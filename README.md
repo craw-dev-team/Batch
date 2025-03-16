@@ -81,21 +81,5 @@
             <td>Retrieve all students</td>
         </tr>
     </table>
-    
-    <h2>Contributing</h2>
-    <p>Contributions are welcome! Follow these steps:</p>
-    <ol>
-        <li>Fork the repository</li>
-        <li>Create a new branch: <code>git checkout -b feature-branch</code></li>
-        <li>Commit your changes: <code>git commit -m "Add new feature"</code></li>
-        <li>Push to the branch: <code>git push origin feature-branch</code></li>
-        <li>Create a Pull Request</li>
-    </ol>
-    
-    <h2>License</h2>
-    <p>This project is licensed under the MIT License.</p>
-    
-    <h2>Contact</h2>
-    <p>For any queries, reach out to <a href="mailto:your-email@example.com">your-email@example.com</a>.</p>
 </body>
 </html>
