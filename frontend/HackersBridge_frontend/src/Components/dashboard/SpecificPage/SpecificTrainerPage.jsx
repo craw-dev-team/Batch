@@ -274,7 +274,7 @@ const SpecificTrainerPage = () => {
                                               
                                                 <td className="px-3 py-2 md:px-1">
                                                 {/* <Tag bordered={false} color={item.languages == 'Hindi'? 'green' : item.languages == 'English'? 'volcano' : 'blue'}>{item.languages}</Tag> */}
-                                                {item.location === '1' ? 'saket' : 'Laxmi Nagar'}
+                                                {item.location_id == '1' ? 'saket' : 'Laxmi Nagar'}
                                                 </td>
                                                 <td className="px-3 py-2 md:px-1">
                                                     {item.preferred_week}
