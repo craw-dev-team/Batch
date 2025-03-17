@@ -25,14 +25,12 @@ SECRET_KEY = 'django-insecure-+6#-07c7yk=gs-x&&0d57y5ov&+p+se0&p#k^9=!(g##f#5*t0
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = [
-    "http://192.168.1.88:8080",
-    ]
+ALLOWED_HOSTS = ["*"]
 
 CORS_ALLOWED_ORIGINS = [
     # "http://192.168.68.134:5173",  # Add 'http://' before the IP
     # "http://localhost:8080",  # Allow requests from React
-    "http://192.168.1.88:8080",  # Remove trailing slash
+    "http://13.203.183.149:8080",  # Remove trailing slash
     "http://127.0.0.1:8080",
 ]
 
@@ -105,7 +103,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'crawhackersbridge',
         'USER': 'root',
-        'PASSWORD': 'Roh@n2005',
+        'PASSWORD': 'CRAW@2025',
         'HOST':'localhost',
         'PORT':'3306',
     }
