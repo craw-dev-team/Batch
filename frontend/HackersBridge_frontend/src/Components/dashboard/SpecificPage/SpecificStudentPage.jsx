@@ -5,7 +5,6 @@ import { Button, message, Popconfirm,  Avatar, Tag, Tooltip, Switch, Input, Spin
 
 
 
-
 const SpecificStudentPage = () => {
     const { studentId } = useParams();
     const { specificStudent, fetchSpecificStudent } = useSpecificStudent();
@@ -42,11 +41,24 @@ const SpecificStudentPage = () => {
     : activeTab === 'allupcomingbatches'
     ? specificStudent?.All_in_One?.all_upcoming_batch
     : []
-    :[];
+    :[];    
     
-    console.log(filteredStudentData);
-    // console.log(specificStudent);
-    // console.log(studentDetails);
+
+    // WHEN REDIRECTED FROM SPECIFICBATCH/STUDENTS CLICK
+    useEffect(() => {
+        if (studentId) {
+            try {
+                // Decode the ID before using it
+                const originalTrainerId = atob(studentId);
+                
+                // Fetch trainer data with the decoded ID
+                fetchSpecificStudent(originalTrainerId);
+            } catch (error) {
+                console.error("Error decoding trainer ID:", error);
+            }
+        }
+    }, [studentId]);
+
 
     return (
         <>
@@ -68,7 +80,13 @@ const SpecificStudentPage = () => {
 
                         <div className="col-span-1 px-1 py-1">
                             <h1>Date of Joining</h1>
-                            <p className="font-semibold">{studentDetails.date_of_joining}</p>
+                            <p className="font-semibold">
+                            {new Date(studentDetails.date_of_joining).toLocaleDateString("en-GB", {
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "numeric",
+                            })}
+                            </p>
                         </div>
 
                         <div className="col-span-1 px-1 py-1 lg:mt-0 md:mt-0 sm:mt-6">
@@ -196,9 +214,6 @@ const SpecificStudentPage = () => {
                                                     Batch ID
                                                 </th>
                                                 <th scope="col" className="px-3 py-3 md:px-1">
-                                                    Trainer Name
-                                                </th>
-                                                <th scope="col" className="px-3 py-3 md:px-1">
                                                     Batch Time
                                                 </th>
                                                 <th scope="col" className="px-3 py-3 md:px-1">
@@ -217,10 +232,10 @@ const SpecificStudentPage = () => {
                                                     Language
                                                 </th>
                                                 <th scope="col" className="px-3 py-3 md:px-1">
-                                                    Location
+                                                    Preferred Week
                                                 </th>
                                                 <th scope="col" className="px-3 py-3 md:px-1">
-                                                    Preferred Week
+                                                    Location
                                                 </th>
                                                 
                                             </tr>
@@ -235,19 +250,54 @@ const SpecificStudentPage = () => {
                                                 <td className="px-3 py-2 md:px-1 font-semibold">
                                                     {item.batch_id}
                                                 </td>
+                                                <td className="px-3 py-2 md:px-1">
+                                                    {new Date(`1970-01-01T${item.batch_time__start_time}`).toLocaleString("en-US", {
+                                                    hour: "numeric",
+                                                    minute: "numeric",
+                                                    hour12: true,
+                                                    })} 
+                                                    <span> - </span>
+                                                    {new Date(`1970-01-01T${item.batch_time__end_time}`).toLocaleString("en-US", {
+                                                    hour: "numeric",
+                                                    minute: "numeric",
+                                                    hour12: true,
+                                                    })}
+                                                </td>
+                                                <td className="px-3 py-2 md:px-1">
+                                                    {new Date(item.start_date).toLocaleDateString("en-GB", {
+                                                    day: "2-digit",
+                                                    month: "2-digit",
+                                                    year: "numeric",
+                                                    })}
+                                                </td>
+                                                <td className="px-3 py-2 md:px-1">
+                                                    {new Date(item.end_date).toLocaleDateString("en-GB", {
+                                                        day: "2-digit",
+                                                        month: "2-digit",
+                                                        year: "numeric",
+                                                    })}
+                                                </td>
                                                 <td className="px-3 py-2 md:px-1 font-semibold">
-                                                    {item.trainer__name}
-                                                </td>
-                                                <td className="px-3 py-2 md:px-1">
-                                                    {item.batch_time__start_time} - {item.batch_time__end_time}
-                                                </td>
-                                                <td className="px-3 py-2 md:px-1">
-                                                    {item.start_date}
-                                                </td>
-                                                <td className="px-3 py-2 md:px-1">
-                                                    {item.end_date}
-                                                </td>
-                                                <td className="px-3 py-2 md:px-1 font-semibold">
+                                                    {/* <Avatar.Group
+                                                        maxCount={2} // Show only 2 avatars initially
+                                                        maxStyle={{
+                                                            color: "#f56a00",
+                                                            backgroundColor: "#fde3cf",
+                                                            height: "24px", // Match avatar size
+                                                            width: "24px", // Match avatar size
+                                                        }}
+                                                    >
+                                                        {item.course__name
+                                                            ? item.course__name.split(", ").map((name, index) => (
+                                                                <Tooltip key={index} title={name} placement="top">
+                                                                    <Avatar size={24} style={{ backgroundColor: "#87d068" }}>
+                                                                        {name[0]}
+                                                                    </Avatar>
+                                                                </Tooltip>
+                                                            ))
+                                                            : <span>No Course</span>
+                                                        }
+                                                    </Avatar.Group> */}
                                                     {item.course__name}
                                                 </td>
                                                 <td className="px-3 py-2 md:px-1">
@@ -256,13 +306,13 @@ const SpecificStudentPage = () => {
                                                 <td className="px-3 py-2 md:px-1">
                                                     {item.language}
                                                 </td>
-                                              
-                                                <td className="px-3 py-2 md:px-1">
-                                                {/* <Tag bordered={false} color={item.languages == 'Hindi'? 'green' : item.languages == 'English'? 'volcano' : 'blue'}>{item.languages}</Tag> */}
-                                                {item.location === '1' ? 'saket' : 'Laxmi Nagar'}
-                                                </td>
+
                                                 <td className="px-3 py-2 md:px-1">
                                                     {item.preferred_week}
+                                                </td>
+                                              
+                                                <td className="px-3 py-2 md:px-1">
+                                                {item.location == '1' ? 'saket' : 'Laxmi Nagar'}
                                                 </td>
                                             </tr>
                                           ))

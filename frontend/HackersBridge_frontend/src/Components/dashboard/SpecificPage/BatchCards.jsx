@@ -4,7 +4,7 @@ import { useBatchForm } from '../Batchcontext/BatchFormContext';
 
 
 
-const DataCards = () => {
+const BatchCards = () => {
 
     const { countBatchesByType } = useBatchForm();
     return (
@@ -47,4 +47,4 @@ const DataCards = () => {
       </Row>
     )
 }
-export default DataCards;
+export default BatchCards;

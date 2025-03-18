@@ -14,7 +14,6 @@ const SpecificTrainerPage = () => {
     const [activeTab, setActiveTab] = useState("running");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTrainer, setSelectedTrainer] = useState(null);
-    // const [decodedTrainerId, setDecodedTrainerId] = useState(null);
 
     const handleTabClick = (tab) => {
         setActiveTab(tab);
@@ -50,28 +49,19 @@ const SpecificTrainerPage = () => {
             ? specificTrainer?.Trainer_All?.trainer_batch_hold
             : []
         : [];
+console.log(filteredBatches);
 
 
-        // Function to handle Edit button click
-        const handleEditClick = (trainer) => {
-            setSelectedTrainer(trainer); // Set the selected course data
-            setIsModalOpen(true); // Open the modal
-            
-        };
-
+            // Function to handle Edit button click
+    const handleEditClick = (trainer) => {
+        setSelectedTrainer(trainer); // Set the selected trainer data
+        setIsModalOpen(true); // Open the modal
+    };
 
     // Function to close the modal
-    const handleCloseModal = async  () => {
+    const handleCloseModal = () => {
         setIsModalOpen(false);
         setSelectedTrainer(null);
-        
-        // Refetch trainer data after modal closes
-        try {
-            const originalTrainerId = atob(trainerId);
-            await fetchSpecificTrainer(originalTrainerId);
-        } catch (error) {
-            console.error("Error fetching updated trainer data:", error);
-        }
     };
     
 
@@ -107,7 +97,13 @@ const SpecificTrainerPage = () => {
 
                         <div className="col-span-1 px-1 py-1">
                             <h1>Date of Joining</h1>
-                            <p className="font-semibold">{trainerDetails.date_of_joining}</p>
+                            <p className="font-semibold">
+                                {new Date(trainerDetails.date_of_joining).toLocaleDateString("en-GB", {
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "numeric",
+                                })}
+                            </p>
                         </div>
 
                         <div className="col-span-1 px-1 py-1 lg:mt-0 md:mt-0 sm:mt-6">
@@ -156,8 +152,14 @@ const SpecificTrainerPage = () => {
                     ) : (
                         <p>Loading trainer data...</p>
                     )}
-                    
             </div>
+
+            {isModalOpen && (
+                <CreateTrainerForm
+                    trainer={selectedTrainer}
+                    onClose={handleCloseModal}
+                />
+            )}
            
                     
                 <div className="px-4 py-4 h-auto shadow-md sm:rounded-lg border border-gray-50 dark:border">
@@ -226,6 +228,9 @@ const SpecificTrainerPage = () => {
                                                     End Date
                                                 </th>
                                                 <th scope="col" className="px-3 py-3 md:px-1">
+                                                    students
+                                                </th>
+                                                <th scope="col" className="px-3 py-3 md:px-1">
                                                     course
                                                 </th>
                                                 <th scope="col" className="px-3 py-3 md:px-1">
@@ -251,33 +256,84 @@ const SpecificTrainerPage = () => {
                                                     {index + 1}
                                                 </td>
                                                 <td className="px-3 py-2 md:px-1">
-                                                    {item.batch_id}
+                                                    {item.batch_name}
                                                 </td>
                                                 <td className="px-3 py-2 md:px-1">
+                                                    {new Date(`1970-01-01T${item.batch_time_start}`).toLocaleString("en-US", {
+                                                    hour: "numeric",
+                                                    minute: "numeric",
+                                                    hour12: true,
+                                                    })} 
+                                                    <span> - </span>
+                                                    {new Date(`1970-01-01T${item.batch_time_end}`).toLocaleString("en-US", {
+                                                    hour: "numeric",
+                                                    minute: "numeric",
+                                                    hour12: true,
+                                                    })}
                                                     {item.batch_time_id}
                                                 </td>
                                                 <td className="px-3 py-2 md:px-1">
-                                                    {item.start_date}
+                                                    {new Date(item.batch_start_date).toLocaleDateString("en-GB", {
+                                                    day: "2-digit",
+                                                    month: "2-digit",
+                                                    year: "numeric",
+                                                    })}
                                                 </td>
                                                 <td className="px-3 py-2 md:px-1">
-                                                    {item.end_date}
+                                                    {new Date(item.batch_end_date).toLocaleDateString("en-GB", {
+                                                        day: "2-digit",
+                                                        month: "2-digit",
+                                                        year: "numeric",
+                                                    })}
                                                 </td>
                                                 <td className="px-3 py-2 md:px-1">
-                                                    {item.course_id}
+                                                    <Avatar.Group
+                                                        maxCount={2} // Show only 2 avatars initially
+                                                        maxStyle={{
+                                                            color: "#f56a00",
+                                                            backgroundColor: "#fde3cf",
+                                                            height: "24px",
+                                                            width: "24px",
+                                                        }}
+                                                    >
+                                                        {item.students?.map((student, index) => (
+                                                            <Tooltip key={student.id || index} title={student.name} placement="top">
+                                                                <Avatar
+                                                                    size={24}
+                                                                    style={{ backgroundColor: "#87d068" }}
+                                                                >
+                                                                     {student.name.charAt(0).toUpperCase()} {/* Show initials if no avatar */}
+                                                                </Avatar>
+                                                            </Tooltip>
+                                                        ))}
+                                                    </Avatar.Group>
+                                                </td>
+                                                <td className="px-3 py-2 md:px-1 font-semibold">
+                                                    {item.course_name}
                                                 </td>
                                                 <td className="px-3 py-2 md:px-1">
-                                                    {item.mode}
+                                                    <Tag bordered={false} color={item.batch_mode === "Offline" ? "green" : item.batch_mode === "Online" ? "red" : "geekblue"}>
+                                                        {item.batch_mode}
+                                                    </Tag>
+                                                    {/* {item.batch_mode} */}
                                                 </td>
                                                 <td className="px-3 py-2 md:px-1">
-                                                    {item.language}
-                                                </td>
-                                              
-                                                <td className="px-3 py-2 md:px-1">
-                                                {/* <Tag bordered={false} color={item.languages == 'Hindi'? 'green' : item.languages == 'English'? 'volcano' : 'blue'}>{item.languages}</Tag> */}
-                                                {item.location_id == '1' ? 'saket' : 'Laxmi Nagar'}
+                                                    <Tag bordered={false} color={item.batch_language === "Hindi" ? "green" : item.batch_language === "English" ? "volcano" : "blue"}>
+                                                        {item.batch_language}
+                                                    </Tag>
+                                                    {/* {item.batch_language} */}
                                                 </td>
                                                 <td className="px-3 py-2 md:px-1">
-                                                    {item.preferred_week}
+                                                    <Tag bordered={false} color={item.batch_location === "Saket" ? "blue" : "magenta" }>
+                                                        {item.batch_location}
+                                                    </Tag>
+                                                    {/* {item.batch_location} */}
+                                                </td>
+                                                <td className="px-3 py-2 md:px-1">
+                                                    <Tag bordered={false} color={item.batch_preferred_week === "Weekdays" ? "cyan" : "gold" }>
+                                                        {item.batch_preferred_week}
+                                                    </Tag>
+                                                    {/* {item.batch_preferred_week} */}
                                                 </td>
                                             </tr>
                                           ))
@@ -300,22 +356,7 @@ const SpecificTrainerPage = () => {
                 </div>
                    
         </div>  
-
-        {isModalOpen && (
-            <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-                <div className="bg-white p-6 rounded-lg shadow-lg">
-                    <CreateTrainerForm 
-                        isOpen={isModalOpen}
-                        selectedTrainerData={selectedTrainer}  // Pass the trainer details
-                        onClose={handleCloseModal} 
-                    />
-                </div>
-            </div>
-        )}
-
-
-    </>
-
+        </>
     )
 };
 
