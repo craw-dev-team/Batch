@@ -1,7 +1,7 @@
 # Batch
 # Not For Normal User
 
-<h1>hello Bhai</h1>
+
 <h1>Batch Management System</h1>
 <p><strong>Batch Management System</strong> is a web application built using <strong>React</strong> for the frontend and <strong>Django</strong> for the backend. It helps in managing batches, students, and trainers efficiently.</p>
 
