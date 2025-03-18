@@ -297,26 +297,35 @@ class DeleteTrainerAPIView(APIView):
 
 
 class TrainerInfoAPIView(APIView):
-    # authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
-    # permission_classes = [IsAuthenticated]
-    
     def get(self, request, id):
-        # if request.user.role != 'admin':
-            # return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
-        
         trainer = get_object_or_404(Trainer, id=id)
-        
-        trainer_batch_upcomimg = Batch.objects.filter(trainer=trainer, status = 'Upcoming')
-        trainer_batch_completed = Batch.objects.filter(trainer=trainer, status = 'Completed')
-        trainer_batch_ongoing = Batch.objects.filter(trainer=trainer, status='Running')
-        trainer_batch_hold = Batch.objects.filter(trainer=trainer, status='Hold')
-        
-        Trainer_All = {
-            'trainer': TrainerSerializer(trainer).data,
-            'trainer_batch_upcoming':list(trainer_batch_upcomimg.values()),
-            'trainer_batch_ongoing':list(trainer_batch_ongoing.values()),
-            'trainer_batch_completed':list(trainer_batch_completed.values()),
-            'trainer_batch_hold':list(trainer_batch_hold.values())
+
+        trainer_batches = {
+            'Upcoming': Batch.objects.filter(trainer=trainer, status='Upcoming').select_related('course', 'batch_time'),
+            'Ongoing': Batch.objects.filter(trainer=trainer, status='Running').select_related('course', 'batch_time'),
+            'Completed': Batch.objects.filter(trainer=trainer, status='Completed').select_related('course', 'batch_time'),
+            'Hold': Batch.objects.filter(trainer=trainer, status='Hold').select_related('course', 'batch_time'),
         }
-        
-        return Response({'Trainer_All':Trainer_All}, status=status.HTTP_200_OK)
+
+        trainer_data = {'trainer': TrainerSerializer(trainer).data}
+
+        for batch_status, batches in trainer_batches.items():  # Rename 'status' to 'batch_status'
+            trainer_data[f'trainer_batch_{batch_status.lower()}'] = [
+                {
+                    'batch_id': batch.id,
+                    'batch_name': batch.batch_id,
+                    'course_name': batch.course.name,
+                    'batch_time_start': batch.batch_time.start_time,
+                    'batch_time_end': batch.batch_time.end_time,
+                    'batch_start_date':batch.start_date,
+                    'batch_end_date':batch.end_date,
+                    'batch_mode':batch.mode,
+                    'batch_language':batch.language,
+                    'batch_location':batch.location.locality,
+                    'batch_preferred_week':batch.preferred_week,
+                    'students': list(batch.student.values('id', 'name'))  # Use correct related_name
+                }
+                for batch in batches  # Iterate over queryset directly
+            ]
+            
+        return Response({'Trainer_All': trainer_data}, status=status.HTTP_200_OK)
