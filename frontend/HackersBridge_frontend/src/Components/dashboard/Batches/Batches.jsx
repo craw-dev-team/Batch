@@ -6,7 +6,7 @@ import  { useBatchForm }  from "../Batchcontext/BatchFormContext";
 import CreateBatchForm from "./CreateBatchForm";
 import axios from "axios";
 import BASE_URL from "../../../ip/Ip";
-import DataCards from "../SpecificPage/DataCards";
+import BatchCards from "../SpecificPage/BatchCards";
 import AvailableBatches from "./AvailableBatches";
 import { useSpecificTrainer } from "../Contexts/SpecificTrainers";
 import { useSpecificBatch } from "../Contexts/SpecificBatch";
@@ -22,6 +22,7 @@ const Batches = () => {
     const [selectedStudent, setSelectedStudent] = useState({}); // Stores selected students per batch
     const [addStudentDropdown, setAddStudentDropdown] = useState({});
     const [searchTerm, setSearchTerm] = useState("");
+    const [sortOrder, setSortOrder] = useState("asc"); // "asc" for nearest date first, "desc" for farthest date first
 
     // const [addTrainerDropdown, setAddtrainerDropdown] = useState({});
     // const [availableTrainers, setAvailabletrainers] = useState({});
@@ -263,11 +264,9 @@ const Batches = () => {
 
 
     const handleBatchClick =  async (batchId) => {
-        console.log(batchId);
-        
         if (!batchId) return;
         const encodedBatchId = btoa(batchId);
-         await fetchSpecificBatch(batchId); 
+         await fetchSpecificBatch(batchId); // Call function with trainer ID
  
         
         navigate(`/batches/${encodedBatchId}`);
@@ -331,7 +330,7 @@ const Batches = () => {
     return (
         <>
 <div className="w-auto pt-4 px-2 mt-14 darkmode">
-    <DataCards/>
+    <BatchCards/>
     <div className="relative w-full h-full shadow-md sm:rounded-lg darkmode border border-gray-50 dark:border dark:border-gray-600">
             <div className="w-full px-4 py-3 text flex justify-between font-semibold ">
                 <h1>All Batches</h1>
@@ -564,16 +563,20 @@ const Batches = () => {
                     hour12: true,
                     })}
                 </td>
-                <td className="px-3 py-2 md:px-1"><td> {new Date(item.start_date).toLocaleDateString("en-GB", {
+                <td className="px-3 py-2 md:px-1"> 
+                    {new Date(item.start_date).toLocaleDateString("en-GB", {
                         day: "2-digit",
                         month: "2-digit",
                         year: "numeric",
-                    })}</td></td>
-                <td className="px-3 py-2 md:px-1"><td> {new Date(item.end_date).toLocaleDateString("en-GB", {
+                    })}
+                </td>
+                <td className="px-3 py-2 md:px-1"> 
+                    {new Date(item.end_date).toLocaleDateString("en-GB", {
                         day: "2-digit",
                         month: "2-digit",
                         year: "numeric",
-                    })}</td></td>
+                    })}
+                </td>
                 <td className="px-3 py-2 md:px-1">{item.course_name}</td>
                 <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.trainer)}>{item.trainer_name}</td>
                 <td className="px-3 py-2 md:px-1 relative">
@@ -637,7 +640,7 @@ const Batches = () => {
                     </div>
                 </td>
                 <td className="px-3 py-2 md:px-1">
-                    <Tag bordered={false} color={item.mode === "Offline" ? "green" : item.mode === "online" ? "volcano" : "geekblue"}>
+                    <Tag bordered={false} color={item.mode === "Offline" ? "green" : item.mode === "Online" ? "red" : "geekblue"}>
                         {item.mode}
                     </Tag>
                 </td>
@@ -646,9 +649,13 @@ const Batches = () => {
                         {item.language}
                     </Tag>
                 </td>
-                <td className="px-3 py-2 md:px-1">{item.preferred_week}</td>
                 <td className="px-3 py-2 md:px-1">
-                    {item.location == "1" ? <Tag color="blue">Saket</Tag> : <Tag color="magenta">Laxmi Nagar</Tag>}
+                    <Tag bordered={false} color={item.preferred_week === "Weekdays" ? "cyan" : "gold" }>
+                        {item.preferred_week}
+                    </Tag>
+                </td>
+                <td className="px-3 py-2 md:px-1">
+                    {item.location == "1" ? <Tag bordered={false} color="blue">Saket</Tag> : <Tag bordered={false} color="magenta">Laxmi Nagar</Tag>}
                 </td>
                 <td className="px-3 py-2 md:px-1">
                     <Dropdown
@@ -663,7 +670,7 @@ const Batches = () => {
                         }}
                     >
                         <a onClick={(e) => e.preventDefault()}>
-                            <Tag color={item.status === "Running" ? "green" : item.status === "Upcoming" ? "blue" : item.status === "Completed" ? "geekblue" : item.status === "Endingsoon" ? "orange" : item.status === "Hold" ? "volcano" : "red"}>
+                            <Tag color={item.status === "Running" ? "green" : item.status === "Upcoming" ? "lime" : item.status === "Completed" ? "geekblue" : item.status === "Hold" ? "volcano" : "red"}>
                                 {item.status} <span><DownOutlined /></span>
                             </Tag>
                         </a>
