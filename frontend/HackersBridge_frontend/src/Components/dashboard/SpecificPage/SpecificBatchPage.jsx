@@ -178,10 +178,10 @@ const SpecificBatchPage = () => {
         if (batchId) {
             try {
                 // Decode the ID before using it
-                const originalTrainerId = atob(batchId);
+                const originalBatchId = atob(batchId);
                 
                 // Fetch trainer data with the decoded ID
-                fetchSpecificBatch(originalTrainerId);
+                fetchSpecificBatch(originalBatchId);
             } catch (error) {
                 console.error("Error decoding trainer ID:", error);
             }
@@ -203,7 +203,6 @@ const SpecificBatchPage = () => {
     const handleStudentClick = async (studentId) => {
         if (!studentId) return;
         const encodedStudentId = btoa(studentId);
-        await fetchSpecificStudent(studentId)
         
         navigate(`/students/${encodedStudentId}`)
     };
@@ -281,6 +280,7 @@ const SpecificBatchPage = () => {
                             { label: "Mode", key: "mode" },
                             { label: "Status", key: "status" },
                             { label: "Start Date", key: "start_date" },
+                            { label: "End Date", key: "end_date" },
                         ].map(({ label, key }) => (
                         <div key={key} className="col-span-1 px-1 py-1 lg:mt-0 sm:mt-6">
                             <h1>{label}</h1>
@@ -358,12 +358,12 @@ const SpecificBatchPage = () => {
                         </div> */}
 
                         {/* Formatted End Date */}
-                        <div className="col-span-1 px-1 py-1 lg:mt-0 md:mt-0 sm:mt-6">
+                        {/* <div className="col-span-1 px-1 py-1 lg:mt-0 md:mt-0 sm:mt-6">
                             <h1>End Date</h1>
                             <p className="font-semibold">
                                 {new Date(updatedValues.end_date).toLocaleDateString("en-GB")}
                             </p>
-                        </div>
+                        </div> */}
                     </div>
                 </div>
 
@@ -445,10 +445,10 @@ const SpecificBatchPage = () => {
                                 {/* <td className="px-3 py-2 md:px-1">
                                     {item.id}
                                 </td> */}
-                                <th className="px-3 py-2 md:px-1 cursor-pointer"  onClick={() => handleStudentClick(item.id)}>
+                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.id)}>
                                     {item.enrollment_no}
-                                </th>
-                                <td className="px-3 py-2 md:px-1">
+                                </td>
+                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.id)}>
                                     {item.name}
                                 </td>
                                 {/* <td className="px-3 py-2 md:px-1">

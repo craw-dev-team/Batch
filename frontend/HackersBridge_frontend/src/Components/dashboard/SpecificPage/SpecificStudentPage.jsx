@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 import { useSpecificStudent } from "../Contexts/SpecificStudent";
 import { Button, message, Popconfirm,  Avatar, Tag, Tooltip, Switch, Input, Spin, Empty  } from 'antd';
 
@@ -9,25 +9,28 @@ const SpecificStudentPage = () => {
     const { studentId } = useParams();
     const { specificStudent, fetchSpecificStudent } = useSpecificStudent();
     const [activeTab, setActiveTab] = useState("running");
- 
+    
+    const navigate = useNavigate();
     
     const handleTabClick = (tab) => {
         setActiveTab(tab);
     }
-
+    
+    // WHEN REDIRECTED FROM SPECIFICBATCH/STUDENTS CLICK
     useEffect(() => {
         if (studentId) {
             try {
                 // Decode the ID before using it
-                const originalTrainerId = atob(studentId);
+                const originalStudentId = atob(studentId);
                  
                 // Fetch trainer data with the decoded ID
-                fetchSpecificStudent(originalTrainerId);
+                fetchSpecificStudent(originalStudentId);
             } catch (error) {
                 console.error("Error decoding trainer ID:", error);
             }
         }
     },[studentId]);
+
     
     const studentDetails = specificStudent?.All_in_One?.student;
     
@@ -44,20 +47,18 @@ const SpecificStudentPage = () => {
     :[];    
     
 
-    // WHEN REDIRECTED FROM SPECIFICBATCH/STUDENTS CLICK
-    useEffect(() => {
-        if (studentId) {
-            try {
-                // Decode the ID before using it
-                const originalTrainerId = atob(studentId);
-                
-                // Fetch trainer data with the decoded ID
-                fetchSpecificStudent(originalTrainerId);
-            } catch (error) {
-                console.error("Error decoding trainer ID:", error);
-            }
-        }
-    }, [studentId]);
+
+console.log(filteredStudentData);
+
+    // NAVIGATE TO BATCH INFO PAGE
+    const handleBatchClick =  async (batchId) => {
+        if (!batchId) return;
+        console.log(batchId);
+        
+            const encodedbatchId = btoa(batchId);
+ 
+        navigate(`/batches/${encodedbatchId}`);
+    };
 
 
     return (
@@ -160,7 +161,7 @@ const SpecificStudentPage = () => {
                 <div className="px-4 py-4 h-auto shadow-md sm:rounded-lg border border-gray-50 dark:border">
                     
                     <div className="w-full h-auto px-1 py-3 text-lg font-semibold">
-                        <h1>Batches Joined</h1>
+                        <h1>Enrolled Batches</h1>
                     </div>
                     <div className="flex gap-x-4 h-10">
                     
@@ -247,7 +248,7 @@ const SpecificStudentPage = () => {
                                                 <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
                                                     {index + 1}
                                                 </td>
-                                                <td className="px-3 py-2 md:px-1 font-semibold">
+                                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleBatchClick(item.id)}>
                                                     {item.batch_id}
                                                 </td>
                                                 <td className="px-3 py-2 md:px-1">
