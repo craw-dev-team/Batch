@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useSpecificTrainer } from "../Contexts/SpecificTrainers";
 import { Button, message, Popconfirm, Switch, Avatar, Tooltip, Tag } from 'antd';
 import { EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
@@ -14,6 +14,7 @@ const SpecificTrainerPage = () => {
     const [activeTab, setActiveTab] = useState("running");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTrainer, setSelectedTrainer] = useState(null);
+    const navigate = useNavigate();
 
     const handleTabClick = (tab) => {
         setActiveTab(tab);
@@ -49,20 +50,30 @@ const SpecificTrainerPage = () => {
             ? specificTrainer?.Trainer_All?.trainer_batch_hold
             : []
         : [];
-console.log(filteredBatches);
 
 
-            // Function to handle Edit button click
-    const handleEditClick = (trainer) => {
-        setSelectedTrainer(trainer); // Set the selected trainer data
-        setIsModalOpen(true); // Open the modal
-    };
+        // Function to handle Edit button click
+        const handleEditClick = (trainer) => {
+            setSelectedTrainer(trainer); // Set the selected trainer data
+            setIsModalOpen(true); // Open the modal
+        };
 
-    // Function to close the modal
-    const handleCloseModal = () => {
-        setIsModalOpen(false);
-        setSelectedTrainer(null);
-    };
+        // Function to close the modal
+        const handleCloseModal = () => {
+            setIsModalOpen(false);
+            setSelectedTrainer(null);
+        };
+
+        // TO NAVIGATE TO BATCH SPECIFIC PAGE 
+        const handleBatchClick = async (batchId) => {
+            if (!batchId) return;
+            console.log(batchId);
+            
+            const encodedBatchId = btoa(batchId);
+            
+            navigate(`/batches/${encodedBatchId}`)
+        };
+
     
 
     return (
@@ -255,7 +266,7 @@ console.log(filteredBatches);
                                                 <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
                                                     {index + 1}
                                                 </td>
-                                                <td className="px-3 py-2 md:px-1">
+                                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleBatchClick(item.batch_id)}>
                                                     {item.batch_name}
                                                 </td>
                                                 <td className="px-3 py-2 md:px-1">
