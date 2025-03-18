@@ -359,7 +359,7 @@ const AvailableBatches = () => {
                     })}</td>
                         <td className="px-3 py-2 md:px-1 font-semibold">{item.batch_course}</td>
                         <td className="px-3 py-2 md:px-1 font-bold">{item.batch_id}</td>
-                        <td className="px-3 py-2 md:px-1">{item.week}</td>
+                        <td className="px-3 py-2 md:px-1">{item.batch_week}</td>
                         <td className="px-3 py-2 md:px-1">{item.free_days} Days</td>
                         <td className="px-3 py-2 md:px-1">
                         <button 
