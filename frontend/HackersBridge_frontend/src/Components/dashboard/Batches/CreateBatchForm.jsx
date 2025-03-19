@@ -226,6 +226,7 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
                                             { value: '2', label: '12:00 - 02:00' },
                                             { value: '3', label: '03:00 - 05:00' },
                                             { value: '4', label: '05:00 - 06:30' },
+                                            { value: '9', label: '06:00 - 07:00' },
                                             { value: '7', label: '07:00 - 09:00' },
                                             { value: '8', label: '10:00 - 05:00' },
                                             { value: '5', label: '10:00 - 02:00 - Weekends' },
