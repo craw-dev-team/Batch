@@ -444,9 +444,15 @@ class BatchCreateSerializer(serializers.ModelSerializer):
         start_date = validated_data.get('start_date')
         status = validated_data.get('status')
 
+        # existing_batch = Batch.objects.filter(
+        #     course=course, mode=mode, location=location, trainer=trainer,
+        #     language=language, batch_time=batch_time, start_date=start_date,
+        #     preferred_week=preferred_week
+        # ).exists()
+
+
         existing_batch = Batch.objects.filter(
-            course=course, mode=mode, location=location, trainer=trainer,
-            language=language, batch_time=batch_time, start_date=start_date,
+            trainer=trainer, batch_time=batch_time, start_date=start_date,
             preferred_week=preferred_week
         ).exists()
 
