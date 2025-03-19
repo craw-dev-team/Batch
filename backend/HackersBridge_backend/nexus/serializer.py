@@ -399,8 +399,7 @@ class BatchCreateSerializer(serializers.ModelSerializer):
             'id', 'batch_id', 'course', 'mode', 'location', 'trainer', 'language', 'status',
             'preferred_week', 'batch_time', 'start_date', 'end_date', 'student', 'student_name'
         ]
-        
-        read_only_fields = ['batch_id']  # Ensure batch_id is generated automatically
+        read_only_fields = ['batch_id']
 
     def get_student_name(self, obj):
         """Return student names as a list."""
@@ -431,6 +430,29 @@ class BatchCreateSerializer(serializers.ModelSerializer):
 
         return f"CRAW-{course_code}{start_year:02d}{new_sequence:03d}"
 
+    def calculate_end_date(self, start_date, course_duration, preferred_week):
+        """Calculate the end date based on course duration and preferred week."""
+        if not start_date or not course_duration:
+            return None
+
+        preferred_week = preferred_week if preferred_week else ""  # Handle None values
+        current_date = start_date  # Fix: Start from start_date, not start_date - 1
+        days_counted = 0
+
+        while days_counted < course_duration:
+            # Check if the current day matches the preferred schedule
+            if preferred_week == "Weekdays" and current_date.weekday() < 5:  # Monday to Friday (0-4)
+                days_counted += 1
+            elif preferred_week == "Weekends" and current_date.weekday() >= 5:  # Saturday and Sunday (5-6)
+                days_counted += 1
+
+            # Move to the next day
+            current_date += timedelta(days=1)
+
+        return current_date
+
+    # def create(self, validated_data):
+    #     """Override create method to generate batch_id and end_date automatically."""
     def create(self, validated_data):
         """Override create method to generate batch_id and end_date automatically."""
         students = validated_data.pop('student', [])  # Extract students list
@@ -458,16 +480,21 @@ class BatchCreateSerializer(serializers.ModelSerializer):
 
         if existing_batch:
             raise serializers.ValidationError("Batch already exists")
-        
+
+        # Ensure we get the correct course duration
+        course_duration = getattr(course, 'duration', None)
+        if not course_duration:
+            raise serializers.ValidationError("Course duration is required to calculate end date.")
+
         # Calculate end date
-        validated_data['end_date'] = start_date + timedelta(days=course.duration) if start_date and course else None
+        validated_data['end_date'] = self.calculate_end_date(start_date, course_duration, preferred_week)
 
         # Create batch instance first (without batch_id)
         batch = Batch.objects.create(**validated_data)
 
         # Generate and assign batch_id
         batch.batch_id = self.generate_batch_id(course, start_date)
-        batch.save(update_fields=['batch_id'])
+        batch.save(update_fields=['batch_id', 'end_date'])
         batch.student.set(students)
 
         return batch
@@ -476,20 +503,18 @@ class BatchCreateSerializer(serializers.ModelSerializer):
         """Update batch details and regenerate batch_id if course changes."""
         new_course = validated_data.get('course', instance.course)
         new_start_date = validated_data.get('start_date', instance.start_date)
+        new_end_date = validated_data.get('end_date', instance.end_date)
 
         # Check if course has changed, and regenerate batch_id if needed
         if new_course != instance.course:
             instance.batch_id = self.generate_batch_id(new_course, new_start_date)
             instance.course = new_course  # Update course
             instance.start_date = new_start_date  # Update start date
-            instance.save(update_fields=['batch_id', 'course', 'start_date'])
-
-        # Update end_date if start_date is modified
-        if 'start_date' in validated_data:
-            instance.end_date = new_start_date + timedelta(days=new_course.duration) if new_course else None
+            instance.end_date = new_end_date  # Update start date
+            instance.save(update_fields=['batch_id', 'course', 'start_date', 'end_date'])
 
         # Update students if provided
         students = validated_data.pop('student', None)
         if students is not None:
             instance.student.set(students)  # Update students list
-        return super().update(instance, validated_data)
+        return super().update(instance, validated_data)    
