@@ -1,5 +1,4 @@
 # Batch
-# Not For Normal User
 
 
 <h1>Batch Management System</h1>

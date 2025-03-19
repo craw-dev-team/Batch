@@ -174,50 +174,34 @@ class AvailableStudentsAPIView(APIView):
         # if request.user.role != 'coordinator':
         #     return Response({"error": "Only coordinators can view this data."}, status=status.HTTP_403_FORBIDDEN)
 
+
         batch = get_object_or_404(Batch, id=batch_id)
 
-        language_filter = [batch.language, 'Both']
-        week_choices = [batch.preferred_week, 'Both']
-        modes = [batch.mode, 'Hybrid']
-        # print(batch.mode)
-        
-        
-        # Get students matching the criteria
-        if batch.mode == "Hybrid" or batch.language == "Both":
-            students = Student.objects.filter(
-                courses__id=batch.course.id,
-                # language__in=language_filter,
-                preferred_week__in=week_choices,
-                # mode__in=modes,
-                status = 'Active'
-            )
-        else:
-            students = Student.objects.filter(
-                courses__id=batch.course.id,
-                language__in=language_filter,
-                preferred_week__in=week_choices,
-                # mode=batch.mode,
-                mode__in=modes,
-                status = 'Active'
-            )
-        # print(students)
-        # Find students who are unavailable due to batch conflicts
-        
-        unavailable_students = Batch.objects.filter(
-            student__in=students.values_list("id", flat=True),
-            start_date__lt=batch.end_date,
-            end_date__gt=batch.start_date,
-            preferred_week=batch.preferred_week,
-            batch_time=batch.batch_time,
-        ).exclude(status="Cancelled").values_list("student", flat=True)
-        # for student in unavailable_students:
-            # print(student)
+        # Base filter for active students in the same course
+        filters = Q(courses__id=batch.course.id, status='Active')
 
-        # Exclude unavailable students
-        available_students = students.exclude(id__in=unavailable_students)
+        # Language filter
+        if batch.language != "Both":
+            filters &= Q(language__in=[batch.language, "Both"])
 
-        serialized_students = StudentSerializer(available_students, many=True).data
-        return Response({"available_students": serialized_students}, status=status.HTTP_200_OK)
+        # Week filter
+        if batch.preferred_week != "Both":
+            filters &= Q(preferred_week__in=[batch.preferred_week, "Both"])
+
+        # Mode filter
+        if batch.mode != "Hybrid":
+            filters &= Q(mode__in=[batch.mode, "Hybrid"])
+
+        # Location filter (Ensure location comparison is valid)
+        if hasattr(batch.location, 'locality') and batch.location.locality != "Both":
+            filters &= Q(location__locality__in=[batch.location.locality, "Both"])
+
+        # Query the filtered students
+        students = Student.objects.filter(filters)
+
+        # Serialize and return filtered student data
+        serialized_students = StudentSerializer(students, many=True).data
+        return Response({"available_students": serialized_students}, status=status.HTTP_200_OK)  
     
 
 
