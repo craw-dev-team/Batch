@@ -10,6 +10,7 @@ from Trainer.models import *
 from django.core.mail import send_mail
 from django.utils.crypto import get_random_string
 import random
+from Student.serializer import StudentSerializer
 
 
 User = get_user_model()
@@ -280,10 +281,10 @@ class BatchSerializer(serializers.ModelSerializer):
     
 
 class BatchStudentAssignmentSerializer(serializers.ModelSerializer):
+    student = StudentSerializer()
     class Meta:
         model = BatchStudentAssignment
-        fields = ['batch', 'student', 'coordinator']
-
+        fields = ['id', 'batch', 'student', 'coordinator', 'student_batch_status']
 
 # class BatchCreateSerializer(serializers.ModelSerializer):
 #     batch_id = serializers.SerializerMethodField()
@@ -437,18 +438,18 @@ class BatchCreateSerializer(serializers.ModelSerializer):
 
         preferred_week = preferred_week if preferred_week else ""  # Handle None values
         current_date = start_date  # Fix: Start from start_date, not start_date - 1
-        days_counted = 0
-
-        while days_counted < course_duration:
-            # Check if the current day matches the preferred schedule
-            if preferred_week == "Weekdays" and current_date.weekday() < 5:  # Monday to Friday (0-4)
-                days_counted += 1
-            elif preferred_week == "Weekends" and current_date.weekday() >= 5:  # Saturday and Sunday (5-6)
-                days_counted += 1
-
-            # Move to the next day
-            current_date += timedelta(days=1)
-
+        course_days = course_duration
+        
+        if preferred_week == "Weekdays":
+            current_date = current_date + timedelta(course_days)
+        
+        elif preferred_week == "Weekends":
+            course_days = course_days + 10
+            current_date = current_date + timedelta(course_days)
+            
+        else:
+            current_date = current_date + timedelta(course_days)
+      
         return current_date
 
     # def create(self, validated_data):

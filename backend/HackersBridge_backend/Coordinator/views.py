@@ -11,6 +11,8 @@ from Student.serializer import StudentSerializer
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
 from nexus.models import Batch
+from Trainer.models import Trainer
+from Trainer.serializer import TrainerSerializer
 
 
 # from django.contrib.auth.models import User
@@ -55,6 +57,21 @@ class StudentsUnderCoordinatorView(APIView):
 
         # Serialize student data
         serializer = StudentSerializer(students, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+
+class TrainerUnderCoordinatorView(APIView):
+    def get(self, request, id):
+        try:
+            coordinator = Coordinator.objects.get(id=id)
+        except Coordinator.DoesNotExist:
+            return Response({'error': 'Coordinator not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        trainers = Trainer.objects.filter(coordinator=coordinator)
+
+        serializer = TrainerSerializer(trainers, many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
