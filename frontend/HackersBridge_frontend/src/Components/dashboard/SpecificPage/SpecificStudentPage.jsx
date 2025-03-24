@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom"
 import { useSpecificStudent } from "../Contexts/SpecificStudent";
-import { Button, message, Popconfirm,  Avatar, Tag, Tooltip, Switch, Input, Spin, Empty  } from 'antd';
+import { Tag } from 'antd';
 
 
 
@@ -33,6 +33,7 @@ const SpecificStudentPage = () => {
 
     
     const studentDetails = specificStudent?.All_in_One?.student;
+    console.log(specificStudent);
     
     const filteredStudentData = specificStudent?.All_in_One
     ? activeTab === 'running'
@@ -47,9 +48,6 @@ const SpecificStudentPage = () => {
     :[];    
     
 
-
-console.log(filteredStudentData);
-
     // NAVIGATE TO BATCH INFO PAGE
     const handleBatchClick =  async (batchId) => {
         if (!batchId) return;
@@ -63,11 +61,11 @@ console.log(filteredStudentData);
 
     return (
         <>
-        <div className="w-auto h-full pt-20 px-2 mt-0 darkmode">
+        <div className="w-auto h-full pt-20 px-2 mt-0">
             <div className="grid grid-cols-6 gap-x-6">
                     {studentDetails ? (
                     <>
-                <div className="px-4 py-4 col-span-6 h-auto shadow-md sm:rounded-lg border border-gray-50 dark:border">
+                <div className="px-4 py-4 col-span-6 h-auto shadow-md sm:rounded-lg border border-gray-50 bg-white">
                     
                     <div className="w-full h-auto px-1 py-3 text-lg font-semibold">
                         <p># {studentDetails.enrollment_no}</p>
@@ -111,7 +109,7 @@ console.log(filteredStudentData);
                         </div>
 
                         <div className="col-span-1 px-1 py-1 mt-6">
-                            <h1>language</h1>
+                            <h1>Language</h1>
                             <p className="font-semibold">{studentDetails.language}</p>
                         </div>
 
@@ -125,22 +123,67 @@ console.log(filteredStudentData);
                             <p className="font-semibold">{studentDetails.support_coordinator_name}</p>
                         </div>
 
+                        <div className="col-span-1 px-1 py-1 mt-6">
+                            <h1>Address</h1>
+                            <p className="font-semibold">{studentDetails.address || "Not Available"}</p>
+                        </div>
+
                         </div>
                 </div>
 
-                <div className="px-4 py-4 col-span-5 mt-6 h-auto shadow-md sm:rounded-lg darkmode border border-gray-50 dark:border dark:border-gray-600">
+                <div className="px-4 py-4 col-span-6 mt-6 h-auto shadow-md sm:rounded-lg darkmode border border-gray-50 dark:border dark:border-gray-600">
                     <div className="w-full font-semibold">
                         
                         <div className="col-span-1 text-lg px-4 py-4">
                             <h1>Courses</h1>
                         </div>
 
-                        <div className="col-span-1 px-4 py-2 leading-8">
-                            <ul>
-                            {specificStudent?.All_in_One?.student_courses.map((course, index) => (
-                            <li className="flex justify-between" key={index}>{course.course_name} <span className={course.status == 'Ongoing'? 'text-green-400': 'text-gray-500'}>{course.course_status}</span></li>
-                            ))}
+                        <div className="col-span-1 px-0 py-2 leading-8">
+                        <table className="w-full text-xs text-left text-gray-500 dark:text-gray-400 ">
+                                    <thead className="text-xs text-gray-700 uppercase bg-green-200 sticky top-0 z-10">
+                                            <tr>
+                                                <th scope="col" className="px-3 py-3 md:px-2">
+                                                    S.No
+                                                </th>
+                                                <th scope="col" className="px-3 py-3 md:px-1">
+                                                    Course Name
+                                                </th>
+                                                <th scope="col" className="px-3 py-3 md:px-1">
+                                                    Course Status
+                                                </th>
+                                                <th scope="col" className="px-3 py-3 md:px-1">
+                                                    Batch Taken
+                                                </th>
+                                                <th scope="col" className="px-3 py-3 md:px-1">
+                                                    Certificate Issue Date
+                                                </th>
+                                            </tr>
+                                    </thead>
+                                        <tbody>
 
+                                        {specificStudent?.All_in_One?.student_courses.map((item, index) => (                          
+                                            <tr key={index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 scroll-smooth">
+                                                <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
+                                                    {index + 1}
+                                                </td>
+                                                <td className="px-3 py-2 md:px-1">
+                                                    {item.course_name}
+                                                </td>
+
+                                                <td className={`px-3 py-2 md:px-1 ${item.course_status == "Ongoing" ? "text-green-500" : item.course_status == "Upcoming" ? "text-lime-400" : "text-blue-500"}`}>
+                                                    {item.course_status}
+                                                </td>
+                                                <td className={`px-3 py-2 md:px-1 text-md ${item.course_tekan == "0" ? "text-red-500" : "text-green-400"}`}>
+                                                    {item.course_tekan}
+                                                </td>
+                                                <td className="px-3 py-2 md:px-1">
+                                                    {item.course_certificate_date || 'N/A'}
+                                                </td>
+                                            </tr>
+                                           ))}
+                                        </tbody>
+                                </table>
+                            <ul>
 
                             </ul>
                         </div>
@@ -169,7 +212,7 @@ console.log(filteredStudentData);
                         <button
                             onClick={() => handleTabClick("running")}
                             className={` px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                                ${activeTab === "running" ? 'bg-[#afc0d1] dark:bg-[#3D5A80] text-black dark:text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                ${activeTab === "running" ? 'bg-blue-300  text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                                 >
                         Active
                         </button>
@@ -177,15 +220,15 @@ console.log(filteredStudentData);
                         <button
                             onClick={() => handleTabClick("scheduled")}
                             className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                                ${activeTab === "scheduled" ? 'bg-[#afc0d1] dark:bg-[#3D5A80] text-black dark:text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                ${activeTab === "scheduled" ? 'bg-blue-300  text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                             >
                             Upcoming
                         </button>
                        
                         <button
-                            onClick={() => handleTabClick("copleted")}
+                            onClick={() => handleTabClick("completed")}
                             className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                                ${activeTab === "hold" ? 'bg-[#afc0d1] dark:bg-[#3D5A80] text-black dark:text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                ${activeTab === "completed" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                             >
                             completed
                         </button>
@@ -193,7 +236,7 @@ console.log(filteredStudentData);
                         <button
                             onClick={() => handleTabClick("allupcomingbatches")}
                             className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                                ${activeTab === "completed" ? 'bg-[#afc0d1] dark:bg-[#3D5A80] text-black dark:text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                ${activeTab === "allupcomingbatches" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                             >
                             All upcoming batches
                         </button>
@@ -205,7 +248,7 @@ console.log(filteredStudentData);
                 </div>
                         <div className="">
                                 <>
-                               <table className="w-full text-xs text-left text-gray-500 dark:text-gray-400 ">
+                                <table className="w-full text-xs text-left text-gray-500 dark:text-gray-400 ">
                                     <thead className="text-xs text-gray-700 uppercase bg-blue-50 dark:bg-gray-700 dark:text-gray-400 sticky top-0 z-10">
                                             <tr>
                                                 <th scope="col" className="px-3 py-3 md:px-2">
@@ -302,18 +345,24 @@ console.log(filteredStudentData);
                                                     {item.course__name}
                                                 </td>
                                                 <td className="px-3 py-2 md:px-1">
-                                                    {item.mode}
+                                                    <Tag bordered={false} color={item.mode == 'Offline'? 'green' : item.mode == 'online'? 'volcano' : 'geekblue'}>
+                                                        {item.mode}
+                                                    </Tag>
                                                 </td>
                                                 <td className="px-3 py-2 md:px-1">
-                                                    {item.language}
+                                                    <Tag bordered={false} color={item.language === 'Hindi'? 'green' : item.language === 'English'? 'volcano' : 'blue'}>
+                                                        {item.language}
+                                                    </Tag>
                                                 </td>
 
                                                 <td className="px-3 py-2 md:px-1">
-                                                    {item.preferred_week}
+                                                    <Tag bordered={false} color={item.preferred_week === "Weekdays" ? "cyan" : "geekblue" }>
+                                                        {item.preferred_week}
+                                                    </Tag>
                                                 </td>
                                               
                                                 <td className="px-3 py-2 md:px-1">
-                                                {item.location == '1' ? 'saket' : 'Laxmi Nagar'}
+                                                {item.location == '1' ? <Tag color="blue">Saket</Tag> : <Tag color="magenta">Laxmi Nagar</Tag>}
                                                 </td>
                                             </tr>
                                           ))

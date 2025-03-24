@@ -184,7 +184,7 @@ const SpecificTrainerPage = () => {
                         <button
                             onClick={() => handleTabClick("running")}
                             className={` px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                                ${activeTab === "running" ? 'bg-[#afc0d1] dark:bg-[#3D5A80] text-black dark:text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                ${activeTab === "running" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                                 >
                         Active
                         </button>
@@ -192,7 +192,7 @@ const SpecificTrainerPage = () => {
                         <button
                             onClick={() => handleTabClick("scheduled")}
                             className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                                ${activeTab === "scheduled" ? 'bg-[#afc0d1] dark:bg-[#3D5A80] text-black dark:text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                ${activeTab === "scheduled" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                             >
                             Upcoming
                         </button>
@@ -200,7 +200,7 @@ const SpecificTrainerPage = () => {
                         <button
                             onClick={() => handleTabClick("hold")}
                             className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                                ${activeTab === "hold" ? 'bg-[#afc0d1] dark:bg-[#3D5A80] text-black dark:text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                ${activeTab === "hold" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                             >
                             Hold
                         </button>
@@ -208,7 +208,7 @@ const SpecificTrainerPage = () => {
                         <button
                             onClick={() => handleTabClick("completed")}
                             className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                                ${activeTab === "completed" ? 'bg-[#afc0d1] dark:bg-[#3D5A80] text-black dark:text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                ${activeTab === "completed" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                             >
                             Completed
                         </button>

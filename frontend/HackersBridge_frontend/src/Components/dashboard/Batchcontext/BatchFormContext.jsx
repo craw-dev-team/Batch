@@ -1,5 +1,5 @@
 import axios from "axios";
-import React, { createContext, useState, useContext } from "react";
+import React, { createContext, useState, useContext, useCallback, useMemo } from "react";
 import BASE_URL from "../../../ip/Ip";
 
 // Create the context object
@@ -28,11 +28,11 @@ const BatchFormProvider = ({ children }) => {
   const [errors, setErrors] = useState({});
   
     // Function to reset form
-    const resetBatchForm = () => {
+    const resetBatchForm = useCallback(() => {
       setBatchFormData(initialFormData);
-    };
+    }, []);
 
-    const fetchBatches = async () => {
+    const fetchBatches = useCallback (async () => {
         if (loading) return;
         
         setLoading(true);
@@ -54,10 +54,10 @@ const BatchFormProvider = ({ children }) => {
         } finally {
           setLoading(false);
         }
-    }
+    }, [loading]);
 
       // COUNT BATCHES BASED ON THEIR STATUS TO DISPLAY IN BADGES
-      const countBatchesByType = {
+      const countBatchesByType = useMemo(() => ({ 
         all: batchData?.All_Type_Batch?.batches?.length || 0,
         running: batchData?.All_Type_Batch?.running_batch?.length || 0,
         scheduled: batchData?.All_Type_Batch?.scheduled_batch?.length || 0,
@@ -65,7 +65,7 @@ const BatchFormProvider = ({ children }) => {
         hold: batchData?.All_Type_Batch?.hold_batch?.length || 0,
         completed: batchData?.All_Type_Batch?.completed_batch?.length || 0,
         cancelled: batchData?.All_Type_Batch?.cancelled_batch?.length || 0,
-    };
+    }), [batchData]);
     
 
 

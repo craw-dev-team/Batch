@@ -20,8 +20,8 @@ const Students = () => {
     const [studentStatuses, setStudentStatuses] = useState({}); // Store status per trainer
     const [searchTerm, setSearchTerm] = useState("");
 
-    const { studentData, loading, setStudentData, fetchStudents } = useStudentForm();
-    const { fetchSpecificStudent } = useSpecificStudent();
+    const { studentData, loading, setLoading, setStudentData, fetchStudents } = useStudentForm();
+
     const navigate = useNavigate();
 
     const [currentPage, setCurrentPage] = useState(1);
@@ -138,9 +138,7 @@ const Students = () => {
 
     const handleTrainerClick =  async (studentId) => {
         if (!studentId) return;
-        const encodedTrainerId = btoa(studentId);
-         await fetchSpecificStudent(studentId); // Call function with trainer ID
-        
+        const encodedTrainerId = btoa(studentId);        
         navigate(`/students/${encodedTrainerId}`);
     };
 
@@ -211,7 +209,7 @@ const currentStudents = filteredStudents.slice(indexOfFirstStudent, indexOfLastS
             <div className="flex gap-x-6">
             <label htmlFor="table-search" className="sr-only">Search</label>
                 <div className="relative">
-                    <input onChange={(e) => setSearchTerm(e.target.value)} value={searchTerm} type="text" id="table-search" placeholder="Search for items"
+                    <input onChange={(e) => setSearchTerm(e.target.value.trim())} value={searchTerm} type="text" id="table-search" placeholder="Search for items"
                         className="block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg w-40 h-7 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" 
                     />
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3">
@@ -298,9 +296,6 @@ const currentStudents = filteredStudents.slice(indexOfFirstStudent, indexOfLastS
                     <th scope="col" className="px-3 py-3 md:px-1">
                         Name
                     </th>
-                    {/* <th scope="col" className="px-3 py-3 md:px-1">
-                        Date of Birth
-                    </th> */}
                     <th scope="col" className="px-3 py-3 md:px-1">
                         Phone No
                     </th>
@@ -308,7 +303,7 @@ const currentStudents = filteredStudents.slice(indexOfFirstStudent, indexOfLastS
                         Email
                     </th>
                     <th scope="col" className="px-3 py-3 md:px-1">
-                    Date of Joining
+                        Date of Joining
                     </th>
                     <th scope="col" className="px-3 py-3 md:px-1">
                         Courses
@@ -325,15 +320,6 @@ const currentStudents = filteredStudents.slice(indexOfFirstStudent, indexOfLastS
                     <th scope="col" className="px-3 py-3 md:px-1">
                         Location
                     </th>
-                    {/* <th scope="col" className="px-3 py-3 md:px-1">
-                        Guardian name
-                    </th> */}
-                    {/* <th scope="col" className="px-3 py-3 md:px-1">
-                        guardian ph no
-                    </th> */}
-                    {/* <th scope="col" className="px-3 py-3 md:px-1">
-                        Address
-                    </th> */}
                     <th scope="col" className="px-3 py-3 md:px-1">
                         course Counsellor
                     </th>
@@ -366,15 +352,12 @@ const currentStudents = filteredStudents.slice(indexOfFirstStudent, indexOfLastS
                     {/* <td className="px-3 py-2 md:px-1">
                         {item.id}
                     </td> */}
-                    <th className="px-3 py-2 md:px-1 cursor-pointer"  onClick={() => handleTrainerClick(item.id)}>
+                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.id)}>
                         {item.enrollment_no}
-                    </th>
-                    <td className="px-3 py-2 md:px-1">
+                    </td>
+                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.id)}>
                         {item.name}
                     </td>
-                    {/* <td className="px-3 py-2 md:px-1">
-                        {item.dob}
-                    </td> */}
                     <td className="px-3 py-2 md:px-1">
                         {item.phone}
                     </td>
@@ -382,7 +365,11 @@ const currentStudents = filteredStudents.slice(indexOfFirstStudent, indexOfLastS
                         {item.email}
                     </td>
                     <td className="px-3 py-2 md:px-1">
-                        {item.date_of_joining}
+                        {new Date(item.date_of_joining).toLocaleDateString("en-GB", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "2-digit"
+                        })}
                     </td>
                     <td className="px-3 py-2 md:px-1">
                     <Avatar.Group
@@ -414,20 +401,13 @@ const currentStudents = filteredStudents.slice(indexOfFirstStudent, indexOfLastS
 
                     </td>
                     <td className="px-3 py-2 md:px-1">
-                        {item.preferred_week}
+                        <Tag bordered={false} color={item.preferred_week === "Weekdays" ? "cyan" : item.preferred_week === "Weekends" ? "gold" : "geekblue" }>
+                            {item.preferred_week}
+                        </Tag>
                     </td>
                     <td className="px-3 py-2 md:px-1">
-                        {item.location == '1' ? <Tag color="blue">Saket</Tag> : <Tag color="magenta">laxmi Nagar</Tag>}
+                        {item.location == '1' ? <Tag color="blue">Saket</Tag> : <Tag color="magenta">Laxmi Nagar</Tag>}
                     </td>
-                    {/* <td className="px-3 py-2 md:px-1">
-                        {item.guardian_name}
-                    </td> */}
-                    {/* <td className="px-3 py-2 md:px-1">
-                        {item.guardian_no}
-                    </td> */}
-                    {/* <td className="px-3 py-2 md:px-1">
-                        {item.address}
-                    </td> */}
                     <td className="px-3 py-2 md:px-1">
                         {item.course_counsellor_name}
                     </td>
@@ -486,7 +466,7 @@ const currentStudents = filteredStudents.slice(indexOfFirstStudent, indexOfLastS
             </tr>
         )}
             </tbody>
-        </table>
+            </table>
         </div>
 
         <div className="w-full h-8 bg-slate-200">

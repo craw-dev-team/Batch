@@ -1,14 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom"
 import { useSpecificBatch } from "../Contexts/SpecificBatch";
-import { DatePicker, Empty, Spin, Avatar, Tooltip, Tag, Button, Popconfirm  } from 'antd';
-import { CheckCircleOutlined, CloseCircleOutlined, EditOutlined, CloseOutlined, CheckOutlined    } from "@ant-design/icons";
+import { DatePicker, Empty, Spin, Avatar, Tooltip, Tag, Button, Popconfirm, message   } from 'antd';
+import { CheckCircleOutlined, CloseCircleOutlined, EditOutlined, DeleteOutlined, DownOutlined    } from "@ant-design/icons";
 import dayjs from "dayjs";
 import axios from 'axios';
 import BASE_URL from "../../../ip/Ip";
 import AddStudentModal from "../AddStudentModal/AddStudentModal";
-import { useSpecificStudent } from "../Contexts/SpecificStudent";
-
 
 
 // const SpecificBatchPage = () => {
@@ -165,15 +163,14 @@ import { useSpecificStudent } from "../Contexts/SpecificStudent";
 const SpecificBatchPage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false); 
     const { batchId } = useParams();
-    const { specificBatch, fetchSpecificBatch, loading } = useSpecificBatch();
-    const { fetchSpecificStudent } = useSpecificStudent();
-
+    const { specificBatch, fetchSpecificBatch } = useSpecificBatch();
     const [editingField, setEditingField] = useState(null);
     const [updatedValues, setUpdatedValues] = useState(null);
     const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     const navigate = useNavigate();
-
+    
     useEffect(() => {
         if (batchId) {
             try {
@@ -187,6 +184,7 @@ const SpecificBatchPage = () => {
             }
         }
     }, [batchId]);
+    
 
     useEffect(() => {
         if (specificBatch?.batch) {
@@ -260,6 +258,64 @@ const SpecificBatchPage = () => {
     };
     
 
+
+    // REMOVE STUDENT FROM BATCH 
+    //  const handleDelete = async (batchId) => {
+    //     if (!batchId) return;
+
+    //     try {
+    //         const response = await axios.delete(`${BASE_URL}/api/batches/delete/${batchId}/`);
+
+    //         setBatchData(prevBatch => {
+    //             if (!prevBatch || !prevBatch.All_Type_Batch || !Array.isArray(prevBatch.All_Type_Batch.batches)) {
+    //                 console.log("prevBatch is not in the expected format", prevBatch);
+    //                 return prevBatch; // Return unchanged state if not in the correct format
+    //             }
+            
+    //             return {
+    //                 ...prevBatch,
+    //                 All_Type_Batch: {
+    //                     ...prevBatch.All_Type_Batch,
+    //                     batches: prevBatch.All_Type_Batch.batches.filter(batch => batch.id !== batchId),
+    //                 }
+    //             };
+    //         });
+            
+   
+    //     } catch (error) {
+    //         setLoading(false);
+        
+    //         if (error.response) {
+    //             console.error("Server Error Response:", error.response.data);
+        
+    //             // Extract error messages and show each one separately
+    //             Object.entries(error.response.data).forEach(([key, value]) => {
+    //                 value.forEach((msg) => {
+    //                     message.error(`${msg}`);
+    //                 });
+    //             });
+    //         } else if (error.request) {
+    //             console.error("No Response from Server:", error.request);
+    //             message.error("No response from server. Please check your internet connection.");
+    //         } else {
+    //             console.error("Error Message:", error.message);
+    //             message.error("An unexpected error occurred.");
+    //         }
+    //     }       
+    // };
+
+
+        // Confirm and Cancel Handler for delete button 
+        const confirm = (batchId) => {
+            handleDelete(batchId);
+            message.success('Batch Deleted Successfully');
+        };
+    
+        const cancel = () => {
+            message.error('batch Deletion Cancelled');
+        };
+
+
     return (
         <div className="w-auto h-full pt-20 px-2 mt-0 darkmode">
             <div className="grid grid-cols-6 gap-x-6">
@@ -283,7 +339,7 @@ const SpecificBatchPage = () => {
                             { label: "End Date", key: "end_date" },
                         ].map(({ label, key }) => (
                         <div key={key} className="col-span-1 px-1 py-1 lg:mt-0 sm:mt-6">
-                            <h1>{label}</h1>
+                            <strong>{label}:</strong>
                             <div className="flex items-center gap-2">
                                 {editingField === key ? (
                                     key === "start_date" ? (
@@ -445,23 +501,27 @@ const SpecificBatchPage = () => {
                                 {/* <td className="px-3 py-2 md:px-1">
                                     {item.id}
                                 </td> */}
-                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.id)}>
-                                    {item.enrollment_no}
+                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.student.id)}>
+                                    {item.student.enrollment_no}
                                 </td>
-                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.id)}>
-                                    {item.name}
+                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.student.id)}>
+                                    {item.student.name}
                                 </td>
                                 {/* <td className="px-3 py-2 md:px-1">
                                     {item.dob}
                                 </td> */}
                                 <td className="px-3 py-2 md:px-1">
-                                    {item.phone}
+                                    {item.student.phone}
                                 </td>
                                 <td className="px-3 py-2 md:px-1">
-                                    {item.email}
+                                    {item.student.email}
                                 </td>
                                 <td className="px-3 py-2 md:px-1">
-                                    {item.date_of_joining}
+                                    {new Date(item.student.date_of_joining).toLocaleDateString("en-GB", {
+                                        day: "2-digit",
+                                        month: "2-digit",
+                                        year: "numeric",
+                                    })}
                                 </td>
                                 <td className="px-3 py-2 md:px-1">
                                 <Avatar.Group
@@ -473,7 +533,7 @@ const SpecificBatchPage = () => {
                                                 width: "24px", // Match avatar size
                                             }}
                                         >
-                                            {item.courses_names?.map((name, index) => (
+                                            {item.student.courses_names?.map((name, index) => (
                                                 <Tooltip key={index} title={name} placement="top">
                                                     <Avatar
                                                         size={24}
@@ -488,29 +548,29 @@ const SpecificBatchPage = () => {
 
                                 <td className="px-3 py-2 md:px-1">
                                     <Tag bordered={false} color={item.mode == 'Offline'? 'green' : item.mode == 'online'? 'volcano' : 'geekblue'}>
-                                        {item.mode}
+                                        {item.student.mode}
                                     </Tag>
                                 </td>
 
                                 <td className="px-3 py-2 md:px-1">
                                     <Tag bordered={false} color={item.language === 'Hindi'? 'green' : item.language === 'English'? 'volcano' : 'blue'}>
-                                        {item.language}
+                                        {item.student.language}
                                     </Tag>
                                 </td>
 
                                 <td className="px-3 py-2 md:px-1">
                                     <Tag bordered={false} color={item.preferred_week === "Weekdays" ? "cyan" : "geekblue" }>
-                                        {item.preferred_week}
+                                        {item.student.preferred_week}
                                     </Tag>
                                 </td>
                                 <td className="px-3 py-2 md:px-1">
-                                    {item.location == '1' ? <Tag color="blue">Saket</Tag> : <Tag color="magenta">laxmi Nagar</Tag>}
+                                    {item.student.location == '1' ? <Tag color="blue">Saket</Tag> : <Tag color="magenta">Laxmi Nagar</Tag>}
                                 </td>
                                 <td className="px-3 py-2 md:px-1">
-                                    {item.course_counsellor_name}
+                                    {item.student.course_counsellor_name}
                                 </td>
                                 <td className="px-3 py-2 md:px-1">
-                                    {item.support_coordinator_name}
+                                    {item.student.support_coordinator_name}
                                 </td>
                                 {/* <td className="px-3 py-2 md:px-1">
                                     <Switch
@@ -524,7 +584,7 @@ const SpecificBatchPage = () => {
                                         }}
                                     />
                                 </td> */}
-                                {/* <td > <Button 
+                                <td > <Button 
                                         color="primary" 
                                         variant="filled" 
                                         className="rounded-lg w-auto pl-3 pr-3 py-0 my-1 mr-1"
@@ -553,7 +613,7 @@ const SpecificBatchPage = () => {
                                             <DeleteOutlined />
                                         </Button>
                                 </Popconfirm>
-                                </td> */}
+                                </td>
                             </tr>
                         ))
                     ) : (

@@ -149,10 +149,7 @@ const Trainers = () => {
 
     const handleTrainerClick =  async (trainerId) => {
         if (!trainerId) return;
-        const encodedTrainerId = btoa(trainerId);
-         await fetchSpecificTrainer(trainerId); // Call function with trainer ID
- 
-        
+        const encodedTrainerId = btoa(trainerId); 
         navigate(`/trainers/${encodedTrainerId}`);
     };
 
@@ -204,7 +201,7 @@ const Trainers = () => {
             <div className="flex gap-x-6">
             <label htmlFor="table-search" className="sr-only">Search</label>
                 <div className="relative">
-                    <input onChange={(e) => setSearchTerm(e.target.value)} value={searchTerm} type="text" id="table-search" placeholder="Search for items"
+                    <input onChange={(e) => setSearchTerm(e.target.value.trim())} value={searchTerm} type="text" id="table-search" placeholder="Search for items"
                         className="block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg w-40 h-7 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" 
                         />
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3">
@@ -222,53 +219,6 @@ const Trainers = () => {
                     </div>
                 </div>
         
-
-            {/* <div className="col-span-1 justify-items-end">
-                <button id="dropdownRadioButton" data-dropdown-toggle="dropdownRadio" className="inline-flex items-center text-gray-500 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 font-medium rounded-lg text-xs px-3 py-1.5 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700" type="button">
-                    <svg className="w-3 h-3 text-gray-500 dark:text-gray-400 me-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M10 0a10 10 0 1 0 10 10A10.011 10.011 0 0 0 10 0Zm3.982 13.982a1 1 0 0 1-1.414 0l-3.274-3.274A1.012 1.012 0 0 1 9 10V6a1 1 0 0 1 2 0v3.586l2.982 2.982a1 1 0 0 1 0 1.414Z"/>
-                        </svg>
-                    Last 30 days
-                    <svg className="w-2.5 h-2.5 ms-2.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
-                        <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 1 4 4 4-4"/>
-                    </svg>
-                </button>
-            
-                <div id="dropdownRadio" className="z-10 hidden w-48 bg-white divide-y divide-gray-100 rounded-lg shadow-sm dark:bg-gray-700 dark:divide-gray-600" data-popper-reference-hidden="" data-popper-escaped="" data-popper-placement="top" style={{position: 'absolute', inset: 'auto auto 0px 0px', margin: '0px', transform: 'translate3d(522.5px, 3847.5px, 0px)'}}>
-                    <ul className="p-3 space-y-1 text-sm text-gray-700 dark:text-gray-200" aria-labelledby="dropdownRadioButton">
-                        <li>
-                            <div className="flex items-center p-2 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-600">
-                                <input id="filter-radio-example-1" type="radio" value="" name="filter-radio" className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
-                                <label htmlFor="filter-radio-example-1" className="w-full ms-2 text-sm font-medium text-gray-900 rounded-sm dark:text-gray-300">Last day</label>
-                            </div>
-                        </li>
-                        <li>
-                            <div className="flex items-center p-2 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-600">
-                                <input checked="" id="filter-radio-example-2" type="radio" value="" name="filter-radio" className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
-                                <label htmlFor="filter-radio-example-2" className="w-full ms-2 text-sm font-medium text-gray-900 rounded-sm dark:text-gray-300">Last 7 days</label>
-                            </div>
-                        </li>
-                        <li>
-                            <div className="flex items-center p-2 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-600">
-                                <input id="filter-radio-example-3" type="radio" value="" name="filter-radio" className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
-                                <label htmlFor="filter-radio-example-3" className="w-full ms-2 text-sm font-medium text-gray-900 rounded-sm dark:text-gray-300">Last 30 days</label>
-                            </div>
-                        </li>
-                        <li>
-                            <div className="flex items-center p-2 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-600">
-                                <input id="filter-radio-example-4" type="radio" value="" name="filter-radio" className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
-                                <label htmlFor="filter-radio-example-4" className="w-full ms-2 text-sm font-medium text-gray-900 rounded-sm dark:text-gray-300">Last month</label>
-                            </div>
-                        </li>
-                        <li>
-                            <div className="flex items-center p-2 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-600">
-                                <input id="filter-radio-example-5" type="radio" value="" name="filter-radio" className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
-                                <label htmlFor="filter-radio-example-5" className="w-full ms-2 text-sm font-medium text-gray-900 rounded-sm dark:text-gray-300">Last year</label>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
-            </div> */}
             </div>
             </div>
 
@@ -409,14 +359,18 @@ const Trainers = () => {
                     {/* <td className="px-3 py-2 md:px-1">
                         {item.id}
                     </td> */}
-                    <th className="px-3 py-2 md:px-1 cursor-pointer"  onClick={() => handleTrainerClick(item.id)}>
+                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.id)}>
                         {item.trainer_id}
-                    </th>
+                    </td>
                     <td className="px-3 py-2 md:px-1">
                         {item.name}
                     </td>
                     <td className="px-3 py-2 md:px-1">
-                        {item.date_of_joining}
+                        {new Date(item.date_of_joining).toLocaleDateString("en-GB", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                        })}
                     </td>
                     <td className="px-3 py-2 md:px-1">
                         {item.phone}
@@ -450,17 +404,16 @@ const Trainers = () => {
                             </Avatar.Group>
                     </td>
                     <td className="px-3 py-2 md:px-1">
-                    <Tag bordered={false} color={item.languages == 'Hindi'? 'green' : item.languages == 'English'? 'volcano' : 'blue'}>{item.languages}</Tag>
+                        <Tag bordered={false} color={item.languages == 'Hindi'? 'green' : item.languages == 'English'? 'volcano' : 'blue'}>{item.languages}</Tag>
                     </td>
                     <td className="px-3 py-2 md:px-1">
-                    {trainerData?.all_data?.teamleaders?.find(leader => leader.id === item.teamleader)?.name || "Mohit Yadav"}
-
+                        {trainerData?.all_data?.teamleaders?.find(leader => leader.id === item.teamleader)?.name || "Mohit Yadav"}
                     </td>
                     <td className="px-3 py-2 md:px-1">
                         {item.coordinator_name}
                     </td>
                     <td className="px-3 py-2 md:px-1">
-                        {item.location == '1' ? <Tag color="blue">Saket</Tag> : <Tag color="magenta">laxmi Nagar</Tag>}
+                        {item.location == '1' ? <Tag color="blue">Saket</Tag> : <Tag color="magenta">Laxmi Nagar</Tag>}
                     </td>
                     <td className="px-3 py-2 md:px-1">
                         {item.weekoff}

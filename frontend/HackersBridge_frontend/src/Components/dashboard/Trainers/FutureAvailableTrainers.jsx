@@ -95,16 +95,32 @@ const FutureAvailableTrainers = () => {
                                 {item.name} 
                             </td>
                             <td className="px-3 py-2 md:px-1">
-                                {item.start_time}
+                                {new Date(`1970-01-01T${item.start_time}`).toLocaleString("en-US", {
+                                    hour: "numeric",
+                                    minute: "numeric",
+                                    hour12: true,
+                                })}
                             </td>
                             <td className="px-3 py-2 md:px-1">
-                                {item.end_time}
+                                {new Date(`1970-01-01T${item.end_time}`).toLocaleString("en-US", {
+                                    hour: "numeric",
+                                    minute: "numeric",
+                                    hour12: true
+                                })}
                             </td>
                             <td className="px-3 py-2 md:px-1">
-                                {item.start_date}
+                            {new Date(item.start_date).toLocaleDateString("en-GB", {
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "2-digit"
+                                })}
                             </td>
                             <td className="px-3 py-2 md:px-1">
-                                {item.end_date}
+                            {new Date(item.end_date).toLocaleDateString("en-GB", {
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "2-digit"
+                                })}
                             </td>
                             <td className="px-3 py-2 md:px-1 font-semibold">
                                 {item.batch_course}
@@ -117,8 +133,9 @@ const FutureAvailableTrainers = () => {
                             </td>
                           
                             <td className="px-3 py-2 md:px-1">
-                            {/* <Tag bordered={false} color={item.languages == 'Hindi'? 'green' : item.languages == 'English'? 'volcano' : 'blue'}>{item.languages}</Tag> */}
-                            {item.batch_week}
+                                <Tag bordered={false} color={item.batch_week === "Weekdays" ? "cyan" : item.batch_week === "Weekends" ? "gold" : "geekblue" }>
+                                    {item.batch_week}
+                                </Tag>
                             </td>
                             <td className="px-3 py-2 md:px-1">
                                 {item.free_days}

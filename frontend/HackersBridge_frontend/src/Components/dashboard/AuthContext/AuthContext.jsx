@@ -40,9 +40,24 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error("Login failed:", error.response?.data || error.message);
-      return false;
-    }
-  };
+
+      const errorData = error?.response?.data?.error; // Extract nested error object
+
+      if (errorData && typeof errorData === "object") {
+          // Map through error fields dynamically
+          const errorMessages = Object.entries(errorData)
+              .map(([field, messages]) => 
+                  `${Array.isArray(messages) ? messages.join(" ") : messages}`
+              )
+              .join(" | ");
+
+          message.error(errorMessages || "Something went wrong");
+      } else {
+          message.error("Something went wrong");
+      }
+  }
+};
+
 
   const logout = (redirect = true) => {
     setUser(null);

@@ -19,14 +19,17 @@ import CoordinatorsHome from "./Pages/AddDetailsHome.jsx/CoordinatorsHome";
 import CounsellorsHome from "./Pages/AddDetailsHome.jsx/CounsellorsHome";
 import { SpecificTrainerProvider } from "./Components/dashboard/Contexts/SpecificTrainers";
 import SpecificTrainerPage from "./Components/dashboard/SpecificPage/SpecificTrainerPage";
+import SpecificStudentPage from "./Components/dashboard/SpecificPage/SpecificStudentPage";
 import { SpecificStudentProvider } from "./Components/dashboard/Contexts/SpecificStudent";
-import SpecificStudentPage from "./Components/dashboard/SpecificPage/SpecificStudentpage";
 import Login, { ForgotPassword, ResetPassword, VerifyOTP } from "./Pages/Login";
 import Register from "./Pages/Register";
 import ProtectedRoute, { PublicRoute } from "./Pages/ProtectedRoute";
 import { AuthProvider } from "./Components/dashboard/AuthContext/AuthContext";
 import { SpecificBatchProvider } from "./Components/dashboard/Contexts/SpecificBatch";
 import SpecificBatchPage from "./Components/dashboard/SpecificPage/SpecificBatchPage";
+import StudentsList from "./Components/dashboard/SpecificPage/StudentCardList";
+import { SpecificCoordinatorProvider } from "./Components/dashboard/Contexts/SpecificCoordinators";
+import SpecificCoordinatorPage from "./Components/dashboard/SpecificPage/SpecificCoordinatorPage";
 
 
 
@@ -98,7 +101,9 @@ function App() {
                           <Route path="/trainers/:trainerId" element={<SpecificTrainerPage />} />
                           <Route path={route.COURSES_PATH} element={<CoursesHome />} />
                           <Route path={route.ADD_DETAILS_COORDINATORS_PATH} element={<CoordinatorsHome />} />
+                          <Route path="/add-details/coordinators/:coordinatorId" element={<SpecificCoordinatorPage />} />
                           <Route path={route.ADD_DETAILS_COUNSELLORS_PATH} element={<CounsellorsHome />} />
+                          <Route path="/studentsdata/:type" element={<StudentsList />} />
                         </Routes>
                       </Content>
                     </Layout>
@@ -127,7 +132,9 @@ const AppProviders = ({ children }) => {
                           <SpecificTrainerProvider>
                             <SpecificStudentProvider>
                               <SpecificBatchProvider>
-                                {children}
+                                <SpecificCoordinatorProvider>
+                                  {children}
+                                </SpecificCoordinatorProvider>
                               </SpecificBatchProvider>
                             </SpecificStudentProvider>
                           </SpecificTrainerProvider>
