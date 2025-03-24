@@ -34,31 +34,51 @@ class StudentCrawListView(APIView):
         today = now().date()  # ✅ Get today's date
         
         total_students = Student.objects.count()
-        active_students = Student.objects.filter(status='Active').count()
+        
+        active_students = Student.objects.filter(status='Active')
+        active_students_count = active_students.count()
+        
+        inactive_students = Student.objects.exclude(status='Active')
+        inactive_students_count = inactive_students.count()
+        
         enrolled_students = Student.objects.filter(
             id__in=BatchStudentAssignment.objects.values('student')
-        ).distinct().count()
-        not_enrolled_students = total_students - enrolled_students
+        ).distinct()
+        enrolled_students_count = enrolled_students.count()
+        
+        not_enrolled_students = Student.objects.exclude(
+            id__in=BatchStudentAssignment.objects.values('student')
+        )
+        not_enrolled_students_count = not_enrolled_students.count()
 
         # ✅ Filter students added today
         today_students = Student.objects.filter(date_of_joining=today)
         today_students_count = today_students.count()
 
-        students = Student.objects.all()
-        serializer = StudentSerializer(students, many=True)
-        today_serializer = StudentSerializer(today_students, many=True)  # ✅ Serialize today’s students
+        # ✅ Serialize all categories
+        active_students_serializer = StudentSerializer(active_students, many=True)
+        inactive_students_serializer = StudentSerializer(inactive_students, many=True)
+        enrolled_students_serializer = StudentSerializer(enrolled_students, many=True)
+        not_enrolled_students_serializer = StudentSerializer(not_enrolled_students, many=True)
+        today_serializer = StudentSerializer(today_students, many=True)  # ✅ Today's students
 
         # ✅ Return the response in a proper dictionary format
         return Response({
             "total_student": total_students,
-            "active_student": active_students,
-            "enrolled_student": enrolled_students,
-            "not_enrolled_student": not_enrolled_students,
-            "today_added_student_count": today_students_count,  # ✅ Today's student count
-            "today_added_students": today_serializer.data,  # ✅ List of today's students
+            "active_student_count": active_students_count,
+            "inactive_student_count": inactive_students_count,
+            "enrolled_student_count": enrolled_students_count,
+            "not_enrolled_student_count": not_enrolled_students_count,
+            "today_added_student_count": today_students_count,
+
+            # ✅ Lists of students
+            "active_students": active_students_serializer.data,
+            "inactive_students": inactive_students_serializer.data,
+            "enrolled_students": enrolled_students_serializer.data,
+            "not_enrolled_students": not_enrolled_students_serializer.data,
+            "today_added_students": today_serializer.data,
         })
-
-
+    
 
 # ✅ Add Student API (Only for Coordinators)
 class AddStudentView(APIView):
@@ -183,9 +203,13 @@ class StudentInfoAPIView(APIView):
             l.append({
                 'id':course.id,
                 'course_name':course.course.name,
+                'course_tekan':Batch.objects.filter(student=student, course=course.course).count(),
                 'course_status':course.status,
                 'course_certificate_date':course.certificate_date
             })
+            # B=Batch.objects.filter(student=student, course=course.course).count()
+        # print(l)
+
 
         # Filter student's batches based on status
         student_batch_upcoming = Batch.objects.filter(student=student, status='Upcoming').select_related('course', 'trainer', 'batch_time')

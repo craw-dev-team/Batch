@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .models import Batch, BatchStudentAssignment
-from .serializer import BatchSerializer, BatchCreateSerializer
+from .serializer import BatchSerializer, BatchCreateSerializer, BatchStudentAssignmentSerializer
 from Trainer.serializer import TrainerSerializer
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
@@ -196,6 +196,16 @@ class AvailableStudentsAPIView(APIView):
         if hasattr(batch.location, 'locality') and batch.location.locality != "Both":
             filters &= Q(location__locality__in=[batch.location.locality, "Both"])
 
+        # Exclude students who are already in the batch
+        # enrolled_students = batch.student.values_list('id', flat=True)  # Get IDs of enrolled students
+        # filters &= ~Q(id__in=enrolled_students)  # Exclude them from the queryset
+
+        # Exclude students who are in a Running or Upcoming batch of the same course
+        ongoing_batches = Batch.objects.filter(course=batch.course, status__in=['Running', 'Upcoming'])
+        ongoing_students = Student.objects.filter(batch__in=ongoing_batches).values_list('id', flat=True)
+        filters &= ~Q(id__in=ongoing_students)
+
+        
         # Query the filtered students
         students = Student.objects.filter(filters)
 
@@ -282,16 +292,66 @@ class BatchAddStudentAPIView(APIView):
 
 
 
+
+class BatchRemoveStudentAPIView(APIView):
+    """API to remove students from a batch."""
+    # permission_classes = [IsAuthenticated]
+
+    def post(self, request, batch_id):
+        # if request.user.role != 'coordinator':
+        #     return Response({"error": "Only coordinators can perform this action."}, status=status.HTTP_403_FORBIDDEN)
+
+        batch = get_object_or_404(Batch, id=batch_id)
+        students_ids = request.data.get('students', [])  # Expecting a list of student IDs
+
+        if not isinstance(students_ids, list):
+            return Response({"error": "Invalid input format, expected a list of student IDs."}, status=status.HTTP_400_BAD_REQUEST)
+
+        students = Student.objects.filter(id__in=students_ids)
+        
+        removed_students = []
+        for student in students:
+            assignment = BatchStudentAssignment.objects.filter(batch=batch, student=student)
+            if assignment.exists():
+                assignment.delete()
+                removed_students.append(student.id)
+
+        return Response({
+            "message": "Students removed successfully",
+            "removed_students": removed_students
+        }, status=status.HTTP_200_OK)
+
+
+
+
+
 class BatchInfoAPIView(APIView):
-    
     def get(self, request, id):
         batch = get_object_or_404(Batch, id=id)
-        student_in_batch = batch.student.all()
-        
-        batch_serializer = BatchSerializer(batch)
-        student_serializer = StudentSerializer(student_in_batch, many=True)
-        
+
+        # Fetch students from BatchStudentAssignment (ensuring correct batch-student mapping)
+        student_assignments = BatchStudentAssignment.objects.filter(batch=batch)
+
+        batch_serializer = BatchSerializer(batch)  # Serialize batch details
+        student_serializer = BatchStudentAssignmentSerializer(student_assignments, many=True)  # Serialize students with status
+
         return Response({
             'batch': batch_serializer.data,
             'students': student_serializer.data
         }, status=status.HTTP_200_OK)
+    
+
+class BatchStudentAssignmentUpdateAPIView(APIView):
+    def patch(self, request, assignment_id):
+        assignment = get_object_or_404(BatchStudentAssignment, id=assignment_id)
+        
+        serializer = BatchStudentAssignmentSerializer(assignment, data=request.data, partial=True)
+        
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "message": "Student batch status updated successfully",
+                "updated_data": serializer.data
+            }, status=status.HTTP_200_OK)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

@@ -142,14 +142,23 @@ class Batch(models.Model):
         return f"Batch {self.batch_id} ({self.course.name})"
 
 class BatchStudentAssignment(models.Model):
+
+    student_batch_status = [
+        ('In', 'In'),
+        ('Out', 'Out'),
+    ]
     # ✅ Fix Student ForeignKey Reference
     batch = models.ForeignKey(Batch, on_delete=models.CASCADE)
     student = models.ForeignKey("Student.Student", on_delete=models.CASCADE)
     coordinator = models.ForeignKey("Coordinator.Coordinator", on_delete=models.SET_NULL, null=True, blank=True)
     added_on = models.DateTimeField(auto_now_add=True)
+    student_batch_status = models.CharField(max_length=10, null=True, blank=True, choices=student_batch_status, default='In')
+    last_update_datetime = models.DateTimeField(default=timezone.now)
 
     class Meta:
         unique_together = ('batch', 'student')
 
     def __str__(self):
         return f"{self.student.name} added by {self.coordinator.coordinator_id if self.coordinator else 'Unknown'}"
+
+
