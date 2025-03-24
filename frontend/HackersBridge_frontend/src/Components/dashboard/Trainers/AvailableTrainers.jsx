@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { useTrainerForm } from "../Trainercontext/TrainerFormContext";
-import { Avatar, Tooltip } from 'antd';
+import { Avatar, Tooltip, Tag } from 'antd';
 
 const AvailableTrainers = () => {
   const [sortByName, setSortByName] = useState(false);
@@ -60,9 +60,6 @@ const AvailableTrainers = () => {
             <th scope="col" className="px-3 py-3 md:px-1">
                 course
             </th>
-            {/* <th scope="col" className="px-3 py-3 md:px-1">
-                Mode
-            </th> */}
             <th scope="col" className="px-3 py-3 md:px-1">
                 Language
             </th>
@@ -124,16 +121,13 @@ const AvailableTrainers = () => {
                         </Avatar.Group>
                         {/* {item.course__name} */}
                     </td>
-                    {/* <td className="px-3 py-2 md:px-1">
-                        {item.mode}
-                    </td> */}
                     <td className="px-3 py-2 md:px-1">
-                        {item.languages}
+                    <Tag bordered={false} color={item.languages == 'Hindi'? 'green' : item.languages == 'English'? 'volcano' : 'blue'}>{item.languages}</Tag>
                     </td>
-                  
                     <td className="px-3 py-2 md:px-1">
-                    {/* <Tag bordered={false} color={item.languages == 'Hindi'? 'green' : item.languages == 'English'? 'volcano' : 'blue'}>{item.languages}</Tag> */}
-                    {item.location}
+                      <Tag color={item.location === "Saket" ? 'blue' : "magenta"}>
+                        {item.location}
+                      </Tag>          
                     </td>
                     <td className="px-3 py-2 md:px-1">
                         {item.free_days}

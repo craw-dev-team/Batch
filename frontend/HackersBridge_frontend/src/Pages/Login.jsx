@@ -20,18 +20,19 @@ const Login = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    const success = await login(credentials.username, credentials.password);
-    // console.log(success);
-    
-    if (success) {
-      message.success('Login successfull')
-      setTimeout(() => {
-      navigate("/batches"); 
-     }, 5000);
-    } else {
-      message.error("Invalid credentials");
-    }
-  };
+
+      const response = await login(credentials.username, credentials.password);
+      // console.log(success);
+      
+      if (response?.success) {
+        message.success('Login successfull');
+
+        setTimeout(() => {
+        navigate("/batches"); 
+      }, 5000);
+
+      }
+    };
 
   const navigateToRegister = () => {
     navigate('/register')

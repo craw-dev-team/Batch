@@ -5,6 +5,7 @@ import { Button, message, Popconfirm, Switch, Empty, Spin } from 'antd';
 import { EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import AddCoordinatorForm from "./AddCoordinatorForm";
 import { useCoordinatorForm } from "./CoordinatorContext";
+import { useNavigate } from "react-router-dom";
 
 
 
@@ -17,8 +18,9 @@ const Coordinators = () => {
     const [isDeleted, setIsDeleted] = useState(false);
     const [coordinatorStatuses, setCoordinatorStatuses] = useState({}); // Store status per trainer
 
-    const { coordinatorData, loading, setCoordinatorData, fetchCoordinators } = useCoordinatorForm();
- 
+    const { coordinatorData, loading, setLoading, setCoordinatorData, fetchCoordinators } = useCoordinatorForm();
+    
+    const navigate = useNavigate();
 
     // Fetch batches afer deletion or modal open
     useEffect(() => {
@@ -70,10 +72,27 @@ const Coordinators = () => {
                     console.error('coordinatordata is not an array');
                 }
             }
-        } catch (error) {
-            console.error("Error deleting coordinator:", error);
+        }catch (error) {
+            setLoading(false);
+        
+            if (error.response) {
+                console.error("Server Error Response:", error.response.data);
+        
+                // Extract error messages and show each one separately
+                Object.entries(error.response.data).forEach(([key, value]) => {
+                    value.forEach((msg) => {
+                        message.error(`${msg}`);
+                    });
+                });
+            } else if (error.request) {
+                console.error("No Response from Server:", error.request);
+                message.error("No response from server. Please check your internet connection.");
+            } else {
+                console.error("Error Message:", error.message);
+                message.error("An unexpected error occurred.");
+            }
         }
-    };
+    };   
 
       // Confirm and Cancel Handler for delete button 
       const confirm = (coordinatorId) => {
@@ -105,6 +124,11 @@ const Coordinators = () => {
     };
 
 
+    const handleCoordinatorClick = async (coordinatorId) => {
+        if (!coordinatorId) return;
+            const encodedCoordinatorId = btoa(coordinatorId);
+            navigate(`/add-details/coordinators/${encodedCoordinatorId}`);
+    };
 
 
     return (
@@ -220,6 +244,9 @@ const Coordinators = () => {
                                     S.No
                                 </th>
                                 <th scope="col" className="px-3 py-3 md:px-1">
+                                    Coordinator ID
+                                </th>
+                                <th scope="col" className="px-3 py-3 md:px-1">
                                     Name
                                 </th>
                                 <th scope="col" className="px-3 py-3 md:px-1">
@@ -254,7 +281,10 @@ const Coordinators = () => {
                                 <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
                                     {index + 1}
                                 </td>
-                                <td className="px-3 py-2 md:px-1">
+                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleCoordinatorClick(item.id)}>
+                                    {item.coordinator_id}
+                                </td>
+                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleCoordinatorClick(item.id)}>
                                     {item.name}
                                 </td>
                                 <td className="px-3 py-2 md:px-1">

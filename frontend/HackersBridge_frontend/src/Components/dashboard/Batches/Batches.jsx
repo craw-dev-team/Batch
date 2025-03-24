@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button, message, Popconfirm, Avatar, Tooltip, Select, Tag, Dropdown, Badge, Spin, Empty } from 'antd';
 import { EditOutlined, DeleteOutlined, DownOutlined } from '@ant-design/icons';
@@ -22,13 +22,8 @@ const Batches = () => {
     const [selectedStudent, setSelectedStudent] = useState({}); // Stores selected students per batch
     const [addStudentDropdown, setAddStudentDropdown] = useState({});
     const [searchTerm, setSearchTerm] = useState("");
-    const [sortOrder, setSortOrder] = useState("asc"); // "asc" for nearest date first, "desc" for farthest date first
-
-    // const [addTrainerDropdown, setAddtrainerDropdown] = useState({});
-    // const [availableTrainers, setAvailabletrainers] = useState({});
 
     const { batchData, loading, setLoading, setBatchData, fetchBatches, countBatchesByType } = useBatchForm();
-    const {  fetchSpecificTrainer } = useSpecificTrainer();
     const {  fetchSpecificBatch } = useSpecificBatch();
 
     const navigate = useNavigate();
@@ -37,19 +32,20 @@ const Batches = () => {
         setActiveTab(tab);
     };
 
-    useEffect(() => {
-        fetchBatches();  
-              
-    }, [isModalOpen, isDeleted, batchData ]); 
-
-    // Fetch batches afer deletion or modal open
     // useEffect(() => {
-    //     fetchBatches();
-    //     setIsDeleted(false);
-    //     // console.log(availableTrainers);
+    //     fetchBatches();  
+    //     console.log(batchData);
         
-    // },[selectedBatch, isModalOpen, setAddStudentDropdown ])
+        
+    // }, [isModalOpen, isDeleted ]); 
 
+    useEffect(() => {
+        if (!batchData) {  // Only fetch if batchData is empty
+            fetchBatches();
+        }
+    }, [isModalOpen, isDeleted, batchData]); 
+    
+    
     
     // Function to handle Edit button click 
     const handleEditClick = (batch) => {
@@ -119,7 +115,7 @@ const Batches = () => {
 
 
     // to add students in a batch fetch available student data from select field
-    const fetchAvailableStudents = async (batchId) => {
+    const fetchAvailableStudents = useCallback(async (batchId) => {
         try {
             const response = await axios.get(`${BASE_URL}/api/batches/${batchId}/available-students/`);
             const data = response.data;
@@ -131,17 +127,20 @@ const Batches = () => {
     
             // Format data for the Select component
             const formattedOptions = data.available_students.map(student => ({
-                label: student.name,
-                value: student.id
+                name: student.name,
+                studentid: student.id,
+                phone: student.phone
             }));
+            
     
             // Update state with students for the specific batchId
             setStudents(prev => ({ ...prev, [batchId]: formattedOptions }));
         } catch (error) {
             console.error("Error fetching students:", error);
         }
-    };
+    }, [students]) 
     
+
     // send student id to api and add it in selected  batch
     const addStudents = async (batchId) => {
         
@@ -275,10 +274,7 @@ const Batches = () => {
 
     const handleTrainerClick =  async (trainerId) => {
         if (!trainerId) return;
-        const encodedTrainerId = btoa(trainerId);
-         await fetchSpecificTrainer(trainerId); // Call function with trainer ID
- 
-        
+        const encodedTrainerId = btoa(trainerId); 
         navigate(`/trainers/${encodedTrainerId}`);
     };
     
@@ -348,7 +344,7 @@ const Batches = () => {
                         <button
                             onClick={() => handleTabClick("running")}
                             className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200  
-                                ${activeTab === "running" ? 'bg-blue-300 text-black dark:text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                ${activeTab === "running" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                                 >
                             Active
                         </button>
@@ -357,7 +353,7 @@ const Batches = () => {
                         <button
                             onClick={() => handleTabClick("scheduled")}
                             className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                                ${activeTab === "scheduled" ? 'bg-blue-300 dark:bg-[#3D5A80] text-black dark:text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                ${activeTab === "scheduled" ? 'bg-blue-300  text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                             >
                             Scheduled 
                         </button>
@@ -366,7 +362,7 @@ const Batches = () => {
                         <button
                             onClick={() => handleTabClick("hold")}
                             className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                                ${activeTab === "hold" ? 'bg-blue-300 dark:bg-[#3D5A80] text-black dark:text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                ${activeTab === "hold" ? 'bg-blue-300  text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                             >
                             Hold 
                         </button>
@@ -375,16 +371,16 @@ const Batches = () => {
                         <button
                             onClick={() => handleTabClick("endingsoon")}
                             className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                                ${activeTab === "endingsoon" ? 'bg-blue-300 dark:bg-[#3D5A80] text-black dark:text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                ${activeTab === "endingsoon" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                             >
-                            Ending 
+                            Ending Soon
                         </button>
                             {/* </Badge> */}
                             {/* <Badge count={countBatchesByType.endingsoon}> */}
                         <button
                             onClick={() => handleTabClick("completed")}
                             className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                                ${activeTab === "completed" ? 'bg-blue-300 dark:bg-[#3D5A80] text-black dark:text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                ${activeTab === "completed" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                             >
                             Completed 
                         </button>
@@ -402,83 +398,34 @@ const Batches = () => {
                     </div>
 
 
-            <div className="grid col-span-1 justify-items-end">
-            <div className="flex gap-x-6">
-            <label htmlFor="table-search" className="sr-only">Search</label>
-                <div className="relative h-auto">
-                    <input onChange={(e) => setSearchTerm(e.target.value)} value={searchTerm} type="text" id="table-search" placeholder="Search for items"
-                        className="block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg w-40 h-7 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" 
-                        />
-                    <div className="absolute inset-y-0 right-0 h-auto flex items-center pr-3">
-                       <button onClick={() => setSearchTerm("")}>
-                       {searchTerm ? (
-                           <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M6.293 6.293a1 1 0 011.414 0L10 8.586l2.293-2.293a1 1 0 111.414 1.414L11.414 10l2.293 2.293a1 1 0 01-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 01-1.414-1.414L8.586 10 6.293 7.707a1 1 0 010-1.414z" clipRule="evenodd"></path>
-                            </svg>
-                        ) : (
-                            <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"></path>
-                            </svg>
-                        )}
-                       </button>
+                    <div className="grid col-span-1 justify-items-end">
+                        <div className="flex gap-x-6">
+                            <label htmlFor="table-search" className="sr-only">Search</label>
+                            <div className="relative h-auto">
+                                <input onChange={(e) => setSearchTerm(e.target.value.trim())} value={searchTerm} type="text" id="table-search" placeholder="Search for items"
+                                    className="block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg w-40 h-7 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" 
+                                    />
+                                <div className="absolute inset-y-0 right-0 h-auto flex items-center pr-3">
+                                <button onClick={() => setSearchTerm("")}>
+                                {searchTerm ? (
+                                    <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M6.293 6.293a1 1 0 011.414 0L10 8.586l2.293-2.293a1 1 0 111.414 1.414L11.414 10l2.293 2.293a1 1 0 01-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 01-1.414-1.414L8.586 10 6.293 7.707a1 1 0 010-1.414z" clipRule="evenodd"></path>
+                                        </svg>
+                                    ) : (
+                                        <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"></path>
+                                        </svg>
+                                    )}
+                                </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                        </div>
-                        </div>
-            
 
-                {/* <div className="col-span-1 justify-items-end">
-                    <button id="dropdownRadioButton" data-dropdown-toggle="dropdownRadio" className="inline-flex items-center text-gray-500 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 font-medium rounded-lg text-xs px-3 py-1.5 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700" type="button">
-                        <svg className="w-3 h-3 text-gray-500 dark:text-gray-400 me-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M10 0a10 10 0 1 0 10 10A10.011 10.011 0 0 0 10 0Zm3.982 13.982a1 1 0 0 1-1.414 0l-3.274-3.274A1.012 1.012 0 0 1 9 10V6a1 1 0 0 1 2 0v3.586l2.982 2.982a1 1 0 0 1 0 1.414Z"/>
-                            </svg>
-                        Last 30 days
-                        <svg className="w-2.5 h-2.5 ms-2.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
-                            <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 1 4 4 4-4"/>
-                        </svg>
-                    </button>
-                
-                    <div id="dropdownRadio" className="z-10 hidden w-48 bg-white divide-y divide-gray-100 rounded-lg shadow-sm dark:bg-gray-700 dark:divide-gray-600" data-popper-reference-hidden="" data-popper-escaped="" data-popper-placement="top" style={{position: 'absolute', inset: 'auto auto 0px 0px', margin: '0px', transform: 'translate3d(522.5px, 3847.5px, 0px)'}}>
-                        <ul className="p-3 space-y-1 text-sm text-gray-700 dark:text-gray-200" aria-labelledby="dropdownRadioButton">
-                            <li>
-                                <div className="flex items-center p-2 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-600">
-                                    <input id="filter-radio-example-1" type="radio" value="" name="filter-radio" className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
-                                    <label htmlFor="filter-radio-example-1" className="w-full ms-2 text-sm font-medium text-gray-900 rounded-sm dark:text-gray-300">Last day</label>
-                                </div>
-                            </li>
-                            <li>
-                                <div className="flex items-center p-2 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-600">
-                                    <input checked="" id="filter-radio-example-2" type="radio" value="" name="filter-radio" className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
-                                    <label htmlFor="filter-radio-example-2" className="w-full ms-2 text-sm font-medium text-gray-900 rounded-sm dark:text-gray-300">Last 7 days</label>
-                                </div>
-                            </li>
-                            <li>
-                                <div className="flex items-center p-2 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-600">
-                                    <input id="filter-radio-example-3" type="radio" value="" name="filter-radio" className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
-                                    <label htmlFor="filter-radio-example-3" className="w-full ms-2 text-sm font-medium text-gray-900 rounded-sm dark:text-gray-300">Last 30 days</label>
-                                </div>
-                            </li>
-                            <li>
-                                <div className="flex items-center p-2 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-600">
-                                    <input id="filter-radio-example-4" type="radio" value="" name="filter-radio" className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
-                                    <label htmlFor="filter-radio-example-4" className="w-full ms-2 text-sm font-medium text-gray-900 rounded-sm dark:text-gray-300">Last month</label>
-                                </div>
-                            </li>
-                            <li>
-                                <div className="flex items-center p-2 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-600">
-                                    <input id="filter-radio-example-5" type="radio" value="" name="filter-radio" className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
-                                    <label htmlFor="filter-radio-example-5" className="w-full ms-2 text-sm font-medium text-gray-900 rounded-sm dark:text-gray-300">Last year</label>
-                                </div>
-                            </li>
-                        </ul>
-                    </div>
-                </div> */}
                 </div>
             </div>
-
-        
-
         </div>
+        
         {/* {activeTab === 'tab1' && ( */}
         <div className={`overflow-hidden pb-2 relative ${loading ? "backdrop-blur-md opacity-50 pointer-events-none" : ""}`}>
             <div className="w-full h-[38rem] overflow-y-auto dark:border-gray-700 rounded-lg pb-2">
@@ -621,15 +568,23 @@ const Batches = () => {
                                     showSearch
                                     mode="multiple"
                                     size="small"
+                                    style={{ width: 250, whiteSpace: "normal" }}
                                     onChange={(values) => handleSelectChange(item.id, values)}
-                                    style={{ width: 200 }}
                                     placeholder="Select a student"
                                     options={students[item.id] ? students[item.id].map(student => ({
-                                        label: student.label,
-                                        value: student.value,
+                                        label: (
+                                            <div style={{ whiteSpace: "normal", wordWrap: "break-word", overflowWrap: "break-word" }}>
+                                                {student.name} - {student.phone}
+                                            </div>
+                                        ),
+                                        title: `${student.name} - ${student.phone}`,
+                                        value: student.studentid,
+                                        dataName: student.name.toLowerCase(), 
+                                        dataPhone: student.phone.toLowerCase(),
                                     })) : []}
                                     filterOption={(input, option) =>
-                                        option.label.toLowerCase().includes(input.toLowerCase())
+                                        option.dataName.includes(input.toLowerCase()) ||
+                                        option.dataPhone.includes(input.toLowerCase())
                                     }
                                 />
                                 <Button variant="solid" color="green" className="ml-1" size="small" onClick={() => { addStudents(item.id); setAddStudentDropdown(false); }}>
@@ -650,7 +605,7 @@ const Batches = () => {
                     </Tag>
                 </td>
                 <td className="px-3 py-2 md:px-1">
-                    <Tag bordered={false} color={item.preferred_week === "Weekdays" ? "cyan" : "gold" }>
+                    <Tag bordered={false} color={item.preferred_week === "Weekdays" ? "cyan" : item.preferred_week === "Weekends" ? "gold" : "geekblue" }>
                         {item.preferred_week}
                     </Tag>
                 </td>
