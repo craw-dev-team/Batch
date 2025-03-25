@@ -163,6 +163,7 @@ import AddStudentModal from "../AddStudentModal/AddStudentModal";
 const SpecificBatchPage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false); 
     const { batchId } = useParams();
+    const [decodedBatchId, setDecodedBatchId] = useState();
     const { specificBatch, fetchSpecificBatch } = useSpecificBatch();
     const [editingField, setEditingField] = useState(null);
     const [updatedValues, setUpdatedValues] = useState(null);
@@ -176,9 +177,9 @@ const SpecificBatchPage = () => {
             try {
                 // Decode the ID before using it
                 const originalBatchId = atob(batchId);
-                
+                setDecodedBatchId(originalBatchId)
                 // Fetch trainer data with the decoded ID
-                fetchSpecificBatch(originalBatchId);
+                fetchSpecificBatch(decodedBatchId);
             } catch (error) {
                 console.error("Error decoding trainer ID:", error);
             }
@@ -260,55 +261,46 @@ const SpecificBatchPage = () => {
 
 
     // REMOVE STUDENT FROM BATCH 
-    //  const handleDelete = async (batchId) => {
-    //     if (!batchId) return;
+     const handleRemoveStudent = async (studentId) => {
+        try {            
+            const payload = { students: [studentId] }; // Wrap studentId in an array
 
-    //     try {
-    //         const response = await axios.delete(`${BASE_URL}/api/batches/delete/${batchId}/`);
+            const response = await axios.post(`${BASE_URL}/api/batch/remove-student/${decodedBatchId}/`,  
+                payload,  // Student IDs in the body
+                { headers: { 'Content-Type': 'application/json' } });
 
-    //         setBatchData(prevBatch => {
-    //             if (!prevBatch || !prevBatch.All_Type_Batch || !Array.isArray(prevBatch.All_Type_Batch.batches)) {
-    //                 console.log("prevBatch is not in the expected format", prevBatch);
-    //                 return prevBatch; // Return unchanged state if not in the correct format
-    //             }
-            
-    //             return {
-    //                 ...prevBatch,
-    //                 All_Type_Batch: {
-    //                     ...prevBatch.All_Type_Batch,
-    //                     batches: prevBatch.All_Type_Batch.batches.filter(batch => batch.id !== batchId),
-    //                 }
-    //             };
-    //         });
-            
+                if (response.status >= 200 && response.status < 300) {   
+                    console.log(specificBatch);
+                                 
+                    fetchSpecificBatch(decodedBatchId);                     
+                } else {
+                    throw new Error("Failed to delete student");
+                }  
    
-    //     } catch (error) {
-    //         setLoading(false);
-        
-    //         if (error.response) {
-    //             console.error("Server Error Response:", error.response.data);
-        
-    //             // Extract error messages and show each one separately
-    //             Object.entries(error.response.data).forEach(([key, value]) => {
-    //                 value.forEach((msg) => {
-    //                     message.error(`${msg}`);
-    //                 });
-    //             });
-    //         } else if (error.request) {
-    //             console.error("No Response from Server:", error.request);
-    //             message.error("No response from server. Please check your internet connection.");
-    //         } else {
-    //             console.error("Error Message:", error.message);
-    //             message.error("An unexpected error occurred.");
-    //         }
-    //     }       
-    // };
+        } catch (error) {
+            setLoading(false);
+            if (error.response) {
+                console.error("Server Error Response:", error);
+            }
+        }       
+    };
 
 
         // Confirm and Cancel Handler for delete button 
-        const confirm = (batchId) => {
-            handleDelete(batchId);
-            message.success('Batch Deleted Successfully');
+        // const confirm = async (studentId) => {
+        //     try {
+        //         await handleRemoveStudent(studentId); 
+        //         message.success("Batch Deleted Successfully");
+        //         // console.log(specificBatch);
+                
+        //     } catch (error) {
+        //         message.error("Failed to delete batch");
+        //         console.error("Error deleting batch:", error);
+        //     }
+        // };
+        const confirm = (studentId) => {
+            handleRemoveStudent(studentId);
+            message.success('Student Removed Successfully');
         };
     
         const cancel = () => {
@@ -525,7 +517,7 @@ const SpecificBatchPage = () => {
                                 </td>
                                 <td className="px-3 py-2 md:px-1">
                                 <Avatar.Group
-                                            maxCount={2} // Show only 2 avatars initially
+                                            max={{count : 2}} // Show only 2 avatars initially
                                             maxStyle={{
                                                 color: "#f56a00",
                                                 backgroundColor: "#fde3cf",
@@ -599,7 +591,7 @@ const SpecificBatchPage = () => {
                                     <Popconfirm
                                         title="Delete the Course"
                                         description="Are you sure you want to delete this course?"
-                                        onConfirm={() => confirm(item.id)}
+                                        onConfirm={() => confirm(item.student.id)}
                                         onCancel={cancel}
                                         okText="Yes"
                                         cancelText="No"

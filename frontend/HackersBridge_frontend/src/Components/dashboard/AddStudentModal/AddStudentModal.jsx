@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { DatePicker } from 'antd';
 import { Select, Input, Alert, Button, Spin, message   } from 'antd';
 import { SyncOutlined } from '@ant-design/icons';
@@ -6,6 +6,7 @@ import axios from 'axios';
 import BASE_URL from '../../../ip/Ip';
 import { useBatchForm } from '../Batchcontext/BatchFormContext';
 import { useStudentForm } from '../StudentContext/StudentFormContext';
+import { useParams } from 'react-router-dom';
 
 
 // const fetchAvailableStudents = async (batchId) => {
@@ -26,34 +27,42 @@ import { useStudentForm } from '../StudentContext/StudentFormContext';
 
 
 const AddStudentModal = ({ isOpen, onClose }) => {
+    const {batchId} = useParams();
+    const [decodedBatchId, setDecodedBatchId] = useState(null);
     const {batchFormData, setBatchFormData} = useBatchForm();
-    const { studentData, fetchStudents } = useStudentForm();
     const [ loading, setLoading ] = useState(false);
-    const [selectedStudent, setSelectedStudent] = useState({}); // Stores selected students per batch
+    const [students, setStudents] = useState({}); // Stores selected students per batch
 
     
     useEffect(() => {
-        if (isOpen) {
-            fetchStudents(); // Fetch students only when the modal is open
+        if (batchId) {
+                setDecodedBatchId(atob(batchId));
         }
-    }, [isOpen]); // Run when modal opens
-
-    useEffect(() => {
-        console.log("Updated Student Data:", studentData); // Log only after data updates
-    }, [studentData]); // Run when stuentData updates
+    }, [batchId]); 
     
-    const handleChange = (batchId, value) => {
-        setSelectedStudent((prev) => ({
+
+
+    // useEffect(() => {
+    //     if (isOpen) {
+    //         fetchStudents();  
+    //     }
+    // },[isOpen]);
+
+    
+    const handleChange = (batchId, selectedStudents) => {
+        setBatchFormData((prev) => ({
             ...prev,
-            [batchId]: value, 
+            [batchId]: selectedStudents, // Store students per batch
         }));
     };
+    
     
 
     const handleFormSubmit = async (e) => {
         e.preventDefault();
-        const studentIds = selectedStudent[batchId] || [];
-        // console.log("Batch ID:", batchId, studentIds);
+        
+        const batch_id = decodedBatchId; // Ensure batchId is properly decoded
+        const studentIds = batchFormData[batch_id] || []; // Get selected students for this batch
     
         if (studentIds.length === 0) {
             message.warning("No students selected!");
@@ -61,25 +70,65 @@ const AddStudentModal = ({ isOpen, onClose }) => {
         }
     
         try {
-            const response = await axios.post(`${BASE_URL}/api/batches/${batchId}/add-students/`, 
+            const response = await axios.post(
+                `${BASE_URL}/api/batches/${batch_id}/add-students/`, 
                 { students: studentIds }, // Ensure correct payload format
                 { headers: { 'Content-Type': 'application/json' } }
             );
     
             if (response.status >= 200 && response.status < 300) {
-                message.success("Student added successfully!");
-                setAddStudentDropdown(false); // Close dropdown on success
+                message.success("Students added successfully!");
+                 setTimeout(async () => {
+                setLoading(false);
+                onClose();
+                setBatchFormData((prev) => ({ ...prev, [batch_id]: [] })); // ✅ Reset selected students
+                }, 1000);
+
             } else {
-                message.error("Student not added.");
+                message.error(response.data?.message || "Failed to add students.");
             }
         } catch (error) {
             console.error("Error sending Add student request:", error);
-            message.error("Failed to add student.");
+            
+            const errorMessage = error.response?.data?.message || "Failed to add students.";
+            message.error(errorMessage);
+        }  finally {
+            setLoading(false);
         }
-    }; 
+    };
 
 
+    const fetchAvailableStudents = useCallback(async (decodedBatchId) => {        
+        try {
+            const response = await axios.get(`${BASE_URL}/api/batches/${decodedBatchId}/available-students/`);
+            const data = response.data;
+            // console.log(data);
+            
+            if (!data.available_students) {
+                throw new Error("Invalid response format");
+            }
+    
+            // Format data for the Select component
+            const formattedOptions = data.available_students.map(student => ({
+                name: student.name,
+                studentid: student.id,
+                phone: student.phone
+            }));
+            
+    
+            // Update state with students for the specific batchId
+            setStudents(prev => ({ ...prev, [decodedBatchId]: formattedOptions }));                        
+        } catch (error) {
+            console.error("Error fetching students:", error);
+        }
+    }, [students]) 
+    
 
+    useEffect(() => {
+        if (isOpen) {
+            fetchAvailableStudents(decodedBatchId);  
+        }
+    },[isOpen]);
 
 
     if(!isOpen) return null;
@@ -95,7 +144,7 @@ const AddStudentModal = ({ isOpen, onClose }) => {
                         Add New Student
                     </h3>
                     <button
-                       onClick={() => onClose() }
+                       onClick={() => onClose()}
                         type="button"
                         className="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
                     >
@@ -107,28 +156,30 @@ const AddStudentModal = ({ isOpen, onClose }) => {
                 </div>
 
                 {/* Modal Form */}
-                <form className="p-4 md:p-5">
-                   <div className="">
-                   <label htmlFor="student" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Add Students</label>
-                            <Select name="student" mode="multiple" className='w-full border-gray-300' size='large' placeholder='Select Students' 
+                <form className="p-4 md:p-5" onSubmit={handleFormSubmit}>
+                   <div className="grid grid-cols-5">
+                   <label htmlFor="student" className="col-span-4 block mb-2 text-sm font-medium text-gray-900 dark:text-white">Add Students</label>
+                            <Select name="student" mode="multiple" className='col-span-4 border-gray-300' size='large' placeholder='Select Students' 
                             showSearch  // This enables search functionality
                                     
-                            onChange={(value) => handleChange("student", value)} 
-                            value={batchFormData.student ? batchFormData.student : []}
+                            onChange={(value) => handleChange(decodedBatchId, value)} 
+                            value={Array.isArray(batchFormData[decodedBatchId]) ? batchFormData[decodedBatchId] : []} // Store students per batch
                             filterOption={(input, option) =>
                                 option.label.toLowerCase().includes(input.toLowerCase()) // Search filter
                             }
-                            options={studentData?.map(student => ({
-                                value: student.id,
-                                label: student.name +" - "+ student.phone,
-                            }))}
+                            options={Array.isArray(students[decodedBatchId]) 
+                                ? students[decodedBatchId].map(student => ({
+                                    value: String(student.studentid),
+                                    label: `${student.name} - ${student.phone}`,
+                                  })) 
+                                : []
+                              }
                             />
 
-                   </div>
+                   {/* </div> */}
 
-                  <div className="flex justify-end">
+                  <div className="flex justify-end h-12">
                   <button
-                  onClick={() => handleFormSubmit(Item.id)}
                     type="submit"
                     disabled={loading} // Disable button when loading
                     className={`text-white inline-flex items-center font-medium rounded-lg text-sm px-5 py-2.5 text-center focus:ring-4 focus:outline-none
@@ -142,6 +193,7 @@ const AddStudentModal = ({ isOpen, onClose }) => {
                         </>
                     ) : "Add Student"}
                 </button>
+                  </div>
                   </div>
                </form>
             </div>
