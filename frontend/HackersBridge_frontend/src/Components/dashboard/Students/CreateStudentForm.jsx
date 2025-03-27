@@ -17,7 +17,7 @@ const { TextArea } = Input;
 
 const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
     if(!isOpen) return null;
-    
+
     const isEditing = Boolean(selectedStudentData?.id); 
 
     const { studentFormData, setStudentFormData, errors, setErrors, resetStudentForm } = useStudentForm();
@@ -39,7 +39,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
         // console.log(completeCourses);
         
         if (selectedStudentData) {
-            console.log("Editing Student Data:", selectedStudentData)
+            // console.log("Editing Student Data:", selectedStudentData)
             setStudentFormData({
                 enrollmentNumber: selectedStudentData.enrollment_no || "",
                 studentName: selectedStudentData.name || "",
@@ -228,7 +228,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
     };
     
     
-    
+
 
     return (
         <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 z-50 overflow-y-scroll">

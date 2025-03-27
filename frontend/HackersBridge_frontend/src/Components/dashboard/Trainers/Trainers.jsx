@@ -22,7 +22,6 @@ const Trainers = () => {
 
 
     const { trainerData, setTrainerData, fetchTrainers } = useTrainerForm();
-    const { fetchSpecificTrainer } = useSpecificTrainer();
     const navigate = useNavigate();
 
 
@@ -174,21 +173,21 @@ const Trainers = () => {
             <button
                 onClick={() => handleTabClick('tab1')}
                 className={` px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                    ${activeTab === 'tab1' ? 'bg-[#afc0d1] text-black dark:text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                    ${activeTab === 'tab1' ? 'bg-blue-300 dark:bg-[#afc0d1] text-black dark:text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                 >
             Trainers
             </button>
             <button
                 onClick={() => handleTabClick('tab2')}
                 className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                    ${activeTab === 'tab2' ? 'bg-[#afc0d1] text-black dark:text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                    ${activeTab === 'tab2' ? 'bg-blue-300 dark:bg-[#afc0d1] text-black dark:text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                 >
                 Available Trainers
             </button>
             <button
                 onClick={() => handleTabClick('tab3')}
                 className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                    ${activeTab === 'tab3' ? 'bg-[#afc0d1] text-black dark:text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                    ${activeTab === 'tab3' ? 'bg-blue-300 dark:bg-[#afc0d1] text-black dark:text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                 >
                 Future Avilable Trainers
             </button>
@@ -383,13 +382,15 @@ const Trainers = () => {
                     </td>
                     <td className="px-3 py-2 md:px-1">
                             <Avatar.Group
-                                maxCount={2} // Show only 2 avatars initially
-                                maxStyle={{
-                                    color: "#f56a00",
-                                    backgroundColor: "#fde3cf",
-                                    height: "24px", // Match avatar size
-                                    width: "24px", // Match avatar size
-                                }}
+                               max={{
+                                    count: 2,
+                                    style: {
+                                        color: "#f56a00",
+                                        backgroundColor: "#fde3cf",
+                                        height: "24px", // Match avatar size
+                                        width: "24px", // Match avatar size
+                                }
+                            }}
                             >
                                 {item.course_names?.map((name, index) => (
                                     <Tooltip key={index} title={name} placement="top">
@@ -443,8 +444,8 @@ const Trainers = () => {
                             <EditOutlined />
                         </Button>
                         <Popconfirm
-                            title="Delete the Course"
-                            description="Are you sure you want to delete this course?"
+                            title="Delete the Trainer"
+                            description="Are you sure you want to delete this Trainer?"
                             onConfirm={() => confirm(item.id)}
                             onCancel={cancel}
                             okText="Yes"

@@ -187,7 +187,7 @@ const AvailableBatches = () => {
                             Location
                         </th>
                         <th scope="col" className="px-3 py-3 md:px-1">
-                            Free Days
+                            Free Since
                         </th>
                         <th scope="col" className="px-3 py-3 md:px-1">
                             create Batch
@@ -230,12 +230,14 @@ const AvailableBatches = () => {
                                 </td>
                                 <td className="px-3 py-2 md:px-1 font-semibold">
                                     <Avatar.Group
-                                        maxCount={2} // Show only 2 avatars initially
-                                        maxStyle={{
-                                            color: "#f56a00",
-                                            backgroundColor: "#fde3cf",
-                                            height: "24px", // Match avatar size
-                                            width: "24px", // Match avatar size
+                                        max={{
+                                            count: 2,
+                                            style: {
+                                                color: "#f56a00",
+                                                backgroundColor: "#fde3cf",
+                                                height: "24px", // Match avatar size
+                                                width: "24px", // Match avatar size
+                                            }
                                         }}
                                     >
                                         {item.course &&
@@ -264,7 +266,7 @@ const AvailableBatches = () => {
                                     </Tag>
                                 </td>
                                 <td className="px-3 py-2 md:px-1">
-                                    {item.free_days}
+                                    {item.free_days >= 0 ? item.free_days + " Days" : item.free_days}
                                 </td>
                                 <td className="px-3 py-2 md:px-1">
                                 <button onClick={() => handleCreateClick(item)} type="button" className="focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Create +</button>
@@ -314,7 +316,7 @@ const AvailableBatches = () => {
                     <th className="px-3 py-3 md:px-1">Course</th>
                     <th className="px-3 py-3 md:px-1">Batch ID</th>
                     <th className="px-3 py-3 md:px-1">Preferred Week</th>
-                    <th className="px-3 py-3 md:px-1">Free In</th>
+                    <th className="px-3 py-3 md:px-1">Days Left</th>
                     <th className="px-3 py-3 md:px-1">Create Batch</th>
                 </tr>
                 </thead>

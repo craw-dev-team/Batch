@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom"
 import { useSpecificStudent } from "../Contexts/SpecificStudent";
-import { Tag } from 'antd';
+import { Dropdown, Tag  } from 'antd';
+import {  DownOutlined } from '@ant-design/icons';
 
 
 
@@ -33,7 +34,7 @@ const SpecificStudentPage = () => {
 
     
     const studentDetails = specificStudent?.All_in_One?.student;
-    console.log(specificStudent);
+    // console.log(specificStudent);
     
     const filteredStudentData = specificStudent?.All_in_One
     ? activeTab === 'running'
@@ -50,14 +51,13 @@ const SpecificStudentPage = () => {
 
     // NAVIGATE TO BATCH INFO PAGE
     const handleBatchClick =  async (batchId) => {
-        if (!batchId) return;
-        console.log(batchId);
-        
+        if (!batchId) return;        
             const encodedbatchId = btoa(batchId);
  
-        navigate(`/batches/${encodedbatchId}`);
+            navigate(`/batches/${encodedbatchId}`);
     };
 
+console.log(specificStudent);
 
     return (
         <>
@@ -171,7 +171,33 @@ const SpecificStudentPage = () => {
                                                 </td>
 
                                                 <td className={`px-3 py-2 md:px-1 ${item.course_status == "Ongoing" ? "text-green-500" : item.course_status == "Upcoming" ? "text-lime-400" : "text-blue-500"}`}>
-                                                    {item.course_status}
+                                                <Dropdown
+                                                    trigger={["click"]}
+                                                    menu={{
+                                                        items: ["not_started", "ongoing", "completed"]
+                                                            .filter(status => item.course_status.toLowerCase() !== status) // Ensure case consistency
+                                                            .map(status => ({
+                                                                key: status,
+                                                                label: status.replace("_", " ").toUpperCase(), // Format for readability
+                                                            })),
+                                                        onClick: ({ key }) => handleCourseStatusChange(item.id, key),
+                                                    }}
+                                                >
+                                                    <a onClick={(e) => e.preventDefault()}>
+                                                        <Tag
+                                                            className="w-32 text-center"
+                                                            color={
+                                                                item.course_status.toLowerCase() === "ongoing" ? "green" :
+                                                                item.course_status.toLowerCase() === "not_started" ? "geekblue" :
+                                                                item.course_status.toLowerCase() === "completed" ? "blue" :
+                                                                "gray"
+                                                        }>
+                                                            {item.course_status.replace("_", " ").toUpperCase()} <DownOutlined />
+                                                        </Tag>
+                                                    </a>
+                                                </Dropdown>
+
+
                                                 </td>
                                                 <td className={`px-3 py-2 md:px-1 text-md ${item.course_tekan == "0" ? "text-red-500" : "text-green-400"}`}>
                                                     {item.course_tekan}
@@ -214,7 +240,7 @@ const SpecificStudentPage = () => {
                             className={` px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
                                 ${activeTab === "running" ? 'bg-blue-300  text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                                 >
-                        Active
+                            Ongoing
                         </button>
 
                         <button
@@ -222,7 +248,7 @@ const SpecificStudentPage = () => {
                             className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
                                 ${activeTab === "scheduled" ? 'bg-blue-300  text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                             >
-                            Upcoming
+                            Scheduled
                         </button>
                        
                         <button
@@ -230,7 +256,7 @@ const SpecificStudentPage = () => {
                             className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
                                 ${activeTab === "completed" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                             >
-                            completed
+                            Completed
                         </button>
 
                         <button
@@ -238,7 +264,7 @@ const SpecificStudentPage = () => {
                             className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
                                 ${activeTab === "allupcomingbatches" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                             >
-                            All upcoming batches
+                            Recommended Batches
                         </button>
 
                        
@@ -362,7 +388,7 @@ const SpecificStudentPage = () => {
                                                 </td>
                                               
                                                 <td className="px-3 py-2 md:px-1">
-                                                {item.location == '1' ? <Tag color="blue">Saket</Tag> : <Tag color="magenta">Laxmi Nagar</Tag>}
+                                                {item.location == '1' ? <Tag color="blue">Saket</Tag> : item.location == "2" ? <Tag color="magenta">Laxmi Nagar</Tag> : <Tag color="geekblue">Both</Tag>}
                                                 </td>
                                             </tr>
                                           ))

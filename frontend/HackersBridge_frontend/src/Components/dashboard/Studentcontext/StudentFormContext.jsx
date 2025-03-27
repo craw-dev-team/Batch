@@ -79,7 +79,7 @@ const StudentFormProvider = ({ children }) => {
             JSON.stringify(prevData) !== JSON.stringify(data) ? data : prevData
         );
 
-        console.log('Student Count Data ', data)
+        // console.log('Student Count Data ', data)
     } catch (error) {
       console.error('Error fetching Batches Data', error);
     } finally {
