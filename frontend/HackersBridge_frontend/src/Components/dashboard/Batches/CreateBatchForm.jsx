@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { DatePicker, TimePicker, Select, Input, message, Checkbox  } from 'antd';
-import { SyncOutlined } from '@ant-design/icons';
+import { DatePicker, TimePicker, Select, Input, message, Checkbox, Tooltip  } from 'antd';
+import { SyncOutlined, CopyOutlined, RightOutlined  } from '@ant-design/icons';
 import { useBatchForm } from "../Batchcontext/BatchFormContext";
 import { useCourseForm } from "../Coursecontext/CourseFormContext";
 import { useTrainerForm } from "../Trainercontext/TrainerFormContext";
@@ -10,10 +10,12 @@ import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 
 import BASE_URL from "../../../ip/Ip";
+import { useNavigate } from "react-router-dom";
 
 
 const { RangePicker } = DatePicker;
 dayjs.extend(customParseFormat);
+
 
 
 const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
@@ -25,6 +27,7 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
     const { trainerData, fetchTrainers } = useTrainerForm();
     const { studentData, fetchStudents } = useStudentForm();
     const [ loading, setLoading ] = useState(false);
+
 
     // fetch batches and assign prefilled value to fields in form
     useEffect(() => {
@@ -162,8 +165,8 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
                 console.error("No Response from Server:", error.request);
                 message.error("No response from server. Please check your internet connection.");
             } else {
-                console.error("Error Message:", error.message);
-                message.error("An unexpected error occurred.");
+                console.error("Error Message:", error);
+                message.error("An unexpected error occurred.", error);
             }
         }       
 
@@ -178,6 +181,42 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
             resetErrors(); // Clear errors when modal closes
             onClose(); // Close the modal
         };
+
+
+        // THIS WILL REDIRECT TO STUDENT IONFO PAGE IN NEW TAB FROM CREATE BATCH MODAL SELECT FIELD
+        const handleStudentClickOnSelect = (event, studentId) => {
+            event.preventDefault();
+            event.stopPropagation(); // Prevents interfering with Select behavior
+        
+            if (!studentId) return;
+        
+            const encodedStudentId = btoa(studentId);
+            
+            // Open in a new tab without switching focus immediately
+            setTimeout(() => {
+                window.open(`/students/${encodedStudentId}`, "_blank", "noopener,noreferrer");
+            }, 2000); // Small delay prevents immediate redirection
+            
+        };
+        
+        
+        const copyToClipboard = (text) => {
+            if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+                navigator.clipboard.writeText(text)
+                    .then(() => message.success("Phone number copied!"))
+                    .catch(() => message.error("Failed to copy!"));
+            } else {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand("copy");
+                document.body.removeChild(textArea);
+                message.success("Phone number copied!");
+            }
+        };
+
+
    
      return (
          <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 z-50">
@@ -363,7 +402,36 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
                                 options={studentData.map(student => ({
                                     value: student.id,
                                     label: student.name +" - "+ student.phone,
+                                    phone:  student.phone,
                                 }))}
+                                optionRender={(option) => (
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                                        {/* Left-aligned student name & phone */}
+                                        <span style={{ flex: 1 }}>{option.data.label}</span>
+                                
+                                        {/* Right-aligned icons */}
+                                        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                                            <Tooltip title="Copy Phone Number">
+                                                <CopyOutlined
+                                                    style={{ cursor: "pointer", color: "#1890ff" }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        copyToClipboard(option.data.phone);
+                                                    }}
+                                                />
+                                            </Tooltip>
+                                            
+                                            <Tooltip title="Open Student Info">
+                                                <RightOutlined
+                                                    style={{ cursor: "pointer", color: "blue" }}
+                                                    onClick={(e) => {
+                                                        handleStudentClickOnSelect(e, option.data.value);
+                                                    }}
+                                                />
+                                            </Tooltip>
+                                        </div>
+                                    </div>
+                                )}
                                 />
                                 {errors.trainer && <p className="text-red-500 text-sm">{errors.trainer}</p>}
                             </div>

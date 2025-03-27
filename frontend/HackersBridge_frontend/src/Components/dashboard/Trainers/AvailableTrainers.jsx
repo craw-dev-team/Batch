@@ -67,7 +67,7 @@ const AvailableTrainers = () => {
                 Location
             </th>
             <th scope="col" className="px-3 py-3 md:px-1">
-                Free Days
+                Free Since
             </th>
           
             
@@ -102,13 +102,15 @@ const AvailableTrainers = () => {
                     </td>
                     <td className="px-3 py-2 md:px-1 font-semibold">
                         <Avatar.Group
-                            maxCount={2} // Show only 2 avatars initially
-                            maxStyle={{
-                                color: "#f56a00",
-                                backgroundColor: "#fde3cf",
-                                height: "24px", // Match avatar size
-                                width: "24px", // Match avatar size
-                            }}
+                           max={{
+                              count: 2,
+                              style: {
+                                  color: "#f56a00",
+                                  backgroundColor: "#fde3cf",
+                                  height: "24px", // Match avatar size
+                                  width: "24px", // Match avatar size
+                            }
+                        }}
                         >
                             {item.course &&
                               item.course.map(([id, name], index) => ( // Destructure to get name
@@ -130,7 +132,7 @@ const AvailableTrainers = () => {
                       </Tag>          
                     </td>
                     <td className="px-3 py-2 md:px-1">
-                        {item.free_days}
+                    {item.free_days >= 0 ? item.free_days + " Days" : item.free_days}
                     </td>
                    
                 </tr>

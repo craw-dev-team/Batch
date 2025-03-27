@@ -76,7 +76,7 @@ const FutureAvailableTrainers = () => {
                         Preferred Week
                     </th>
                     <th scope="col" className="px-3 py-3 md:px-1">
-                        Free Days
+                        Days Left
                     </th>
                     
                 </tr>
@@ -138,7 +138,7 @@ const FutureAvailableTrainers = () => {
                                 </Tag>
                             </td>
                             <td className="px-3 py-2 md:px-1">
-                                {item.free_days}
+                                {item.free_days >= 0 ? item.free_days + " Days" : item.free_days}
                             </td>
                         </tr>
                       ))

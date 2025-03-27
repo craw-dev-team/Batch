@@ -299,13 +299,15 @@ const SpecificTrainerPage = () => {
                                                 </td>
                                                 <td className="px-3 py-2 md:px-1">
                                                     <Avatar.Group
-                                                        maxCount={2} // Show only 2 avatars initially
-                                                        maxStyle={{
-                                                            color: "#f56a00",
-                                                            backgroundColor: "#fde3cf",
-                                                            height: "24px",
-                                                            width: "24px",
-                                                        }}
+                                                        max={{
+                                                            count: 2,
+                                                            style: {
+                                                                color: "#f56a00",
+                                                                backgroundColor: "#fde3cf",
+                                                                height: "24px", // Match avatar size
+                                                                width: "24px", // Match avatar size
+                                                        }
+                                                    }}
                                                     >
                                                         {item.students?.map((student, index) => (
                                                             <Tooltip key={student.id || index} title={student.name} placement="top">

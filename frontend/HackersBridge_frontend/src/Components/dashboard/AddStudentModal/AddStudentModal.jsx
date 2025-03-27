@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { DatePicker } from 'antd';
-import { Select, Input, Alert, Button, Spin, message   } from 'antd';
-import { SyncOutlined } from '@ant-design/icons';
+import { Select, Input, Alert, Button, Spin, message, Tooltip   } from 'antd';
+import { SyncOutlined, CopyOutlined, RightOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import BASE_URL from '../../../ip/Ip';
 import { useBatchForm } from '../Batchcontext/BatchFormContext';
 import { useStudentForm } from '../StudentContext/StudentFormContext';
 import { useParams } from 'react-router-dom';
+import { useSpecificBatch } from '../Contexts/SpecificBatch';
 
 
 // const fetchAvailableStudents = async (batchId) => {
@@ -27,9 +28,11 @@ import { useParams } from 'react-router-dom';
 
 
 const AddStudentModal = ({ isOpen, onClose }) => {
+
     const {batchId} = useParams();
     const [decodedBatchId, setDecodedBatchId] = useState(null);
-    const {batchFormData, setBatchFormData} = useBatchForm();
+    const {batchFormData, setBatchFormData, resetBatchForm} = useBatchForm();
+    const { fetchSpecificBatch } = useSpecificBatch();
     const [ loading, setLoading ] = useState(false);
     const [students, setStudents] = useState({}); // Stores selected students per batch
 
@@ -70,18 +73,18 @@ const AddStudentModal = ({ isOpen, onClose }) => {
         }
     
         try {
-            const response = await axios.post(
-                `${BASE_URL}/api/batches/${batch_id}/add-students/`, 
+            const response = await axios.post(`${BASE_URL}/api/batches/${batch_id}/add-students/`, 
                 { students: studentIds }, // Ensure correct payload format
                 { headers: { 'Content-Type': 'application/json' } }
             );
     
             if (response.status >= 200 && response.status < 300) {
                 message.success("Students added successfully!");
-                 setTimeout(async () => {
-                setLoading(false);
-                onClose();
-                setBatchFormData((prev) => ({ ...prev, [batch_id]: [] })); // ✅ Reset selected students
+                 setTimeout( () => {
+                    setLoading(false);
+                    onClose();
+                    setBatchFormData((prev) => ({ ...prev, [batch_id]: [] })); // ✅ Reset selected students
+                    fetchSpecificBatch(batch_id)
                 }, 1000);
 
             } else {
@@ -126,12 +129,48 @@ const AddStudentModal = ({ isOpen, onClose }) => {
 
     useEffect(() => {
         if (isOpen) {
-            fetchAvailableStudents(decodedBatchId);  
+            fetchAvailableStudents(decodedBatchId);
+              
         }
     },[isOpen]);
 
 
+
+     // THIS WILL REDIRECT TO STUDENT IONFO PAGE IN NEW TAB FROM CREATE BATCH MODAL SELECT FIELD
+     const handleStudentClickOnSelect = (event, studentId) => {
+        event.preventDefault();
+        event.stopPropagation(); // Prevents interfering with Select behavior
+    
+        if (!studentId) return;
+    
+        const encodedStudentId = btoa(studentId);
+        
+        // Open in a new tab without switching focus immediately
+        setTimeout(() => {
+            window.open(`/students/${encodedStudentId}`, "_blank", "noopener,noreferrer");
+        }, 2000); // Small delay prevents immediate redirection
+        
+    };
+
+
+    const copyToClipboard = (text) => {        
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+            navigator.clipboard.writeText(text)
+                .then(() => message.success("Phone number copied!"))
+                .catch(() => message.error("Failed to copy!"));
+        } else {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textArea);
+            message.success("Phone number copied!");
+        }
+    };
+
     if(!isOpen) return null;
+
     
     return (
         <>
@@ -144,7 +183,7 @@ const AddStudentModal = ({ isOpen, onClose }) => {
                         Add New Student
                     </h3>
                     <button
-                       onClick={() => onClose()}
+                       onClick={() => { onClose(); resetBatchForm()}}
                         type="button"
                         className="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
                     >
@@ -171,9 +210,38 @@ const AddStudentModal = ({ isOpen, onClose }) => {
                                 ? students[decodedBatchId].map(student => ({
                                     value: String(student.studentid),
                                     label: `${student.name} - ${student.phone}`,
+                                    phone:  student.phone,
                                   })) 
                                 : []
                               }
+                              optionRender={(option) => (
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                                    {/* Left-aligned student name & phone */}
+                                    <span style={{ flex: 1 }}>{option.data.label}</span>
+                            
+                                    {/* Right-aligned icons */}
+                                    <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                                        <Tooltip title="Copy Phone Number">
+                                            <CopyOutlined
+                                                style={{ cursor: "pointer", color: "#1890ff" }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    copyToClipboard(option.data.phone);
+                                                }}
+                                            />
+                                        </Tooltip>
+                                        
+                                        <Tooltip title="Open Student Info">
+                                            <RightOutlined
+                                                style={{ cursor: "pointer", color: "blue" }}
+                                                onClick={(e) => {
+                                                    handleStudentClickOnSelect(e, option.data.value);
+                                                }}
+                                            />
+                                        </Tooltip>
+                                    </div>
+                                </div>
+                            )}
                             />
 
                    {/* </div> */}

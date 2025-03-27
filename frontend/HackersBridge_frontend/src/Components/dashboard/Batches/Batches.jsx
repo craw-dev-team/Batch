@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button, message, Popconfirm, Avatar, Tooltip, Select, Tag, Dropdown, Badge, Spin, Empty } from 'antd';
-import { EditOutlined, DeleteOutlined, DownOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, DownOutlined, CopyOutlined, RightOutlined } from '@ant-design/icons';
 import  { useBatchForm }  from "../Batchcontext/BatchFormContext";
 import CreateBatchForm from "./CreateBatchForm";
 import axios from "axios";
@@ -22,6 +22,7 @@ const Batches = () => {
     const [selectedStudent, setSelectedStudent] = useState({}); // Stores selected students per batch
     const [addStudentDropdown, setAddStudentDropdown] = useState({});
     const [searchTerm, setSearchTerm] = useState("");
+    const [sortByTime, setSortByTime] = useState(false); // Default ascending
 
     const { batchData, loading, setLoading, setBatchData, fetchBatches, countBatchesByType } = useBatchForm();
     const {  fetchSpecificBatch } = useSpecificBatch();
@@ -265,9 +266,6 @@ const Batches = () => {
     const handleBatchClick =  async (batchId) => {
         if (!batchId) return;
         const encodedBatchId = btoa(batchId);
-         await fetchSpecificBatch(batchId); // Call function with trainer ID
- 
-        
         navigate(`/batches/${encodedBatchId}`);
     };
 
@@ -279,11 +277,30 @@ const Batches = () => {
     };
     
 
-    const sortedBatches = [...searchFilteredBatches].sort((a, b) => 
-        new Date(a.start_date) - new Date(b.start_date) // Nearest date first
-    );
+    // const sortedBatches = [...searchFilteredBatches].sort((a, b) => 
+    //     new Date(a.start_date) - new Date(b.start_date) // Nearest date first
+    // );
     
-        
+    // FOR TOGGLING SORT BY TIME IN ACTIVE DATA TH
+        const toggleSortByTime = () => {
+            setSortByTime(prev => !prev);
+        };
+
+    const sortedBatches = useMemo(() => {
+        return [...searchFilteredBatches].sort((a, b) => {
+            // Extract start_time from batch_time_data (Handle missing data safely)
+            const timeA = a.batch_time_data?.start_time || "00:00:00";
+            const timeB = b.batch_time_data?.start_time || "00:00:00";
+
+            // Convert "HH:mm:ss" to Date object (same day reference for proper sorting)
+            const dateA = new Date(`1970-01-01T${timeA}Z`);
+            const dateB = new Date(`1970-01-01T${timeB}Z`);
+
+            // Sort based on ascending or descending order
+            return sortByTime ? dateA - dateB : dateB - dateA;
+        });
+    }, [searchFilteredBatches, sortByTime]);
+
 
     // handle Trainer Dropdown for assigning trainer to batch 
     // const handleTrainerDropdown = (batchId, index) => {
@@ -321,7 +338,39 @@ const Batches = () => {
     //     }
     // };
 
-  
+    
+    // THIS WILL REDIRECT TO STUDENT IONFO PAGE IN NEW TAB FROM FILTERED STUDENT SELECT FIELD
+    const handleStudentClickOnSelect = (event, studentId) => {
+        event.preventDefault();
+        event.stopPropagation(); // Prevents interfering with Select behavior
+    
+        if (!studentId) return;
+    
+        const encodedStudentId = btoa(studentId);
+        
+        // Open in a new tab without switching focus immediately
+        setTimeout(() => {
+            window.open(`/students/${encodedStudentId}`, "_blank", "noopener,noreferrer");
+        }, 2000); // Small delay prevents immediate redirection
+        
+    };
+
+
+    const copyToClipboard = (text) => {
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+            navigator.clipboard.writeText(text)
+                .then(() => message.success("Phone number copied!"))
+                .catch(() => message.error("Failed to copy!"));
+        } else {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textArea);
+            message.success("Phone number copied!");
+        }
+    };
 
     return (
         <>
@@ -402,7 +451,7 @@ const Batches = () => {
                         <div className="flex gap-x-6">
                             <label htmlFor="table-search" className="sr-only">Search</label>
                             <div className="relative h-auto">
-                                <input onChange={(e) => setSearchTerm(e.target.value.trim())} value={searchTerm} type="text" id="table-search" placeholder="Search for items"
+                                <input onChange={(e) => setSearchTerm(e.target.value.replace(/^\s+/, ''))} value={searchTerm} type="text" id="table-search" placeholder="Search for items"
                                     className="block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg w-40 h-7 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" 
                                     />
                                 <div className="absolute inset-y-0 right-0 h-auto flex items-center pr-3">
@@ -444,8 +493,10 @@ const Batches = () => {
                     <th scope="col" className="px-3 py-3 md:px-1">
                         Batch Id
                     </th>
-                    <th scope="col" className="px-3 py-3 md:px-1">
-                        Batch Time
+                    <th scope="col" className="px-3 py-3 md:px-1 cursor-pointer" onClick={toggleSortByTime}>
+                        <Tooltip title="Sort by Start Time" placement="right"> 
+                        Start Time {activeTab === "running" && (sortByTime ? "▲" : "▼")}  
+                        </Tooltip>
                     </th>
                     <th scope="col" className="px-3 py-3 md:px-1">
                         Start Date
@@ -528,13 +579,15 @@ const Batches = () => {
                 <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.trainer)}>{item.trainer_name}</td>
                 <td className="px-3 py-2 md:px-1 relative">
                     <Avatar.Group
-                        maxCount={2} // Show only 2 avatars initially
-                        maxStyle={{
-                            color: "#f56a00",
-                            backgroundColor: "#fde3cf",
-                            height: "24px",
-                            width: "24px",
-                        }}
+                       max={{
+                            count: 2,
+                            style: {
+                                color: "#f56a00",
+                                backgroundColor: "#fde3cf",
+                                height: "24px", // Match avatar size
+                                width: "24px", // Match avatar size
+                        }
+                    }}
                     >
                         {item.student_name?.map((name, index) => (
                             <Tooltip key={index} title={name} placement="top">
@@ -579,6 +632,7 @@ const Batches = () => {
                                         ),
                                         title: `${student.name} - ${student.phone}`,
                                         value: student.studentid,
+                                        phone:  student.phone,
                                         dataName: student.name.toLowerCase(), 
                                         dataPhone: student.phone.toLowerCase(),
                                     })) : []}
@@ -586,6 +640,34 @@ const Batches = () => {
                                         option.dataName.includes(input.toLowerCase()) ||
                                         option.dataPhone.includes(input.toLowerCase())
                                     }
+                                    optionRender={(option) => (
+                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                                            {/* Left-aligned student name & phone */}
+                                            <span style={{ flex: 1 }}>{option.data.label}</span>
+                                    
+                                            {/* Right-aligned icons */}
+                                            <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                                                <Tooltip title="Copy Phone Number">
+                                                    <CopyOutlined
+                                                        style={{ cursor: "pointer", color: "#1890ff" }}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            copyToClipboard(option.data.phone);
+                                                        }}
+                                                    />
+                                                </Tooltip>
+                                                
+                                                <Tooltip title="Open Student Info">
+                                                    <RightOutlined
+                                                        style={{ cursor: "pointer", color: "blue" }}
+                                                        onClick={(e) => {
+                                                            handleStudentClickOnSelect(e, option.data.value);
+                                                        }}
+                                                    />
+                                                </Tooltip>
+                                            </div>
+                                        </div>
+                                    )}
                                 />
                                 <Button variant="solid" color="green" className="ml-1" size="small" onClick={() => { addStudents(item.id); setAddStudentDropdown(false); }}>
                                     Add
@@ -610,7 +692,7 @@ const Batches = () => {
                     </Tag>
                 </td>
                 <td className="px-3 py-2 md:px-1">
-                    {item.location == "1" ? <Tag bordered={false} color="blue">Saket</Tag> : <Tag bordered={false} color="magenta">Laxmi Nagar</Tag>}
+                    {item.location == "1" ? <Tag bordered={false} color="blue">Saket</Tag> : item.location == "2" ? <Tag bordered={false} color="magenta">Laxmi Nagar</Tag> : <Tag bordered={false} color="geekblue">Both</Tag>}
                 </td>
                 <td className="px-3 py-2 md:px-1">
                     <Dropdown
@@ -645,8 +727,8 @@ const Batches = () => {
                         <EditOutlined />
                     </Button>
                     <Popconfirm
-                        title="Delete the Course"
-                        description="Are you sure you want to delete this course?"
+                        title="Delete the Batch"
+                        description="Are you sure you want to delete this Batch?"
                         onConfirm={() => confirm(item.id)}
                         onCancel={cancel}
                         okText="Yes"

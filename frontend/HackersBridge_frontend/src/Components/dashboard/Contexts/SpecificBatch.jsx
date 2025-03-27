@@ -18,7 +18,7 @@ const SpecificBatchProvider = ({ children }) => {
         try {
             const response = await axios.get(`${BASE_URL}/api/batches/info/${batchId}/`);
             const data = response?.data
-            console.log(data);
+            // console.log(data);
             
             setSpecificBatch(prevData => {
                 if (JSON.stringify(prevData) !== JSON.stringify(data)) {
@@ -26,7 +26,7 @@ const SpecificBatchProvider = ({ children }) => {
                 }
                 return prevData;
             });
-            console.log(data);
+            // console.log(data);
             
         } catch (error) {
             console.error('Error fetching SpecificBatch Data', error);

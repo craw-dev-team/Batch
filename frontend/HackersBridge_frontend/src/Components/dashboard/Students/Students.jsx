@@ -32,9 +32,13 @@ const Students = () => {
         setActiveTab(tab);
     };
     
+    useEffect(() => {
+        fetchStudents()
+    },[!isModalOpen]);
+
        // Fetch students after deletion or modal interaction
           useEffect(() => {
-            fetchStudents();  // Fetch courses after deletion
+            // fetchStudents();  // Fetch courses after deletion
             setIsDeleted(false); // Reset deletion flag
    
             
@@ -81,6 +85,10 @@ const Students = () => {
             // Make sure coursesData is an array before filtering
             if (Array.isArray(studentData)) {
                 setStudentData(prevStudents => prevStudents.filter(student => student.id !== studentId));
+                
+                setTimeout(() => {
+                    setSearchTerm('')
+                }, 2000);
             } else {
                 console.error('coursesData is not an array');
             }
@@ -110,11 +118,11 @@ const Students = () => {
     // Confirm and Cancel Handlers for delete button
     const confirm = (studentId) => {
         handleDelete(studentId); // Call delete function with course ID
-        message.success('Course Deleted Successfully');
+        message.success('Student Deleted Successfully');
     };
 
     const cancel = () => {
-        message.error('Course Deletion Cancelled');
+        message.error('Student Deletion Cancelled');
     };
 
 
@@ -155,18 +163,18 @@ const Students = () => {
         : [];
 
 
-                // Ensure currentPage resets to 1 when search term changes
-useEffect(() => {
-    setCurrentPage(1);
-}, [searchTerm]);
+            // Ensure currentPage resets to 1 when search term changes
+            useEffect(() => {
+                setCurrentPage(1);
+            }, [searchTerm]);
 
-// Calculate the total pages based on the filtered students
-const totalPages = Math.ceil(filteredStudents.length / studentsPerPage);
+            // Calculate the total pages based on the filtered students
+            const totalPages = Math.ceil(filteredStudents.length / studentsPerPage);
 
-// Get students for the current page (AFTER SEARCH FILTERING)
-const indexOfLastStudent = currentPage * studentsPerPage;
-const indexOfFirstStudent = indexOfLastStudent - studentsPerPage;
-const currentStudents = filteredStudents.slice(indexOfFirstStudent, indexOfLastStudent);
+            // Get students for the current page (AFTER SEARCH FILTERING)
+            const indexOfLastStudent = currentPage * studentsPerPage;
+            const indexOfFirstStudent = indexOfLastStudent - studentsPerPage;
+            const currentStudents = filteredStudents.slice(indexOfFirstStudent, indexOfLastStudent);
 
 
     return (
@@ -189,9 +197,9 @@ const currentStudents = filteredStudents.slice(indexOfFirstStudent, indexOfLastS
             <button
                 onClick={() => handleTabClick('tab1')}
                 className={` px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                    ${activeTab === 'tab1' ? 'bg-[#afc0d1] dark:bg-[#3D5A80] text-black dark:text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                    ${activeTab === 'tab1' ? 'bg-blue-300  text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                 >
-            Students
+                Students
             </button>
             {/* <button
                 onClick={() => handleTabClick('tab2')}
@@ -209,7 +217,7 @@ const currentStudents = filteredStudents.slice(indexOfFirstStudent, indexOfLastS
             <div className="flex gap-x-6">
             <label htmlFor="table-search" className="sr-only">Search</label>
                 <div className="relative">
-                    <input onChange={(e) => setSearchTerm(e.target.value.trim())} value={searchTerm} type="text" id="table-search" placeholder="Search for items"
+                    <input onChange={(e) => setSearchTerm(e.target.value.replace(/^\s+/, ''))} value={searchTerm} type="text" id="table-search" placeholder="Search for items"
                         className="block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg w-40 h-7 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" 
                     />
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3">
@@ -373,13 +381,15 @@ const currentStudents = filteredStudents.slice(indexOfFirstStudent, indexOfLastS
                     </td>
                     <td className="px-3 py-2 md:px-1">
                     <Avatar.Group
-                                maxCount={2} // Show only 2 avatars initially
-                                maxStyle={{
-                                    color: "#f56a00",
-                                    backgroundColor: "#fde3cf",
-                                    height: "24px", // Match avatar size
-                                    width: "24px", // Match avatar size
-                                }}
+                               max={{
+                                    count: 2,
+                                    style: {
+                                        color: "#f56a00",
+                                        backgroundColor: "#fde3cf",
+                                        height: "24px", // Match avatar size
+                                        width: "24px", // Match avatar size
+                                }
+                            }}
                             >
                                 {item.courses_names?.map((name, index) => (
                                     <Tooltip key={index} title={name} placement="top">
@@ -394,10 +404,10 @@ const currentStudents = filteredStudents.slice(indexOfFirstStudent, indexOfLastS
                             </Avatar.Group>
                     </td>
                     <td className="px-3 py-2 md:px-1">
-                    <Tag bordered={false} color={item.language == 'hindi'? 'green' : item.language == 'english'? 'volcano' : 'blue'}>{item.language}</Tag>
+                    <Tag bordered={false} color={item.language == 'Hindi'? 'green' : item.language == 'English'? 'volcano' : 'blue'}>{item.language}</Tag>
                     </td>
                     <td className="px-3 py-2 md:px-1">
-                    <Tag bordered={false} color={item.mode == 'Offline'? 'green' : item.mode == 'online'? 'volcano' : 'geekblue'}>{item.mode}</Tag>
+                    <Tag bordered={false} color={item.mode == 'Offline'? 'green' : item.mode == 'Online'? 'volcano' : 'geekblue'}>{item.mode}</Tag>
 
                     </td>
                     <td className="px-3 py-2 md:px-1">
@@ -406,7 +416,7 @@ const currentStudents = filteredStudents.slice(indexOfFirstStudent, indexOfLastS
                         </Tag>
                     </td>
                     <td className="px-3 py-2 md:px-1">
-                        {item.location == '1' ? <Tag color="blue">Saket</Tag> : <Tag color="magenta">Laxmi Nagar</Tag>}
+                        {item.location == '1' ? <Tag color="blue">Saket</Tag> : item.location == "2" ? <Tag color="magenta">Laxmi Nagar</Tag> : <Tag color="geekblue">Both</Tag> }
                     </td>
                     <td className="px-3 py-2 md:px-1">
                         {item.course_counsellor_name}
@@ -439,8 +449,8 @@ const currentStudents = filteredStudents.slice(indexOfFirstStudent, indexOfLastS
                             <EditOutlined />
                         </Button>
                         <Popconfirm
-                            title="Delete the Course"
-                            description="Are you sure you want to delete this course?"
+                            title="Delete the Student"
+                            description="Are you sure you want to delete this Student?"
                             onConfirm={() => confirm(item.id)}
                             onCancel={cancel}
                             okText="Yes"
