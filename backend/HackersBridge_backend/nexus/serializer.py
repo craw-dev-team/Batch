@@ -216,6 +216,11 @@ class ResetPasswordSerializer(serializers.Serializer):
 
 
 
+
+
+
+
+
 class CourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
@@ -400,17 +405,6 @@ class BatchCreateSerializer(serializers.ModelSerializer):
     def get_student_name(self, obj):
         """Return student names as a list."""
         return [student.name for student in obj.student.all()]
-    
-    def is_trainer_available(self, trainer, start_date, end_date, batch_time, preferred_week):
-        """Check if the trainer is available for the given date range."""
-        return not Batch.objects.filter(
-            trainer=trainer,
-            batch_time=batch_time,
-            preferred_week=preferred_week,
-            status__in=['Running', 'Upcoming'],  # Only consider active batches
-            start_date__lte=end_date,  # Overlapping condition
-            end_date__gte=start_date
-        ).exists()
 
     def generate_batch_id(self, course, start_date):
         """Generate a new batch ID dynamically."""
@@ -458,31 +452,37 @@ class BatchCreateSerializer(serializers.ModelSerializer):
       
         return current_date
 
-
+    # def create(self, validated_data):
+    #     """Override create method to generate batch_id and end_date automatically."""
     def create(self, validated_data):
         """Override create method to generate batch_id and end_date automatically."""
         students = validated_data.pop('student', [])  # Extract students list
+        course = validated_data.get('course')
+        mode = validated_data.get('mode')
+        location = validated_data.get('location')
         trainer = validated_data.get('trainer')
+        language = validated_data.get('language')
         batch_time = validated_data.get('batch_time')
         preferred_week = validated_data.get('preferred_week')
         start_date = validated_data.get('start_date')
-        end_date = validated_data.get('end_date')
         status = validated_data.get('status')
 
-        # Check if batch already exists
-        if Batch.objects.filter(trainer=trainer, batch_time=batch_time, start_date=start_date, preferred_week=preferred_week).exists():
-            raise serializers.ValidationError({"error": "A batch with the same trainer, time, and start date already exists."})
+        # existing_batch = Batch.objects.filter(
+        #     course=course, mode=mode, location=location, trainer=trainer,
+        #     language=language, batch_time=batch_time, start_date=start_date,
+        #     preferred_week=preferred_week
+        # ).exists()
 
-        # # Check if trainer is already assigned to another batch at the same time
-        # if Batch.objects.filter(trainer=trainer, batch_time=batch_time, start_date=start_date).exists():
-        #     raise serializers.ValidationError({"error": "Trainer is already assigned to another batch at this time."})
 
-        # Check trainer availability
-        if not self.is_trainer_available(trainer, start_date, end_date, batch_time, preferred_week):
-            raise serializers.ValidationError({"error": "Trainer is unavailable during this period due to overlapping batches."})
+        existing_batch = Batch.objects.filter(
+            trainer=trainer, batch_time=batch_time, start_date=start_date,
+            preferred_week=preferred_week
+        ).exists()
 
-        # Ensure course duration is available
-        course = validated_data.get('course')
+        if existing_batch:
+            raise serializers.ValidationError("Batch already exists")
+
+        # Ensure we get the correct course duration
         course_duration = getattr(course, 'duration', None)
         if not course_duration:
             raise serializers.ValidationError("Course duration is required to calculate end date.")
@@ -493,85 +493,29 @@ class BatchCreateSerializer(serializers.ModelSerializer):
         # Create batch instance first (without batch_id)
         batch = Batch.objects.create(**validated_data)
 
-        # Assign students to batch
-        batch.student.set(students)  
-
-        # Collect StudentCourse updates in bulk
-        student_courses_to_update = []
-        for student in students:
-            student_course = StudentCourse.objects.filter(student=student, course=course).first()
-            if student_course:
-                if status == 'Running':
-                    student_course.status = 'Ongoing'
-                elif status == 'Upcoming':
-                    student_course.status = 'Upcoming'
-                elif status == 'Completed':
-                    student_course.status = 'Completed'
-                student_courses_to_update.append(student_course)
-
-        # Bulk update StudentCourse status
-        if student_courses_to_update:
-            StudentCourse.objects.bulk_update(student_courses_to_update, ['status'])
-
         # Generate and assign batch_id
         batch.batch_id = self.generate_batch_id(course, start_date)
         batch.save(update_fields=['batch_id', 'end_date'])
+        batch.student.set(students)
 
         return batch
-
-
+    
     def update(self, instance, validated_data):
-        """Update batch details, regenerate batch_id if course changes, and update student statuses."""
-
-        # Extract relevant fields
+        """Update batch details and regenerate batch_id if course changes."""
         new_course = validated_data.get('course', instance.course)
         new_start_date = validated_data.get('start_date', instance.start_date)
         new_end_date = validated_data.get('end_date', instance.end_date)
-        status = validated_data.get('status', instance.status)  # Default to current status if not updated
 
-        # Regenerate batch_id if the course has changed
+        # Check if course has changed, and regenerate batch_id if needed
         if new_course != instance.course:
             instance.batch_id = self.generate_batch_id(new_course, new_start_date)
-            instance.course = new_course
-            instance.start_date = new_start_date
-            instance.end_date = new_end_date
+            instance.course = new_course  # Update course
+            instance.start_date = new_start_date  # Update start date
+            instance.end_date = new_end_date  # Update start date
             instance.save(update_fields=['batch_id', 'course', 'start_date', 'end_date'])
 
-        # Handle student additions/removals and update course status
+        # Update students if provided
         students = validated_data.pop('student', None)
         if students is not None:
-            existing_students = set(instance.student.all())  # Current students in batch
-            new_students = set(students)  # Updated student list
-
-            removed_students = existing_students - new_students  # Students removed from batch
-            added_students = new_students - existing_students  # New students added to batch
-
-            # Bulk update course status for removed students
-            if removed_students:
-                if status == 'Running':
-                    StudentCourse.objects.filter(student__in=removed_students, course=instance.course).update(status='Denied')
-                elif status == 'Upcoming':
-                    StudentCourse.objects.filter(student__in=removed_students, course=instance.course).update(status='Not Started')
-
-            # Bulk update course status for added students
-            if added_students:
-                student_status_mapping = {
-                    'Running': 'Ongoing',
-                    'Upcoming': 'Upcoming',
-                    'Completed': 'Completed'
-                }
-                StudentCourse.objects.filter(student__in=added_students, course=instance.course).update(
-                    status=student_status_mapping.get(status, 'Not Started')
-                )
-
-            # Set the updated list of students
-            instance.student.set(students)
-
-        # Update remaining batch fields
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-
-        # Save the batch instance
-        instance.save()
-
-        return instance
+            instance.student.set(students)  # Update students list
+        return super().update(instance, validated_data)    

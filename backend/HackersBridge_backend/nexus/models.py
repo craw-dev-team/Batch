@@ -39,28 +39,16 @@ class OTPVerification(models.Model):
         cls.objects.filter(created_at__lt=now() - datetime.timedelta(minutes=5)).delete()
 
 
+
+
+
 class Timeslot(models.Model):
-    SPECIAL_SLOTS = [
-        ('Normal', 'Normal'),
-        ('Special', 'Special'),
-    ]
-
-    WEEK_TYPES = [
-    ('Weekdays', 'Weekdays'),
-    ('Weekends', 'Weekends'),
-    ('Both', 'Both'),  # New option for covering both weekdays & weekends
-    ]
-
     start_time = models.TimeField(null=True, blank=True)
     end_time = models.TimeField(null=True, blank=True)
     gen_time = models.DateTimeField(default=timezone.now)
-    week_type = models.CharField(max_length=10, choices=WEEK_TYPES, default='Weekdays')
-    special_time_slot = models.CharField(max_length=20, choices=SPECIAL_SLOTS, null=True, blank=True, default='Normal')
 
     def __str__(self):
-        special_slot = self.special_time_slot if self.special_time_slot else "Regular"
-        return f"{self.start_time} - {self.end_time} ({special_slot}, {self.week_type})"
-
+        return f"{self.start_time} - {self.end_time}"
 
 class Course(models.Model):
     name = models.CharField(max_length=100, null=True, blank=True)
@@ -72,7 +60,6 @@ class Course(models.Model):
     def __str__(self):
         return self.name
 
-
 class Location(models.Model):
     code = models.CharField(max_length=10, unique=True)
     country = models.CharField(max_length=100, null=True, blank=True)
@@ -81,7 +68,6 @@ class Location(models.Model):
 
     def __str__(self):
         return self.locality
-
 
 class Book(models.Model):
     book_id = models.CharField(max_length=10, unique=True)
@@ -97,7 +83,6 @@ class Book(models.Model):
 
     def __str__(self):
         return self.name
-
 
 class Batch(models.Model):
     MODE_CHOICES = [
