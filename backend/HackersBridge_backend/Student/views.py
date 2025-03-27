@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from .models import Student, Installment, FeesRecords, StudentCourse
-from .serializer import StudentSerializer, InstallmentSerializer
+from .serializer import StudentSerializer, InstallmentSerializer, StudentCourseSerializer
 from nexus.models import Batch
 from django.db.models import Q
 from rest_framework.authtoken.models import Token
@@ -185,72 +185,89 @@ class StudentInfoAPIView(APIView):
     # permission_classes = [IsAuthenticated]
 
     def get(self, request, id):
-        # Ensure the user is a coordinator
-        # if request.user.role != 'admin':
-            # return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
-
         # Get the student by ID
         student = get_object_or_404(Student, id=id)
 
         # Fetch student's enrolled courses
         student_courses = StudentCourse.objects.filter(student=student).select_related('course')
-        for course in student_courses:
-            course.name = course.course.name
-            course.save()
-            # print(course.course.name)
-        l=[]
-        for course in student_courses:
-            l.append({
-                'id':course.id,
-                'course_name':course.course.name,
-                'course_tekan':Batch.objects.filter(student=student, course=course.course).count(),
-                'course_status':course.status,
-                'course_certificate_date':course.certificate_date
-            })
-            # B=Batch.objects.filter(student=student, course=course.course).count()
-        # print(l)
+        
+        student_course_list = [
+            {
+                'id': course.id,
+                'course_name': course.course.name,
+                'course_taken': Batch.objects.filter(student=student, course=course.course).count(),
+                'course_status': course.status,
+                'course_certificate_date': course.certificate_date,
+            }
+            for course in student_courses
+        ]
 
+        # Fetch batches based on status
+        batch_statuses = ['Upcoming', 'Completed', 'Running', 'Hold']
+        student_batches = {
+            status: Batch.objects.filter(student=student, status=status).select_related('course', 'trainer', 'batch_time')
+            for status in batch_statuses
+        }
 
-        # Filter student's batches based on status
-        student_batch_upcoming = Batch.objects.filter(student=student, status='Upcoming').select_related('course', 'trainer', 'batch_time')
-        student_batch_completed = Batch.objects.filter(student=student, status='Completed').select_related('course', 'trainer', 'batch_time')
-        student_batch_ongoing = Batch.objects.filter(student=student, status='Running').select_related('course', 'trainer', 'batch_time')
-        student_batch_hold = Batch.objects.filter(student=student, status='Hold').select_related('course', 'trainer', 'batch_time')
+        # Get all upcoming batches for the student's courses
+        student_course_ids = student_courses.values_list("course_id", flat=True)
+        all_upcoming_batches = Batch.objects.filter(course_id__in=student_course_ids, status='Upcoming')
 
-        # Find all upcoming batches for the student's courses
-        all_upcoming = Batch.objects.filter(
-            Q(course__in=student_courses.values_list("course_id", flat=True)) & Q(status='Upcoming')
-        )
+        # Get completed and ongoing course IDs to exclude from upcoming batches
+        student_completed_course_ids = student_courses.filter(status__in=['Completed', 'Ongoing']).values_list('course_id', flat=True)
 
         # Exclude already assigned upcoming batches
-        all_upcoming_batch = all_upcoming.exclude(id__in=student_batch_upcoming.values_list("id", flat=True))
+        filtered_upcoming_batches = all_upcoming_batches.exclude(
+            course_id__in=student_completed_course_ids
+        ).exclude(id__in=student_batches['Upcoming'].values_list("id", flat=True))
 
         # Update student course status based on batch status
-        for sbu in student_batch_upcoming:
-            student_course = StudentCourse.objects.get(student=student, course=sbu.course)
-            student_course.status = sbu.status
-            student_course.save()
+        StudentCourse.objects.filter(student=student, course__in=student_batches['Upcoming'].values_list("course_id", flat=True)).update(status='Upcoming')
 
-        # Get total student count (if needed)
+        # Get total student count
         student_count = Student.objects.count()
 
-        All_in_One = {
-            'student_count': student_count,
-            'student': StudentSerializer(student).data,
-            'student_courses': l,
-            'student_batch_upcoming': list(student_batch_upcoming.values(*[field.name for field in Batch._meta.fields], 'course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time')),
-            'student_batch_hold': list(student_batch_hold.values(*[field.name for field in Batch._meta.fields], 'course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time')),
-            'student_batch_ongoing': list(student_batch_ongoing.values(*[field.name for field in Batch._meta.fields], 'course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time')),
-            'student_batch_completed': list(student_batch_completed.values(*[field.name for field in Batch._meta.fields], 'course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time')),
-            'all_upcoming_batch': list(all_upcoming_batch.values(*[field.name for field in Batch._meta.fields], 'course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time')),
-        }
-        
-        # Serialize and return the response
+        # Build response data
         response_data = {
-            "All_in_One":All_in_One
+            "All_in_One": {
+                'student_count': student_count,
+                'student': StudentSerializer(student).data,
+                'student_courses': student_course_list,
+                'student_batch_upcoming': list(student_batches['Upcoming'].values(
+                    *[field.name for field in Batch._meta.fields], 'course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time'
+                )),
+                'student_batch_hold': list(student_batches['Hold'].values(
+                    *[field.name for field in Batch._meta.fields], 'course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time'
+                )),
+                'student_batch_ongoing': list(student_batches['Running'].values(
+                    *[field.name for field in Batch._meta.fields], 'course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time'
+                )),
+                'student_batch_completed': list(student_batches['Completed'].values(
+                    *[field.name for field in Batch._meta.fields], 'course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time'
+                )),
+                'all_upcoming_batch': list(filtered_upcoming_batches.values(
+                    *[field.name for field in Batch._meta.fields], 'course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time'
+                )),
+            }
         }
 
         return Response(response_data, status=status.HTTP_200_OK)
+
+
+class StudentCourseEditAPIView(APIView):
+    """API to edit an existing StudentCourse record."""
+    # permission_classes = [IsAuthenticated]  # Uncomment to enable authentication
+
+    def patch(self, request, id, *args, **kwargs):
+        """Allows partial updates (e.g., only updating status or certificate_date)."""
+        student_course = get_object_or_404(StudentCourse, id=id)
+        serializer = StudentCourseSerializer(student_course, data=request.data, partial=True)  # Partial update
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "StudentCourse updated successfully", "data": serializer.data}, status=status.HTTP_200_OK)
+        
+        return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
 
