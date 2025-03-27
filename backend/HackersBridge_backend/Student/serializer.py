@@ -129,8 +129,3 @@ class StudentSerializer(serializers.ModelSerializer):
         instance.save()
 
         return instance
-
-class StudentCourseSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = StudentCourse
-        fields = ['id', 'student', 'course', 'status', 'certificate_date', 'student_certificate_allotment']

@@ -44,7 +44,6 @@ urlpatterns = [
     path('students/fees/<int:student_id>/', AddFeesView.as_view(), name='add-fees'),
     path('students/info/<int:id>/', StudentInfoAPIView.as_view(), name='student-info'),
     path('students/delete/<int:id>/', DeleteStudentView.as_view(), name='delete-student'),
-    path('student-course/edit/<int:id>/', StudentCourseEditAPIView.as_view(), name='student-course-edit'),
     
     path('trainers/', TrainerListAPIviews.as_view(), name='trainer-list'),
     path('trainers/add/', AddTrainerAPIView.as_view(), name='add_trainer_api'),

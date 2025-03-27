@@ -114,10 +114,9 @@ class FeesRecords(models.Model):
 
 class StudentCourse(models.Model):  # ✅ Through Model
     STATUS_CHOICES = [
-        ('Not Started', 'Not Started'),
-        ('Ongoing', 'Ongoing'),
-        ('Completed', 'Completed'),
-        ('Denied', 'Denied'),
+        ('not_started', 'Not Started'),
+        ('ongoing', 'Ongoing'),
+        ('completed', 'Completed'),
     ]
     
     student = models.ForeignKey(Student, on_delete=models.CASCADE)

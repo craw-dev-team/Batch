@@ -39,21 +39,18 @@ class BatchAPIView(APIView):
                 if batch.start_date <= today < batch.end_date:
                     batch.status = 'Running'
                     batch.save()
-                    # StudentCourse.objects.filter(student__in=students, course=batch.course).update(status='Ongoing')
+                    StudentCourse.objects.filter(student__in=students, course=batch.course).update(status='Ongoing')
                 elif batch.start_date >= today and batch.end_date >= today:
                     batch.status = 'Upcoming'
                     batch.save()
-                    # StudentCourse.objects.filter(student__in=students, course=batch.course).update(status='Upcoming')
+                    StudentCourse.objects.filter(student__in=students, course=batch.course).update(status='Upcoming')
                 elif batch.end_date < today:
                     batch.status = 'Completed'
                     batch.save()
-                    # StudentCourse.objects.filter(student__in=students, course=batch.course).update(status='Completed')
+                    StudentCourse.objects.filter(student__in=students, course=batch.course).update(status='Completed')
 
-        seven_days_later = now + timedelta(days=10)
-        batches_ending_soon = Batch.objects.filter(end_date__lte=seven_days_later, end_date__gte=now, status='Running').order_by('end_date')
-        # for batch in batches_ending_soon:
-        #     print(batch.end_date, batch.id)
-        #     print(" ")
+        seven_days_later = now + timedelta(days=7)
+        batches_ending_soon = Batch.objects.filter(end_date__lte=seven_days_later, end_date__gte=now, status='Running')
         running_batch = Batch.objects.filter(status='Running')
         scheduled_batch = Batch.objects.filter(status='Upcoming')
         completed_batch = Batch.objects.filter(status='Completed')
@@ -153,35 +150,19 @@ class BatchEditAPIView(APIView):
 
 
 
-class BatchDeleteAPIView(APIView):
+class  BatchDeleteAPIView(APIView):
     # permission_classes = [IsAuthenticated]
-
+    
     def delete(self, request, id):
-        """Delete a batch and update student course statuses."""
-
+        # if request.user.role == 'admin':
         try:
-            batch = Batch.objects.prefetch_related('student').get(id=id)
+            counsellors = Batch.objects.get(id=id)
         except Batch.DoesNotExist:
-            return Response({'detail': 'Batch not found'}, status=status.HTTP_404_NOT_FOUND)
-
-        course = batch.course
-        students = list(batch.student.all())  # Fetch students before deleting batch
-        batch_status = batch.status  # Store batch status before deletion
-
-        # Delete the batch
-        batch.delete()
-
-        # Update student course statuses based on the batch status
-        if batch_status == 'Running':
-            StudentCourse.objects.filter(student__in=students, course=course).update(status='Denied')
-        elif batch_status == 'Upcoming':
-            StudentCourse.objects.filter(student__in=students, course=course).update(status='Not Started')
-        elif batch_status == 'Completed':
-            StudentCourse.objects.filter(student__in=students, course=course).update(status='Completed')
-
-        return Response({'detail': 'Batch deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
-                
-    # else:
+            return Response({'detail': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
+        counsellors.delete()
+        return Response({'detail': 'Course deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+            
+        # else:
         #     return Response({'detail': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
 
 
@@ -284,34 +265,28 @@ class BatchAddStudentAPIView(APIView):
     # permission_classes = [IsAuthenticated]
 
     def post(self, request, batch_id):
-        """Add students to a batch and update their course status accordingly."""
-        
-        batch = get_object_or_404(Batch, id=batch_id)
-        student_ids = request.data.get('students', [])  # Expecting a list of student IDs
+        # if request.user.role != 'coordinator':
+        #     return Response({"error": "Only coordinators can perform this action."}, status=status.HTTP_403_FORBIDDEN)
 
-        if not isinstance(student_ids, list):
+        batch = get_object_or_404(Batch, id=batch_id)
+        students_ids = request.data.get('students', [])  # Expecting a list of student IDs
+
+        if not isinstance(students_ids, list):
             return Response({"error": "Invalid input format, expected a list of student IDs."}, status=status.HTTP_400_BAD_REQUEST)
 
-        students = Student.objects.filter(id__in=student_ids)
+        students = Student.objects.filter(id__in=students_ids)
 
-        if not students.exists():
-            return Response({"error": "No valid students found."}, status=status.HTTP_400_BAD_REQUEST)
+        # # Get the logged-in coordinator
+        # coordinator_id = request.user.username
+        # coordinator = get_object_or_404(Coordinator, coordinator_id=coordinator_id)
 
-        course = batch.course
+        # Add students to batch if conditions meet
         added_students = []
-
         for student in students:
-            # Check if student is already assigned to this batch
             if not BatchStudentAssignment.objects.filter(batch=batch, student=student).exists():
-                if batch.status != 'Completed':  # Ensure batch is not completed
-                    BatchStudentAssignment.objects.create(batch=batch, student=student)
+                if batch.status != 'Completed':
+                    BatchStudentAssignment.objects.create(batch=batch, student=student,) #coordinator=coordinator)
                     added_students.append(student.id)
-
-        # Update course status based on batch status
-        if batch.status == 'Running':
-            StudentCourse.objects.filter(student__in=students, course=course).update(status='Ongoing')
-        elif batch.status == 'Upcoming':
-            StudentCourse.objects.filter(student__in=students, course=course).update(status='Not Started')
 
         return Response({"message": "Students added successfully", "added_students": added_students}, status=status.HTTP_200_OK)
 
@@ -319,7 +294,7 @@ class BatchAddStudentAPIView(APIView):
 
 
 class BatchRemoveStudentAPIView(APIView):
-    """API to remove students from a batch and update course status."""
+    """API to remove students from a batch."""
     # permission_classes = [IsAuthenticated]
 
     def post(self, request, batch_id):
@@ -335,30 +310,14 @@ class BatchRemoveStudentAPIView(APIView):
         students = Student.objects.filter(id__in=students_ids)
         
         removed_students = []
-        student_courses_to_update = []  # Collect StudentCourse objects for bulk update
-
         for student in students:
             assignment = BatchStudentAssignment.objects.filter(batch=batch, student=student)
             if assignment.exists():
                 assignment.delete()
                 removed_students.append(student.id)
 
-                # Update only the course associated with this batch
-                student_course = StudentCourse.objects.filter(student=student, course=batch.course).first()
-                if student_course:
-                    if batch.status == 'Running':
-                        student_course.status = 'Denied'
-                    elif batch.status == 'Upcoming':
-                        student_course.status = 'Not Started'
-                    student_courses_to_update.append(student_course)
-
-
-        # Bulk update StudentCourse status for better performance
-        if student_courses_to_update:
-            StudentCourse.objects.bulk_update(student_courses_to_update, ['status'])
-
         return Response({
-            "message": "Students removed successfully, and course status updated.",
+            "message": "Students removed successfully",
             "removed_students": removed_students
         }, status=status.HTTP_200_OK)
 
