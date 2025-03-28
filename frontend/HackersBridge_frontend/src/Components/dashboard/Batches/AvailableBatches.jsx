@@ -16,6 +16,7 @@ dayjs.extend(customParseFormat);
 const AvailableBatches = () => {
     const [isModalOpen, setIsModalOpen] = useState(false); 
     const [activeTab, setActiveTab] = useState("tab1");
+    const [searchTerm, setSearchTerm] = useState("");
     const [selectedBatch, setSelectedBatch] = useState(null);
     const [sortByName, setSortByName] = useState(false);
     const [sortByStartTime, setSortByStartTime] = useState(false);
@@ -32,8 +33,6 @@ const AvailableBatches = () => {
         
     }, [availableTrainers])
 
-    const freeTrainers = availableTrainers?.free_trainers ?? [];    
-    const futureAvailableTrainers = availableTrainers?.future_availability_trainers ?? [];
 
     const handleCreateClick = (trainer) => {
         setSelectedBatch({
@@ -43,6 +42,21 @@ const AvailableBatches = () => {
         setIsModalOpen(true);
     };
     
+    const freeTrainers = availableTrainers?.free_trainers ?? [];    
+    const futureAvailableTrainers = availableTrainers?.future_availability_trainers ?? [];
+
+
+    const filteredTrainers = activeTab === "tab1" ? freeTrainers : futureAvailableTrainers;
+
+//    filter batches based on trainer name and location 
+    const searchFilteredBatches = searchTerm
+    ? filteredTrainers.filter((batch) =>
+        batch.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        batch.location.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    : filteredTrainers;
+   
+   
     
     // FOR SORTING BY NAME AND START TIME 
     const toggleSortByName = () => {
@@ -56,7 +70,7 @@ const AvailableBatches = () => {
     };
     
     const sortedFreeTrainers = useMemo(() => {
-      let sorted = [...freeTrainers];
+      let sorted = [...searchFilteredBatches];
     
       if (sortByName) {
         sorted.sort((a, b) => a.name.localeCompare(b.name)); // Always Ascending
@@ -65,10 +79,11 @@ const AvailableBatches = () => {
       }
     
       return sorted;
-    }, [freeTrainers, sortByName, sortByStartTime]);
+    }, [searchFilteredBatches, sortByName, sortByStartTime]);
     
+
     const sortedFutureAvailableTrainers = useMemo(() => {
-      let sorted = [...futureAvailableTrainers];
+      let sorted = [...searchFilteredBatches];
     
       if (sortByName) {
         sorted.sort((a, b) => a.name.localeCompare(b.name)); // Always Ascending
@@ -77,7 +92,7 @@ const AvailableBatches = () => {
       }
     
       return sorted;
-    }, [futureAvailableTrainers, sortByName, sortByStartTime]);
+    }, [searchFilteredBatches, sortByName, sortByStartTime]);
     
 
 
@@ -111,35 +126,35 @@ const AvailableBatches = () => {
                                 className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
                                     ${activeTab === "tab2" ? 'bg-blue-300 dark:bg-[#3D5A80] text-black dark:text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                                 >
-                                Scheduled Batches
+                                Future Available Batches
                             </button>
                             
                         </div>
 
 
-                {/* <div className="grid col-span-1 justify-items-end">
-                <div className="flex gap-x-6">
-                <label htmlFor="table-search" className="sr-only">Search</label>
-                    <div className="relative h-auto">
-                        <input onChange={(e) => setSearchTerm(e.target.value)} value={searchTerm} type="text" id="table-search" placeholder="Search for items"
-                            className="block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg w-40 h-7 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" 
-                            />
-                        <div className="absolute inset-y-0 right-0 h-auto flex items-center pr-3">
-                        <button onClick={() => setSearchTerm("")}>
-                        {searchTerm ? (
-                            <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M6.293 6.293a1 1 0 011.414 0L10 8.586l2.293-2.293a1 1 0 111.414 1.414L11.414 10l2.293 2.293a1 1 0 01-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 01-1.414-1.414L8.586 10 6.293 7.707a1 1 0 010-1.414z" clipRule="evenodd"></path>
-                                </svg>
-                            ) : (
-                                <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"></path>
-                                </svg>
-                            )}
-                        </button>
+                        <div className="grid col-span-1 justify-items-end">
+                        <div className="flex gap-x-6">
+                            <label htmlFor="table-search" className="sr-only">Search</label>
+                            <div className="relative h-auto">
+                                <input onChange={(e) => setSearchTerm(e.target.value.replace(/^\s+/, ''))} value={searchTerm} type="text" id="table-search" placeholder="Search for items"
+                                    className="block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg w-40 h-7 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" 
+                                    />
+                                <div className="absolute inset-y-0 right-0 h-auto flex items-center pr-3">
+                                <button onClick={() => setSearchTerm("")}>
+                                {searchTerm ? (
+                                    <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M6.293 6.293a1 1 0 011.414 0L10 8.586l2.293-2.293a1 1 0 111.414 1.414L11.414 10l2.293 2.293a1 1 0 01-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 01-1.414-1.414L8.586 10 6.293 7.707a1 1 0 010-1.414z" clipRule="evenodd"></path>
+                                        </svg>
+                                    ) : (
+                                        <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"></path>
+                                        </svg>
+                                    )}
+                                </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                            </div>
-                            </div> */}
                     </div>
                 </div>
 
@@ -177,11 +192,11 @@ const AvailableBatches = () => {
                         <th scope="col" className="px-3 py-3 md:px-1">
                             course
                         </th>
-                        {/* <th scope="col" className="px-3 py-3 md:px-1">
-                            Mode
-                        </th> */}
                         <th scope="col" className="px-3 py-3 md:px-1">
                             Language
+                        </th>
+                        <th scope="col" className="px-3 py-3 md:px-1">
+                            Preferred Week
                         </th>
                         <th scope="col" className="px-3 py-3 md:px-1">
                             Location
@@ -257,6 +272,12 @@ const AvailableBatches = () => {
                                 <td className="px-3 py-2 md:px-1">
                                     <Tag bordered={false} color={item.languages === "Hindi" ? "green" : item.languages === "English" ? "volcano" : "blue"}>
                                     {item.languages}
+                                    </Tag>
+                                </td>
+
+                                <td className="px-3 py-2 md:px-1">
+                                    <Tag bordered={false} color={item.week === "Weekdays" ? "cyan" : item.week === "Weekends" ? "gold" : "geekblue" }>
+                                        {item.week}
                                     </Tag>
                                 </td>
                                 
@@ -361,7 +382,11 @@ const AvailableBatches = () => {
                     })}</td>
                         <td className="px-3 py-2 md:px-1 font-semibold">{item.batch_course}</td>
                         <td className="px-3 py-2 md:px-1 font-bold">{item.batch_id}</td>
-                        <td className="px-3 py-2 md:px-1">{item.batch_week}</td>
+                        <td className="px-3 py-2 md:px-1">
+                            <Tag bordered={false} color={item.batch_week === "Weekdays" ? "cyan" : item.batch_week === "Weekends" ? "gold" : "geekblue" }>
+                                {item.batch_week}
+                            </Tag>
+                        </td>
                         <td className="px-3 py-2 md:px-1">{item.free_days} Days</td>
                         <td className="px-3 py-2 md:px-1">
                         <button 
@@ -467,7 +492,6 @@ const CreateAvailableBatchForm = ({ isOpen, onClose, selectedBatch }) => {
   const handleFormSubmit = async (e) => {
     e.preventDefault();
 
-
     const formattedData = {
         ...batchFormData,
         location: batchFormData.location ? parseInt(batchFormData.location, 10) : null,
@@ -485,8 +509,7 @@ const CreateAvailableBatchForm = ({ isOpen, onClose, selectedBatch }) => {
         start_date: formattedData.startDate,
         end_date: formattedData.endDate,
         course: formattedData.course?.id,
-        trainer: selectedBatch?.tr_id,
-        preferred_week: formattedData.preferredWeek,
+        trainer: selectedBatch?.formattedData.preferredWeek,
         mode: formattedData.mode,
         language: formattedData.language,
         location: selectedBatch?.location_id,
@@ -640,11 +663,23 @@ const convertTo12HourFormat = (time) => {
                         filterOption={(input, option) =>
                             option.label.toLowerCase().includes(input.toLowerCase())
                         }
-                        options={(Array.isArray(selectedBatch?.courses) ? selectedBatch.courses : []).map(course => ({
-                            value: course.id,  
-                            label: course.name, 
-                        }))}
-                        
+                        // options={(Array.isArray(selectedBatch?.courses) ? selectedBatch.courses : []).map(course => ({
+                        //     value: course.id,  
+                        //     label: course.name, 
+                        // }))}
+                        options={[
+                            ...(Array.isArray(selectedBatch?.courses)
+                              ? selectedBatch.courses.map(course => ({
+                                  value: course.id, // Extract ID
+                                  label: course.name, // Extract Name
+                                }))
+                              : []),
+                            ...(selectedBatch?.batch_course
+                              ? [{ value: selectedBatch.batch_course, label: selectedBatch.batch_course }]
+                              : [])
+                          ]}
+                          
+                          
                     />
                    {/* {errors.course && <p className="text-red-500 text-sm">{errors.course}</p>} */}
                </div>

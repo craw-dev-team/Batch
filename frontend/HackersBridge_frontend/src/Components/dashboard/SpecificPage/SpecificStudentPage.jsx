@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom"
 import { useSpecificStudent } from "../Contexts/SpecificStudent";
-import { Dropdown, Tag  } from 'antd';
-import {  DownOutlined } from '@ant-design/icons';
-
+import { Dropdown, message, Tag, DatePicker, Button  } from 'antd';
+import {  DownOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import BASE_URL from "../../../ip/Ip";
+import axios from "axios";
 
 
 const SpecificStudentPage = () => {
@@ -34,7 +35,6 @@ const SpecificStudentPage = () => {
 
     
     const studentDetails = specificStudent?.All_in_One?.student;
-    // console.log(specificStudent);
     
     const filteredStudentData = specificStudent?.All_in_One
     ? activeTab === 'running'
@@ -59,6 +59,22 @@ const SpecificStudentPage = () => {
 
 console.log(specificStudent);
 
+
+    // HANDLE COURSE STATUS CHANGE INSIDE THE STUDENT INFO PAGE 
+    const handleCourseStatusChange = async (id, selectesStatus) => {
+        try {
+            const response = await axios.patch(`${BASE_URL}/api/student-course/edit/${id}/`, selectesStatus);
+            message.success(`Status updated to ${selectesStatus.status}`)
+            console.log(response);
+            
+        } catch (error) {
+            console.log(error);
+            message.error("Failed to update status")
+        }
+    };
+
+
+    
     return (
         <>
         <div className="w-auto h-full pt-20 px-2 mt-0">
@@ -170,39 +186,45 @@ console.log(specificStudent);
                                                     {item.course_name}
                                                 </td>
 
-                                                <td className={`px-3 py-2 md:px-1 ${item.course_status == "Ongoing" ? "text-green-500" : item.course_status == "Upcoming" ? "text-lime-400" : "text-blue-500"}`}>
+                                                <td className={`px-3 py-2 md:px-1 `}>
                                                 <Dropdown
                                                     trigger={["click"]}
                                                     menu={{
-                                                        items: ["not_started", "ongoing", "completed"]
-                                                            .filter(status => item.course_status.toLowerCase() !== status) // Ensure case consistency
+                                                        items: ["Not Started", "Ongoing", "Completed"]
+                                                            .filter(status => item.course_status !== status) // Ensure case consistency
                                                             .map(status => ({
                                                                 key: status,
-                                                                label: status.replace("_", " ").toUpperCase(), // Format for readability
+                                                                label: status.replace("_", " "), // Format for readability
                                                             })),
-                                                        onClick: ({ key }) => handleCourseStatusChange(item.id, key),
+                                                        onClick: ({ key }) => handleCourseStatusChange(item.id, { status : key }),
                                                     }}
                                                 >
                                                     <a onClick={(e) => e.preventDefault()}>
                                                         <Tag
-                                                            className="w-32 text-center"
+                                                            className="w-24 text-center"
                                                             color={
-                                                                item.course_status.toLowerCase() === "ongoing" ? "green" :
-                                                                item.course_status.toLowerCase() === "not_started" ? "geekblue" :
-                                                                item.course_status.toLowerCase() === "completed" ? "blue" :
+                                                                item.course_status == "Ongoing" ? "green" :
+                                                                item.course_status == "Upcoming" ? "lime" :
+                                                                item.course_status == "Not Started" || "not started" ? "geekblue" :
+                                                                item.course_status == "Completed" ? "blue" :
                                                                 "gray"
                                                         }>
-                                                            {item.course_status.replace("_", " ").toUpperCase()} <DownOutlined />
+                                                            {item.course_status.replace("_", " ")} <DownOutlined />
                                                         </Tag>
                                                     </a>
                                                 </Dropdown>
 
 
                                                 </td>
-                                                <td className={`px-3 py-2 md:px-1 text-md ${item.course_tekan == "0" ? "text-red-500" : "text-green-400"}`}>
-                                                    {item.course_tekan}
+                                                <td className={`px-3 py-2 md:px-1 text-md ${item.course_taken == "0" ? "text-red-500" : "text-green-400"}`}>
+                                                    {item.course_taken}
                                                 </td>
-                                                <td className="px-3 py-2 md:px-1">
+                                                <td className="px-3 py-2 md:px-1 flex">
+                                                <DatePicker name='certificateIssueDate'    className='border-gray-300' size='small'  placeholder="Certificate issue date"                    
+                                                    // value={certificateIssueDate ? dayjs(studentFormData.dateOfBirth, "YYYY-MM-DD") : null}
+                                                    onChange={(date, dateString) => setStudentFormData({ certificateIssueDate: dateString })}
+                                                />     
+                                                    <Button variant="solid" color="green" className="mx-2">Issue</Button>
                                                     {item.course_certificate_date || 'N/A'}
                                                 </td>
                                             </tr>

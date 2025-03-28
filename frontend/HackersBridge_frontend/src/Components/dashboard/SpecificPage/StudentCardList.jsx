@@ -99,13 +99,15 @@ const StudentsList = () => {
                                     </td>
                                     <td className="px-3 py-2 md:px-1">
                                         <Avatar.Group
-                                                maxCount={2} // Show only 2 avatars initially
-                                                maxStyle={{
-                                                    color: "#f56a00",
-                                                    backgroundColor: "#fde3cf",
-                                                    height: "24px", // Match avatar size
-                                                    width: "24px", // Match avatar size
-                                                }}
+                                                max={{
+                                                    count: 2,
+                                                    style: {
+                                                        color: "#f56a00",
+                                                        backgroundColor: "#fde3cf",
+                                                        height: "24px", // Match avatar size
+                                                        width: "24px", // Match avatar size
+                                                }
+                                            }}
                                             >
                                                 {item.courses_names?.map((name, index) => (
                                                     <Tooltip key={index} title={name} placement="top">
@@ -131,7 +133,7 @@ const StudentsList = () => {
                                         {item.preferred_week}
                                     </td>
                                     <td className="px-3 py-2 md:px-1">
-                                        {item.location == '1' ? <Tag color="blue">Saket</Tag> : <Tag color="magenta">laxmi Nagar</Tag>}
+                                        {item.location == '1' ? <Tag color="blue">Saket</Tag> : item.location == "2" ? <Tag color="magenta">Laxmi Nagar</Tag> : <Tag color="geekblue">Both</Tag>}
                                     </td>
                                     <td className="px-3 py-2 md:px-1">
                                         {item.course_counsellor_name}
