@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button, message, Popconfirm, Avatar, Tooltip, Select, Tag, Dropdown, Badge, Spin, Empty } from 'antd';
-import { EditOutlined, DeleteOutlined, DownOutlined, CopyOutlined, RightOutlined } from '@ant-design/icons';
+import { Button, message, Popconfirm, Avatar, Tooltip, Select, Tag, Dropdown, Badge, Spin, Empty, Menu } from 'antd';
+import { EditOutlined, DeleteOutlined, DownOutlined, CopyOutlined, RightOutlined, FilterOutlined } from '@ant-design/icons';
 import  { useBatchForm }  from "../Batchcontext/BatchFormContext";
 import CreateBatchForm from "./CreateBatchForm";
 import axios from "axios";
@@ -22,10 +22,15 @@ const Batches = () => {
     const [selectedStudent, setSelectedStudent] = useState({}); // Stores selected students per batch
     const [addStudentDropdown, setAddStudentDropdown] = useState({});
     const [searchTerm, setSearchTerm] = useState("");
-    const [sortByTime, setSortByTime] = useState(false); // Default ascending
-
+    const [sortByTime, setSortByTime] = useState(null); // Default ascending
+    const [sortByStartDate, setSortByStartDate] = useState(null);
+    const [sortByMode, setSortByMode] = useState(null);
+    const [sortByLanguage, setSortByLanguage] = useState(null);
+    const [sortByPreferredWeek, setSortByPreferredWeek] = useState(null);
+    const [sortByLocation, setSortByLocation] = useState(null);
+  
+    
     const { batchData, loading, setLoading, setBatchData, fetchBatches, countBatchesByType } = useBatchForm();
-    const {  fetchSpecificBatch } = useSpecificBatch();
 
     const navigate = useNavigate();
 
@@ -33,12 +38,6 @@ const Batches = () => {
         setActiveTab(tab);
     };
 
-    // useEffect(() => {
-    //     fetchBatches();  
-    //     console.log(batchData);
-        
-        
-    // }, [isModalOpen, isDeleted ]); 
 
     useEffect(() => {
         if (!batchData) {  // Only fetch if batchData is empty
@@ -202,7 +201,9 @@ const Batches = () => {
         : activeTab === "completed"
         ? batchData.All_Type_Batch.completed_batch
         : activeTab === "endingsoon"
-        ? batchData.All_Type_Batch.batches_ending_soon
+        ? [...batchData.All_Type_Batch.batches_ending_soon].sort(
+            (a, b) => new Date(a.end_date) - new Date(b.end_date) // Sort by nearest end date
+        )
         : activeTab === "hold"
         ? batchData.All_Type_Batch.hold_batch
         : batchData.All_Type_Batch.cancelled_batch
@@ -282,24 +283,183 @@ const Batches = () => {
     // );
     
     // FOR TOGGLING SORT BY TIME IN ACTIVE DATA TH
-        const toggleSortByTime = () => {
-            setSortByTime(prev => !prev);
+        // const toggleSortByTime = () => {
+        //     setSortByTime(prev => !prev);
+        // };
+
+        const toggleSort = (key) => {
+            setSortByTime(false);
+            setSortByStartDate(false);
+        
+            switch (key) {
+                case "start_time":
+                    setSortByTime((prev) => !prev);
+                    break;
+                case "start_date":
+                    setSortByStartDate((prev) => !prev);
+                    break;
+                default:
+                    break;
+            }
         };
+        
 
-    const sortedBatches = useMemo(() => {
-        return [...searchFilteredBatches].sort((a, b) => {
-            // Extract start_time from batch_time_data (Handle missing data safely)
-            const timeA = a.batch_time_data?.start_time || "00:00:00";
-            const timeB = b.batch_time_data?.start_time || "00:00:00";
 
-            // Convert "HH:mm:ss" to Date object (same day reference for proper sorting)
-            const dateA = new Date(`1970-01-01T${timeA}Z`);
-            const dateB = new Date(`1970-01-01T${timeB}Z`);
+        const sortedBatches = useMemo(() => {
+            let sorted = [...searchFilteredBatches];
+          
+            if (sortByTime) {
+              sorted.sort((a, b) => a.batch_time_data.start_time.localeCompare(b.batch_time_data.start_time)); // Always Ascending
+            } else if (sortByStartDate) {
+              sorted.sort((a, b) => a.start_date.localeCompare(b.start_date)); // Sort by Time as String
+            }
 
-            // Sort based on ascending or descending order
-            return sortByTime ? dateA - dateB : dateB - dateA;
-        });
-    }, [searchFilteredBatches, sortByTime]);
+             // Filter based on selected mode on top
+            if (sortByMode) {
+                sorted.sort((a, b) => {
+                    if (a.mode === sortByMode && b.mode !== sortByMode) return -1;
+                    if (b.mode === sortByMode && a.mode !== sortByMode) return 1;
+                    return 0;
+                });
+            };
+
+            // Filter based on selected language on top
+            if (sortByLanguage) {
+                sorted.sort((a, b) => {
+                    if (a.language === sortByLanguage && b.language !== sortByLanguage) return -1;
+                    if (b.language === sortByLanguage && a.language !== sortByLanguage) return 1;
+                    return 0;
+                })
+            };
+
+            // Filter based on selected preferred week on top
+            if (sortByPreferredWeek) {
+                sorted.sort((a, b) => {
+                    if (a.preferred_week === sortByPreferredWeek && b.preferred_week !== sortByPreferredWeek) return -1;
+                    if (b.preferred_week === sortByPreferredWeek && a.preferred_week !== sortByPreferredWeek) return 1;
+                    return 0;
+                })
+            };
+
+            // filter based on selected location on top
+            if (sortByLocation) {
+                sorted.sort((a, b) => {
+                    if (a.batch_location === sortByLocation && b.batch_location !== sortByLocation) return -1;
+                    if (b.batch_location === sortByLocation && a.batch_location !== sortByLocation) return 1;
+                    return 0;
+                })
+            }
+          
+            return sorted;
+          }, [searchFilteredBatches, sortByTime, sortByStartDate, sortByMode, sortByLanguage, sortByPreferredWeek]);
+
+
+
+            const handleSort = ( key, filterType ) => {
+                if (key === "clear") {
+                    if (filterType === "mode") setSortByMode(null);
+                    if (filterType === "language") setSortByLanguage(null);
+                    if (filterType === "preferred_week") setSortByPreferredWeek(null);
+                    if (filterType === "location") setSortByLocation(null);
+                } else  {
+                    if (filterType === "mode") setSortByMode(key);
+                    if (filterType === "language") setSortByLanguage(key);
+                    if (filterType === "preferred_week") setSortByPreferredWeek(key);
+                    if (filterType === "location") setSortByLocation(key);
+                }
+                // setSortByMode(key === "clear" ? null : key);
+                // setSortByLanguage(key === "clear" ? null : key);
+                // setSortByPreferredWeek(key === "clear" ? null : key);
+                // setSortByLocation(key === "clear" ? null : key);
+            };
+
+
+
+            const modeMenu = {
+                items: [
+                    { key: "Online", label: <span style={{ color: "red" }}>Online</span> },
+                    { key: "Offline", label: <span style={{ color: "green" }}>Offline</span> },
+                    { key: "Hybrid", label: <span style={{ color: "blue" }}>Hybrid</span> },
+                    { type: "divider" },
+                    { key: "clear", label:  <span style={{ color: "red", fontWeight: "bold" }}>Clear Filter</span> },
+                ],
+                onClick: ({ key }) => handleSort(key, "mode"),
+            };
+
+            const languageMenu = {
+                items: [
+                    { key: "Hindi", label: <span style={{ color: "green" }}>Hindi</span> },
+                    { key: "English", label: <span style={{ color: "red" }}>English</span> },
+                    { key: "Both", label: <span style={{ color: "blue" }}>Both</span> },
+                    { type: "divider" },
+                    { key: "clear", label:  <span style={{ color: "red", fontWeight: "bold" }}>Clear Filter</span> },
+                ],
+                onClick: ({ key }) => handleSort(key, "language"),
+            };
+
+            const preferredWeekMenu = {
+                items: [
+                    { key: "Weekdays", label: <span style={{ color: "gray" }}>Weekdays</span> },
+                    { key: "Weekends", label: <span style={{ color: "gray" }}>Weekends</span> },
+                    { type: "divider" },
+                    { key: "clear", label:  <span style={{ color: "red", fontWeight: "bold" }}>Clear Filter</span> },
+                ],
+                onClick: ({ key }) => handleSort(key, "preferred_week"),
+            };
+
+            const locationMenu = {
+                items: [
+                    { key: "Saket", label: <span style={{ color: "blue" }}>Saket</span> },
+                    { key: "Laxmi Nagar", label: <span style={{ color: "magenta" }}>Laxmi Nagar</span> },
+                    { type: "divider" },
+                    { key: "clear", label:  <span style={{ color: "red", fontWeight: "bold" }}>Clear Filter</span> },
+                ],
+                onClick: ({ key }) => handleSort(key, "location"),
+            };
+
+            
+
+        // const sortedBatches = useMemo(() => {
+        //     return [...searchFilteredBatches].sort((a, b) => {
+        //         let valueA, valueB;
+        //         const sortKey = Object.keys(sortConfig).find((key) => sortConfig[key] !== null); // Find active sort key
+    
+        //         if (!sortKey) return 0; // If no sorting, return unsorted
+    
+        //         switch (sortKey) {
+        //             case "start_time":
+        //                 valueA = a.batch_time_data?.start_time || "00:00:00";
+        //                 valueB = b.batch_time_data?.start_time || "00:00:00";
+        //                 valueA = new Date(`1970-01-01T${valueA}Z`);
+        //                 valueB = new Date(`1970-01-01T${valueB}Z`);
+        //                 break;
+    
+        //             case "start_date":
+        //                 valueA = new Date(a.start_date);
+        //                 valueB = new Date(b.start_date);
+        //                 break;
+    
+        //             case "name":
+        //                 valueA = a.name.toLowerCase();
+        //                 valueB = b.name.toLowerCase();
+        //                 break;
+    
+        //             case "mode":
+        //             case "location":
+        //             case "language":
+        //                 valueA = a[sortKey] || "";
+        //                 valueB = b[sortKey] || "";
+        //                 break;
+    
+        //             default:
+        //                 return 0;
+        //         }
+    
+        //         return sortConfig[sortKey] ? (valueA > valueB ? 1 : -1) : (valueA < valueB ? 1 : -1);
+        //     });
+        // }, [searchFilteredBatches, sortConfig]);
+        
+        
 
 
     // handle Trainer Dropdown for assigning trainer to batch 
@@ -371,6 +531,8 @@ const Batches = () => {
             message.success("Phone number copied!");
         }
     };
+
+
 
     return (
         <>
@@ -493,13 +655,15 @@ const Batches = () => {
                     <th scope="col" className="px-3 py-3 md:px-1">
                         Batch Id
                     </th>
-                    <th scope="col" className="px-3 py-3 md:px-1 cursor-pointer" onClick={toggleSortByTime}>
+                    <th scope="col" className="px-3 py-3 md:px-1 cursor-pointer"  onClick={() => toggleSort("start_time")}>
                         <Tooltip title="Sort by Start Time" placement="right"> 
-                        Start Time {activeTab === "running" && (sortByTime ? "▲" : "▼")}  
+                            Start Time {sortByTime ? "▲" : "▼"}
                         </Tooltip>
                     </th>
-                    <th scope="col" className="px-3 py-3 md:px-1">
-                        Start Date
+                    <th scope="col" className="px-3 py-3 md:px-1 cursor-pointer"  onClick={() => toggleSort("start_date")}>
+                        <Tooltip title="Sort by start Date" placement="right">
+                            Start Date {sortByStartDate ? "▲" : "▼"}
+                        </Tooltip>
                     </th>
                     <th scope="col" className="px-3 py-3 md:px-1">
                         End Date
@@ -513,17 +677,37 @@ const Batches = () => {
                     <th scope="col" className="px-3 py-3 md:px-1">
                         Students
                     </th>
-                    <th scope="col" className="px-3 py-3 md:px-1">
-                        Mode
+                    <th scope="col" className="px-3 py-3 md:px-1 cursor-pointer">
+                            Mode 
+                        <Tooltip title="Sort by Mode" placement="top">
+                        <Dropdown menu={modeMenu} trigger={["click"]}>
+                            <Button type="text" icon={<FilterOutlined  style={{ color: sortByMode ? "blue" : "black" }} />} />
+                        </Dropdown>
+                        </Tooltip>
                     </th>
                     <th scope="col" className="px-3 py-3 md:px-1">
-                        Language
+                            Language 
+                        <Tooltip title="Sort by Mode" placement="top">
+                        <Dropdown menu={languageMenu} trigger={["click"]}>
+                            <Button type="text" icon={<FilterOutlined  style={{ color: sortByLanguage ? "blue" : "black" }} />} />
+                        </Dropdown>
+                        </Tooltip>
                     </th>
                     <th scope="col" className="px-3 py-3 md:px-1">
                         Preferred Week
+                        <Tooltip title="Sort by Preferred Week" placement="top">
+                        <Dropdown menu={preferredWeekMenu} trigger={["click"]}>
+                            <Button type="text" icon={<FilterOutlined style={{ color: sortByPreferredWeek ? "blue" : "black" }} />} />
+                        </Dropdown>
+                        </Tooltip>
                     </th>
                     <th scope="col" className="px-3 py-3 md:px-1">
                         Location
+                        <Tooltip title="Sort by Location" placement="top">
+                        <Dropdown menu={locationMenu} trigger={["click"]}>
+                            <Button type="text" icon={<FilterOutlined style={{ color: sortByLocation ? "blue" : "black" }} />} />
+                        </Dropdown>
+                        </Tooltip>
                     </th>
                     <th scope="col" className="px-3 py-3 md:px-1">
                         Status
@@ -692,7 +876,9 @@ const Batches = () => {
                     </Tag>
                 </td>
                 <td className="px-3 py-2 md:px-1">
-                    {item.location == "1" ? <Tag bordered={false} color="blue">Saket</Tag> : item.location == "2" ? <Tag bordered={false} color="magenta">Laxmi Nagar</Tag> : <Tag bordered={false} color="geekblue">Both</Tag>}
+                    <Tag bordered={false} color={item.batch_location === "saket" ? "blue" : item.batch_location === "Laxmi Nagar" ? "magenta" : "geekblue"}>
+                        {item.batch_location}
+                    </Tag>
                 </td>
                 <td className="px-3 py-2 md:px-1">
                     <Dropdown

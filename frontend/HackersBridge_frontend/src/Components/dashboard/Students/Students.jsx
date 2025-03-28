@@ -33,7 +33,7 @@ const Students = () => {
     };
     
     useEffect(() => {
-        fetchStudents()
+        fetchStudents()        
     },[!isModalOpen]);
 
        // Fetch students after deletion or modal interaction
