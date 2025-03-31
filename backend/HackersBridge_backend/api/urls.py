@@ -45,6 +45,8 @@ urlpatterns = [
     path('students/info/<int:id>/', StudentInfoAPIView.as_view(), name='student-info'),
     path('students/delete/<int:id>/', DeleteStudentView.as_view(), name='delete-student'),
     path('student-course/edit/<int:id>/', StudentCourseEditAPIView.as_view(), name='student-course-edit'),
+    path('generate-certificate/<int:id>/', GenerateCertificateAPIView.as_view(), name='generate-certificate'),
+    path('download-certificate/<int:id>/', DownloadCertificateAPIView.as_view(), name='download_certificate'),
     
     path('trainers/', TrainerListAPIviews.as_view(), name='trainer-list'),
     path('trainers/add/', AddTrainerAPIView.as_view(), name='add_trainer_api'),
@@ -63,6 +65,7 @@ urlpatterns = [
     path('batches/<int:batch_id>/available-trainers/', AvailableTrainersAPIView.as_view(), name='get_available_trainers'),
     path('batch/remove-student/<int:batch_id>/', BatchRemoveStudentAPIView.as_view(), name='remove_student_from_batch'),
     path('batch-student-assignment/update/<int:assignment_id>/', BatchStudentAssignmentUpdateAPIView.as_view(), name='update_batch_student_assignment'),
+    path('batch-generate-certificate/<int:id>/', GenerateBatchCertificateAPIView.as_view(), name='generate-certificate'),
 ]
 
 
