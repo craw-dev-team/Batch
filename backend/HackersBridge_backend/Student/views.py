@@ -11,6 +11,10 @@ from django.db.models import Q
 from rest_framework.authtoken.models import Token
 from nexus.serializer import BatchStudentAssignment
 from django.utils.timezone import now
+from django.http import FileResponse
+import os
+from nexus.generate_certificate import generate_certificate, get_certificate_path
+
 
 # from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model
@@ -268,6 +272,47 @@ class StudentCourseEditAPIView(APIView):
             return Response({"message": "StudentCourse updated successfully", "data": serializer.data}, status=status.HTTP_200_OK)
         
         return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        # # Ensure status is "Complete" before processing
+        # if student_course.status != "Completed":
+        #     return Response({'error': 'Certificate can only be generated for completed courses'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+class GenerateCertificateAPIView(APIView):
+    def patch(self, request, id, *args, **kwargs):
+        student_course = get_object_or_404(StudentCourse, id=id)
+        serializer = StudentCourseSerializer(student_course, data=request.data, partial=True)
+
+        # Ensure status is "Complete" before processing
+        if student_course.status != "Completed":
+            return Response({'error': 'Certificate can only be generated for completed courses'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if serializer.is_valid():
+            serializer.save()  # Save partial update first
+            
+            name = student_course.student.name  # ✅ Correct way to get Student's name
+            course = student_course.course.name  # ✅ Correct way to get Course name
+            certificate_no = student_course.student.enrollment_no  # ✅ Correct way to get Enrollment No
+            date = student_course.certificate_date  # ✅ Fetch the certificate date
+
+            file_path = generate_certificate(course, name, certificate_no, date)
+            
+            if os.path.exists(file_path):
+
+                # ✅ Update student_certificate_allotment to True
+                student_course.student_certificate_allotment = True
+                student_course.save(update_fields=['student_certificate_allotment'])
+
+
+                return FileResponse(open(file_path, 'rb'), content_type='application/pdf')
+            else:
+                return Response({'error': 'Certificate generation failed'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 
@@ -300,3 +345,24 @@ class DeleteStudentView(APIView):
         )
 
         # return Response({'detail': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
+
+
+
+class DownloadCertificateAPIView(APIView):
+    def get(self, request, id, *args, **kwargs):
+        # Fetch the student course
+        student_course = get_object_or_404(StudentCourse, id=id)
+
+        # Ensure the certificate was allotted
+        if not student_course.student_certificate_allotment:
+            return Response({'error': 'Certificate not generated yet'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Get the file path of the certificate
+        file_path = get_certificate_path(student_course.course.name, student_course.student.name, student_course.student.enrollment_no)
+
+        # Ensure the file exists
+        if os.path.exists(file_path):
+            return FileResponse(open(file_path, 'rb'), content_type='application/pdf')
+        
+        return Response({'error': 'Certificate file not found'}, status=status.HTTP_404_NOT_FOUND)

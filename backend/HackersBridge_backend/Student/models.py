@@ -116,13 +116,14 @@ class StudentCourse(models.Model):  # ✅ Through Model
     STATUS_CHOICES = [
         ('Not Started', 'Not Started'),
         ('Ongoing', 'Ongoing'),
+        ('Upcoming', 'Upcoming'),
         ('Completed', 'Completed'),
         ('Denied', 'Denied'),
     ]
     
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     course = models.ForeignKey("nexus.Course", on_delete=models.CASCADE)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='not_started')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Not Started')
     certificate_date = models.DateField(null=True, blank=True)
     student_certificate_allotment = models.BooleanField(null=True, blank=True, default=False) 
 

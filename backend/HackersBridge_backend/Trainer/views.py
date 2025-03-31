@@ -29,56 +29,53 @@ class TrainerListAPIviews(APIView):
     # permission_classes = [IsAuthenticated]
     
     def get(self, request):
-        # if request.user.role == 'admin':
-        trainers = Trainer.objects.prefetch_related('course').select_related('coordinator','teamleader')
-        isTeamleader = Trainer.objects.filter(is_teamleader=True)
-        all_data = {
-            "trainers": TrainerSerializer(trainers, many=True).data,
-            "teamleaders": TrainerSerializer(isTeamleader, many=True).data
-        }
-        
-        return Response({"all_data":all_data}, status=200)
+        try:
+            trainers = Trainer.objects.prefetch_related('course', 'timeslot').select_related('coordinator', 'teamleader')
+            teamleaders = trainers.filter(is_teamleader=True)  # ✅ Optimized filtering
+
+            all_data = {
+                "trainers": TrainerSerializer(trainers, many=True).data,
+                "teamleaders": TrainerSerializer(teamleaders, many=True).data
+            }
             
-        # else:
-        #     return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"all_data": all_data}, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)  # ✅ Error handling
 
 
 # For Trainer-Availability-In-CurrentlyFreeTrainers-Or-FutureAvailabilityOfTrainers
 class TrainerAvailabilityAPIView(APIView):
     def get(self, request):
-        trainers = Trainer.objects.all()
         today = date.today()
 
-        # Fetch all timeslots except 'Special'
+        # Fetch trainers with their assigned timeslots
+        trainers = Trainer.objects.select_related('location').prefetch_related('course', 'timeslot')
         timeslots = Timeslot.objects.exclude(special_time_slot='Special')
 
-        # Step 1: Initialize free trainers dictionary
-        free_trainers = {trainer.id: {ts: [trainer, None] for ts in timeslots} for trainer in trainers}
+        # Step 1: Initialize free trainers list (Filtered by trainer's assigned timeslot)
+        free_trainers = []
 
-        # Step 2: Assign last batch info to trainers
         for trainer in trainers:
-            for timeslot in timeslots:
-                last_batch = Batch.objects.filter(
-                    trainer=trainer, batch_time=timeslot
-                ).order_by('-end_date').first()
-                free_trainers[trainer.id][timeslot][1] = last_batch  # Store last batch info
+            assigned_timeslots = trainer.timeslot.all()
 
-        # Step 3: Filter out trainers with an active batch at the same timeslot
-        for trainer in trainers:
-            for timeslot in timeslots:
-                active_batch = Batch.objects.filter(
+            for timeslot in assigned_timeslots:
+                if timeslot not in timeslots:  # Skip if not a valid timeslot
+                    continue  
+
+                # Check if the trainer has an active batch in this timeslot
+                active_batch_exists = Batch.objects.filter(
                     trainer=trainer, batch_time=timeslot, status__in=["Running", "Upcoming"]
                 ).exists()
 
-                if active_batch and timeslot in free_trainers.get(trainer.id, {}):
-                    del free_trainers[trainer.id][timeslot]  # Remove trainer from free list if they have an active batch
+                if not active_batch_exists:  # Only add if the trainer is actually free
+                    last_batch = Batch.objects.filter(
+                        trainer=trainer, batch_time=timeslot
+                    ).order_by('-end_date').first()
 
-        # Step 4: Compile the final free trainers list
-        current_free_trainers = []
-        for trainer_id, timeslot_data in free_trainers.items():
-            for timeslot, (trainer, batch) in timeslot_data.items():
-                if not batch or batch.status in ["Completed", "Cancelled"]:  # Ensure past batch is completed or canceled
-                    current_free_trainers.append({
+                    free_days = (today - last_batch.end_date).days if last_batch and last_batch.status in ["Completed", "Cancelled"] else "No past Batch"
+
+                    free_trainers.append({
                         'start_time': timeslot.start_time,
                         'time_id': timeslot.id,
                         'end_time': timeslot.end_time,
@@ -90,17 +87,18 @@ class TrainerAvailabilityAPIView(APIView):
                         'location_id': trainer.location.id if trainer.location else None,
                         'email': trainer.email,
                         'phone': trainer.phone,
-                        'end_date': batch.end_date if batch else 'No past Batch',
-                        'free_days': (today - batch.end_date).days if batch else 'No past Batch',
-                        'course': list(Course.objects.filter(trainer=trainer).values_list('id', 'name')),
+                        'end_date': last_batch.end_date if last_batch else 'No past Batch',
+                        'free_days': free_days,
+                        'course': list(trainer.course.values_list('id', 'name')),
                         'week': timeslot.week_type
                     })
 
-        # Step 5: Sort free trainers by max free days
-        current_free_trainers.sort(
-            key=lambda x: x['free_days'] if isinstance(x['free_days'], int) else float('-inf'), reverse=True
+        # Step 2: Sort free trainers by max free days
+        free_trainers.sort(
+            key=lambda x: x['free_days'] if isinstance(x['free_days'], int) else float('-inf'),
+            reverse=True
         )
-
+        
         future_availability_trainers = []
 
         for trainer in trainers:
@@ -144,7 +142,7 @@ class TrainerAvailabilityAPIView(APIView):
         future_availability_trainers.sort(key=lambda x: x['free_days'] if isinstance(x['free_days'], int) else float('inf'))
 
         return Response({
-            'free_trainers': current_free_trainers,
+            'free_trainers': free_trainers,
             'future_availability_trainers': future_availability_trainers
         })
 

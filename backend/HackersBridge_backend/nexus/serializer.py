@@ -529,6 +529,7 @@ class BatchCreateSerializer(serializers.ModelSerializer):
         new_end_date = validated_data.get('end_date', instance.end_date)
         status = validated_data.get('status', instance.status)  # Default to current status if not updated
 
+
         # Regenerate batch_id if the course has changed
         if new_course != instance.course:
             instance.batch_id = self.generate_batch_id(new_course, new_start_date)
@@ -539,6 +540,15 @@ class BatchCreateSerializer(serializers.ModelSerializer):
 
         # Handle student additions/removals and update course status
         students = validated_data.pop('student', None)
+        if students is not None:
+            existing_students = set(instance.student.all())
+            if status == 'Running':
+                StudentCourse.objects.filter(student__in=existing_students, course=instance.course).update(status='Ongoing')
+            elif status == 'Upcoming':
+                StudentCourse.objects.filter(student__in=existing_students, course=instance.course).update(status='Upcoming')
+            elif status == 'Completed':
+                StudentCourse.objects.filter(student__in=existing_students, course=instance.course).update(status='Completed')
+
         if students is not None:
             existing_students = set(instance.student.all())  # Current students in batch
             new_students = set(students)  # Updated student list

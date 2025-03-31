@@ -1,3 +1,4 @@
+import  os
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -10,11 +11,12 @@ from django.utils import timezone
 from datetime import timedelta, date
 from django.db.models import Q, Count, Min, Prefetch
 from Student.models import StudentCourse, Student
-from Student.serializer import StudentSerializer
+from Student.serializer import StudentSerializer, StudentCourseSerializer
 from Trainer.models import Trainer
 from Coordinator.models import Coordinator
 from nexus.models import Course, Timeslot
 from rest_framework import serializers
+from nexus.generate_certificate import generate_certificate, get_certificate_path
 
 
 
@@ -39,15 +41,15 @@ class BatchAPIView(APIView):
                 if batch.start_date <= today < batch.end_date:
                     batch.status = 'Running'
                     batch.save()
-                    # StudentCourse.objects.filter(student__in=students, course=batch.course).update(status='Ongoing')
+                    StudentCourse.objects.filter(student__in=students, course=batch.course).update(status='Ongoing')
                 elif batch.start_date >= today and batch.end_date >= today:
                     batch.status = 'Upcoming'
                     batch.save()
-                    # StudentCourse.objects.filter(student__in=students, course=batch.course).update(status='Upcoming')
+                    StudentCourse.objects.filter(student__in=students, course=batch.course).update(status='Upcoming')
                 elif batch.end_date < today:
                     batch.status = 'Completed'
                     batch.save()
-                    # StudentCourse.objects.filter(student__in=students, course=batch.course).update(status='Completed')
+                    StudentCourse.objects.filter(student__in=students, course=batch.course).update(status='Completed')
 
         seven_days_later = now + timedelta(days=10)
         batches_ending_soon = Batch.objects.filter(end_date__lte=seven_days_later, end_date__gte=now, status='Running').order_by('end_date')
@@ -396,3 +398,54 @@ class BatchStudentAssignmentUpdateAPIView(APIView):
             }, status=status.HTTP_200_OK)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class GenerateBatchCertificateAPIView(APIView):
+    def post(self, request, id, *args, **kwargs):
+        issue_date = request.data.get("issue_date")
+        student_ids = request.data.get("student_id", [])
+
+        if not issue_date:
+            return Response({"error": "Issue date is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Get the batch and course
+        batch = get_object_or_404(Batch, id=id)
+        course = batch.course.name
+
+        # Fetch all completed student courses for the given student IDs
+        student_courses = StudentCourse.objects.filter(
+            student__id__in=student_ids, course=batch.course, status="Completed"
+        )
+
+        if not student_courses.exists():
+            return Response({"error": "No completed student courses found for this batch"}, status=status.HTTP_400_BAD_REQUEST)
+
+        certificate_paths = []
+        errors = []
+
+        for student_course in student_courses:
+            student = student_course.student
+            student_course.certificate_date = issue_date
+            student_course.save(update_fields=["certificate_date"])
+
+            # Generate certificate
+            file_path = generate_certificate(course, student.name, student.enrollment_no, issue_date)
+            
+            if os.path.exists(file_path):
+                student_course.student_certificate_allotment = True
+                student_course.save(update_fields=["student_certificate_allotment"])
+                certificate_paths.append({
+                    "student_id": student.id,
+                    "certificate_path": file_path
+                })
+            else:
+                errors.append({
+                    "student_id": student.id,
+                    "error": "Certificate generation failed"
+                })
+
+        response_data = {"certificates": certificate_paths}
+        if errors:
+            response_data["errors"] = errors
+
+        return Response(response_data, status=status.HTTP_200_OK)
