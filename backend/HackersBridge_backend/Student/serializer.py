@@ -5,6 +5,7 @@ from django.utils.crypto import get_random_string
 from django.contrib.auth import get_user_model
 from rest_framework.authtoken.models import Token
 from nexus.models import Course
+from datetime import date
 
 User = get_user_model()  # ✅ Dynamically fetch the User model
 
@@ -131,6 +132,20 @@ class StudentSerializer(serializers.ModelSerializer):
         return instance
 
 class StudentCourseSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source='student.name', read_only=True)
+    enrollment_no = serializers.CharField(source='student.enrollment_no', read_only=True)
+
     class Meta:
         model = StudentCourse
-        fields = ['id', 'student', 'course', 'status', 'certificate_date', 'student_certificate_allotment']
+        fields = ['id', 'student', 'student_name', 'enrollment_no', 'course', 'status', 'certificate_date', 'student_certificate_allotment']
+
+
+
+# class CertificateSerializer(serializers.Serializer):
+#     name = serializers.CharField(max_length=255)
+#     course = serializers.CharField(max_length=255)
+#     certificate_no = serializers.CharField(max_length=255)
+#     date = serializers.DateField(default=date.today)
+
+
+        
