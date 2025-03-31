@@ -58,6 +58,19 @@ export const AuthProvider = ({ children }) => {
   }
 };
 
+// useEffect(() => {
+//   const clearStorageOnClose = () => {
+//     localStorage.removeItem("token");
+//     localStorage.removeItem("user");
+//   };
+
+//   window.addEventListener("beforeunload", clearStorageOnClose);
+
+//   return () => {
+//     window.removeEventListener("beforeunload", clearStorageOnClose);
+//   };
+// }, []);
+
 
   const logout = (redirect = true) => {
     setUser(null);

@@ -64,6 +64,9 @@ const AvailableTrainers = () => {
                 Language
             </th>
             <th scope="col" className="px-3 py-3 md:px-1">
+                Preferred Week
+            </th>
+            <th scope="col" className="px-3 py-3 md:px-1">
                 Location
             </th>
             <th scope="col" className="px-3 py-3 md:px-1">
@@ -124,12 +127,17 @@ const AvailableTrainers = () => {
                         {/* {item.course__name} */}
                     </td>
                     <td className="px-3 py-2 md:px-1">
-                    <Tag bordered={false} color={item.languages == 'Hindi'? 'green' : item.languages == 'English'? 'volcano' : 'blue'}>{item.languages}</Tag>
+                      <Tag bordered={false} color={item.languages == 'Hindi'? 'green' : item.languages == 'English'? 'volcano' : 'blue'}>{item.languages}</Tag>
+                    </td>
+                    <td className="px-3 py-2 md:px-1">
+                      <Tag color={item.week === "Weekdays" ? 'cyan' : item.week === "Weekends" ? "gold" : "geekblue"}>
+                        {item.week}
+                      </Tag>          
                     </td>
                     <td className="px-3 py-2 md:px-1">
                       <Tag color={item.location === "Saket" ? 'blue' : "magenta"}>
                         {item.location}
-                      </Tag>          
+                      </Tag>
                     </td>
                     <td className="px-3 py-2 md:px-1">
                     {item.free_days >= 0 ? item.free_days + " Days" : item.free_days}

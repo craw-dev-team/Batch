@@ -40,6 +40,7 @@ const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
             isTeamLeader: selectedTrainerData.is_teamleader || "",
             trainerTeamLeader: selectedTrainerData.teamleader || "",
             trainerCoordinator: selectedTrainerData.coordinator || "",
+            trainerTimeSlot: selectedTrainerData.timeslot || [],
             
         });   
 
@@ -47,6 +48,8 @@ const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
         resetTrainerForm();
     }
     }, []);
+    console.log(selectedTrainerData);
+    
 
     //handle change of input fields  
     const handleChange = (name, value) => {
@@ -72,6 +75,7 @@ const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
         if(!trainerFormData.trainerCoordinator || trainerFormData.trainerCoordinator.length === 0) newErrors.trainerCoordinator = "Team Leader is required";
         if(!trainerFormData.location || trainerFormData.location.length === 0) newErrors.location = "Location is required";
         if(!trainerFormData.trainerWeekOff || trainerFormData.trainerWeekOff.length === 0) newErrors.trainerWeekOff = "Location is required";
+        if(!trainerFormData.trainerTimeSlot || trainerFormData.trainerTimeSlot.length === 0) newErrors.trainerTimeSlot = "Time Slot is required";
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0; // Returns true if no errors
@@ -109,6 +113,7 @@ const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
                 is_teamleader: formattedData.isTeamLeader ? "true" : "false",
                 teamleader: formattedData.isTeamLeader ? "" : formattedData.trainerTeamLeader,
                 coordinator: formattedData.trainerCoordinator,
+                timeslot: formattedData.trainerTimeSlot,
                 // profile_picture: studentFormData.studentProfilePicture,
             };
 
@@ -400,8 +405,36 @@ const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
                                         ]}
                             />
                             {errors.trainerWeekOff && <p className="text-red-500 text-sm">{errors.trainerWeekOff}</p>}
+                        </div>
+                        
+                         {/* Dropdown for Trainer's Time Slot Selection */}
+                         <div className="col-span-1 sm:col-span-2">
+                           <label htmlFor="trainerTimeSlot" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Trainer's Time Slot</label>
+                           <Select name="trainerTimeSlot" mode='multiple' className='w-full border-gray-300' size='large' placeholder='Select Trainer Time Slot' 
+                                value={Array.isArray(trainerFormData?.trainerTimeSlot) && trainerFormData?.trainerTimeSlot.length > 0
+                                    ? trainerFormData.trainerTimeSlot.map(id => String(id))  // Convert IDs to strings
+                                    : []
+                                }
+                                onChange={(selectedValues) => {
+                                    setTrainerFormData(prev => ({
+                                        ...prev,
+                                        trainerTimeSlot: selectedValues.map(Number),  // Convert back to numbers if needed
+                                    }));
+                                }}
+                                options={[
+                                        { value: '1', label: '10:00 - 12:00' },
+                                        { value: '2', label: '12:00 - 02:00' },
+                                        { value: '3', label: '03:00 - 05:00' },
+                                        { value: '4', label: '05:00 - 06:30' },
+                                        { value: '9', label: '06:00 - 07:00' },
+                                        { value: '7', label: '07:00 - 09:00' },
+                                        { value: '8', label: '10:00 - 05:00' },
+                                        { value: '5', label: '10:00 - 02:00 - Weekends' },
+                                        { value: '6', label: '03:00 - 06:30 - Weekends' },
+                                        ]}
+                            />
+                            {errors.trainerTimeSlot && <p className="text-red-500 text-sm">{errors.trainerTimeSlot}</p>}
                        </div>
-
 
 
                    </div>
