@@ -10,6 +10,7 @@ import BatchCards from "../SpecificPage/BatchCards";
 import AvailableBatches from "./AvailableBatches";
 import { useSpecificTrainer } from "../Contexts/SpecificTrainers";
 import { useSpecificBatch } from "../Contexts/SpecificBatch";
+import { useCourseForm } from "../Coursecontext/CourseFormContext";
 
 
 
@@ -22,15 +23,18 @@ const Batches = () => {
     const [selectedStudent, setSelectedStudent] = useState({}); // Stores selected students per batch
     const [addStudentDropdown, setAddStudentDropdown] = useState({});
     const [searchTerm, setSearchTerm] = useState("");
-    const [sortByTime, setSortByTime] = useState(null); // Default ascending
-    const [sortByStartDate, setSortByStartDate] = useState(null);
+    const [sortByTime, setSortByTime] = useState(false); // Default ascending
+    const [sortByStartDate, setSortByStartDate] = useState(false);
+    const [sortByEndDate, setSortByEndDate] = useState(false);
     const [sortByMode, setSortByMode] = useState(null);
     const [sortByLanguage, setSortByLanguage] = useState(null);
     const [sortByPreferredWeek, setSortByPreferredWeek] = useState(null);
     const [sortByLocation, setSortByLocation] = useState(null);
-  
+    const [sortByCourse, setSortByCourse] = useState(null);
     
     const { batchData, loading, setLoading, setBatchData, fetchBatches, countBatchesByType } = useBatchForm();
+    const { coursesData, setCoursesData, fetchCourses } = useCourseForm();
+    const [originalCourses, setOriginalCourses] = useState([]); // Store the original data
 
     const navigate = useNavigate();
 
@@ -45,7 +49,15 @@ const Batches = () => {
         }
     }, [isModalOpen, isDeleted, batchData]); 
     
+
+   // Store the original course list when data is first loaded
+   useEffect(() => {
+    fetchCourses();
     
+    if (coursesData.length > 0 && originalCourses.length === 0) {
+        setOriginalCourses([...coursesData]); // Store unmodified data
+    }
+    }, [coursesData]);
     
     // Function to handle Edit button click 
     const handleEditClick = (batch) => {
@@ -66,7 +78,6 @@ const Batches = () => {
 
             setBatchData(prevBatch => {
                 if (!prevBatch || !prevBatch.All_Type_Batch || !Array.isArray(prevBatch.All_Type_Batch.batches)) {
-                    console.log("prevBatch is not in the expected format", prevBatch);
                     return prevBatch; // Return unchanged state if not in the correct format
                 }
             
@@ -201,9 +212,7 @@ const Batches = () => {
         : activeTab === "completed"
         ? batchData.All_Type_Batch.completed_batch
         : activeTab === "endingsoon"
-        ? [...batchData.All_Type_Batch.batches_ending_soon].sort(
-            (a, b) => new Date(a.end_date) - new Date(b.end_date) // Sort by nearest end date
-        )
+        ? batchData.All_Type_Batch.batches_ending_soon
         : activeTab === "hold"
         ? batchData.All_Type_Batch.hold_batch
         : batchData.All_Type_Batch.cancelled_batch
@@ -242,7 +251,6 @@ const Batches = () => {
                 //     );
                 // });
                 
-                
             } else {
                 message.error("Batch status not updated.");
             }
@@ -278,41 +286,36 @@ const Batches = () => {
     };
     
 
-    // const sortedBatches = [...searchFilteredBatches].sort((a, b) => 
-    //     new Date(a.start_date) - new Date(b.start_date) // Nearest date first
-    // );
-    
-    // FOR TOGGLING SORT BY TIME IN ACTIVE DATA TH
-        // const toggleSortByTime = () => {
-        //     setSortByTime(prev => !prev);
-        // };
 
-        const toggleSort = (key) => {
-            setSortByTime(false);
+    // FOR SORTING BY START TIME AND START DATE
+        const toggleSortByStartTime = () => {
+            setSortByTime((prev) => !prev);
+            setSortByStartDate(false); // Reset start_time sorting when sorting by name
+        };
+      
+        const toggleSortByStartDate = () => {
+            setSortByStartDate((prev) => !prev);
+            setSortByTime(false); // Reset name sorting when sorting by start_time
+        };
+
+        const toggleSortByEndDate = () => {
+            setSortByEndDate((prev) => !prev);
+            setSortByTime(false);  // Explicitly set to false instead of null
             setSortByStartDate(false);
-        
-            switch (key) {
-                case "start_time":
-                    setSortByTime((prev) => !prev);
-                    break;
-                case "start_date":
-                    setSortByStartDate((prev) => !prev);
-                    break;
-                default:
-                    break;
-            }
         };
         
-
-
+        
+        
         const sortedBatches = useMemo(() => {
             let sorted = [...searchFilteredBatches];
           
             if (sortByTime) {
               sorted.sort((a, b) => a.batch_time_data.start_time.localeCompare(b.batch_time_data.start_time)); // Always Ascending
             } else if (sortByStartDate) {
-              sorted.sort((a, b) => a.start_date.localeCompare(b.start_date)); // Sort by Time as String
-            }
+                sorted.sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
+            } else if (sortByEndDate) {
+                sorted.sort((a, b) => new Date(a.end_date) - new Date(b.end_date));
+            };
 
              // Filter based on selected mode on top
             if (sortByMode) {
@@ -348,32 +351,53 @@ const Batches = () => {
                     if (b.batch_location === sortByLocation && a.batch_location !== sortByLocation) return 1;
                     return 0;
                 })
+            };
+            
+            // Filter by selected course (if applicable)
+            if (sortByCourse) {
+                sorted.sort((a, b) => (a.course_id === sortByCourse ? -1 : b.course_id === sortByCourse ? 1 : 0));
             }
-          
+
             return sorted;
           }, [searchFilteredBatches, sortByTime, sortByStartDate, sortByMode, sortByLanguage, sortByPreferredWeek]);
 
 
 
-            const handleSort = ( key, filterType ) => {
+        const handleSort = async (key, filterType) => {
+            if (key === "clear") {
+                if (filterType === "mode") setSortByMode(null);
+                if (filterType === "language") setSortByLanguage(null);
+                if (filterType === "preferred_week") setSortByPreferredWeek(null);
+                if (filterType === "location") setSortByLocation(null);
                 if (key === "clear") {
-                    if (filterType === "mode") setSortByMode(null);
-                    if (filterType === "language") setSortByLanguage(null);
-                    if (filterType === "preferred_week") setSortByPreferredWeek(null);
-                    if (filterType === "location") setSortByLocation(null);
-                } else  {
-                    if (filterType === "mode") setSortByMode(key);
-                    if (filterType === "language") setSortByLanguage(key);
-                    if (filterType === "preferred_week") setSortByPreferredWeek(key);
-                    if (filterType === "location") setSortByLocation(key);
+                    if (filterType === "course") {
+                        setSortByCourse(null);
+                        setCoursesData([...originalCourses]); // Reset to original data
+                    }
+                    return;
                 }
-                // setSortByMode(key === "clear" ? null : key);
-                // setSortByLanguage(key === "clear" ? null : key);
-                // setSortByPreferredWeek(key === "clear" ? null : key);
-                // setSortByLocation(key === "clear" ? null : key);
-            };
-
-
+            }
+        
+            if (filterType === "mode") setSortByMode(key);
+            if (filterType === "language") setSortByLanguage(key);
+            if (filterType === "preferred_week") setSortByPreferredWeek(key);
+            if (filterType === "location") setSortByLocation(key);
+        
+            if (filterType === "course") {
+                setSortByCourse(Number(key)); // Ensure key is a number
+        
+                setCoursesData(() => {
+                    const selectedCourse = originalCourses.find(course => course.id === Number(key));
+                    if (!selectedCourse) return [...originalCourses]; // Reset if not found
+        
+                    return [
+                        selectedCourse, 
+                        ...originalCourses.filter(course => course.id !== Number(key))
+                    ];
+                });
+            }
+        };
+        
 
             const modeMenu = {
                 items: [
@@ -417,49 +441,28 @@ const Batches = () => {
                 onClick: ({ key }) => handleSort(key, "location"),
             };
 
+            const courseMenu = {
+                items: [
+                    ...(coursesData && coursesData.length > 0
+                        ? coursesData.map(course => ({
+                            key: String(course.id), // Ensure ID is a string for Dropdown compatibility
+                            label: (
+                                <span style={{ fontWeight: Number(course.id) === Number(sortByCourse) ? "bold" : "normal" }}>
+                                    {course.name}
+                                </span>
+                            ),
+                        }))
+                        : [
+                            { key: "no-data", label: <span style={{ color: "gray" }}>No courses available</span>, disabled: true }
+                        ]
+                    ),
+                    { type: "divider" },
+                    { key: "clear", label: <span style={{ color: "red", fontWeight: "bold" }}>Clear Filter</span> },
+                ],
+                onClick: ({ key }) => handleSort(Number(key), "course"),
+            };
             
-
-        // const sortedBatches = useMemo(() => {
-        //     return [...searchFilteredBatches].sort((a, b) => {
-        //         let valueA, valueB;
-        //         const sortKey = Object.keys(sortConfig).find((key) => sortConfig[key] !== null); // Find active sort key
-    
-        //         if (!sortKey) return 0; // If no sorting, return unsorted
-    
-        //         switch (sortKey) {
-        //             case "start_time":
-        //                 valueA = a.batch_time_data?.start_time || "00:00:00";
-        //                 valueB = b.batch_time_data?.start_time || "00:00:00";
-        //                 valueA = new Date(`1970-01-01T${valueA}Z`);
-        //                 valueB = new Date(`1970-01-01T${valueB}Z`);
-        //                 break;
-    
-        //             case "start_date":
-        //                 valueA = new Date(a.start_date);
-        //                 valueB = new Date(b.start_date);
-        //                 break;
-    
-        //             case "name":
-        //                 valueA = a.name.toLowerCase();
-        //                 valueB = b.name.toLowerCase();
-        //                 break;
-    
-        //             case "mode":
-        //             case "location":
-        //             case "language":
-        //                 valueA = a[sortKey] || "";
-        //                 valueB = b[sortKey] || "";
-        //                 break;
-    
-        //             default:
-        //                 return 0;
-        //         }
-    
-        //         return sortConfig[sortKey] ? (valueA > valueB ? 1 : -1) : (valueA < valueB ? 1 : -1);
-        //     });
-        // }, [searchFilteredBatches, sortConfig]);
-        
-        
+                        
 
 
     // handle Trainer Dropdown for assigning trainer to batch 
@@ -566,7 +569,7 @@ const Batches = () => {
                             className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
                                 ${activeTab === "scheduled" ? 'bg-blue-300  text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                             >
-                            Scheduled 
+                            Scheduled
                         </button>
                             {/* </Badge>      */}
                             {/* <Badge count={countBatchesByType.endingsoon}> */}
@@ -575,7 +578,7 @@ const Batches = () => {
                             className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
                                 ${activeTab === "hold" ? 'bg-blue-300  text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                             >
-                            Hold 
+                            Hold
                         </button>
                             {/* </Badge> */}
                             {/* <Badge count={countBatchesByType.endingsoon}> */}
@@ -655,30 +658,51 @@ const Batches = () => {
                     <th scope="col" className="px-3 py-3 md:px-1">
                         Batch Id
                     </th>
-                    <th scope="col" className="px-3 py-3 md:px-1 cursor-pointer"  onClick={() => toggleSort("start_time")}>
-                        <Tooltip title="Sort by Start Time" placement="right"> 
-                            Start Time {sortByTime ? "▲" : "▼"}
-                        </Tooltip>
+                    <th scope="col" className="px-3 py-3 md:px-1 cursor-pointer" onClick={toggleSortByStartTime}>
+                        Start Time 
+                       <span className="ml-1">
+                            <Tooltip title="Sort by Start Time" placement="top"> 
+                                {sortByTime ? "▲" : "▼"}
+                            </Tooltip>
+                       </span>
                     </th>
-                    <th scope="col" className="px-3 py-3 md:px-1 cursor-pointer"  onClick={() => toggleSort("start_date")}>
-                        <Tooltip title="Sort by start Date" placement="right">
-                            Start Date {sortByStartDate ? "▲" : "▼"}
-                        </Tooltip>
+                    <th scope="col" className="px-3 py-3 md:px-1 cursor-pointer" onClick={toggleSortByStartDate}>
+                        Start Date
+                       <span className="ml-1">
+                            <Tooltip title="Sort by start Date" placement="top">
+                                {sortByStartDate ? "▲" : "▼"}
+                            </Tooltip>
+                       </span>
                     </th>
-                    <th scope="col" className="px-3 py-3 md:px-1">
+                    <th scope="col" className="px-3 py-3 md:px-1 cursor-pointer" onClick={toggleSortByEndDate}>
                         End Date
+                        <span className="ml-1">
+                            <Tooltip title="Sort by End Date" placement="top">
+                                {sortByEndDate ? "▲" : "▼"}
+                            </Tooltip>
+                       </span>
                     </th>
                     <th scope="col" className="px-3 py-3 md:px-1">
                         Course
+                        {/* <Tooltip title="Sort by Course" placement="top">
+                        <Dropdown menu={courseMenu} trigger={["click"]} >
+                            <Button type="text" icon={<FilterOutlined  />} />
+                        </Dropdown>
+                        </Tooltip> */}
                     </th>
                     <th scope="col" className="px-3 py-3 md:px-1">
                         Trainer
+                        {/* <Tooltip title="Sort by Trainer" placement="top">
+                        <Dropdown  trigger={["click"]}>
+                            <Button type="text" icon={<FilterOutlined  style={{ color: sortByLanguage ? "blue" : "black" }} />} />
+                        </Dropdown>
+                        </Tooltip> */}
                     </th>
                     <th scope="col" className="px-3 py-3 md:px-1">
                         Students
                     </th>
                     <th scope="col" className="px-3 py-3 md:px-1 cursor-pointer">
-                            Mode 
+                        Mode 
                         <Tooltip title="Sort by Mode" placement="top">
                         <Dropdown menu={modeMenu} trigger={["click"]}>
                             <Button type="text" icon={<FilterOutlined  style={{ color: sortByMode ? "blue" : "black" }} />} />
@@ -686,8 +710,8 @@ const Batches = () => {
                         </Tooltip>
                     </th>
                     <th scope="col" className="px-3 py-3 md:px-1">
-                            Language 
-                        <Tooltip title="Sort by Mode" placement="top">
+                        Language 
+                        <Tooltip title="Sort by Language" placement="top">
                         <Dropdown menu={languageMenu} trigger={["click"]}>
                             <Button type="text" icon={<FilterOutlined  style={{ color: sortByLanguage ? "blue" : "black" }} />} />
                         </Dropdown>
@@ -737,7 +761,7 @@ const Batches = () => {
                     hour: "numeric",
                     minute: "numeric",
                     hour12: true,
-                    })} 
+                    })}
                     <span> - </span>
                     {new Date(`1970-01-01T${item.batch_time_data?.end_time}`).toLocaleString("en-US", {
                     hour: "numeric",

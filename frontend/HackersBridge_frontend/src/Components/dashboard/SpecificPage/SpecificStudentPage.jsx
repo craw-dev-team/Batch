@@ -5,13 +5,15 @@ import { Dropdown, message, Tag, DatePicker, Button  } from 'antd';
 import {  DownOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import BASE_URL from "../../../ip/Ip";
 import axios from "axios";
+import dayjs from "dayjs";
 
 
 const SpecificStudentPage = () => {
     const { studentId } = useParams();
     const { specificStudent, fetchSpecificStudent } = useSpecificStudent();
     const [activeTab, setActiveTab] = useState("running");
-    
+    const [certificateData, setCertificateData] = useState({});
+
     const navigate = useNavigate();
     
     const handleTabClick = (tab) => {
@@ -31,7 +33,7 @@ const SpecificStudentPage = () => {
                 console.error("Error decoding trainer ID:", error);
             }
         }
-    },[studentId]);
+    },[studentId, certificateData]);
 
     
     const studentDetails = specificStudent?.All_in_One?.student;
@@ -57,7 +59,6 @@ const SpecificStudentPage = () => {
             navigate(`/batches/${encodedbatchId}`);
     };
 
-console.log(specificStudent);
 
 
     // HANDLE COURSE STATUS CHANGE INSIDE THE STUDENT INFO PAGE 
@@ -65,7 +66,8 @@ console.log(specificStudent);
         try {
             const response = await axios.patch(`${BASE_URL}/api/student-course/edit/${id}/`, selectesStatus);
             message.success(`Status updated to ${selectesStatus.status}`)
-            console.log(response);
+            fetchSpecificStudent(atob(studentId))
+            // console.log(response);
             
         } catch (error) {
             console.log(error);
@@ -74,6 +76,82 @@ console.log(specificStudent);
     };
 
 
+
+    // Function to handle the date change
+    // const handleDateChange = (date, dateString) => {
+    //     setCertificateData(prevState => ({
+    //         ...prevState,
+    //         certificateIssueDate: dateString,
+    //     }));
+    // };
+
+
+    // FUNCTION HANDLE ISSUE CERTIFICATE TO STUDENT OF STUDENT'S COMPLETED COURSES
+    const issueCertificate = async (courseId, certificateIssueDate, courseName) => {
+        
+        if (!certificateIssueDate) {
+            message.info("Please Select a certificate issue date");
+            return;
+        };
+
+        try {
+            const response = await axios.patch(`${BASE_URL}/api/generate-certificate/${courseId}/`, {
+                headers : { "Content-Type" : "Application/json"},
+                certificate_date : certificateIssueDate
+            });
+            
+
+            if (response.status === 200) {                
+                message.success(`Certificate issued successfully for ${courseName}`)
+                fetchSpecificStudent(atob(studentId));
+
+            } else {
+                message.error("Error issuing certificate", response?.error.message)
+            };
+
+        } catch (error) {
+            console.log("error occured", error);
+            message.error("Something went wrong while issuing the certificate.");
+        }
+
+    };
+
+
+    // FUNCTION HANDLE DOWNLOAD CERTIFICATE
+    const downloadCertificate = async (courseId, courseName) => {
+        try {
+            const response = await axios.get(`${BASE_URL}/api/download-certificate/${courseId}/`, {
+                responseType: "blob",  // Ensure response is treated as a file
+            });
+    
+            if (response.status === 200) {
+                // Create a blob from the response data
+                const pdfBlob = new Blob([response.data], { type: "application/pdf" });
+    
+                // Create a URL for the blob
+                const url = window.URL.createObjectURL(pdfBlob);
+    
+                // Create a temporary download link
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = `${courseName}_certificate.pdf`; 
+                document.body.appendChild(link);
+                link.click();
+    
+                // Cleanup
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(link);
+    
+                message.success("Certificate downloaded successfully");
+            } else {
+                message.error("Error downloading certificate");
+            }
+        } catch (error) {
+            console.error("Error occurred while downloading:", error);
+            message.error("Error downloading the certificate");
+        }
+    };
+    
     
     return (
         <>
@@ -171,6 +249,9 @@ console.log(specificStudent);
                                                     Batch Taken
                                                 </th>
                                                 <th scope="col" className="px-3 py-3 md:px-1">
+                                                    
+                                                </th>
+                                                <th scope="col" className="px-3 py-3 md:px-1 md:w-40">
                                                     Certificate Issue Date
                                                 </th>
                                             </tr>
@@ -182,8 +263,10 @@ console.log(specificStudent);
                                                 <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
                                                     {index + 1}
                                                 </td>
+
                                                 <td className="px-3 py-2 md:px-1">
-                                                    {item.course_name}
+                                                    {item.course_name} {item.course_certificate_date ? <CheckCircleOutlined className="text-green-500 text-md"/> 
+                                                    : ''}
                                                 </td>
 
                                                 <td className={`px-3 py-2 md:px-1 `}>
@@ -213,20 +296,46 @@ console.log(specificStudent);
                                                         </Tag>
                                                     </a>
                                                 </Dropdown>
-
-
                                                 </td>
+
                                                 <td className={`px-3 py-2 md:px-1 text-md ${item.course_taken == "0" ? "text-red-500" : "text-green-400"}`}>
                                                     {item.course_taken}
                                                 </td>
+
                                                 <td className="px-3 py-2 md:px-1 flex">
-                                                <DatePicker name='certificateIssueDate'    className='border-gray-300' size='small'  placeholder="Certificate issue date"                    
-                                                    // value={certificateIssueDate ? dayjs(studentFormData.dateOfBirth, "YYYY-MM-DD") : null}
-                                                    onChange={(date, dateString) => setStudentFormData({ certificateIssueDate: dateString })}
-                                                />     
-                                                    <Button variant="solid" color="green" className="mx-2">Issue</Button>
-                                                    {item.course_certificate_date || 'N/A'}
+                                                    <DatePicker name='certificateIssueDate' className='border-gray-300' size='small'  placeholder="Certificate issue date"                    
+                                                        disabled={item.course_status !== "Completed"}
+                                                        value={certificateData[item.id] 
+                                                                ? dayjs(certificateData[item.id])  // ✅ Show selected date 
+                                                                : item.course_certificate_date 
+                                                                    ? dayjs(item.course_certificate_date)  // ✅ Show date from server
+                                                                    : null
+                                                        }
+                                                        onChange={(date, dateString) => {
+                                                            setCertificateData((prevState) => ({
+                                                                ...prevState,
+                                                                [item.id]: dateString,  // ✅ Store date per course ID
+                                                            }));
+                                                        }}
+                                                    />     
+                                                    <Button variant="solid"   disabled={item.course_status !== "Completed"}
+                                                        className={`mx-2 text-gray-50 ${item.course_certificate_date ? "bg-lime-600" : "bg-lime-500"}`}
+                                                        onClick={() => issueCertificate(item.id, certificateData[item.id], item.course_name)}
+                                                    >{item.course_certificate_date ? "Issued" : "Issue"}</Button>
+                                                   
+                                                   {/* button for download certificate */}
+                                                   {item.course_certificate_date && ( // ✅ Only show "Download" button if certificate is issued
+                                                        <Button 
+                                                            variant="solid"  
+                                                            className="mx-2 bg-blue-500 text-white"
+                                                            onClick={() => downloadCertificate(item.id, item.course_name)}
+                                                        >
+                                                            Download
+                                                        </Button>
+                                                    )}
                                                 </td>
+
+                                                <td> {item.course_certificate_date || 'N/A'}</td>
                                             </tr>
                                            ))}
                                         </tbody>
@@ -404,7 +513,7 @@ console.log(specificStudent);
                                                 </td>
 
                                                 <td className="px-3 py-2 md:px-1">
-                                                    <Tag bordered={false} color={item.preferred_week === "Weekdays" ? "cyan" : "geekblue" }>
+                                                    <Tag bordered={false} color={item.preferred_week === "Weekdays" ? "cyan" : "gold" }>
                                                         {item.preferred_week}
                                                     </Tag>
                                                 </td>

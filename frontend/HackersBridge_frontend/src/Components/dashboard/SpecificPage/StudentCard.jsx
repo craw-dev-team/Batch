@@ -43,12 +43,12 @@ const inactive_Students = () => {
         </Col>
         <Col span={4}>
           <Card title={studentsCounts?.enrolled_student_count || '0'} variant="borderless" className='font-semibold cursor-pointer' onClick={enrolled_students}>
-            Enrolled in Batch
+            Batch Assigned
           </Card>
         </Col>
         <Col span={4}>
           <Card title={studentsCounts?.not_enrolled_student_count || '0'} variant="borderless" className='font-semibold cursor-pointer' onClick={not_enrolled_students}>
-            Not Enrolled Yet
+            Batch not assigned
           </Card>
         </Col>
         <Col span={4}>

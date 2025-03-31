@@ -171,6 +171,12 @@ const SpecificBatchPage = () => {
     const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState() // store specific student data for editing
+    // handle date field dropdown for issue certificate date 
+    const [dateFieldIssueCertificate, setDateFieldIssueCertificate] = useState(false);
+    // store issuing date sending to server 
+    const [certificateIssueDate, setCertificateIssueDate] = useState(null);
+    // store student id's of all students in a specific batch 
+    const [selectedStudentIds, setSelectedStudentIds] = useState([]);
 
     const navigate = useNavigate();
     
@@ -300,9 +306,9 @@ const SpecificBatchPage = () => {
         //         console.error("Error deleting batch:", error);
         //     }
         // };
-        const confirm = (studentId) => {
+        const confirm = (studentId, studentName) => {            
             handleRemoveStudent(studentId);
-            message.success('Student Removed Successfully');
+            message.success(`${studentName} Removed from this Batch`);
         };
     
         const cancel = () => {
@@ -313,15 +319,52 @@ const SpecificBatchPage = () => {
          // Function to handle Edit button click
         const handleEditClick = (student) => {
             setSelectedStudent(student); // Set the selected course data
-            setIsModalOpen(true); // Open the modal
-            console.log(student);
-            
+            setIsModalOpen(true); // Open the modal            
             // setIsDeleted(false)
         };
 
 
+        // HANDLE ISSUE CERTIFICATE DATE PICKER MODAL OPEN AND CLOSE AND SET ALL STUDENT ID' IN STATE
+        const handleIssueClick = () => {
+            setSelectedStudentIds(specificBatch?.students.map(student => student.student.id));
+            setDateFieldIssueCertificate((prev) => !prev); // Toggle date field visibility
+        };
+        
+        
+        // HANDLE ISSUE CERTIFICATE TO ALL THE STUENTS IN A BATCH 
+        const handleIssueCertificate = async () => {
+            if (!certificateIssueDate) {
+                message.info("Please Select a date");
+                return;
+            };
+
+            const batch_id = atob(batchId)            
+
+            const payload = {
+                student_id : selectedStudentIds,
+                issue_date : certificateIssueDate,
+            };
+
+            try {
+                const response = await axios.post(`${BASE_URL}/api/batch-generate-certificate/${batch_id}/`, payload);
+                
+                if (response.status >= 200 && response.status < 300) {
+                    message.success("Certificate issued to students successfully");
+
+                    setDateFieldIssueCertificate(false);
+                    setSelectedStudentIds([]);
+                    setCertificateIssueDate(null);
+                };
+            } catch (error) {
+                console.log("Error issuing crtificate", error);
+                message.error("Failed to issue Certificate")
+            };
+        };
+
+
+
     return (
-        <div className="w-auto h-full pt-20 px-2 mt-0 darkmode">
+        <div className="w-auto h-full pt-20 px-2 mt-0">
             <div className="grid grid-cols-6 gap-x-6">
                 <div className="px-4 py-4 col-span-6 h-auto shadow-md sm:rounded-lg border border-gray-50 dark:border">
                     <div className="w-full h-auto px-1 py-3 text-lg font-semibold">
@@ -433,8 +476,47 @@ const SpecificBatchPage = () => {
                     <div className="w-full font-semibold">
                         <div className="col-span-1 text-lg px-4 py-4 flex justify-between">
                             <h1>Students</h1>
-                            <button onClick={() => { setIsAddStudentModalOpen(true) }} type="button" className="focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5">Add +</button>
+                            <div className="flex">
+                                <Button onClick={handleIssueClick}>Issue Certificate</Button>
+                                    {dateFieldIssueCertificate && (
+                                        <div className="flex mx-1">
+                                            <DatePicker
+                                                open={dateFieldIssueCertificate}
+                                                name="certificateIssueDate"
+                                                className="border-gray-300"
+                                                size="small"
+                                                placeholder="Certificate issue date"
+                                                // value={certificateData[item.id] 
+                                                //         ? dayjs(certificateData[item.id])  // ✅ Show selected date 
+                                                //         : item.course_certificate_date 
+                                                //         ? dayjs(item.course_certificate_date)  // ✅ Show date from server
+                                                //         : null
+                                                // }
+                                                onChange={(date, dateString) => {
+                                                    setCertificateIssueDate(dateString);  // ✅ Store selected date
+                                                }}
+                                            />
+                                            {/* Submit Button */}
+                                            <CheckCircleOutlined
+                                                className="mx-1 text-green-500 text-lg cursor-pointer hover:text-green-700"
+                                                onClick={() => {
+                                                    handleIssueCertificate();
+                                                    setDateFieldIssueCertificate(false);
+                                                }}
+                                            />
+
+                                            {/* Cancel Button */}
+                                            <CloseCircleOutlined
+                                                className="text-red-500 text-lg cursor-pointer hover:text-red-700"
+                                                onClick={() => {
+                                                    setDateFieldIssueCertificate(false);
+                                                }}
+                                            />
+                                        </div>
+                                    )}
+                                <button onClick={() => { setIsAddStudentModalOpen(true) }} type="button" className="ml-2 focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5">Add +</button>
                             </div>
+                        </div>
 
                             <div className={`overflow-hidden pb-2 relative `}>
                                 <div className="w-full h-[38rem] overflow-y-auto dark:border-gray-700 rounded-lg pb-2">
@@ -607,7 +689,7 @@ const SpecificBatchPage = () => {
                                                 <Popconfirm
                                                     title={`Remove ${item.student.name}`}
                                                     description="Are you sure you want to Remove this Student?"
-                                                    onConfirm={() => confirm(item.student.id)}
+                                                    onConfirm={() => confirm(item.student.id, item.student.name)}
                                                     onCancel={cancel}
                                                     okText="Yes"
                                                     cancelText="No"
