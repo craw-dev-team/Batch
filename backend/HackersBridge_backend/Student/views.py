@@ -13,6 +13,7 @@ from nexus.serializer import BatchStudentAssignment
 from django.utils.timezone import now
 from django.http import FileResponse
 import os
+from django.core.mail import EmailMessage
 from nexus.generate_certificate import generate_certificate, get_certificate_path
 
 
@@ -282,33 +283,68 @@ class StudentCourseEditAPIView(APIView):
 class GenerateCertificateAPIView(APIView):
     def patch(self, request, id, *args, **kwargs):
         student_course = get_object_or_404(StudentCourse, id=id)
-        serializer = StudentCourseSerializer(student_course, data=request.data, partial=True)
 
-        # Ensure status is "Complete" before processing
+        # Ensure course is marked as "Completed"
         if student_course.status != "Completed":
             return Response({'error': 'Certificate can only be generated for completed courses'}, status=status.HTTP_400_BAD_REQUEST)
 
+        serializer = StudentCourseSerializer(student_course, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()  # Save partial update first
-            
-            name = student_course.student.name  # ✅ Correct way to get Student's name
-            course = student_course.course.name  # ✅ Correct way to get Course name
-            certificate_no = student_course.student.enrollment_no  # ✅ Correct way to get Enrollment No
-            date = student_course.certificate_date  # ✅ Fetch the certificate date
 
-            file_path = generate_certificate(course, name, certificate_no, date)
-            
+            # Fetch necessary details
+            student = student_course.student
+            course = student_course.course
+            certificate_no = student.enrollment_no
+            certificate_date = student_course.certificate_date
+
+            # Generate certificate
+            file_path = generate_certificate(course.name, student.name, certificate_no, certificate_date)
+
             if os.path.exists(file_path):
-
                 # ✅ Update student_certificate_allotment to True
                 student_course.student_certificate_allotment = True
                 student_course.save(update_fields=['student_certificate_allotment'])
 
+                # 📧 Send Email Notification
+                subject = f"🎉 Congratulations, {student.name}! Your {course.name} Certificate is Here!"
+                message = f"""
+Dear {student.name},
 
-                return FileResponse(open(file_path, 'rb'), content_type='application/pdf')
-            else:
-                return Response({'error': 'Certificate generation failed'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
+We’re thrilled to congratulate you on successfully completing the {course.name} course at Craw Cyber Security! 
+Your dedication and hard work have paid off, and we are delighted to issue your official certificate.
+
+🏷️ Student Enrollment Number: {student.enrollment_no}
+📅 Date of Issue: {certificate_date}
+
+Your certificate is attached to this email—feel free to showcase it in your portfolio, LinkedIn profile, or anywhere that highlights your achievements. 
+This milestone is just the beginning of your journey in cybersecurity, and we’re excited to see where your skills take you next!
+
+If you have any questions or need further assistance, don’t hesitate to reach out.
+
+🚀 Keep learning, keep growing, and keep securing the digital world!
+
+Best regards,  
+🚀 Craw Cyber Security Team  
+📧 training@craw.in  
+📞 +919513805401  
+🌐 https://www.craw.in/
+                """
+
+                from_email = "noreply@yourdomain.com"
+                try:
+                    email = EmailMessage(subject, message, from_email, [student.email])
+                    email.attach_file(file_path)  # Attach generated certificate PDF
+                    email.send()
+                except Exception as e:
+                    return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+                # ✅ Fix: Open file WITHOUT closing it prematurely
+                certificate_file = open(file_path, 'rb')
+                return FileResponse(certificate_file, content_type='application/pdf')
+
+            return Response({'error': 'Certificate generation failed'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
