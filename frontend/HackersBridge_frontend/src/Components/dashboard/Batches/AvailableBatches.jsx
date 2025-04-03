@@ -624,13 +624,21 @@ const convertTo12HourFormat = (time) => {
                <Select name="batchTime" onChange={(value) => handleChange("batchTime", value)} className='w-full border-gray-300' size='large' placeholder='Select Batch Timing' 
                    value={batchFormData.batchTime ? String(batchFormData.batchTime) : null}
                    options={[
-                            { value: '1', label: '10:00 AM - 12:00 PM' },
-                            { value: '2', label: '12:00 PM - 02:00 PM' },
-                            { value: '3', label: '03:00 PM - 05:00 PM' },
-                            { value: '4', label: '05:00 PM - 06:30 PM' },
-                            { value: '5', label: '10:00 AM - 02:00 PM - Weekends' },
-                            { value: '6', label: '3:00 PM - 06:30 PM - Weekends' },
-                           ]}
+                    { value: '1', label: '10:00 - 12:00' },
+                    { value: '2', label: '12:00 - 02:00' },
+                    { value: '3', label: '03:00 - 05:00' },
+                    { value: '4', label: '05:00 - 06:30' },
+                    { value: '9', label: '06:00 - 07:00' },
+                    { value: '7', label: '07:00 - 09:00' },
+                    { value: '8', label: '10:00 - 05:00' },
+                    { value: '5', label: '10:00 - 02:00 - Weekends' },
+                    { value: '10', label: '12:30 - 02:30 - Weekdays' },
+                    { value: '11', label: '07:00 - 08:30 - Weekdays' },
+                    { value: '12', label: '05:00 - 07:00 - Weekdays' },
+                    { value: '13', label: '08:00 - 09:00 - Weekdays' },
+                    { value: '14', label: '12:00 - 02:00 - Weekends' },
+                    { value: '15', label: '07:00 - 08:30 - Weekdays' },
+                ]}
                    />
                    {/* {errors.batchTime && <p className="text-red-500 text-sm">{errors.batchTime}</p>} */}
                </div>
