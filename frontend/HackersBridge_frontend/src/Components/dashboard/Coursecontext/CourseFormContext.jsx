@@ -27,9 +27,18 @@ export const CourseFormProvider = ({ children }) => {
     const fetchCourses = async () => {
         if (loading) return;  // Prevent multiple fetches at the same time
 
+        const token = localStorage.getItem('token');
+        if (!token) {
+            console.error("No token found, user might be logged out.");
+            return;
+        };
+
+
         setLoading(true);  // Set loading state
         try {
-            const response = await axios.get(`${BASE_URL}/api/courses/`);
+            const response = await axios.get(`${BASE_URL}/api/courses/`, 
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+            );
             const data = response?.data;
             
             // Update state only if data has changed

@@ -26,6 +26,7 @@ const BatchFormProvider = ({ children }) => {
   const [batchData, setBatchData] = useState();
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+
   
     // Function to reset form
     const resetBatchForm = useCallback(() => {
@@ -34,11 +35,19 @@ const BatchFormProvider = ({ children }) => {
 
     const fetchBatches = useCallback (async () => {
         if (loading) return;
-        
+       
+        const token = localStorage.getItem('token');
+        if (!token) {
+            console.error("No token found, user might be logged out.");
+            return;
+        };
+
         setLoading(true);
         try {
-            const response = await axios.get(`${BASE_URL}/api/batches/`);
-            const data = response?.data;
+            const response = await axios.get(`${BASE_URL}/api/batches/`,
+            { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+            );
+            const data = response.data;
             // console.log(data);
             
             setBatchData(prevData => {

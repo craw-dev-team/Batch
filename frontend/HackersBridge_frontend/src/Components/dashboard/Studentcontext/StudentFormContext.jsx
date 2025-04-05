@@ -12,6 +12,7 @@ const initialFormData = {
     dateOfBirth : "",
     dateOfJoining : "",
     phoneNumber : "",
+    alternatePhoneNUmber : "",
     emailAddress : "",
     studentAddress : "",
     course : [],
@@ -44,9 +45,17 @@ const StudentFormProvider = ({ children }) => {
     const fetchStudents = async () => {
         if (loading) return;  // Prevent multiple fetches at the same time
 
+        const token = localStorage.getItem('token');
+        if (!token) {
+            console.error("No token found, user might be logged out.");
+            return;
+        };
+
         setLoading(true);  // Set loading state
         try {
-            const response = await axios.get(`${BASE_URL}/api/students/`);
+            const response = await axios.get(`${BASE_URL}/api/students/`, 
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+            );
             const data = response?.data;
             // console.log(data);          
             // Update state only if data has changed
@@ -70,9 +79,18 @@ const StudentFormProvider = ({ children }) => {
   const fetchStudentCount = async () => {
     if (loading) return;
     
+    const token = localStorage.getItem('token');
+    if (!token) {
+        console.error("No token found, user might be logged out.");
+        return;
+    };
+
+    
     setLoading(true);
     try {
-        const response = await axios.get(`${BASE_URL}/api/studentscraw/`);
+        const response = await axios.get(`${BASE_URL}/api/studentscraw/`, 
+            { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+        );
         const data = response?.data;
         
         setStudentsCounts(prevData => 

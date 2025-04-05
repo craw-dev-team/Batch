@@ -29,6 +29,7 @@ export const AuthProvider = ({ children }) => {
       if (response.data.token) {
         setToken(response.data.token);
         setUser({ username: response.data.username, role: response.data.role });
+        
 
         localStorage.setItem("token", response.data.token);
         localStorage.setItem(
@@ -72,47 +73,60 @@ export const AuthProvider = ({ children }) => {
 // }, []);
 
 
-  const logout = (redirect = true) => {
-    setUser(null);
-    setToken("");
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    delete axios.defaults.headers.common["Authorization"];
-    
-    if (redirect) {
+const logout = (redirect = true) => {
+  console.log("Logging out user..."); // Debugging purpose
+  if (!localStorage.getItem("token")) {
+      console.warn("Token already removed, possible unexpected logout.");
+      return; // Prevent redundant logouts
+  }
+
+  setUser(null);
+  setToken("");
+
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+  delete axios.defaults.headers.common["Authorization"];
+
+  if (redirect) {
       window.location.href = "/login"; // Redirect only when necessary
-    }
-  };
+  }
+};
+
 
   // Set default axios headers and handle logout if the user is deleted
-  useEffect(() => {
-    const savedToken = localStorage.getItem("token");
-    const savedUser = JSON.parse(localStorage.getItem("user"));
+//   useEffect(() => {
+//     const savedToken = localStorage.getItem("token");
+//     const savedUser = localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : null;
 
-    if (savedToken && savedUser) {
-      axios.defaults.headers.common["Authorization"] = `token ${savedToken}`;
-      setToken(savedToken);
-      setUser(savedUser);
-    } else if (!user) {
-      logout(false); // Call logout but prevent redirection loop
-    }
+//     if (savedToken && savedUser) {
+//         axios.defaults.headers.common["Authorization"] = `token ${savedToken}`; // ✅ Ensure correct format
+//         setToken(savedToken);
+//         setUser(savedUser);
+//     } else if (!savedToken && !loading) {  // Prevent logout on initial load
+//         logout(false);
+//     }
 
-    // Axios Response Interceptor to handle unauthorized access
-    const interceptor = axios.interceptors.response.use(
-      (response) => response,
-      (error) => {
-        if (error.response?.status === 401) {
-          message.error("Session expired or user deleted. Logging out...");
-          logout(); // Redirect only on unauthorized error
-        }
-        return Promise.reject(error);
-      }
-    );
+//     setLoading(false); // Now state is ready
 
-    return () => {
-      axios.interceptors.response.eject(interceptor);
-    };
-  }, []);
+//     // Axios Response Interceptor to handle unauthorized access
+//     const interceptor = axios.interceptors.response.use(
+//         (response) => response,
+//         (error) => {
+//             if (error.response?.status === 401) {
+//                 message.error("Session expired. Logging out...");
+//                 logout();
+//                 console.log(error);
+                
+//             }
+//             return Promise.reject(error);
+//         }
+//     );
+
+//     return () => {
+//         axios.interceptors.response.eject(interceptor); // Cleanup on unmount
+//     };
+// }, [loading]);
+
 
   return (
     <AuthContext.Provider value={{ user, token, register, login, logout }}>

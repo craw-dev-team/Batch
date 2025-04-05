@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom"
 import { useSpecificBatch } from "../Contexts/SpecificBatch";
 import { DatePicker, Empty, Spin, Avatar, Tooltip, Tag, Button, Popconfirm, message   } from 'antd';
-import { CheckCircleOutlined, CloseCircleOutlined, EditOutlined, DeleteOutlined, DownOutlined    } from "@ant-design/icons";
+import { CheckCircleOutlined, CloseCircleOutlined, EditOutlined, DeleteOutlined, ClearOutlined    } from "@ant-design/icons";
 import dayjs from "dayjs";
 import axios from 'axios';
 import BASE_URL from "../../../ip/Ip";
 import AddStudentModal from "../AddStudentModal/AddStudentModal";
 import CreateStudentForm from "../Students/CreateStudentForm";
+import CreateBatchForm from "../Batches/CreateBatchForm";
+import { useAuth } from "../AuthContext/AuthContext";
 
 
 // const SpecificBatchPage = () => {
@@ -164,8 +166,15 @@ import CreateStudentForm from "../Students/CreateStudentForm";
 const SpecificBatchPage = () => {
     const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false); 
     const [isModalOpen, setIsModalOpen] = useState(false) 
+    
+    // store batch data for editing 
+    const [isBatchModalOpen, setIsBatchModalOpen] = useState(false) 
+    const [selectedBatch, setSelectedBatch] = useState();
+
     const { batchId } = useParams();
     const { specificBatch, fetchSpecificBatch } = useSpecificBatch();
+    const { token } = useAuth();
+
     const [editingField, setEditingField] = useState(null);
     const [updatedValues, setUpdatedValues] = useState(null);
     const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
@@ -177,6 +186,8 @@ const SpecificBatchPage = () => {
     const [certificateIssueDate, setCertificateIssueDate] = useState(null);
     // store student id's of all students in a specific batch 
     const [selectedStudentIds, setSelectedStudentIds] = useState([]);
+    // track the certificate is issued or not 
+    const [isCertificateIssued, setIsCertificateIssued] = useState(false);
 
     const navigate = useNavigate();
     
@@ -191,7 +202,7 @@ const SpecificBatchPage = () => {
                 console.error("Error decoding trainer ID:", error);
             }
         }
-    }, [batchId]);
+    }, [batchId, isCertificateIssued, isBatchModalOpen]);
     
 
     useEffect(() => {
@@ -205,6 +216,13 @@ const SpecificBatchPage = () => {
     }
 
     
+    // Function to handle Edit button click 
+       const handleBatchEditClick = (batch) => {
+        setSelectedBatch(batch);
+        setIsBatchModalOpen(true);
+    };
+
+
     // TO NAVIGATE TO STUDENT SPECIFIC PAGE 
     const handleStudentClick = async (studentId) => {
         if (!studentId) return;
@@ -252,12 +270,13 @@ const SpecificBatchPage = () => {
             const decodedBatchId = atob(batchId); // Decode batchId before using it
             const updatePayload = JSON.stringify({ [field]: updatedValues[field] }); // Convert to JSON string
     
-            console.log("Decoded Batch ID:", decodedBatchId);
-            console.log("Payload:", updatePayload);
+            // console.log("Decoded Batch ID:", decodedBatchId);
+            // console.log("Payload:", updatePayload);
     
-            await axios.put(`${BASE_URL}/api/batches/edit/${decodedBatchId}`, updatePayload, {
-                headers: { "Content-Type": "application/json" },
-            });
+            await axios.put(`${BASE_URL}/api/batches/edit/${decodedBatchId}`, 
+                updatePayload, 
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+            );
     
             console.log(`${field} updated successfully`);
         } catch (error) {
@@ -275,10 +294,11 @@ const SpecificBatchPage = () => {
 
             const response = await axios.post(`${BASE_URL}/api/batch/remove-student/${decodedBatchId}/`,  
                 payload,  // Student IDs in the body
-                { headers: { 'Content-Type': 'application/json' } });
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+            );
 
                 if (response.status >= 200 && response.status < 300) {   
-                    console.log(specificBatch);
+                    // console.log(specificBatch);
                                  
                     fetchSpecificBatch(decodedBatchId);                     
                 } else {
@@ -306,6 +326,7 @@ const SpecificBatchPage = () => {
         //         console.error("Error deleting batch:", error);
         //     }
         // };
+        
         const confirm = (studentId, studentName) => {            
             handleRemoveStudent(studentId);
             message.success(`${studentName} Removed from this Batch`);
@@ -346,7 +367,10 @@ const SpecificBatchPage = () => {
             };
 
             try {
-                const response = await axios.post(`${BASE_URL}/api/batch-generate-certificate/${batch_id}/`, payload);
+                const response = await axios.post(`${BASE_URL}/api/batch-generate-certificate/${batch_id}/`, 
+                    payload,
+                    { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                );
                 
                 if (response.status >= 200 && response.status < 300) {
                     message.success("Certificate issued to students successfully");
@@ -354,6 +378,7 @@ const SpecificBatchPage = () => {
                     setDateFieldIssueCertificate(false);
                     setSelectedStudentIds([]);
                     setCertificateIssueDate(null);
+                    setIsCertificateIssued(true);
                 };
             } catch (error) {
                 console.log("Error issuing crtificate", error);
@@ -366,9 +391,22 @@ const SpecificBatchPage = () => {
     return (
         <div className="w-auto h-full pt-20 px-2 mt-0">
             <div className="grid grid-cols-6 gap-x-6">
-                <div className="px-4 py-4 col-span-6 h-auto shadow-md sm:rounded-lg border border-gray-50 dark:border">
-                    <div className="w-full h-auto px-1 py-3 text-lg font-semibold">
+                <div className="px-4 py-4 col-span-6 h-auto shadow-md sm:rounded-lg border border-gray-50 bg-white">
+                    <div className="w-full h-auto px-1 py-3 text-lg font-semibold flex justify-between">
                         <p># {updatedValues.batch_id}</p>
+
+                        <Button
+                            color="secondary" 
+                            variant="outlined" 
+                            className="rounded-lg"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleBatchEditClick(updatedValues);
+                                setIsBatchModalOpen(true);
+                            }}>
+                            <EditOutlined />
+                        </Button>
+
                     </div>
 
                     <div className="grid 2xl:grid-cols-6 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-2 px-4 py-4 gap-4">
@@ -472,12 +510,16 @@ const SpecificBatchPage = () => {
 
 
                 {/* Students List */}
-                <div className="py-4 col-span-6 mt-6 h-auto shadow-md sm:rounded-lg border border-gray-50 dark:border ">
+                <div className="py-4 col-span-6 mt-6 h-auto shadow-md sm:rounded-lg border border-gray-50  bg-white">
                     <div className="w-full font-semibold">
                         <div className="col-span-1 text-lg px-4 py-4 flex justify-between">
                             <h1>Students</h1>
                             <div className="flex">
-                                <Button onClick={handleIssueClick}>Issue Certificate</Button>
+                                <Button onClick={handleIssueClick}
+                                    variant="outlined"
+                                    color={isCertificateIssued ? "blue" : "green"}
+                                > {isCertificateIssued ? "Certificate Issued" : "Issue Certificate"}
+                                </Button>
                                     {dateFieldIssueCertificate && (
                                         <div className="flex mx-1">
                                             <DatePicker
@@ -527,6 +569,9 @@ const SpecificBatchPage = () => {
                                                 <th scope="col" className="px-3 py-3 md:px-2">
                                                     s.No
                                                 </th>
+                                                {/* <th scope="col" className="px-3 py-3 md:px-1 w-5">
+
+                                                </th> */}
                                                 <th scope="col" className="px-3 py-3 md:px-1">
                                                     Enrollment No
                                                 </th>
@@ -542,9 +587,9 @@ const SpecificBatchPage = () => {
                                                 <th scope="col" className="px-3 py-3 md:px-1">
                                                     Email
                                                 </th>
-                                                <th scope="col" className="px-3 py-3 md:px-1">
+                                                {/* <th scope="col" className="px-3 py-3 md:px-1">
                                                     Date of Joining
-                                                </th>
+                                                </th> */}
                                                 <th scope="col" className="px-3 py-3 md:px-1">
                                                     Courses
                                                 </th>
@@ -589,9 +634,13 @@ const SpecificBatchPage = () => {
                                             {/* <td className="px-3 py-2 md:px-1">
                                                 {item.id}
                                             </td> */}
+                                            {/* <td> {isCertificateIssued ? <CheckCircleOutlined className="text-green-500 text-md"/> : ''} </td> */}
+                                            
                                             <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.student.id)}>
                                                 {item.student.enrollment_no}
                                             </td>
+                                            
+
                                             <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.student.id)}>
                                                 {item.student.name}
                                             </td>
@@ -604,13 +653,13 @@ const SpecificBatchPage = () => {
                                             <td className="px-3 py-2 md:px-1">
                                                 {item.student.email}
                                             </td>
-                                            <td className="px-3 py-2 md:px-1">
+                                            {/* <td className="px-3 py-2 md:px-1">
                                                 {new Date(item.student.date_of_joining).toLocaleDateString("en-GB", {
                                                     day: "2-digit",
                                                     month: "2-digit",
                                                     year: "numeric",
                                                 })}
-                                            </td>
+                                            </td> */}
                                             <td className="px-3 py-2 md:px-1">
                                             <Avatar.Group
                                                         max={{
@@ -700,7 +749,7 @@ const SpecificBatchPage = () => {
                                                         className="rounded-lg w-auto px-3"
                                                         onClick={(e) => e.stopPropagation()} // Prevent the click from triggering the Edit button
                                                     >
-                                                        <DeleteOutlined />
+                                                        <ClearOutlined />
                                                     </Button>
                                             </Popconfirm>
                                             </td>
@@ -731,6 +780,8 @@ const SpecificBatchPage = () => {
             </div>
             <CreateStudentForm isOpen={isModalOpen} selectedStudentData={selectedStudent || {}} onClose={() => setIsModalOpen(false)} />
             <AddStudentModal isOpen={isAddStudentModalOpen} onClose={() => setIsAddStudentModalOpen(false)} />
+            <CreateBatchForm isOpen={isBatchModalOpen} selectedBatchData={selectedBatch|| {}}  onClose={() => setIsBatchModalOpen(false)} />
+
         </div>
     );
 };

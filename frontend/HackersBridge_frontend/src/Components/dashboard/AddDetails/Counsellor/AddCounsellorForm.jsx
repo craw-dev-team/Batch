@@ -4,6 +4,7 @@ import { SyncOutlined } from '@ant-design/icons';
 import axios from "axios";
 import BASE_URL from "../../../../ip/Ip";
 import { useCounsellorForm } from "./CounsellorContext";
+import { useAuth } from "../../AuthContext/AuthContext";
 
 
 
@@ -15,6 +16,8 @@ const AddCounsellorForm = ( { isOpen, onClose, counsellorData } ) => {
     const isEditing = Boolean(counsellorData?.id); 
 
     const { counsellorFormData, setCounsellorFormData, errors, setErrors, resetCounsellorForm } = useCounsellorForm();
+    const { token } = useAuth();
+
     const [ loading, setLoading] = useState(false);
 
 
@@ -61,13 +64,13 @@ const AddCounsellorForm = ( { isOpen, onClose, counsellorData } ) => {
                 if (counsellorData && counsellorData.id) {
                 // Update existing course (PUT)
                 response = await axios.put(`${BASE_URL}/api/counsellors/edit/${counsellorData.id}/`, payload, {
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` }
                 });
                 successMessage = "Counsellors updated successfully!";
                 } else {
                     // Add new course (POST)
                     response = await axios.post(`${BASE_URL}/api/counsellors/add/`, payload, {
-                        headers: { 'Content-Type': 'application/json' }
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` }
                     });
                     successMessage = "Counsellors added successfully!";
                 }

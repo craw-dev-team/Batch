@@ -5,9 +5,9 @@ import { SyncOutlined, CopyOutlined, RightOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import BASE_URL from '../../../ip/Ip';
 import { useBatchForm } from '../Batchcontext/BatchFormContext';
-import { useStudentForm } from '../StudentContext/StudentFormContext';
 import { useParams } from 'react-router-dom';
 import { useSpecificBatch } from '../Contexts/SpecificBatch';
+import { useAuth } from '../AuthContext/AuthContext';
 
 
 // const fetchAvailableStudents = async (batchId) => {
@@ -33,6 +33,8 @@ const AddStudentModal = ({ isOpen, onClose }) => {
     const [decodedBatchId, setDecodedBatchId] = useState(null);
     const {batchFormData, setBatchFormData, resetBatchForm} = useBatchForm();
     const { fetchSpecificBatch } = useSpecificBatch();
+    const { token } = useAuth();
+
     const [ loading, setLoading ] = useState(false);
     const [students, setStudents] = useState({}); // Stores selected students per batch
 
@@ -43,14 +45,6 @@ const AddStudentModal = ({ isOpen, onClose }) => {
         }
     }, [batchId]); 
     
-
-
-    // useEffect(() => {
-    //     if (isOpen) {
-    //         fetchStudents();  
-    //     }
-    // },[isOpen]);
-
     
     const handleChange = (batchId, selectedStudents) => {
         setBatchFormData((prev) => ({
@@ -70,12 +64,12 @@ const AddStudentModal = ({ isOpen, onClose }) => {
         if (studentIds.length === 0) {
             message.warning("No students selected!");
             return;
-        }
+        };
     
         try {
             const response = await axios.post(`${BASE_URL}/api/batches/${batch_id}/add-students/`, 
                 { students: studentIds }, // Ensure correct payload format
-                { headers: { 'Content-Type': 'application/json' } }
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
             );
     
             if (response.status >= 200 && response.status < 300) {
@@ -89,7 +83,7 @@ const AddStudentModal = ({ isOpen, onClose }) => {
 
             } else {
                 message.error(response.data?.message || "Failed to add students.");
-            }
+            };
         } catch (error) {
             console.error("Error sending Add student request:", error);
             
@@ -103,13 +97,15 @@ const AddStudentModal = ({ isOpen, onClose }) => {
 
     const fetchAvailableStudents = useCallback(async (decodedBatchId) => {        
         try {
-            const response = await axios.get(`${BASE_URL}/api/batches/${decodedBatchId}/available-students/`);
+            const response = await axios.get(`${BASE_URL}/api/batches/${decodedBatchId}/available-students/`, 
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+            );
             const data = response.data;
             // console.log(data);
             
             if (!data.available_students) {
                 throw new Error("Invalid response format");
-            }
+            };
     
             // Format data for the Select component
             const formattedOptions = data.available_students.map(student => ({
@@ -124,19 +120,18 @@ const AddStudentModal = ({ isOpen, onClose }) => {
         } catch (error) {
             console.error("Error fetching students:", error);
         }
-    }, [students]) 
+    }, [students]);
     
 
     useEffect(() => {
         if (isOpen) {
             fetchAvailableStudents(decodedBatchId);
-              
         }
     },[isOpen]);
 
 
 
-     // THIS WILL REDIRECT TO STUDENT IONFO PAGE IN NEW TAB FROM CREATE BATCH MODAL SELECT FIELD
+     // THIS WILL REDIRECT TO STUDENT INFO PAGE IN NEW TAB FROM CREATE BATCH MODAL SELECT FIELD
      const handleStudentClickOnSelect = (event, studentId) => {
         event.preventDefault();
         event.stopPropagation(); // Prevents interfering with Select behavior
@@ -175,11 +170,11 @@ const AddStudentModal = ({ isOpen, onClose }) => {
     return (
         <>
          <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 z-50">
-            <div className="relative p-2 w-3/6 bg-white rounded-lg shadow-lg dark:bg-gray-700">
+            <div className="relative p-2 w-3/6 bg-white rounded-lg shadow-lg">
                 
                 {/* Modal Header */}
-                <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600 border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900">
                         Add New Student
                     </h3>
                     <button
@@ -197,7 +192,7 @@ const AddStudentModal = ({ isOpen, onClose }) => {
                 {/* Modal Form */}
                 <form className="p-4 md:p-5" onSubmit={handleFormSubmit}>
                    <div className="grid grid-cols-5">
-                   <label htmlFor="student" className="col-span-4 block mb-2 text-sm font-medium text-gray-900 dark:text-white">Add Students</label>
+                   <label htmlFor="student" className="col-span-4 block mb-2 text-sm font-medium text-gray-900">Add Students</label>
                             <Select name="student" mode="multiple" className='col-span-4 border-gray-300' size='large' placeholder='Select Students' 
                             showSearch  // This enables search functionality
                                     

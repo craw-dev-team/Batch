@@ -2,15 +2,22 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom"
 import { useSpecificStudent } from "../Contexts/SpecificStudent";
 import { Dropdown, message, Tag, DatePicker, Button  } from 'antd';
-import {  DownOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import {  DownOutlined, CheckCircleOutlined, EditOutlined } from '@ant-design/icons';
 import BASE_URL from "../../../ip/Ip";
 import axios from "axios";
 import dayjs from "dayjs";
+import CreateStudentForm from "../Students/CreateStudentForm";
+import { useAuth } from "../AuthContext/AuthContext";
 
 
 const SpecificStudentPage = () => {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedStudent, setSelectedStudent] = useState();
+
     const { studentId } = useParams();
     const { specificStudent, fetchSpecificStudent } = useSpecificStudent();
+    const { token } = useAuth();
+
     const [activeTab, setActiveTab] = useState("running");
     const [certificateData, setCertificateData] = useState({});
 
@@ -33,7 +40,15 @@ const SpecificStudentPage = () => {
                 console.error("Error decoding trainer ID:", error);
             }
         }
-    },[studentId, certificateData]);
+    },[studentId, certificateData, isModalOpen]);
+
+    
+    // FUNCTION TO HANDLE EDIT BUTTON CLICK
+    const handleEditClick = (student) => {
+        setSelectedStudent(student); // Set the selected course data
+        setIsModalOpen(true); // Open the modal
+    };
+
 
     
     const studentDetails = specificStudent?.All_in_One?.student;
@@ -64,7 +79,10 @@ const SpecificStudentPage = () => {
     // HANDLE COURSE STATUS CHANGE INSIDE THE STUDENT INFO PAGE 
     const handleCourseStatusChange = async (id, selectesStatus) => {
         try {
-            const response = await axios.patch(`${BASE_URL}/api/student-course/edit/${id}/`, selectesStatus);
+            const response = await axios.patch(`${BASE_URL}/api/student-course/edit/${id}/`, 
+                selectesStatus,
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+            );
             message.success(`Status updated to ${selectesStatus.status}`)
             fetchSpecificStudent(atob(studentId))
             // console.log(response);
@@ -85,9 +103,13 @@ const SpecificStudentPage = () => {
     //     }));
     // };
 
+console.log(specificStudent?.All_in_One?.student_courses);
+
+
 
     // FUNCTION HANDLE ISSUE CERTIFICATE TO STUDENT OF STUDENT'S COMPLETED COURSES
     const issueCertificate = async (courseId, certificateIssueDate, courseName) => {
+        console.log(courseId, certificateIssueDate, courseName);
         
         if (!certificateIssueDate) {
             message.info("Please Select a certificate issue date");
@@ -95,15 +117,17 @@ const SpecificStudentPage = () => {
         };
 
         try {
-            const response = await axios.patch(`${BASE_URL}/api/generate-certificate/${courseId}/`, {
-                headers : { "Content-Type" : "Application/json"},
-                certificate_date : certificateIssueDate
-            });
+            const response = await axios.patch(`${BASE_URL}/api/generate-certificate/${courseId}/`, 
+                { certificate_date: certificateIssueDate },
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+            );
+            console.log(response);
             
 
             if (response.status === 200) {                
                 message.success(`Certificate issued successfully for ${courseName}`)
                 fetchSpecificStudent(atob(studentId));
+                setCertificateData({})
 
             } else {
                 message.error("Error issuing certificate", response?.error.message)
@@ -120,9 +144,10 @@ const SpecificStudentPage = () => {
     // FUNCTION HANDLE DOWNLOAD CERTIFICATE
     const downloadCertificate = async (courseId, courseName) => {
         try {
-            const response = await axios.get(`${BASE_URL}/api/download-certificate/${courseId}/`, {
-                responseType: "blob",  // Ensure response is treated as a file
-            });
+            const response = await axios.get(`${BASE_URL}/api/download-certificate/${courseId}/`, 
+                { responseType: "blob" },
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+        );
     
             if (response.status === 200) {
                 // Create a blob from the response data
@@ -161,8 +186,20 @@ const SpecificStudentPage = () => {
                     <>
                 <div className="px-4 py-4 col-span-6 h-auto shadow-md sm:rounded-lg border border-gray-50 bg-white">
                     
-                    <div className="w-full h-auto px-1 py-3 text-lg font-semibold">
+                    <div className="w-full h-auto px-1 py-3 text-lg font-semibold flex justify-between">
                         <p># {studentDetails.enrollment_no}</p>
+                        
+                        <Button  
+                            color="secondary" 
+                            variant="outlined" 
+                            className="rounded-lg"
+                            onClick={(e) => {
+                                    e.stopPropagation(); // Prevent the click from bubbling to the <td> click handler
+                                    handleEditClick(studentDetails);  // Open the form with selected course data
+                                    setIsModalOpen(true);   // Open the modal
+                                }}>
+                                <EditOutlined />
+                            </Button>
                     </div>
                         <div className="grid 2xl:grid-cols-6 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-2 px-4 py-4 gap-4">
 
@@ -311,12 +348,15 @@ const SpecificStudentPage = () => {
                                                                     ? dayjs(item.course_certificate_date)  // ✅ Show date from server
                                                                     : null
                                                         }
-                                                        onChange={(date, dateString) => {
+                                                        onChange={(date) => {
+                                                            if (!date) return; // Prevent errors if date is cleared
+                                                        
                                                             setCertificateData((prevState) => ({
                                                                 ...prevState,
-                                                                [item.id]: dateString,  // ✅ Store date per course ID
+                                                                [item.id]: dayjs(date).format("YYYY-MM-DD"), // Always update state correctly
                                                             }));
                                                         }}
+                                                        
                                                     />     
                                                     <Button variant="solid"   disabled={item.course_status !== "Completed"}
                                                         className={`mx-2 text-gray-50 ${item.course_certificate_date ? "bg-lime-600" : "bg-lime-500"}`}
@@ -540,7 +580,8 @@ const SpecificStudentPage = () => {
 
                         </div>
                 </div>
-                   
+                <CreateStudentForm isOpen={isModalOpen} selectedStudentData={selectedStudent || {}} onClose={() => setIsModalOpen(false)} />
+
         </div>  
         </>
     )

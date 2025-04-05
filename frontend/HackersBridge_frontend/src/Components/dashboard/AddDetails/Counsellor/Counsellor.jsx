@@ -5,6 +5,7 @@ import { Button, Empty, message, Popconfirm, Switch, Spin } from 'antd';
 import { EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { useCounsellorForm } from "./CounsellorContext";
 import AddCounsellorForm from "./AddCounsellorForm";
+import { useAuth } from "../../AuthContext/AuthContext";
 
 
 
@@ -17,7 +18,7 @@ const Counsellor = () => {
     const [counsellorStatuses, setCounsellorStatuses] = useState({}); // Store status per trainer
 
     const { counsellorData, loading, setCounsellorData, fetchCounsellors } = useCounsellorForm();
- 
+    const { token } = useAuth();
 
     // Fetch batches afer deletion or modal open
     useEffect(() => {
@@ -59,7 +60,9 @@ const Counsellor = () => {
         if (!counsellorId) return;
 
         try {
-            const response = await axios.delete(`${BASE_URL}/api/counsellors/delete/${counsellorId}/`);
+            const response = await axios.delete(`${BASE_URL}/api/counsellors/delete/${counsellorId}/`, 
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+            );
 
             if (response.status === 204) {
                 // Make sure coursesData is an array before filtering
@@ -94,7 +97,10 @@ const Counsellor = () => {
         setCounsellorStatuses((prev) => ({ ...prev, [counsellorId]: checked }));
     
         try {
-            await axios.put(`${BASE_URL}/api/counsellors/edit/${counsellorId}/`, { status: newStatus, email: counsellorEmail });
+            await axios.put(`${BASE_URL}/api/counsellors/edit/${counsellorId}/`, 
+                { status: newStatus, email: counsellorEmail },
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+            );
             message.success(`counsellor status updated to ${newStatus}`);
         } catch (error) {
             message.error("Failed to update status");

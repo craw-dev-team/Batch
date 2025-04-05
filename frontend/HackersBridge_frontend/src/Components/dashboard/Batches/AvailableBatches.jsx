@@ -6,6 +6,7 @@ import customParseFormat from "dayjs/plugin/customParseFormat";
 import axios from "axios";
 import dayjs from "dayjs";
 import BASE_URL from "../../../ip/Ip";
+import { useAuth } from "../AuthContext/AuthContext";
 
 
 
@@ -444,6 +445,9 @@ export default AvailableBatches;
 
 const CreateAvailableBatchForm = ({ isOpen, onClose, selectedBatch }) => {
     if (!isOpen) return null;
+
+    const { token } = useAuth();
+    
     const [ loading, setLoading ] = useState(false);
     const [batchFormData, setBatchFormData] = useState({
         batchId: "",
@@ -534,15 +538,17 @@ const CreateAvailableBatchForm = ({ isOpen, onClose, selectedBatch }) => {
 
         if (selectedBatch && selectedBatch.id) {
             // Update existing batch (PUT)
-            response = await axios.put(`${BASE_URL}/api/batches/edit/${selectedBatch.id}/`, payload, {
-                headers: { 'Content-Type': 'application/json' }
-            });
+            response = await axios.put(`${BASE_URL}/api/batches/edit/${selectedBatch.id}/`, 
+                payload, 
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+            );
             successMessage = "Batch updated successfully!";
         } else {
             // Add new batch (POST)
-            response = await axios.post(`${BASE_URL}/api/batches/add/`, payload, {
-                headers: { 'Content-Type': 'application/json' }
-            });
+            response = await axios.post(`${BASE_URL}/api/batches/add/`, 
+                payload, 
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+            );
             successMessage = "Batch added successfully!";
         }
 

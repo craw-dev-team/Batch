@@ -1,5 +1,6 @@
-import { useLocation, useParams } from "react-router-dom";
-import { Button, message, Popconfirm,  Avatar, Tag, Tooltip, Switch, Input, Spin, Empty  } from 'antd';
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { Avatar, Tag, Tooltip } from 'antd';
+import StudentCards from "./StudentCard";
 
 
 
@@ -7,21 +8,29 @@ const StudentsList = () => {
     const { type } = useParams(); // Get type from URL
     const location = useLocation();
     const { data } = location.state || { data: "No data available", type: "Unknown" };
+    
+    const navigate = useNavigate();
 
-
-    console.log(data, type);
     const filteredStudents = Array.isArray(data) ? data : [];
 
-    
+    const handleStudentClick = async (studentId) => {
+        if (!studentId) return;
+        const encodedStudentId = btoa(studentId)
+        navigate(`/students/${encodedStudentId}`)
+    };
+
     return (
         <>
         <div className="w-auto pt-4 px-2 mt-14 darkmode">
             <div className="relative w-full h-full shadow-md sm:rounded-lg darkmode border border-gray-50 dark:border dark:border-gray-600">
                 <div className={`overflow-hidden pb-2 relative `}>
                     <div className="w-full h-[47.5rem] overflow-y-auto dark:border-gray-700 rounded-lg pb-2">
-                        <h3 className="text-lg font-semibold mb-4"> {type === "enrolled_students"? "Students enrolled in batches": type === "today_added_students"? "Today added students" : type === "not_enrolled_students"? "Students not enrolled in batches yet" : type === "active_students"? "Active students" : "Inactive students"}</h3>
-                        <table className="w-full text-xs text-left text-gray-500 dark:text-gray-400 ">
-                        <thead className="text-xs text-gray-700 uppercase bg-blue-50 dark:bg-gray-700 dark:text-gray-400 sticky top-0 z-10">
+                        
+                        <StudentCards/>
+                        
+                        <h3 className="text-lg font-semibold my-4 px-4"> {type === "enrolled_students"? "Students Enrolled In Batches": type === "today_added_students"? "Today Added Students" : type === "not_enrolled_students"? "Students Not Enrolled In Batches Yet" : type === "active_students"? "Active Students" : "Inactive Students"}</h3>
+                        <table className="w-full text-xs text-left text-gray-500">
+                        <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10">
                             {["not_enrolled_students", "today_added_students", "enrolled_students", "active_students", "inactive_students"].includes(type) && (
                                 <>
                                 <tr>
@@ -80,10 +89,10 @@ const StudentsList = () => {
                                     <td className="px-3 py-2 md:px-2 font-medium text-gray-900 dark:text-white">
                                         {index + 1}
                                     </td>
-                                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer">
+                                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.id)}>
                                         {item.enrollment_no}
                                     </td>
-                                    <td className="px-3 py-2 md:px-1">
+                                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.id)}>
                                         {item.name}
                                     </td>
                                     <td className="px-3 py-2 md:px-1">

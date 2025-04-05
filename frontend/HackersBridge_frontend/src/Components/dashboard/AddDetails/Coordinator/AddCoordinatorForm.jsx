@@ -4,6 +4,7 @@ import { SyncOutlined } from '@ant-design/icons';
 import axios from "axios";
 import BASE_URL from "../../../../ip/Ip";
 import { useCoordinatorForm } from "./CoordinatorContext";
+import { useAuth } from "../../AuthContext/AuthContext";
 
 
 
@@ -14,6 +15,8 @@ const AddCoordinatorForm = ( { isOpen, onClose, coordinatorData } ) => {
     const isEditing = Boolean(coordinatorData?.id); 
 
     const { coordinatorFormData, setCoordinatorFormData, errors, setErrors, resetCoordinatorForm } = useCoordinatorForm();
+    const { token } = useAuth();
+
     const [ loading, setLoading] = useState(false);
 
 
@@ -50,7 +53,8 @@ const AddCoordinatorForm = ( { isOpen, onClose, coordinatorData } ) => {
                 phone: coordinatorFormData.coordinatorNumber,
                 weekoff: coordinatorFormData.coordinatorWeekOff,
             };
-            console.log("Final Payload:", JSON.stringify(payload, null, 2));
+            // console.log("Final Payload:", JSON.stringify(payload, null, 2));
+
 
             try {
                 setLoading(true); // Start loading
@@ -59,15 +63,17 @@ const AddCoordinatorForm = ( { isOpen, onClose, coordinatorData } ) => {
                 let successMessage = "";
                 if (coordinatorData && coordinatorData.id) {
                 // Update existing course (PUT)
-                response = await axios.put(`${BASE_URL}/api/coordinators/edit/${coordinatorData.id}/`, payload, {
-                    headers: { 'Content-Type': 'application/json' }
-                });
+                response = await axios.put(`${BASE_URL}/api/coordinators/edit/${coordinatorData.id}/`, 
+                    payload,
+                    { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                );
                 successMessage = "Coordinator updated successfully!";
                 } else {
                     // Add new course (POST)
-                    response = await axios.post(`${BASE_URL}/api/coordinators/add/`, payload, {
-                        headers: { 'Content-Type': 'application/json' }
-                    });
+                    response = await axios.post(`${BASE_URL}/api/coordinators/add/`, 
+                        payload, 
+                        { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                );
                     successMessage = "Coordinator added successfully!";
                 }
 

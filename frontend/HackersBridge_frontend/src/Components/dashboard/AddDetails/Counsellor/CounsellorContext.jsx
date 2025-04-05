@@ -28,9 +28,17 @@ const CounsellorFormProvider = ({ children }) => {
     const fetchCounsellors = async () => {
         if (loading) return;
         
+        const token = localStorage.getItem('token');
+        if (!token) {
+            console.error("No token found, user might be logged out.");
+            return;
+        };
+
         setLoading(true);
         try {
-            const response = await axios.get(`${BASE_URL}/api/counsellors/`);
+            const response = await axios.get(`${BASE_URL}/api/counsellors/`, 
+              { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+            );
             const data = response?.data;
           //  console.log(data);
            
