@@ -1,6 +1,8 @@
 from django.db import models
 from django.utils import timezone
 from datetime import date
+from auditlog.registry import auditlog
+from auditlog.models import AuditlogHistoryField
 # from django.contrib.auth import
 
 class Trainer(models.Model): 
@@ -55,6 +57,10 @@ class Trainer(models.Model):
     last_update_time = models.DateField(default=timezone.now)
     gen_time = models.DateTimeField(default=timezone.now)
 
+
+    # Add audit log tracking
+    history = AuditlogHistoryField()
+
     def calculate_inactive_days(self):
         """Calculate total days when the trainer was inactive."""
         inactive_periods = Trainer.objects.filter(
@@ -83,4 +89,7 @@ class Trainer(models.Model):
 
     def __str__(self):
         return self.name
+    
+# Register Trainer model for audit logging
+# auditlog.register(Trainer)
     

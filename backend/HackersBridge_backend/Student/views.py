@@ -1,3 +1,4 @@
+import os
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
@@ -9,33 +10,47 @@ from .serializer import StudentSerializer, InstallmentSerializer, StudentCourseS
 from nexus.models import Batch
 from django.db.models import Q
 from rest_framework.authtoken.models import Token
-from nexus.serializer import BatchStudentAssignment
+from nexus.serializer import BatchStudentAssignment, LogEntrySerializer
 from django.utils.timezone import now
 from django.http import FileResponse
-import os
-from django.core.mail import EmailMessage
 from nexus.generate_certificate import generate_certificate, get_certificate_path
-
+from django.core.mail import EmailMessage
+from auditlog.models import LogEntry
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.auth import get_user_model
+from django.forms.models import model_to_dict
+from django.utils.timezone import now
+import json
+import uuid
 
 # from django.contrib.auth.models import User
-from django.contrib.auth import get_user_model
 User = get_user_model()
+
 
 # ✅ Student List API (Only for Coordinators)
 class StudentListView(APIView):
-    # authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
-    # permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        # if request.user.role == 'admin':  # Ensure `role` exists in the User model
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
         students = Student.objects.prefetch_related('courses').select_related('course_counsellor', 'support_coordinator')
         serializer = StudentSerializer(students, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-    
-        # return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
+
+
 
 class StudentCrawListView(APIView):
+    authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
+    permission_classes = [IsAuthenticated]
+    
     def get(self, request, *args, **kwargs):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+        
         today = now().date()  # ✅ Get today's date
         
         total_students = Student.objects.count()
@@ -85,58 +100,135 @@ class StudentCrawListView(APIView):
         })
     
 
-# ✅ Add Student API (Only for Coordinators)
+
+
 class AddStudentView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
     def post(self, request):
-        # if request.user.role == 'admin':
-        serializer = StudentSerializer(data=request.data)
+        # ✅ Check user role (Only Admin & Coordinator can add students)
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = StudentSerializer(data=request.data, context={'request': request})  # ✅ Pass request context
         if serializer.is_valid():
             student = serializer.save()
+            
+            # ✅ Store student details
+            student_data = {field.name: getattr(student, field.name, None) for field in Student._meta.fields}   
+            changes_text = [f"Created field {field}: {value}" for field, value in student_data.items()]
+            
+            # ✅ Log entry for student creation
+            LogEntry.objects.create(
+                content_type=ContentType.objects.get_for_model(Student),
+                cid=str(uuid.uuid4()),  # ✅ Generate a unique correlation ID
+                object_pk=student.id,
+                object_id=student.id,
+                object_repr=f"Student ID: {student.enrollment_no} | Name: {student.name}",
+                action=LogEntry.Action.CREATE,
+                changes=f"Created Student: {student_data} by {request.user.username}",
+                serialized_data=json.dumps(model_to_dict(student), default=str),  # ✅ JSON serialized student data
+                changes_text=" ".join(changes_text),
+                additional_data="Student",
+                actor=request.user,
+                timestamp=now()
+            )
+            
             return Response({'message': 'Student added successfully', 'student_id': student.id}, status=status.HTTP_201_CREATED)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        # return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
 
 
 
 # ✅ Edit Student API with email update handling
 class EditStudentView(APIView):
-    # authentication_classes = [TokenAuthentication]
-    # permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def put(self, request, id):
-        # if request.user.role == 'admin':
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
         student = get_object_or_404(Student, id=id)
+        old_student_data = model_to_dict(student)  # Get all old field values
         old_email = student.email  # Store old email before update
-        
-        serializer = StudentSerializer(student, data=request.data, partial=True)
+
+        # ✅ Pass request context for proper handling in serializer
+        serializer = StudentSerializer(student, data=request.data, partial=True, context={'request': request})
 
         if serializer.is_valid():
-            serializer.save()
+            student = serializer.save()
+            new_student_data = model_to_dict(student)  # Get new field values
+            
+            # ✅ Generate a unique correlation ID for logging
+            cid = str(uuid.uuid4())
 
             # ✅ Update User email if changed
             new_email = serializer.validated_data.get('email')
             if old_email and new_email and old_email != new_email:
-                try:
-                    user = User.objects.get(email=old_email)
+                user = User.objects.filter(email=old_email).first()
+                if user:
                     user.email = new_email
                     user.save()
-                except User.DoesNotExist:
-                    pass  # User record might not exist if not linked
 
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            # ✅ Track what changed
+            changes = {}
+            for field, old_value in old_student_data.items():
+                new_value = new_student_data.get(field)
+                if old_value != new_value:  # Only log changes
+                    changes[field] = {
+                        "old": str(old_value) if old_value else "None",
+                        "new": str(new_value) if new_value else "None"
+                    }
+
+            changes_text = []
+            for field, change in changes.items():
+                if change["old"] != "None" and change["new"] != "None":
+                    changes_text.append(f"Updated {field} from {change['old']} to {change['new']}.")
+                elif change["new"] != "None":
+                    changes_text.append(f"Added {field}: {change['new']}.")
+                elif change["old"] != "None":
+                    changes_text.append(f"Removed {field}: {change['old']}.")
+
+            # ✅ Log detailed update action
+            LogEntry.objects.create(
+                content_type=ContentType.objects.get_for_model(Student),
+                cid=cid,
+                object_pk=student.id,
+                object_id=student.id,
+                object_repr=f"Student ID: {student.enrollment_no} | Name: {student.name}",
+                action=LogEntry.Action.UPDATE,
+                changes=f"Updated student: {student.name} by {request.user.username}. Changes: {changes}",
+                serialized_data=json.dumps(model_to_dict(student), default=str),
+                changes_text=" ".join(changes_text),
+                additional_data="Student",
+                actor=request.user,
+                timestamp=now()
+            )
+
+            return Response({
+                'message': 'Student updated successfully',
+                'student_id': student.id
+            }, status=status.HTTP_200_OK)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        # return Response({'detail': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
 
 
 
 # ✅ Add Fees API
 class AddFeesView(APIView):
-    # authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
-    # permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, student_id):
-        # if request.user.role == 'admin':
+    
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
         student = get_object_or_404(Student, id=student_id)
         data = request.data
         payment = float(data['payment'])
@@ -162,34 +254,16 @@ class AddFeesView(APIView):
 
         return Response({'message': 'Fees added successfully'}, status=status.HTTP_201_CREATED)
         
-        # else:
-        #     return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
-
-
-
-
-# # ✅ Student Info API
-# class StudentInfoView(APIView):
-#     permission_classes = [IsAuthenticated]
-
-#     def get(self, request, id):
-#         if request.user.role == 'admin':
-#             student = get_object_or_404(Student, id=id)
-#             serializer = StudentSerializer(student)
-#             return Response(serializer.data, status=status.HTTP_200_OK)
-        
-#         else:
-#             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
-
-
-
 
 
 class StudentInfoAPIView(APIView):
-    # authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
-    # permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, id):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+        
         # Get the student by ID
         student = get_object_or_404(Student, id=id)
 
@@ -232,6 +306,11 @@ class StudentInfoAPIView(APIView):
         # Get total student count
         student_count = Student.objects.count()
 
+        # ✅ Fetch logs for this student
+        student_ct = ContentType.objects.get_for_model(Student)
+        student_logs = LogEntry.objects.filter(content_type=student_ct, object_id=student.id).order_by('-timestamp')
+        serialized_logs = LogEntrySerializer(student_logs, many=True).data
+
         # Build response data
         response_data = {
             "All_in_One": {
@@ -253,6 +332,7 @@ class StudentInfoAPIView(APIView):
                 'all_upcoming_batch': list(filtered_upcoming_batches.values(
                     *[field.name for field in Batch._meta.fields], 'course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time'
                 )),
+                'student_logs': serialized_logs,
             }
         }
 
@@ -261,27 +341,81 @@ class StudentInfoAPIView(APIView):
 
 class StudentCourseEditAPIView(APIView):
     """API to edit an existing StudentCourse record."""
-    # permission_classes = [IsAuthenticated]  # Uncomment to enable authentication
+    authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
+    permission_classes = [IsAuthenticated]
 
     def patch(self, request, id, *args, **kwargs):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+        
         """Allows partial updates (e.g., only updating status or certificate_date)."""
         student_course = get_object_or_404(StudentCourse, id=id)
-        serializer = StudentCourseSerializer(student_course, data=request.data, partial=True)  # Partial update
+        old_student_course_data = model_to_dict(student_course)  # Get old field values
 
+        serializer = StudentCourseSerializer(student_course, data=request.data, partial=True)
+        
         if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "StudentCourse updated successfully", "data": serializer.data}, status=status.HTTP_200_OK)
+            student_course = serializer.save()
+            new_student_course_data = model_to_dict(student_course)  # Get new field values
+            
+            # ✅ Generate a unique correlation ID for logging
+            cid = str(uuid.uuid4())  
+
+            # ✅ Track what changed
+            changes = {}
+            for field, old_value in old_student_course_data.items():
+                new_value = new_student_course_data.get(field)
+                if old_value != new_value:  # Only log changes
+                    changes[field] = {
+                        "old": str(old_value) if old_value else "None",
+                        "new": str(new_value) if new_value else "None"
+                    }
+
+            changes_text = []
+            for field, change in changes.items():
+                if change["old"] != "None" and change["new"] != "None":
+                    changes_text.append(f"Updated {field} from {change['old']} to {change['new']}.")
+                elif change["new"] != "None":
+                    changes_text.append(f"Added {field}: {change['new']}.")
+                elif change["old"] != "None":
+                    changes_text.append(f"Removed {field}: {change['old']}.")
+
+            # ✅ Log detailed update action
+            LogEntry.objects.create(
+                content_type=ContentType.objects.get_for_model(StudentCourse),
+                cid=cid,
+                object_pk=student_course.id,
+                object_id=student_course.id,
+                object_repr=f"Student ID: {student_course.student.enrollment_no} | Student: {student_course.student.name}",
+                action=LogEntry.Action.UPDATE,
+                changes=f"Updated StudentCourse: {student_course.id} by {request.user.username}. Changes: {changes}",
+                serialized_data=json.dumps(model_to_dict(student_course), default=str),
+                changes_text=" ".join(changes_text),
+                additional_data="Student",
+                actor=request.user,
+                timestamp=now()
+            )
+
+            return Response({
+                "message": "StudentCourse updated successfully", 
+                "student_course_id": student_course.id,
+                "changes": changes_text
+            }, status=status.HTTP_200_OK)
         
         return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-        # # Ensure status is "Complete" before processing
-        # if student_course.status != "Completed":
-        #     return Response({'error': 'Certificate can only be generated for completed courses'}, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 
 
 class GenerateCertificateAPIView(APIView):
+    authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
+    permission_classes = [IsAuthenticated]
+
     def patch(self, request, id, *args, **kwargs):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
         student_course = get_object_or_404(StudentCourse, id=id)
 
         # Ensure course is marked as "Completed"
@@ -305,6 +439,22 @@ class GenerateCertificateAPIView(APIView):
                 # ✅ Update student_certificate_allotment to True
                 student_course.student_certificate_allotment = True
                 student_course.save(update_fields=['student_certificate_allotment'])
+
+                # ✅ Log certificate generation
+                LogEntry.objects.create(
+                    content_type=ContentType.objects.get_for_model(StudentCourse),
+                    cid=str(uuid.uuid4()),  # ✅ Generate unique correlation ID
+                    object_pk=student_course.id,
+                    object_id=student_course.id,
+                    object_repr=f"Certificate Generated - Student: {student.name} | Course: {course.name}",
+                    action=LogEntry.Action.CREATE,
+                    changes=f"Generated Certificate for Student: {student.name}, Course: {course.name}, Certificate No: {certificate_no}",
+                    actor=request.user,
+                    serialized_data=json.dumps(model_to_dict(student_course), default=str),  # ✅ JSON serialized data
+                    changes_text=f"Certificate generated for {student.name} in {course.name}.",
+                    additional_data="Student",
+                    timestamp=now()
+                )
 
                 # 📧 Send Email Notification
                 subject = f"🎉 Congratulations, {student.name}! Your {course.name} Certificate is Here!"
@@ -347,46 +497,74 @@ Best regards,
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 
 
-# ✅ Delete Student API with user & token deletion
 class DeleteStudentView(APIView):
-    # authentication_classes = [TokenAuthentication]
-    # permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def delete(self, request, id):
-        # if request.user.role == 'admin':
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+        
         student = get_object_or_404(Student, id=id)
+        
+        # ✅ Store student details before deleting
+        student_data = {field.name: getattr(student, field.name, None) for field in Student._meta.fields}
+        student_id = student.id
+        student_enrollment_no = student.enrollment_no
+        student_name = student.name
 
         # Attempt to get the associated user
         user = None
         if student.enrollment_no:
             user = User.objects.filter(username=student.enrollment_no).first()
 
-        # Delete the student record
+        if user:
+            # ✅ Delete associated token(s)
+            Token.objects.filter(user=user).delete()
+            # ✅ Delete the user account linked to the student
+            user.delete()
+
+        # ✅ Delete the student record
         student.delete()
 
-        if user:
-            # Delete associated token(s)
-            Token.objects.filter(user=user).delete()
-            # Delete the user account linked to the student
-            user.delete()
+        # ✅ Log deletion
+        changes_text = [f"Deleted field {field}: {value}" for field, value in student_data.items()]
+
+        LogEntry.objects.create(
+            content_type=ContentType.objects.get_for_model(Student),
+            cid=str(uuid.uuid4()),  # ✅ Generate unique correlation ID
+            object_pk=student_id,
+            object_id=student_id,
+            object_repr=f"Student ID: {student_enrollment_no} | Name: {student_name}",
+            action=LogEntry.Action.DELETE,
+            changes=f"Deleted Student: {student_data} by {request.user.username}",
+            actor=request.user,
+            serialized_data=json.dumps(student_data, default=str),  # ✅ JSON serialized student data
+            changes_text=" ".join(changes_text),
+            additional_data="Student",
+            timestamp=now()
+        )
 
         return Response(
             {'detail': 'Student, associated user, and authentication token deleted successfully'},
             status=status.HTTP_204_NO_CONTENT
         )
 
-        # return Response({'detail': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
-
 
 
 
 class DownloadCertificateAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
     def get(self, request, id, *args, **kwargs):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
         # Fetch the student course
         student_course = get_object_or_404(StudentCourse, id=id)
 
@@ -399,6 +577,41 @@ class DownloadCertificateAPIView(APIView):
 
         # Ensure the file exists
         if os.path.exists(file_path):
+            # ✅ Log certificate download action
+            log_entry = LogEntry.objects.create(
+                content_type=ContentType.objects.get_for_model(StudentCourse),
+                cid=str(uuid.uuid4()),
+                object_pk=student_course.id,
+                object_id=student_course.id,
+                object_repr=f"Student: {student_course.student.name} | Course: {student_course.course.name}",
+                action=LogEntry.Action.UPDATE,
+                changes=f"Downloaded certificate for {student_course.student.name} ({student_course.student.enrollment_no}) in {student_course.course.name}",
+                actor=request.user,
+                serialized_data=json.dumps({
+                    "student_name": student_course.student.name,
+                    "enrollment_no": student_course.student.enrollment_no,
+                    "course": student_course.course.name,
+                    "certificate_allotted": student_course.student_certificate_allotment
+                }, default=str),
+                changes_text=f"Certificate downloaded for {student_course.student.name}",
+                additional_data="Student",
+                timestamp=now()
+            )
+
             return FileResponse(open(file_path, 'rb'), content_type='application/pdf')
-        
+
         return Response({'error': 'Certificate file not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+
+class StudentLogListView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error':'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
+        student_ct = ContentType.objects.get_for_model(Student)
+        logs = LogEntry.objects.filter(content_type=student_ct).order_by('-timestamp')
+        serializer = LogEntrySerializer(logs, many=True)
+        return Response(serializer.data)

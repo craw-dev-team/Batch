@@ -16,6 +16,7 @@ urlpatterns = [
     path('verify-otp/', VerifyOTPView.as_view(), name='verify-otp'),
     path('reset-password/', ResetPasswordView.as_view(), name='reset-password'),
     path('logout/', UserLogoutAPIView.as_view(), name='logout'),  # Add logout route
+    path('logs/', LogEntryListAPIView.as_view(), name='log-list'),
 
     path('courses/', CourseListAPIView.as_view(), name='course-list'),
     path('courses/add/', CourseCreateAPIView.as_view(), name='course-create'),
@@ -24,6 +25,7 @@ urlpatterns = [
     
     path('coordinators/', CoordinatorListView.as_view(), name='coordinator-list'),
     path('coordinators/add/', CoordinatorCreateAPIView.as_view(), name='coordinator-create'),
+    path('coordinators-logs/', CoordinatorLogListView.as_view(), name='coordinators-logs'),
     path('coordinators/edit/<int:id>/', CoordinatorEditAPIView.as_view(), name='coordinator-edit'),
     path('coordinators/delete/<int:id>/', CoordinatorDeleteAPIView.as_view(), name='coordinator-delete'),
     path('coordinators/<int:id>/students/', StudentsUnderCoordinatorView.as_view(), name='coordinator-list'),
@@ -32,14 +34,16 @@ urlpatterns = [
     
     path('counsellors/', CounsellorListView.as_view(), name='counsellor-list'),
     path('counsellors/add/', CounsellorCreateAPIView.as_view(), name='counsellor-create'),
+    path('counsellors-logs/', CounsellorLogListView.as_view(), name='coordinators-logs'),
     path('counsellors/edit/<int:id>/', CounsellorEditAPIView.as_view(), name='counsellor-edit'),
     path('counsellors/delete/<int:id>/', CounsellorDeleteAPIView.as_view(), name='counsellor-delete'),
     path('counsellors/<int:id>/students/', StudentsUnderCounsellorView.as_view(), name='coordinator-list'),
     path('counsellors/info/<int:id>/', CousellorInfoAPIView.as_view(), name='counsellor-info'),
     
     path('students/', StudentListView.as_view(), name='student-list'),
-    path('studentscraw/', StudentCrawListView.as_view(), name='student-list'),
     path('students/add/', AddStudentView.as_view(), name='add-student'),
+    path('studentscraw/', StudentCrawListView.as_view(), name='student-list'),
+    path('students-logs/', StudentLogListView.as_view(), name='student-logs'),
     path('students/edit/<int:id>/', EditStudentView.as_view(), name='edit-student'),
     path('students/fees/<int:student_id>/', AddFeesView.as_view(), name='add-fees'),
     path('students/info/<int:id>/', StudentInfoAPIView.as_view(), name='student-info'),
@@ -50,6 +54,7 @@ urlpatterns = [
     
     path('trainers/', TrainerListAPIviews.as_view(), name='trainer-list'),
     path('trainers/add/', AddTrainerAPIView.as_view(), name='add_trainer_api'),
+    path('trainers-logs/', TrainerLogListView.as_view(), name='trainers-logs'),
     path('trainers/info/<int:id>/', TrainerInfoAPIView.as_view(), name='info_trainer_api'),
     path('trainers/edit/<int:id>/', EditTrainerAPIView.as_view(), name='edit_trainer_api'),
     path('trainers/delete/<int:id>/', DeleteTrainerAPIView.as_view(), name='delete_trainer_api'),

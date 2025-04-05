@@ -34,7 +34,7 @@ class StudentSerializer(serializers.ModelSerializer):
                     'courses', 'mode', 'location', 'preferred_week', 'status', 'course_counsellor',
                     'support_coordinator', 'note', 'dob', 'last_update_user', 'student_assing_by',
                     'last_update_datetime', 'course_counsellor_name', 'support_coordinator_name',
-                    'courses_names', 'complete_course', 'complete_course_id', 'complete_course_name']
+                    'courses_names', 'complete_course', 'complete_course_id', 'complete_course_name', 'alternate_phone']
 
     def get_course_counsellor_name(self, obj):
         return obj.course_counsellor.name if obj.course_counsellor else None
@@ -59,12 +59,81 @@ class StudentSerializer(serializers.ModelSerializer):
         # Ensure we are accessing the `course` through the relationship
         return [student_course.course.id for student_course in completed_courses]
 
+    # def create(self, validated_data):
+    #     temp_password = get_random_string(length=8)
+
+    #     # ✅ Extract and remove fields that are not in the Student model
+    #     courses = validated_data.pop('courses', [])
+    #     completed_courses = validated_data.pop('complete_course', [])
+
+    #     request_user = self.context['request'].user  # ✅ Get the logged-in user
+
+    #     # ✅ Set additional fields before saving
+    #     validated_data['last_update_user'] = request_user  # User making the request
+    #     validated_data['student_assing_by'] = request_user if request_user.role == 'coordinator' else None
+    #     # validated_data['last_update_datetime'] = timezone.now()
+        
+        
+        
+        
+    #     # ✅ Create the Student instance
+    #     student = Student.objects.create(**validated_data)
+
+    #     # ✅ Assign ManyToMany courses
+    #     if courses:
+    #         student.courses.set(courses)
+
+    #     # ✅ If complete_course is provided, update StudentCourse records
+    #     if completed_courses:
+    #         StudentCourse.objects.filter(student=student, course__in=completed_courses).update(status='Completed')
+
+
+    #     email = validated_data.get('email')
+    #     if email:
+    #         try:
+    #             # ✅ Ensure `User` is created
+    #             user = User.objects.create_user(
+    #                 username=student.enrollment_no,  # Use provided enrollment_no
+    #                 email=email,
+    #                 password=temp_password
+    #             )
+    #             user.role = 'student'  # Ensure role exists in `User` model
+    #             user.save()
+
+    #             # ✅ Create an authentication token for the user
+    #             Token.objects.create(user=user)
+
+    #             # ✅ Send Email
+    #             # send_mail(
+    #             #     subject="Your Temporary Password",
+    #             #     message=f"Your temporary password is: {temp_password}. Please log in and reset your password.",
+    #             #     from_email="noreply@yourdomain.com",
+    #             #     recipient_list=[user.email],
+    #             #     fail_silently=False,
+    #             # )
+
+    #             print(f"✅ User created: {user.username}, Email: {user.email}")
+
+    #         except Exception as e:
+    #             print(f"❌ Error creating user: {e}")
+
+    #     return student
+
+
+
     def create(self, validated_data):
         temp_password = get_random_string(length=8)
 
         # ✅ Extract and remove fields that are not in the Student model
         courses = validated_data.pop('courses', [])
         completed_courses = validated_data.pop('complete_course', [])
+
+        request_user = self.context['request'].user  # ✅ Get the logged-in user
+
+        # ✅ Set additional fields before saving
+        validated_data['last_update_user'] = request_user  # Assign logged-in user
+        validated_data['student_assing_by'] = request_user  # Assign only if the user is a Coordinator
+        # validated_data['last_update_datetime'] = timezone.now()
 
         # ✅ Create the Student instance
         student = Student.objects.create(**validated_data)
@@ -76,7 +145,6 @@ class StudentSerializer(serializers.ModelSerializer):
         # ✅ If complete_course is provided, update StudentCourse records
         if completed_courses:
             StudentCourse.objects.filter(student=student, course__in=completed_courses).update(status='Completed')
-
 
         email = validated_data.get('email')
         if email:
@@ -93,15 +161,6 @@ class StudentSerializer(serializers.ModelSerializer):
                 # ✅ Create an authentication token for the user
                 Token.objects.create(user=user)
 
-                # ✅ Send Email
-                # send_mail(
-                #     subject="Your Temporary Password",
-                #     message=f"Your temporary password is: {temp_password}. Please log in and reset your password.",
-                #     from_email="noreply@yourdomain.com",
-                #     recipient_list=[user.email],
-                #     fail_silently=False,
-                # )
-
                 print(f"✅ User created: {user.username}, Email: {user.email}")
 
             except Exception as e:
@@ -112,7 +171,10 @@ class StudentSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         """Update an existing student record and handle courses & completed courses."""
 
-        # ✅ Update instance fields
+        request_user = self.context['request'].user  # ✅ Get the logged-in user
+        instance.last_update_user = request_user  # ✅ Assign last_update_user before saving
+
+        # ✅ Update instance fields except 'courses' and 'complete_course'
         for attr, value in validated_data.items():
             if attr not in ['courses', 'complete_course']:
                 setattr(instance, attr, value)
@@ -121,10 +183,11 @@ class StudentSerializer(serializers.ModelSerializer):
         if 'courses' in validated_data:
             instance.courses.set(validated_data['courses'])
 
-        # ✅ Update completed courses
+        # ✅ Update completed courses properly
         if 'complete_course' in validated_data:
             completed_courses = validated_data['complete_course']
-            StudentCourse.objects.filter(student=instance, course__in=completed_courses).update(status='Completed')
+            for course in completed_courses:
+                StudentCourse.objects.filter(student=instance, course=course).update(status='Completed')
 
         # ✅ Save the updated instance
         instance.save()

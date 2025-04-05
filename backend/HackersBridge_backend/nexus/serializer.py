@@ -11,6 +11,8 @@ from django.core.mail import send_mail
 from django.utils.crypto import get_random_string
 import random
 from Student.serializer import StudentSerializer
+from auditlog.models import LogEntry
+from django.contrib.contenttypes.models import ContentType
 
 
 User = get_user_model()
@@ -585,3 +587,18 @@ class BatchCreateSerializer(serializers.ModelSerializer):
         instance.save()
 
         return instance
+    
+
+class LogEntrySerializer(serializers.ModelSerializer):
+    content_type = serializers.SlugRelatedField(
+        queryset=ContentType.objects.all(), slug_field='model'
+    )
+    actor = serializers.StringRelatedField()  # Shows actor's username
+
+    class Meta:
+        model = LogEntry
+        fields = [
+            'id', 'cid', 'content_type', 'object_id', 'object_pk', 
+            'object_repr', 'action', 'changes', 'changes_text',
+            'serialized_data', 'actor', 'remote_addr', 'timestamp', 'additional_data'
+        ]

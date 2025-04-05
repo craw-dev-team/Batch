@@ -7,7 +7,7 @@ from rest_framework import status
 from nexus.models import *
 from .serializer import TrainerSerializer
 from .models import *
-from nexus.models import *
+from nexus.serializer import LogEntrySerializer
 from Coordinator.models import *
 from Counsellor.models import *
 from django.utils.crypto import get_random_string
@@ -17,18 +17,25 @@ from rest_framework.authentication import TokenAuthentication
 from django.contrib.auth import get_user_model
 from rest_framework.authtoken.models import Token
 from django.core.mail import send_mail
-
-
+from auditlog.middleware import AuditlogMiddleware
+from auditlog.models import LogEntry
+from django.contrib.contenttypes.models import ContentType
+from django.forms.models import model_to_dict
+import json
+import uuid
 
 User = get_user_model()  # Get custom User model if used
-
+cid = str(uuid.uuid4())
 
 # For Trainer-List-Only
 class TrainerListAPIviews(APIView):
-    # authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
-    # permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
+    permission_classes = [IsAuthenticated]
     
     def get(self, request):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+        
         try:
             trainers = Trainer.objects.prefetch_related('course', 'timeslot').select_related('coordinator', 'teamleader')
             teamleaders = trainers.filter(is_teamleader=True)  # ✅ Optimized filtering
@@ -44,9 +51,18 @@ class TrainerListAPIviews(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)  # ✅ Error handling
 
 
+
+
+
 # For Trainer-Availability-In-CurrentlyFreeTrainers-Or-FutureAvailabilityOfTrainers
 class TrainerAvailabilityAPIView(APIView):
+    authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
         today = date.today()
 
         # Fetch trainers with their assigned timeslots
@@ -148,47 +164,19 @@ class TrainerAvailabilityAPIView(APIView):
 
 
 
-        # Step 5: Get trainers with future availability
-        # future_available_trainers = Trainer.objects.annotate(
-        #     batch_count=Count('batch', filter=~Q(batch__status='Completed')),
-        #     next_end_date=Min('batch__end_date', filter=~Q(batch__status='Completed'))
-        # ).prefetch_related(
-        #     'batch_set'
-        # )
 
-        # future_availability_trainers = []
-        # for trainer in future_available_trainers:
-        #     if trainer.batch_count > 0:
-        #         for batch in trainer.batch_set.all():
-        #             if batch.status != 'Completed':
-        #                 free_days = (batch.end_date - today).days
-        #                 if free_days >= 0:
-        #                     future_availability_trainers.append({
-        #                         'trainer_id': trainer.trainer_id,
-        #                         'name': trainer.name,
-        #                         'start_date': batch.start_date,
-        #                         'end_date': batch.end_date,
-        #                         'batch_count': trainer.batch_count,
-        #                         'batch_id': batch.batch_id,
-        #                         'batch_course':batch.course.name,
-        #                         'batch_week': batch.preferred_week,
-        #                         'free_days': free_days,
-        #                         'start_time': getattr(batch.batch_time, 'start_time', "N/A"),
-        #                         'end_time': getattr(batch.batch_time, 'end_time', "N/A")
-        #                     })
-
-        # # Sort future availability trainers by earliest free date
-        # future_availability_trainers.sort(key=lambda x: x['free_days'])
 
 class AddTrainerAPIView(APIView):
     """API View to add a new trainer (without creating a user)"""
-    # authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
-    # permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
         """Handle POST request to create a new trainer"""
-        # if request.user.role == 'admin':
-        serializer = TrainerSerializer(data=request.data)
+        serializer = TrainerSerializer(data=request.data,  context={'request': request})
 
         if serializer.is_valid():
             # Get the currently logged-in coordinator
@@ -199,62 +187,30 @@ class AddTrainerAPIView(APIView):
 
             trainer = serializer.save(last_update_user=last_update_user)
 
+            
+            trainer_data = {field.name: getattr(trainer, field.name, None) for field in Trainer._meta.fields}   
+            changes_text = [f"Created field {field}: {value}" for field, value in trainer_data.items()]
+
+            LogEntry.objects.create(
+                content_type=ContentType.objects.get_for_model(Trainer),
+                cid=cid,  # ✅ Now properly defined
+                object_pk=trainer.id,
+                object_id=trainer.id,
+                object_repr=f"Trainer ID: {trainer.trainer_id} | Name: {trainer.name}",
+                action=LogEntry.Action.CREATE,
+                changes=f"Created Trainer: {trainer_data} by {request.user.username}",
+                serialized_data=json.dumps(model_to_dict(trainer), default=str),  # ✅ JSON serialized trainer data
+                changes_text=" ".join(changes_text),
+                additional_data="Trainer",
+                actor=request.user,
+                timestamp=now()
+            )
             return Response({
                 'message': 'Trainer added successfully',
                 'trainer_id': trainer.trainer_id,
             }, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
-        # else:
-        #     return Response({'error': 'Only admin can add trainers'}, status=status.HTTP_403_FORBIDDEN)
-
-
-
-
-
-# class AddTrainerAPIView(APIView):
-#     """API View to handle adding a new trainer"""
-#     permission_classes = [IsAuthenticated]
-
-#     def post(self, request):
-#         """Handle POST request to create a new trainer"""
-#         if request.user.role != 'coordinator':
-#             return Response({'error': 'Only coordinators can add trainers'}, status=status.HTTP_403_FORBIDDEN)
-
-#         serializer = AddTrainerSerializer(data=request.data)
-
-#         if serializer.is_valid():
-#             # Get the currently logged-in coordinator
-#             try:
-#                 last_update_coordinator = Coordinator.objects.get(coordinator_id=request.user.username)
-#             except Coordinator.DoesNotExist:
-#                 return Response({'error': 'Coordinator not found'}, status=status.HTTP_400_BAD_REQUEST)
-
-#             trainer = serializer.save(last_update_coordinator=last_update_coordinator)
-
-#             return Response({
-#                 'message': 'Trainer added successfully',
-#                 'trainer_id': trainer.trainer_id,
-#                 # 'password': get_random_string(length=12)  # Just an example, should be securely shared
-#                 'password': trainer.phone  # Just an example, should be securely shared
-#             }, status=status.HTTP_201_CREATED)
-#         else:
-#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-
-
-#     """
-#     API view to retrieve a list of trainers who are team leaders.
-#     """
-# class TeamLeaderListView(APIView):
-    
-#     def get(self, request):
-#             isTeamleader = Trainer.objects.filter(is_teamleader=True)
-#             serializer = TrainerSerializer(isTeamleader, many=True)
-#             return Response(serializer.data, status=status.HTTP_200_OK)
-            
 
 
 
@@ -262,39 +218,77 @@ class AddTrainerAPIView(APIView):
 
 class EditTrainerAPIView(APIView):
     """API View to edit an existing trainer"""
-    # permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def put(self, request, id):
         """Handle PUT request to update trainer details"""
-        # if request.user.role != 'admin':
-        #     return Response({'error': 'Only admins can edit trainers'}, status=status.HTTP_403_FORBIDDEN)
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
 
         trainer = get_object_or_404(Trainer, id=id)
-        old_email = trainer.email  # Store old email before updating
-        previous_status = trainer.status  # Store previous status before updating
+        old_trainer_data = model_to_dict(trainer)  # Get all old field values
 
-        serializer = TrainerSerializer(trainer, data=request.data, partial=True)
+        serializer = TrainerSerializer(trainer, data=request.data, partial=True, context={'request': request})
 
         if serializer.is_valid():
+            old_email = trainer.email 
             trainer = serializer.save(last_update_coordinator=request.user)
+            new_trainer_data = model_to_dict(trainer)  # Get new field values
+            
+            # ✅ Generate a unique correlation ID for logging
+            cid = str(uuid.uuid4())  
 
             # ✅ Update User email if changed
             if old_email != serializer.validated_data.get('email'):
-                try:
-                    user = User.objects.get(email=old_email)
+                user = User.objects.filter(email=old_email).first()
+                if user:
                     user.email = serializer.validated_data.get('email')
                     user.save()
-                except User.DoesNotExist:
-                    return Response({'error': 'Associated user not found'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # ✅ Track what changed
+            changes = {}
+            for field, old_value in old_trainer_data.items():
+                new_value = new_trainer_data.get(field)
+                if old_value != new_value:  # Only log changes
+                    changes[field] = {
+                        "old": str(old_value) if old_value else "None",
+                        "new": str(new_value) if new_value else "None"
+                    }
+
+            changes_text = []
+            for field, change in changes.items():
+                if change["old"] != "None" and change["new"] != "None":
+                    changes_text.append(f"Updated {field} from {change['old']} to {change['new']}.")
+                elif change["new"] != "None":
+                    changes_text.append(f"Added {field}: {change['new']}.")
+                elif change["old"] != "None":
+                    changes_text.append(f"Removed {field}: {change['old']}.")
 
             # ✅ Check if status changed to Inactive
-            if previous_status == "Active" and trainer.status == "Inactive":
+            if old_trainer_data.get('status') == "Active" and trainer.status == "Inactive":
                 trainer.status_change_date = now().date()
                 trainer.save()
 
             # ✅ Calculate inactive days
             inactive_days = trainer.calculate_inactive_days()
-            
+
+            # ✅ Log detailed update action
+            LogEntry.objects.create(
+                content_type=ContentType.objects.get_for_model(Trainer),
+                cid=cid,  # ✅ Now properly defined
+                object_pk=trainer.id,
+                object_id=trainer.id,
+                object_repr=f"Trainer ID: {trainer.trainer_id} | Name: {trainer.name}",
+                action=LogEntry.Action.UPDATE,
+                changes=f"Updated trainer: {trainer.name} by {request.user.username}. Changes: {changes}",  # ✅ JSON serialized changes
+                serialized_data=json.dumps(model_to_dict(trainer), default=str),  # ✅ JSON serialized trainer data
+                changes_text=" ".join(changes_text),
+                additional_data="Trainer",
+                actor=request.user,
+                timestamp=now()
+            )
+
             return Response({
                 'message': 'Trainer updated successfully',
                 'trainer_id': trainer.trainer_id,
@@ -304,22 +298,31 @@ class EditTrainerAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+
+
+
 class DeleteTrainerAPIView(APIView):
     """API View to delete a trainer"""
-    # permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
+    permission_classes = [IsAuthenticated]
 
     def delete(self, request, id):
         """Handle DELETE request to remove a trainer"""
-        # if request.user.role != 'admin':
-        #     return Response({'error': 'Only admins can delete trainers'}, status=status.HTTP_403_FORBIDDEN)
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
 
         trainer = get_object_or_404(Trainer, id=id)
+        # ✅ Store trainer details before deleting
+        trainer_data = {field.name: getattr(trainer, field.name, None) for field in Trainer._meta.fields}
+        trainer_id = trainer.id
+        trainer_id_no = trainer.trainer_id
+        trainer_name = trainer.name
 
         try:
             user = User.objects.get(username=trainer.trainer_id)  # Get user by trainer ID
         except User.DoesNotExist:
             return Response({'error': 'Associated user not found'}, status=status.HTTP_400_BAD_REQUEST)
-
+        
         # ✅ Delete authentication tokens
         Token.objects.filter(user=user).delete()
 
@@ -328,49 +331,40 @@ class DeleteTrainerAPIView(APIView):
 
         # ✅ Delete associated user
         user.delete()
+
+        # ✅ Log deletion
+        changes_text = [f"Deleted field {field}: {value}" for field, value in trainer_data.items()]
+
+
+        # ✅ Log deletion
+        LogEntry.objects.create(
+            content_type=ContentType.objects.get_for_model(Trainer),
+            cid=cid,  # ✅ Now properly defined
+            object_pk=trainer_id,
+            object_id=trainer_id,
+            object_repr=f"Trainer ID: {trainer_id_no} | Name: {trainer_name}",
+            action=LogEntry.Action.DELETE,
+            changes=f"Created Trainer: {trainer_data} by {request.user.username}",
+            actor=request.user,
+            serialized_data=json.dumps(model_to_dict(trainer), default=str),  # ✅ JSON serialized trainer data
+            changes_text=" ".join(changes_text),
+            additional_data="Trainer",
+            timestamp=now()
+        )
         
         return Response({'message': 'Trainer, user account, and authentication token deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
     
 
 
 
-# class TrainerInfoAPIView(APIView):
-#     def get(self, request, id):
-#         trainer = get_object_or_404(Trainer, id=id)
-
-#         trainer_batches = {
-#             'Upcoming': Batch.objects.filter(trainer=trainer, status='Upcoming').select_related('course', 'batch_time'),
-#             'Ongoing': Batch.objects.filter(trainer=trainer, status='Running').select_related('course', 'batch_time'),
-#             'Completed': Batch.objects.filter(trainer=trainer, status='Completed').select_related('course', 'batch_time'),
-#             'Hold': Batch.objects.filter(trainer=trainer, status='Hold').select_related('course', 'batch_time'),
-#             'Cancelled' : Batch.objects.filter(trainer=trainer, status='Cancelled').select_related('course', 'batch_time'),
-#         }
-
-#         trainer_data = {'trainer': TrainerSerializer(trainer).data}
-
-#         for batch_status, batches in trainer_batches.items():  # Rename 'status' to 'batch_status'
-#             trainer_data[f'trainer_batch_{batch_status.lower()}'] = [
-#                 {
-#                     'batch_id': batch.id,
-#                     'batch_name': batch.batch_id,
-#                     'course_name': batch.course.name,
-#                     'batch_time_start': batch.batch_time.start_time,
-#                     'batch_time_end': batch.batch_time.end_time,
-#                     'batch_start_date':batch.start_date,
-#                     'batch_end_date':batch.end_date,
-#                     'batch_mode':batch.mode,
-#                     'batch_language':batch.language,
-#                     'batch_location':batch.location.locality,
-#                     'batch_preferred_week':batch.preferred_week,
-#                     'students': list(batch.student.values('id', 'name'))  # Use correct related_name
-#                 }
-#                 for batch in batches  # Iterate over queryset directly
-#             ]
-            
-#         return Response({'Trainer_All': trainer_data}, status=status.HTTP_200_OK)
-
 class TrainerInfoAPIView(APIView):
+    authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
+    permission_classes = [IsAuthenticated]
+    
     def get(self, request, id):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+    
         trainer = get_object_or_404(Trainer, id=id)
         today = date.today()
 
@@ -468,6 +462,11 @@ class TrainerInfoAPIView(APIView):
         # Sort trainers by the number of free days (earliest availability first)
         future_availability_trainers.sort(key=lambda x: x['free_days'] if isinstance(x['free_days'], int) else float('inf'))
 
+        # Fetch logs for this Trainer
+        trainer_ct = ContentType.objects.get_for_model(Trainer)
+        trainer_logs = LogEntry.objects.filter(content_type=trainer_ct, object_id=trainer.id).order_by('-timestamp')
+        serialized_logs = LogEntrySerializer(trainer_logs, many=True).data
+
         # Fetch trainer's batch data
         trainer_batches = {
             'Upcoming': list(Batch.objects.filter(trainer=trainer, status='Upcoming').select_related('course', 'batch_time')),
@@ -502,4 +501,84 @@ class TrainerInfoAPIView(APIView):
                     for batch in batches
                 ]
 
-        return Response({'Trainer_All': trainer_data}, status=status.HTTP_200_OK)
+        return Response({'Trainer_All': trainer_data, 
+            'trainer_logs':serialized_logs,}, status=status.HTTP_200_OK)
+
+
+
+
+class TrainerLogListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        trainer_ct = ContentType.objects.get_for_model(Trainer)
+        logs = LogEntry.objects.filter(content_type=trainer_ct).order_by('-timestamp')
+        serializer = LogEntrySerializer(logs, many=True)
+        return Response(serializer.data)
+
+
+# class EditTrainerAPIView(APIView):
+#     """API View to edit an existing trainer"""
+#     authentication_classes = [TokenAuthentication]
+#     permission_classes = [IsAuthenticated]
+
+#     def put(self, request, id):
+#         """Handle PUT request to update trainer details"""
+#         if request.user.role not in ['admin', 'coordinator']:
+#             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
+#         trainer = get_object_or_404(Trainer, id=id)
+#         old_trainer_data = model_to_dict(trainer)  # Get all old field values
+
+#         serializer = TrainerSerializer(trainer, data=request.data, partial=True, context={'request': request})
+
+#         if serializer.is_valid():
+#             trainer = serializer.save(last_update_coordinator=request.user)
+#             new_trainer_data = model_to_dict(trainer)  # Get new field values
+
+#             # ✅ Track what changed
+#             changes = {}
+#             for field, old_value in old_trainer_data.items():
+#                 new_value = new_trainer_data.get(field)
+#                 if old_value != new_value:  # Only log changes
+#                     changes[field] = {"old": old_value, "new": new_value}
+
+#             # ✅ Update User email if changed
+#             if old_trainer_data['email'] != serializer.validated_data.get('email'):
+#                 try:
+#                     user = User.objects.get(email=old_trainer_data['email'])
+#                     user.email = serializer.validated_data.get('email')
+#                     user.save()
+#                 except User.DoesNotExist:
+#                     return Response({'error': 'Associated user not found'}, status=status.HTTP_400_BAD_REQUEST)
+
+#             # ✅ Check if status changed to Inactive
+#             if old_trainer_data['status'] == "Active" and trainer.status == "Inactive":
+#                 trainer.status_change_date = now().date()
+#                 trainer.save()
+
+#             # ✅ Calculate inactive days
+#             inactive_days = trainer.calculate_inactive_days()
+
+#             # ✅ Log detailed update action
+#             LogEntry.objects.create(
+#                 content_type=ContentType.objects.get_for_model(Trainer),
+#                 cid=cid,
+#                 object_pk=trainer.id,
+#                 object_id=trainer.id,
+#                 object_repr=f"Trainer ID: {trainer.trainer_id} | Name: {trainer.name}",
+#                 action=LogEntry.Action.UPDATE,
+#                 changes=f"Updated trainer: {trainer.name} by {request.user.username}. Changes: {changes}",
+#                 serialized_data=json.dumps(model_to_dict(trainer), default=str),
+#                 actor=request.user,
+#                 timestamp=now()
+#             )
+
+#             return Response({
+#                 'message': 'Trainer updated successfully',
+#                 'trainer_id': trainer.trainer_id,
+#                 'inactive_days': inactive_days
+#             }, status=status.HTTP_200_OK)
+        
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
