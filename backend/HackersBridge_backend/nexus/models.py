@@ -177,3 +177,4 @@ class BatchStudentAssignment(models.Model):
         return f"{self.student.name} added by {self.coordinator.coordinator_id if self.coordinator else 'Unknown'}"
 
 
+

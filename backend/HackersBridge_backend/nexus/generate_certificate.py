@@ -251,11 +251,11 @@ def generate_certificate(course, name, certificate_no, date):
 
     c.setFont(FONT_CERT_NO, 23)
     c.setFillColor(COLOR_CERT_NO)
-    c.drawString(100, 620, certificate_no)  # Certificate Number
+    c.drawString(97.5, 620, certificate_no)  # Certificate Number
 
     c.setFont(FONT_DATE, 23)
     c.setFillColor(COLOR_DATE)
-    c.drawString(100, 480, format_date(date)) # Date
+    c.drawString(97.5, 480, format_date(date)) # Date
 
     c.save()
     print(f"✅ Certificate generated: {output_filename}")

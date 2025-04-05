@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
+    'auditlog',
 ]
 
 MIDDLEWARE = [
@@ -64,6 +65,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'auditlog.middleware.AuditlogMiddleware',
     
 ]
 
@@ -133,8 +135,8 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'  
 EMAIL_PORT = 587  
 EMAIL_USE_TLS = True  
-EMAIL_HOST_USER = 'amank010102005@gmail.com'  # Your Gmail address
-EMAIL_HOST_PASSWORD = 'ibdh myac mezs wybq'  # Your Gmail App Password  
+EMAIL_HOST_USER = 'training@craw.in'  # Your Gmail address
+EMAIL_HOST_PASSWORD = 'fjmi bgyj bjjy emcy'  # Your Gmail App Password  
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 
