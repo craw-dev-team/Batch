@@ -11,6 +11,7 @@ import customParseFormat from "dayjs/plugin/customParseFormat";
 
 import BASE_URL from "../../../ip/Ip";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../AuthContext/AuthContext";
 
 
 const { RangePicker } = DatePicker;
@@ -26,11 +27,12 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
     const { coursesData, fetchCourses } = useCourseForm();
     const { trainerData, fetchTrainers } = useTrainerForm();
     const { studentData, fetchStudents } = useStudentForm();
+    const { token } = useAuth();
     const [ loading, setLoading ] = useState(false);
 
 
     // fetch batches and assign prefilled value to fields in form
-    useEffect(() => {
+    useEffect(() => {        
         fetchCourses();
         fetchTrainers();
         fetchStudents();
@@ -87,7 +89,7 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
     // handle form submittion 
     const handleFormSubmit = async (e) => {
         e.preventDefault();
-
+        
         if (!validateForm()) return; // Stop submission if validation fails
         
          const formattedData = {
@@ -122,20 +124,20 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
         
         try {
             setLoading(true); // Start loading
-
+            
             let response;
             let successMessage = "";
             
             if (selectedBatchData && selectedBatchData.id) {
                 // Update existing course (PUT)
                 response = await axios.put(`${BASE_URL}/api/batches/edit/${selectedBatchData.id}/`, payload, {
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` }
                 });
                 successMessage = "Batch updated successfully!";
                 } else {
                     // Add new course (POST)
                     response = await axios.post(`${BASE_URL}/api/batches/add/`, payload, {
-                        headers: { 'Content-Type': 'application/json' }
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` }
                     });
                     successMessage = "Batch added successfully!";
                 }
@@ -260,22 +262,22 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
                                 onChange={(value) => handleChange('batchTime', value)}
                             /> */}
                             <Select name="batchTime" value={batchFormData.batchTime ? String(batchFormData.batchTime) : null} onChange={(value) => handleChange("batchTime", value)} className='w-full border-gray-300' size='large' placeholder='Select Batch Timing' 
-                                options={[
-                                            { value: '1', label: '10:00 - 12:00' },
-                                            { value: '2', label: '12:00 - 02:00' },
-                                            { value: '3', label: '03:00 - 05:00' },
-                                            { value: '4', label: '05:00 - 06:30' },
-                                            { value: '9', label: '06:00 - 07:00' },
-                                            { value: '7', label: '07:00 - 09:00' },
-                                            { value: '8', label: '10:00 - 05:00' },
-                                            { value: '5', label: '10:00 - 02:00 - Weekends' },
-                                            { value: '10', label: '12:30 - 02:30 - Weekdays' },
-                                            { value: '11', label: '07:00 - 08:30 - Weekdays' },
-                                            { value: '12', label: '05:00 - 07:00 - Weekdays' },
-                                            { value: '13', label: '08:00 - 09:00 - Weekdays' },
-                                            { value: '14', label: '12:00 - 02:00 - Weekends' },
-                                            { value: '15', label: '07:00 - 08:30 - Weekdays' },
-                                        ]}
+                                                               options={[
+                                                                { value: '1', label: '10:00 - 12:00' },
+                                                                { value: '2', label: '12:00 - 02:00' },
+                                                                { value: '3', label: '03:00 - 05:00' },
+                                                                { value: '4', label: '05:00 - 06:30' },
+                                                                { value: '9', label: '06:00 - 07:00' },
+                                                                { value: '7', label: '07:00 - 09:00' },
+                                                                { value: '8', label: '10:00 - 05:00' },
+                                                                { value: '5', label: '10:00 - 02:00 - Weekends' },
+                                                                { value: '10', label: '12:30 - 02:30 - Weekdays' },
+                                                                { value: '11', label: '07:00 - 08:30 - Weekdays' },
+                                                                { value: '12', label: '05:00 - 07:00 - Weekdays' },
+                                                                { value: '13', label: '08:00 - 09:00 - Weekdays' },
+                                                                { value: '14', label: '12:00 - 02:00 - Weekends' },
+                                                                { value: '15', label: '07:00 - 08:30 - Weekdays' },
+                                                            ]}
                                 />
                                 {errors.batchTime && <p className="text-red-500 text-sm">{errors.batchTime}</p>}
                             </div>

@@ -9,6 +9,7 @@ import BASE_URL from "../../../ip/Ip";
 import { useSpecificTrainer } from "../Contexts/SpecificTrainers";
 import AvailableTrainers from "./AvailableTrainers";
 import FutureAvailableTrainers from "./FutureAvailableTrainers";
+import { useAuth } from "../AuthContext/AuthContext";
 
 
 const Trainers = () => {
@@ -22,8 +23,9 @@ const Trainers = () => {
 
 
     const { trainerData, setTrainerData, fetchTrainers } = useTrainerForm();
+    const { token } = useAuth();
+    
     const navigate = useNavigate();
-
 
 
     const handleTabClick = (tab) => {
@@ -83,7 +85,9 @@ const Trainers = () => {
     if (!trainerId) return;
         
     try {
-        const response = await axios.delete(`${BASE_URL}/api/trainers/delete/${trainerId}/`);
+        const response = await axios.delete(`${BASE_URL}/api/trainers/delete/${trainerId}/`, 
+            { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+        );
 
         if (response.status === 204) {
             // Make sure coursesData is an array before filtering
@@ -134,7 +138,11 @@ const Trainers = () => {
         setTrainerStatuses((prev) => ({ ...prev, [trainerId]: checked }));
     
         try {
-            await axios.put(`${BASE_URL}/api/trainers/edit/${trainerId}/`, { status: newStatus, email: trainerEmail });
+            await axios.put(`${BASE_URL}/api/trainers/edit/${trainerId}/`, 
+                { status: newStatus, email: trainerEmail },
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+
+            );
             message.success(`Trainer status updated to ${newStatus}`);
         } catch (error) {
             message.error("Failed to update status");

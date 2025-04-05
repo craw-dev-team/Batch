@@ -8,9 +8,8 @@ import axios from "axios";
 import BASE_URL from "../../../ip/Ip";
 import BatchCards from "../SpecificPage/BatchCards";
 import AvailableBatches from "./AvailableBatches";
-import { useSpecificTrainer } from "../Contexts/SpecificTrainers";
-import { useSpecificBatch } from "../Contexts/SpecificBatch";
 import { useCourseForm } from "../Coursecontext/CourseFormContext";
+import { useAuth } from "../AuthContext/AuthContext";
 
 
 
@@ -34,6 +33,8 @@ const Batches = () => {
     
     const { batchData, loading, setLoading, setBatchData, fetchBatches, countBatchesByType } = useBatchForm();
     const { coursesData, setCoursesData, fetchCourses } = useCourseForm();
+    const { token } = useAuth();
+
     const [originalCourses, setOriginalCourses] = useState([]); // Store the original data
 
     const navigate = useNavigate();
@@ -74,7 +75,9 @@ const Batches = () => {
         if (!batchId) return;
 
         try {
-            const response = await axios.delete(`${BASE_URL}/api/batches/delete/${batchId}/`);
+            const response = await axios.delete(`${BASE_URL}/api/batches/delete/${batchId}/`, 
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+            );
 
             setBatchData(prevBatch => {
                 if (!prevBatch || !prevBatch.All_Type_Batch || !Array.isArray(prevBatch.All_Type_Batch.batches)) {
@@ -128,7 +131,9 @@ const Batches = () => {
     // to add students in a batch fetch available student data from select field
     const fetchAvailableStudents = useCallback(async (batchId) => {
         try {
-            const response = await axios.get(`${BASE_URL}/api/batches/${batchId}/available-students/`);
+            const response = await axios.get(`${BASE_URL}/api/batches/${batchId}/available-students/`, 
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+            );
             const data = response.data;
             // console.log(data);
             
@@ -167,7 +172,7 @@ const Batches = () => {
         try {
             const response = await axios.post(`${BASE_URL}/api/batches/${batchId}/add-students/`, 
                 { students: studentIds }, // Ensure correct payload format
-                { headers: { 'Content-Type': 'application/json' } }
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
             );
     
             if (response.status >= 200 && response.status < 300) {
@@ -236,24 +241,15 @@ const Batches = () => {
         try {
             const response = await axios.put(`${BASE_URL}/api/batches/edit/${batchId}/`,
                 JSON.stringify(updatedData),
-                { headers: { "Content-Type": "application/json"} }
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
             );
             if (response.status >= 200 && response.status < 300) {
                 message.success(`Batch status updated successfully to ${status} !`);
                 // console.log(updatedData);
-
-                // setBatchData((prevBatches) => {
-                //     console.log("Previous Batches:", prevBatches);
-                //     if (!Array.isArray(prevBatches)) return [];
-                    
-                //     return prevBatches.map((batch) =>
-                //         batch.id === batchId ? { ...batch, ...updatedData } : batch
-                //     );
-                // });
                 
             } else {
                 message.error("Batch status not updated.");
-            }
+            };
             
            await fetchBatches()
     
@@ -308,59 +304,44 @@ const Batches = () => {
         
         const sortedBatches = useMemo(() => {
             let sorted = [...searchFilteredBatches];
-          
+        
+            // Apply Sorting (Start with time, then dates)
             if (sortByTime) {
-              sorted.sort((a, b) => a.batch_time_data.start_time.localeCompare(b.batch_time_data.start_time)); // Always Ascending
-            } else if (sortByStartDate) {
-                sorted.sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
-            } else if (sortByEndDate) {
-                sorted.sort((a, b) => new Date(a.end_date) - new Date(b.end_date));
-            };
-
-             // Filter based on selected mode on top
-            if (sortByMode) {
-                sorted.sort((a, b) => {
-                    if (a.mode === sortByMode && b.mode !== sortByMode) return -1;
-                    if (b.mode === sortByMode && a.mode !== sortByMode) return 1;
-                    return 0;
-                });
-            };
-
-            // Filter based on selected language on top
-            if (sortByLanguage) {
-                sorted.sort((a, b) => {
-                    if (a.language === sortByLanguage && b.language !== sortByLanguage) return -1;
-                    if (b.language === sortByLanguage && a.language !== sortByLanguage) return 1;
-                    return 0;
-                })
-            };
-
-            // Filter based on selected preferred week on top
-            if (sortByPreferredWeek) {
-                sorted.sort((a, b) => {
-                    if (a.preferred_week === sortByPreferredWeek && b.preferred_week !== sortByPreferredWeek) return -1;
-                    if (b.preferred_week === sortByPreferredWeek && a.preferred_week !== sortByPreferredWeek) return 1;
-                    return 0;
-                })
-            };
-
-            // filter based on selected location on top
-            if (sortByLocation) {
-                sorted.sort((a, b) => {
-                    if (a.batch_location === sortByLocation && b.batch_location !== sortByLocation) return -1;
-                    if (b.batch_location === sortByLocation && a.batch_location !== sortByLocation) return 1;
-                    return 0;
-                })
-            };
-            
-            // Filter by selected course (if applicable)
-            if (sortByCourse) {
-                sorted.sort((a, b) => (a.course_id === sortByCourse ? -1 : b.course_id === sortByCourse ? 1 : 0));
+                sorted.sort((a, b) => a.batch_time_data.start_time.localeCompare(b.batch_time_data.start_time));
             }
-
+        
+            if (sortByStartDate) {
+                sorted.sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
+            }
+        
+            if (sortByEndDate) {
+                sorted.sort((a, b) => new Date(a.end_date) - new Date(b.end_date));
+            }
+        
+            // Apply Filters (Mode, Language, Preferred Week, Location, Course)
+            if (sortByMode) {
+                sorted = sorted.filter(batch => batch.mode === sortByMode);
+            }
+        
+            if (sortByLanguage) {
+                sorted = sorted.filter(batch => batch.language === sortByLanguage);
+            }
+        
+            if (sortByPreferredWeek) {
+                sorted = sorted.filter(batch => batch.preferred_week === sortByPreferredWeek);
+            }
+        
+            if (sortByLocation) {
+                sorted = sorted.filter(batch => batch.batch_location === sortByLocation);
+            }
+        
+            if (sortByCourse) {
+                sorted = sorted.filter(batch => batch.course_id === sortByCourse);
+            }
+        
             return sorted;
-          }, [searchFilteredBatches, sortByTime, sortByStartDate, sortByMode, sortByLanguage, sortByPreferredWeek]);
-
+        }, [searchFilteredBatches, sortByTime, sortByStartDate, sortByEndDate, sortByMode, sortByLanguage, sortByPreferredWeek, sortByLocation, sortByCourse]);
+        
 
 
         const handleSort = async (key, filterType) => {
@@ -540,7 +521,7 @@ const Batches = () => {
     return (
         <>
 <div className="w-auto pt-4 px-2 mt-14 darkmode">
-    <BatchCards/>
+    <BatchCards handleTabClick={handleTabClick} activeTab={activeTab}/>
     <div className="relative w-full h-full shadow-md sm:rounded-lg darkmode border border-gray-50 dark:border dark:border-gray-600">
             <div className="w-full px-4 py-3 text flex justify-between font-semibold ">
                 <h1>All Batches</h1>
@@ -554,7 +535,7 @@ const Batches = () => {
                 <div className="flex gap-x-4 h-auto flex-wrap justify-between">
                     
                     <div className="relative ">
-                            <Badge count={countBatchesByType.running} size="small">
+                            <Badge count={countBatchesByType.running ?? 0} size="small">
                         <button
                             onClick={() => handleTabClick("running")}
                             className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200  
@@ -567,7 +548,7 @@ const Batches = () => {
                         <button
                             onClick={() => handleTabClick("scheduled")}
                             className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                                ${activeTab === "scheduled" ? 'bg-blue-300  text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                ${activeTab === "scheduled" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                             >
                             Scheduled
                         </button>
@@ -576,7 +557,7 @@ const Batches = () => {
                         <button
                             onClick={() => handleTabClick("hold")}
                             className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                                ${activeTab === "hold" ? 'bg-blue-300  text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                ${activeTab === "hold" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                             >
                             Hold
                         </button>
@@ -603,12 +584,19 @@ const Batches = () => {
                         <button
                             onClick={() => handleTabClick("cancelled")}
                             className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                                ${activeTab === "cancelled" ? 'bg-blue-300 dark:bg-[#afc0d1] text-black dark:text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                ${activeTab === "cancelled" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                             >
-                            Cancelled 
+                            Cancelled
                         </button>
                             {/* </Badge> */}
                         
+                            {/* <button
+                            onClick={() => handleTabClick("available_batches")}
+                            className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
+                                ${activeTab === "available_batches" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                            >
+                            Available Batches
+                        </button> */}
                     </div>
 
 
@@ -705,7 +693,7 @@ const Batches = () => {
                         Mode 
                         <Tooltip title="Sort by Mode" placement="top">
                         <Dropdown menu={modeMenu} trigger={["click"]}>
-                            <Button type="text" icon={<FilterOutlined  style={{ color: sortByMode ? "blue" : "black" }} />} />
+                            <Button type="text" icon={<FilterOutlined  style={{ color: sortByMode ? "blue" : "black" }} className="w-3"/>} />
                         </Dropdown>
                         </Tooltip>
                     </th>
@@ -713,7 +701,7 @@ const Batches = () => {
                         Language 
                         <Tooltip title="Sort by Language" placement="top">
                         <Dropdown menu={languageMenu} trigger={["click"]}>
-                            <Button type="text" icon={<FilterOutlined  style={{ color: sortByLanguage ? "blue" : "black" }} />} />
+                            <Button type="text" icon={<FilterOutlined  style={{ color: sortByLanguage ? "blue" : "black" }} className="w-3"/>} />
                         </Dropdown>
                         </Tooltip>
                     </th>
@@ -721,7 +709,7 @@ const Batches = () => {
                         Preferred Week
                         <Tooltip title="Sort by Preferred Week" placement="top">
                         <Dropdown menu={preferredWeekMenu} trigger={["click"]}>
-                            <Button type="text" icon={<FilterOutlined style={{ color: sortByPreferredWeek ? "blue" : "black" }} />} />
+                            <Button type="text" icon={<FilterOutlined style={{ color: sortByPreferredWeek ? "blue" : "black" }} className="w-3"/>} />
                         </Dropdown>
                         </Tooltip>
                     </th>
@@ -729,7 +717,7 @@ const Batches = () => {
                         Location
                         <Tooltip title="Sort by Location" placement="top">
                         <Dropdown menu={locationMenu} trigger={["click"]}>
-                            <Button type="text" icon={<FilterOutlined style={{ color: sortByLocation ? "blue" : "black" }} />} />
+                            <Button type="text" icon={<FilterOutlined style={{ color: sortByLocation ? "blue" : "black" }} className="w-3"/>} />
                         </Dropdown>
                         </Tooltip>
                     </th>
@@ -967,7 +955,9 @@ const Batches = () => {
 
         </table>
         </div>
-
+    {activeTab === "available_batches" && (
+        <AvailableBatches/>
+    )}
         </div>
         {/* )} */}
     </div>

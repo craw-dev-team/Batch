@@ -5,6 +5,7 @@ import CreateCourseForm from "./CreateCourseForm";
 import axios from "axios";
 import { useCourseForm } from "../Coursecontext/CourseFormContext";
 import BASE_URL from "../../../ip/Ip";
+import { useAuth } from "../AuthContext/AuthContext";
 
 
 const Courses = () => {
@@ -13,7 +14,8 @@ const Courses = () => {
     const [selectedCourse, setSelectedCourse] = useState();
     const [isDeleted, setIsDeleted] = useState(false)
     const { coursesData, loading, setCoursesData, fetchCourses } = useCourseForm();
-
+    const { token } = useAuth();
+    
     const handleTabClick = (tab) => {
         setActiveTab(tab);
     };
@@ -38,7 +40,9 @@ const Courses = () => {
         if (!courseId) return;
 
         try {
-            const response = await axios.delete(`${BASE_URL}/api/courses/delete/${courseId}/`);
+            const response = await axios.delete(`${BASE_URL}/api/courses/delete/${courseId}/`, 
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+            );
 
             if (response.status === 204) {
                 // Make sure coursesData is an array before filtering

@@ -5,12 +5,18 @@ import { useNavigate } from 'react-router-dom';
 
 const StudentCards = () => {
   const { studentsCounts, fetchStudentCount } = useStudentForm();
+  const [selectedCard, setSelectedCard] = useState(null);
+
   const navigate = useNavigate();
 
   useEffect(() => {
         fetchStudentCount(); 
 
 }, []);
+
+const total_student = () => {
+  navigate(`/students/`)
+};
 
 
 const today_added_students = () => {
@@ -34,35 +40,41 @@ const inactive_Students = () => {
 };
 
 
+const handleCardClick = (cardType, callback) => {
+  setSelectedCard(cardType);
+  callback(); // Call the original function (e.g., `enrolled_students`)
+};
+
+
     return (
         <Row gutter={14}>
         <Col span={4}>
-          <Card title={studentsCounts?.total_student || '0'} variant="borderless">
+          <Card title={studentsCounts?.total_student || '0'} variant="borderless" className={`font-semibold cursor-pointer ${selectedCard === "total_students" ? "text-blue-500" : "text-black"}`} onClick={() => handleCardClick("total_atudents", total_student)}>
             Total Students
           </Card>
         </Col>
         <Col span={4}>
-          <Card title={studentsCounts?.enrolled_student_count || '0'} variant="borderless" className='font-semibold cursor-pointer' onClick={enrolled_students}>
+          <Card title={studentsCounts?.enrolled_student_count || '0'} variant="borderless" className={`font-semibold cursor-pointer ${selectedCard === "enrolled" ? "text-blue-500" : "text-black"}`} onClick={() => handleCardClick("enrolled", enrolled_students)}>
             Batch Assigned
           </Card>
         </Col>
         <Col span={4}>
-          <Card title={studentsCounts?.not_enrolled_student_count || '0'} variant="borderless" className='font-semibold cursor-pointer' onClick={not_enrolled_students}>
-            Batch not assigned
+          <Card title={studentsCounts?.not_enrolled_student_count || '0'} variant="borderless" className={`font-semibold cursor-pointer ${selectedCard === "not_enrolled" ? "text-blue-500" : "text-black"}`} onClick={() => handleCardClick("not_enrolled", not_enrolled_students)}>
+            Batch Not Assigned
           </Card>
         </Col>
         <Col span={4}>
-          <Card title={studentsCounts?.today_added_student_count || '0'} variant="borderless" className='font-semibold cursor-pointer' onClick={today_added_students}>
+          <Card title={studentsCounts?.today_added_student_count || '0'} variant="borderless" className={`font-semibold cursor-pointer ${selectedCard === "today_added" ? "text-blue-500" : "text-black"}`} onClick={() => handleCardClick("today_added", today_added_students)}>
              Enrolled Today
           </Card>
         </Col>
         <Col span={4}>
-          <Card title={studentsCounts?.active_student_count || '0'} variant="borderless" className='font-semibold cursor-pointer' onClick={active_Students}>
+          <Card title={studentsCounts?.active_student_count || '0'} variant="borderless" className={`font-semibold cursor-pointer ${selectedCard === "active_students" ? "text-blue-500" : "text-black"}`} onClick={() => handleCardClick("active_students", active_Students)}>
             Active Students
           </Card>
         </Col>
         <Col span={4}>
-          <Card title={studentsCounts?.inactive_student_count || '0'} variant="borderless" className='font-semibold cursor-pointer' onClick={inactive_Students}>
+          <Card title={studentsCounts?.inactive_student_count || '0'} variant="borderless" className={`font-semibold cursor-pointer ${selectedCard === "inactive_students" ? "text-blue-500" : "text-black"}`} onClick={() => handleCardClick("inactive_students", inactive_Students)}>
             Inactive Students
           </Card>
         </Col>

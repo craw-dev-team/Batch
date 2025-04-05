@@ -42,12 +42,22 @@ const TrainerFormProvider = ({ children }) => {
     
         const fetchTrainers = async () => {
             if (loading) return;  // Prevent multiple fetches at the same time
-    
+            
+            const token = localStorage.getItem('token');
+            if (!token) {
+                console.error("No token found, user might be logged out.");
+                return;
+            };
+
             setLoading(true);  // Set loading state
             try {
-                const response = await axios.get(`${BASE_URL}/api/trainers/`);
+                const response = await axios.get(`${BASE_URL}/api/trainers/`, 
+                    { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                );
                 const trainers = response?.data;
-                const available = await axios.get(`${BASE_URL}/api/trainers/availability/`);
+                const available = await axios.get(`${BASE_URL}/api/trainers/availability/`, 
+                    { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                );
                 const availableTrainer = available?.data;
                 // console.log(availableTrainer);
                 

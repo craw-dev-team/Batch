@@ -14,6 +14,7 @@ const breadcrumbNameMap = {
   [route.STUDENTS_PATH]: { title: "Students", icon: <UsergroupAddOutlined /> },
   [route.TRAINERS_PATH]: { title: "Trainers", icon: <UserOutlined /> },
   [route.COURSES_PATH]: { title: "Courses", icon: <ProfileOutlined /> },
+  [route.ALL_LOGS_PATH]: { title: "Logs", icon: <ProductOutlined /> },
   // [route.TRAINER_DETAILS_PATH]: { title: "Trainer Details", icon: <UserOutlined /> }, // Added new route
 
 };
@@ -61,7 +62,7 @@ const BreadCrumbs = () => {
         };
       }
 
-      // Handle dynamic trainer route
+      // Handle dynamic routes
       if (path.startsWith("/trainers/") && trainerId) {
         return {
           href: `/trainers/${trainerId}`,

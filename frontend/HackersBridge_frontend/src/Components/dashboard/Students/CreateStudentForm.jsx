@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { DatePicker, Select, Input, Button, Upload, Spin, message } from 'antd';
-import { UploadOutlined, SyncOutlined } from '@ant-design/icons';
+import { DatePicker, Select, Input, Checkbox, message } from 'antd';
+import { SyncOutlined, PlusCircleOutlined, MinusCircleOutlined } from '@ant-design/icons';
 import { useStudentForm } from '../StudentContext/StudentFormContext';
 import axios from 'axios';
 import { useCourseForm } from '../Coursecontext/CourseFormContext';
@@ -8,6 +8,7 @@ import dayjs from "dayjs";
 import BASE_URL from '../../../ip/Ip';
 import { useCoordinatorForm } from '../AddDetails/Coordinator/CoordinatorContext';
 import { useCounsellorForm } from '../AddDetails/Counsellor/CounsellorContext';
+import { useAuth } from '../AuthContext/AuthContext';
 
 
 const { TextArea } = Input;
@@ -24,9 +25,14 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
     const { coursesData, fetchCourses  } = useCourseForm();
     const { coordinatorData, fetchCoordinators } = useCoordinatorForm();
     const { counsellorData, fetchCounsellors } = useCounsellorForm();
+    const { token } = useAuth();
+    
     const [ loading, setLoading] = useState(false);
-
-    const [selectedCourses, setSelectedCourses] = useState([]);  
+    // store visibility of alternate phone number of student
+    const [showAltPhone, setShowAltPhone] = useState(false);
+    // store courses in which student enrolled
+    const [selectedCourses, setSelectedCourses] = useState([]);
+    // store student's completed courses  
     const [completedCourses, setCompletedCourses] = useState([]);
 
     // fetching students and assigning prefilled value to fields in form 
@@ -35,8 +41,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
         fetchCoordinators();
         fetchCounsellors()
 
-        // console.log(selectedCourses);
-        // console.log(completeCourses);
+        // console.log(selectedStudentData);
         
         if (selectedStudentData) {
             // console.log("Editing Student Data:", selectedStudentData)
@@ -49,6 +54,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
                 ? dayjs(selectedStudentData.date_of_joining, "YYYY-MM-DD").format("DD/MM/YYYY") 
                 : "", 
                 phoneNumber: selectedStudentData.phone || "",
+                alternatePhoneNumber: selectedStudentData.alternate_phone || "",
                 emailAddress: selectedStudentData.email || "",
                 course: selectedStudentData.courses || [], 
                 completedCourse: selectedStudentData.complete_course_id || [],
@@ -116,6 +122,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
         const formattedData = {
             ...studentFormData,
             phoneNumber: parseInt(studentFormData.phoneNumber, 10) || null,
+            alternatePhoneNumber: studentFormData.alternatePhoneNumber ? parseInt(studentFormData.alternatePhoneNumber, 10) : null,
             guardianPhoneNumber: parseInt(studentFormData.guardianPhoneNumber, 10) || null,
             location: parseInt(studentFormData.location, 10) || null,
             courseCounsellor: parseInt(studentFormData.courseCounsellor, 10) || null,
@@ -135,6 +142,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
             dob: formattedData.dateOfBirth,
             date_of_joining: formattedData.dateOfJoining,
             phone: formattedData.phoneNumber,
+            alternate_phone: formattedData.alternatePhoneNumber,
             email: formattedData.emailAddress,
             courses: Array.isArray(selectedCourses) ? selectedCourses : [],
             complete_course: Array.isArray(completedCourses) ? completedCourses : [],
@@ -155,22 +163,25 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
         try {
             setLoading(true); // Start loading
 
+                //const token = localStorage.getItem("token")            
+                // , 'Authorization': `token ${token}`
+                
             let response;
             let successMessage = "";
 
             if (selectedStudentData && selectedStudentData.id) {
                 // Update existing course (PUT)
                 response = await axios.put(`${BASE_URL}/api/students/edit/${selectedStudentData.id}/`, payload, {
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` }
                 });
                     successMessage = "Student updated successfully!";
                 } else {
                     // Add new course (POST)
                     response = await axios.post(`${BASE_URL}/api/students/add/`, payload, {
-                        headers: { 'Content-Type': 'application/json' }
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` }
                     });
                     successMessage = "Student added successfully!";
-                }
+                };
 
                 if (response.status >= 200 && response.status < 300) {
                     message.success(successMessage);
@@ -179,13 +190,13 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
                         onClose();
                         resetStudentForm();
                     }, 1000);
-                }
+                };
   
         } catch (error) {
             setLoading(false);
         
             if (error.response) {
-                console.error("Server Error Response:", error.response.data);
+                console.error("Server Error Response:", error.response);
         
                 // Extract error messages and show each one separately
                 Object.entries(error.response.data).forEach(([key, value]) => {
@@ -257,7 +268,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
                     <div className="grid gap-4 mb-4 grid-cols-4">
                         <div className="col-span-1">
                             <label htmlFor="enrollmentNumber" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Enrollment Number</label>
-                            <Input name="enrollmentNumber" value={studentFormData.enrollmentNumber} onChange={(e) => handleChange("enrollmentNumber", e.target.value)} className='rounded-lg border-gray-300' placeholder="Enter Enrollment Number" />
+                            <Input name="enrollmentNumber" value={studentFormData.enrollmentNumber} onChange={(e) => handleChange("enrollmentNumber", e.target.value)} disabled={isEditing} className='rounded-lg border-gray-300' placeholder="Enter Enrollment Number" />
                             {errors.enrollmentNumber && <p className="text-red-500 text-sm">{errors.enrollmentNumber}</p>}
                         </div>
                         
@@ -281,16 +292,51 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
                             </div>
 
                         {/* Phone Number */}
-                        <div className="col-span-1">
-                            <label htmlFor="phoneNumber" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Phone Number</label>
-                            <Input name="phoneNumber"  value={studentFormData.phoneNumber} className='rounded-lg border-gray-300'  placeholder='Enter Phone Number' 
+                        <div className="col-span-1 flex gap-2">
+                            <div>
+                                <label htmlFor="phoneNumber" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Phone Number</label>
+                                <Input name="phoneNumber"  value={studentFormData.phoneNumber} className='rounded-lg border-gray-300'  placeholder='Enter Phone Number' 
                                     onChange={(e) => {
                                         const inputValue = e.target.value.replace(/\D/g, ""); // Remove non-numeric values
                                         if (inputValue.length <= 12) {
                                             handleChange("phoneNumber", inputValue);
                                         }
                                     }}
-                            />
+                                    />
+                                
+                                {showAltPhone && (
+                                    <>
+                                        <label htmlFor="alternatePhoneNumber" className="block mt-2 mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                            Alternate Phone Number
+                                        </label>
+                                        <Input
+                                            name="alternatePhoneNumber"
+                                            value={studentFormData.alternatePhoneNumber || ""}
+                                            className="rounded-lg border-gray-300"
+                                            placeholder="Enter Alternate Phone Number"
+                                            onChange={(e) => {
+                                                const inputValue = e.target.value.replace(/\D/g, ""); // Remove non-numeric values
+                                                if (inputValue.length <= 12) {
+                                                    handleChange("alternatePhoneNumber", inputValue);
+                                                }
+                                            }}
+                                        />
+                                    </>
+                                )}
+                            </div>
+                            <div className='flex items-end mb-3'>
+                            {showAltPhone ? (
+                                <MinusCircleOutlined
+                                    className="text-red-500 text-lg cursor-pointer hover:text-red-700"
+                                    onClick={() => setShowAltPhone(false)}
+                                />
+                            ) : (
+                                <PlusCircleOutlined
+                                    className="text-green-500 text-lg cursor-pointer hover:text-green-700"
+                                    onClick={() => setShowAltPhone(true)}
+                                />
+                            )}
+                            </div>
                             {errors.phoneNumber && <p className="text-red-500 text-sm">{errors.phoneNumber}</p>}
                         </div>
 

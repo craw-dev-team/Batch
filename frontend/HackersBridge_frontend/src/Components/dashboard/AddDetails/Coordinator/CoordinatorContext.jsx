@@ -28,9 +28,18 @@ const CoordinatorFormProvider = ({ children }) => {
     const fetchCoordinators = async () => {
         if (loading) return;
         
+        
+        const token = localStorage.getItem('token');
+        if (!token) {
+            console.error("No token found, user might be logged out.");
+            return;
+        };
+        
         setLoading(true);
         try {
-            const response = await axios.get(`${BASE_URL}/api/coordinators/`);
+            const response = await axios.get(`${BASE_URL}/api/coordinators/`, 
+             { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` }}
+            );
             const data = response?.data;
            
             setCoordinatorData(prevData => {

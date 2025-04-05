@@ -151,7 +151,7 @@ const AvailableTrainers = () => {
                     <td></td>
                     <td></td>
                     <td colSpan="5" className="text-center py-3 text-gray-500">
-                        No batches found for {activeTab}
+                        No batches found
                     </td>
                 </tr>
             )}

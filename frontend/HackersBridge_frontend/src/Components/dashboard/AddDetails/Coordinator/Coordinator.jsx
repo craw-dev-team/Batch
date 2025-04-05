@@ -6,6 +6,7 @@ import { EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined } from '@ant
 import AddCoordinatorForm from "./AddCoordinatorForm";
 import { useCoordinatorForm } from "./CoordinatorContext";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../AuthContext/AuthContext";
 
 
 
@@ -19,6 +20,7 @@ const Coordinators = () => {
     const [coordinatorStatuses, setCoordinatorStatuses] = useState({}); // Store status per trainer
 
     const { coordinatorData, loading, setLoading, setCoordinatorData, fetchCoordinators } = useCoordinatorForm();
+    const { token } = useAuth();
     
     const navigate = useNavigate();
 
@@ -62,7 +64,9 @@ const Coordinators = () => {
         if (!coordinatorId) return;
 
         try {
-            const response = await axios.delete(`${BASE_URL}/api/coordinators/delete/${coordinatorId}/`);
+            const response = await axios.delete(`${BASE_URL}/api/coordinators/delete/${coordinatorId}/`, 
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+            );
 
             if (response.status === 204) {
                 // Make sure coursesData is an array before filtering
@@ -114,7 +118,10 @@ const Coordinators = () => {
         setCoordinatorStatuses((prev) => ({ ...prev, [coordinatorId]: checked }));
     
         try {
-            await axios.put(`${BASE_URL}/api/coordinators/edit/${coordinatorId}/`, { status: newStatus, email: coordinatorEmail });
+            await axios.put(`${BASE_URL}/api/coordinators/edit/${coordinatorId}/`, 
+                { status: newStatus, email: coordinatorEmail },
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+            );
             message.success(`Coordinator status updated to ${newStatus}`);
         } catch (error) {
             message.error("Failed to update status");

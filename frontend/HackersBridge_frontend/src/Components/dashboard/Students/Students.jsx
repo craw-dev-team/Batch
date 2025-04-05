@@ -5,9 +5,9 @@ import axios from "axios";
 import { Button, message, Popconfirm,  Avatar, Tag, Tooltip, Switch, Input, Spin, Empty  } from 'antd';
 import { EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import BASE_URL from "../../../ip/Ip";
-import { useSpecificStudent } from "../Contexts/SpecificStudent";
 import { useStudentForm } from "../StudentContext/StudentFormContext";
 import StudentCards from "../SpecificPage/StudentCard";
+import { useAuth } from "../AuthContext/AuthContext";
 
 const { Search } = Input;
 
@@ -21,7 +21,8 @@ const Students = () => {
     const [searchTerm, setSearchTerm] = useState("");
 
     const { studentData, loading, setLoading, setStudentData, fetchStudents } = useStudentForm();
-
+    const { token } = useAuth();
+    
     const navigate = useNavigate();
 
     const [currentPage, setCurrentPage] = useState(1);
@@ -63,10 +64,10 @@ const Students = () => {
             };
 
         // }, [isDeleted, selectedStudent, isModalOpen, studentData]);
-        }, [studentData, isModalOpen ]);
+        }, [studentData, isModalOpen, isDeleted ]);
     
 
-   // Function to handle Edit button click
+   // Function to handle Edit BUTTON click
     const handleEditClick = (student) => {
         setSelectedStudent(student); // Set the selected course data
         setIsModalOpen(true); // Open the modal
@@ -79,7 +80,9 @@ const Students = () => {
     if (!studentId) return;
 
     try {
-        const response = await axios.delete(`${BASE_URL}/api/students/delete/${studentId}/`);
+        const response = await axios.delete(`${BASE_URL}/api/students/delete/${studentId}/`, 
+            { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+        );
 
         if (response.status === 204) {
             // Make sure coursesData is an array before filtering
@@ -134,7 +137,10 @@ const Students = () => {
         setStudentStatuses((prev) => ({ ...prev, [studentId]: checked }));
     
         try {
-            await axios.put(`${BASE_URL}/api/students/edit/${studentId}/`, { status: newStatus });
+            await axios.put(`${BASE_URL}/api/students/edit/${studentId}/`, 
+                { status: newStatus },
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+            );
             message.success(`Student status updated to ${newStatus}`);
         } catch (error) {
             message.error("Failed to update status");
@@ -179,9 +185,9 @@ const Students = () => {
 
     return (
         <>
-<div className="w-auto pt-4 px-2 mt-16 darkmode">
+<div className="w-auto pt-4 px-2 mt-16">
     <StudentCards />
-    <div className="relative w-full h-full shadow-md sm:rounded-lg darkmode border border-gray-50 dark:border dark:border-gray-600">
+    <div className="relative w-full h-full shadow-md sm:rounded-lg border border-gray-50 dark:border">
     <div className="w-full px-4 py-3 text flex justify-between font-semibold ">
         <h1>All Students</h1>
             <div>
@@ -291,9 +297,9 @@ const Students = () => {
         </div>
         {activeTab === 'tab1' && (
         <div className={`overflow-hidden pb-2 relative ${loading ? "backdrop-blur-md opacity-50 pointer-events-none" : ""}`}>
-            <div className="w-full h-[38rem] overflow-y-auto dark:border-gray-700 rounded-lg pb-2">
-            <table className="w-full text-xs text-left text-gray-500 dark:text-gray-400 ">
-            <thead className="text-xs text-gray-700 uppercase bg-blue-50 dark:bg-gray-700 dark:text-gray-400 sticky top-0 z-10">
+            <div className="w-full h-[38rem] overflow-y-auto rounded-lg pb-2">
+            <table className="w-full text-xs text-left text-gray-500">
+            <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10">
                 <tr>
                     <th scope="col" className="px-3 py-3 md:px-2">
                         s.No

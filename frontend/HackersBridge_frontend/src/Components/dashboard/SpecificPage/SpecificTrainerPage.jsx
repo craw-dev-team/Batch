@@ -9,11 +9,12 @@ import CreateTrainerForm from "../Trainers/CreateTrainerForm";
 
 
 const SpecificTrainerPage = () => {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedTrainer, setSelectedTrainer] = useState();
+
     const { trainerId } = useParams();
     const { specificTrainer, fetchSpecificTrainer } = useSpecificTrainer();
     const [activeTab, setActiveTab] = useState("running");
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedTrainer, setSelectedTrainer] = useState(null);
     const navigate = useNavigate();
 
     const handleTabClick = (tab) => {
@@ -34,7 +35,7 @@ const SpecificTrainerPage = () => {
                 console.error("Error decoding trainer ID:", error);
             }
         }
-    }, [trainerId]); 
+    }, [trainerId, isModalOpen]); 
 
     const trainerDetails = specificTrainer?.Trainer_All?.trainer;
 
@@ -52,7 +53,7 @@ const SpecificTrainerPage = () => {
         : [];
 
 
-        // Function to handle Edit button click
+        // FUNCTION HANDLE EDIT TRAINER CLICK
         const handleEditClick = (trainer) => {
             setSelectedTrainer(trainer); // Set the selected trainer data
             setIsModalOpen(true); // Open the modal
@@ -66,9 +67,7 @@ const SpecificTrainerPage = () => {
 
         // TO NAVIGATE TO BATCH SPECIFIC PAGE 
         const handleBatchClick = async (batchId) => {
-            if (!batchId) return;
-            console.log(batchId);
-            
+            if (!batchId) return;            
             const encodedBatchId = btoa(batchId);
             
             navigate(`/batches/${encodedBatchId}`)
@@ -88,7 +87,7 @@ const SpecificTrainerPage = () => {
                         <p># {trainerDetails.trainer_id}</p>
                         <Button 
                             color="secondary" 
-                            variant="filled" 
+                            variant="outlined" 
                             className="rounded-lg"
                             onClick={(e) => {
                                 e.stopPropagation(); // Prevent the click from bubbling to the <td> click handler
@@ -367,7 +366,8 @@ const SpecificTrainerPage = () => {
 
                         </div>
                 </div>
-                   
+                <CreateTrainerForm isOpen={isModalOpen} selectedTrainerData={selectedTrainer || {}} onClose={() => setIsModalOpen(false)} />
+
         </div>  
         </>
     )
