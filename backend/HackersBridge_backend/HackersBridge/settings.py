@@ -137,7 +137,7 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True  
 EMAIL_HOST_USER = 'training@craw.in'  # Your Gmail address
 EMAIL_HOST_PASSWORD = 'fjmi bgyj bjjy emcy'  # Your Gmail App Password  
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+DEFAULT_FROM_EMAIL = 'CRAW SECURITY CERTIFICATE <training@craw.in>'
 
 
 

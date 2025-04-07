@@ -30,6 +30,8 @@ import SpecificBatchPage from "./Components/dashboard/SpecificPage/SpecificBatch
 import StudentsList from "./Components/dashboard/SpecificPage/StudentCardList";
 import { SpecificCoordinatorProvider } from "./Components/dashboard/Contexts/SpecificCoordinators";
 import SpecificCoordinatorPage from "./Components/dashboard/SpecificPage/SpecificCoordinatorPage";
+import AllLogs from "./Components/dashboard/AllLogs/AllLogs";
+import { AllLogsProvider } from "./Components/dashboard/AllLogsContext/AllLogsContext";
 
 
 
@@ -104,6 +106,7 @@ function App() {
                           <Route path="/add-details/coordinators/:coordinatorId" element={<SpecificCoordinatorPage />} />
                           <Route path={route.ADD_DETAILS_COUNSELLORS_PATH} element={<CounsellorsHome />} />
                           <Route path="/studentsdata/:type" element={<StudentsList />} />
+                          <Route path={route.ALL_LOGS_PATH} element={<AllLogs />} />
                         </Routes>
                       </Content>
                     </Layout>
@@ -133,7 +136,9 @@ const AppProviders = ({ children }) => {
                             <SpecificStudentProvider>
                               <SpecificBatchProvider>
                                 <SpecificCoordinatorProvider>
+                                  <AllLogsProvider>
                                   {children}
+                                  </AllLogsProvider>
                                 </SpecificCoordinatorProvider>
                               </SpecificBatchProvider>
                             </SpecificStudentProvider>

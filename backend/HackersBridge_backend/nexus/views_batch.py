@@ -325,6 +325,14 @@ class AvailableStudentsAPIView(APIView):
         filters &= ~Q(id__in=completed_students)
 
 
+        # ❌ Exclude students whose course status is completed in StudentCourse model
+        completed_course_students = StudentCourse.objects.filter(
+            course=batch.course,
+            status='Completed'
+        ).values_list('student_id', flat=True)
+        filters &= ~Q(id__in=completed_course_students)
+
+
         # Query the filtered students
         students = Student.objects.filter(filters)
 

@@ -128,34 +128,39 @@ class TrainerAvailabilityAPIView(APIView):
                 ).exists()
 
                 if not has_upcoming_batch:
-                    # Fetch the most recent past batch (excluding "Upcoming" ones)
+                    # Fetch the most recent past batch (excluding "Upcoming")
                     last_batch = trainer_batches.exclude(status="Upcoming").order_by('-end_date').first()
 
                     if last_batch and last_batch.status in ["Running", "Completed", "Canceled", "Hold"]:
+                        # Calculate free_days from last_batch end_date
                         free_days = (last_batch.end_date - today).days if last_batch.end_date else None
 
-                        future_availability_trainers.append({
-                            'trainer_id': trainer.trainer_id,
-                            'tr_id': trainer.id,
-                            'name': trainer.name,
-                            'languages': trainer.languages,
-                            'location': getattr(trainer.location, 'locality', None),
-                            'location_id': getattr(trainer.location, 'id', None),
-                            'email': trainer.email,
-                            'phone': trainer.phone,
-                            'batch_id': last_batch.batch_id,
-                            'batch_course': last_batch.course.name,
-                            'batch_week': last_batch.preferred_week,
-                            'start_date': last_batch.start_date,
-                            'end_date': last_batch.end_date,
-                            'free_days': free_days,
-                            'start_time': timeslot.start_time,
-                            'end_time': timeslot.end_time,
-                            'week': timeslot.week_type  # Include week_type filter
-                        })
+                        # ✅ Filter trainers available within the next 90 days
+                        if free_days is not None and 0 <= free_days <= 90:
+                            future_availability_trainers.append({
+                                'trainer_id': trainer.trainer_id,
+                                'tr_id': trainer.id,
+                                'name': trainer.name,
+                                'languages': trainer.languages,
+                                'location': getattr(trainer.location, 'locality', None),
+                                'location_id': getattr(trainer.location, 'id', None),
+                                'email': trainer.email,
+                                'phone': trainer.phone,
+                                'batch_id': last_batch.batch_id,
+                                'batch_course': last_batch.course.name,
+                                'batch_week': last_batch.preferred_week,
+                                'start_date': last_batch.start_date,
+                                'end_date': last_batch.end_date,
+                                'free_days': free_days,
+                                'start_time': timeslot.start_time,
+                                'end_time': timeslot.end_time,
+                                'week': timeslot.week_type
+                            })
 
         # Sort trainers by the number of free days (earliest availability first)
         future_availability_trainers.sort(key=lambda x: x['free_days'] if isinstance(x['free_days'], int) else float('inf'))
+        # ✅ Sort by earliest availability
+        # future_availability_trainers.sort(key=lambda x: x['free_days'])
 
         return Response({
             'free_trainers': free_trainers,

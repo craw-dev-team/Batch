@@ -5,7 +5,7 @@ export const TRAINERS_PATH = "/trainers";
 export const COURSES_PATH = "/courses";
 export const ADD_DETAILS_COORDINATORS_PATH = "/add-details/coordinators/";
 export const ADD_DETAILS_COUNSELLORS_PATH = "/add-details/counsellors/";
-// export const TRAINER_DETAILS_PATH = "/trainer/:trainerId";
+export const ALL_LOGS_PATH = "/all-logs/";
 
 // export const SPECIFIC_PAGE_PATH = "/specific-data";
 // export const FIREWALLRULES_PATH = "/firewallrules";

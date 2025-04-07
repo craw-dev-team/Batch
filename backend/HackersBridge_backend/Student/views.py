@@ -481,7 +481,7 @@ Best regards,
 🌐 https://www.craw.in/
                 """
 
-                from_email = "noreply@yourdomain.com"
+                from_email = "CRAW SECURITY CERTIFICATE <training@craw.in>"
                 try:
                     email = EmailMessage(subject, message, from_email, [student.email])
                     email.attach_file(file_path)  # Attach generated certificate PDF
