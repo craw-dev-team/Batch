@@ -11,8 +11,18 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   const register = async (userData) => {
+
+    const token = localStorage.getItem('token');
+    // if (!token) {
+    //     console.error("No token found, user might be logged out.");
+    //     return;
+    // };
+
     try {
-      await axios.post(`${BASE_URL}/api/register/`, userData);
+      await axios.post(`${BASE_URL}/api/register/`, 
+        userData,
+        // { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+      );
       message.success("Registration successful");
     } catch (error) {
       message.error(error.response?.data?.error || "Registration failed");
@@ -20,11 +30,22 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = async (username, password) => {
+
+    // const token = localStorage.getItem('token');
+    // if (!token) {
+    //     console.error("No token found, user might be logged out.");
+    //     return;
+    // };
+
     try {
-      const response = await axios.post(`${BASE_URL}/api/login/`, {
+      const response = await axios.post(`${BASE_URL}/api/login/`,
+         {
         username,
         password,
-      });
+      },
+      // { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+
+    );
 
       if (response.data.token) {
         setToken(response.data.token);
@@ -40,7 +61,7 @@ export const AuthProvider = ({ children }) => {
         return true;
       }
     } catch (error) {
-      console.error("Login failed:", error.response?.data || error.message);
+      console.error("Login failed:", error.response || error.message);
 
       const errorData = error?.response?.data?.error; // Extract nested error object
 
@@ -54,6 +75,8 @@ export const AuthProvider = ({ children }) => {
 
           message.error(errorMessages || "Something went wrong");
       } else {
+        console.log(error);
+        
           message.error("Something went wrong");
       }
   }

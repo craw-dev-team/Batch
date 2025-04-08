@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom"
 import { useSpecificBatch } from "../Contexts/SpecificBatch";
 import { DatePicker, Empty, Spin, Avatar, Tooltip, Tag, Button, Popconfirm, message   } from 'antd';
@@ -10,6 +10,7 @@ import AddStudentModal from "../AddStudentModal/AddStudentModal";
 import CreateStudentForm from "../Students/CreateStudentForm";
 import CreateBatchForm from "../Batches/CreateBatchForm";
 import { useAuth } from "../AuthContext/AuthContext";
+import { useBatchForm } from "../Batchcontext/BatchFormContext";
 
 
 // const SpecificBatchPage = () => {
@@ -166,13 +167,15 @@ import { useAuth } from "../AuthContext/AuthContext";
 const SpecificBatchPage = () => {
     const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false); 
     const [isModalOpen, setIsModalOpen] = useState(false) 
-    
+    const [activeTab, setActiveTab] = useState('tab1')
     // store batch data for editing 
     const [isBatchModalOpen, setIsBatchModalOpen] = useState(false) 
     const [selectedBatch, setSelectedBatch] = useState();
 
     const { batchId } = useParams();
     const { specificBatch, fetchSpecificBatch } = useSpecificBatch();
+
+    const {batchFormData, setBatchFormData} = useBatchForm();
     const { token } = useAuth();
 
     const [editingField, setEditingField] = useState(null);
@@ -188,9 +191,75 @@ const SpecificBatchPage = () => {
     const [selectedStudentIds, setSelectedStudentIds] = useState([]);
     // track the certificate is issued or not 
     const [isCertificateIssued, setIsCertificateIssued] = useState(false);
-
+    // store preferred available students for that specific batch
+    const [students, setStudents] = useState({});
+    
     const navigate = useNavigate();
     
+    
+    const handleTabClick = (tab) => {
+        setActiveTab(tab);
+    };
+
+
+    
+        // HANDLE FETCH PREFFERED AVAILABLE STUDNETS FOR THAT SPECIFIC BATCH
+        const fetchAvailableStudents = useCallback(async (batchId) => {              
+            try {
+                const response = await axios.get(`${BASE_URL}/api/batches/${batchId}/available-students/`, 
+                    { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                );
+                const data = response.data;
+                console.log(data);
+                
+                if (!data.available_students) {
+                    throw new Error("Invalid response format");
+                };
+        
+                // Update state with students for the specific batchId
+                setStudents(data);                        
+            } catch (error) {
+                console.error("Error fetching students:", error);
+            }
+        }, [students]);
+        
+
+        // HANDLE FORM SUBMIT AND SEND DATA TO THAT MODAL AND ADD THAT STUDENT IN THAT BATCH 
+        const handleAddStudentToBatch = async (studentId) => {
+            const batch_id = atob(batchId)
+                    
+            if (!studentId) {
+                message.warning("No student selected!");
+                return;
+            }
+        
+            try {
+                const response = await axios.post(`${BASE_URL}/api/batches/${batch_id}/add-students/`, 
+                    { students: [studentId] }, // Ensure correct payload format
+                    { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                );
+        
+                if (response.status >= 200 && response.status < 300) {
+                    message.success("Students added successfully!");
+                     setTimeout( () => {
+                        setLoading(false);
+                        setBatchFormData((prev) => ({ ...prev, [batch_id]: [] })); // Reset selected students
+                        fetchSpecificBatch(batch_id)
+                    }, 1000);
+    
+                } else {
+                    message.error(response.data?.message || "Failed to add students.");
+                };
+            } catch (error) {
+                console.error("Error sending Add student request:", error);
+                
+                const errorMessage = error.response?.data?.message || "Failed to add students.";
+                message.error(errorMessage);
+            }  finally {
+                setLoading(false);
+            }
+        };
+
     useEffect(() => {        
         if (batchId) {
             try {
@@ -198,6 +267,7 @@ const SpecificBatchPage = () => {
                 const originalBatchId = atob(batchId);                
                 // Fetch trainer data with the decoded ID
                 fetchSpecificBatch(originalBatchId);
+                fetchAvailableStudents(originalBatchId)
             } catch (error) {
                 console.error("Error decoding trainer ID:", error);
             }
@@ -362,9 +432,10 @@ const SpecificBatchPage = () => {
             const batch_id = atob(batchId)            
 
             const payload = {
-                student_id : selectedStudentIds,
+                students : selectedStudentIds,
                 issue_date : certificateIssueDate,
             };
+            
 
             try {
                 const response = await axios.post(`${BASE_URL}/api/batch-generate-certificate/${batch_id}/`, 
@@ -387,6 +458,15 @@ const SpecificBatchPage = () => {
         };
 
 
+        
+    
+        // useEffect(() => {
+        //     if (batchId) {
+        //         const batchId = atob(batchId)
+        //         fetchAvailableStudents(batchId);
+        //     }
+            
+        // },[batchId]);
 
     return (
         <div className="w-auto h-full pt-20 px-2 mt-0">
@@ -513,7 +593,26 @@ const SpecificBatchPage = () => {
                 <div className="py-4 col-span-6 mt-6 h-auto shadow-md sm:rounded-lg border border-gray-50  bg-white">
                     <div className="w-full font-semibold">
                         <div className="col-span-1 text-lg px-4 py-4 flex justify-between">
-                            <h1>Students</h1>
+                            {/* <h1>Students</h1> */}
+
+                            <div className="relative ">
+                                <button
+                                    onClick={() => handleTabClick("tab1")}
+                                    className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200  
+                                        ${activeTab === "tab1" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                        >
+                                    Students
+                                </button>
+
+                                <button
+                                    onClick={() => handleTabClick("tab2")}
+                                    className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
+                                        ${activeTab === "tab2" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                    >
+                                    Recommened Students
+                                </button>
+                            </div>
+
                             <div className="flex">
                                 <Button onClick={handleIssueClick}
                                     variant="outlined"
@@ -563,8 +662,8 @@ const SpecificBatchPage = () => {
                             <div className={`overflow-hidden pb-2 relative `}>
                                 <div className="w-full h-[38rem] overflow-y-auto dark:border-gray-700 rounded-lg pb-2">
                                     <div className="col-span-1py-2 leading-8">
-                                    <table className="w-full text-xs text-left text-gray-500 dark:text-gray-400 ">
-                                        <thead className="text-xs text-gray-700 uppercase bg-blue-50 dark:bg-gray-700 dark:text-gray-400 sticky top-0 z-10">
+                                    <table className="w-full text-xs text-left text-gray-500">
+                                        <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10">
                                             <tr>
                                                 <th scope="col" className="px-3 py-3 md:px-2">
                                                     s.No
@@ -617,6 +716,7 @@ const SpecificBatchPage = () => {
                                             
                                             </tr>
                                         </thead>
+                                {activeTab === "tab1" && (
                                         <tbody>
                                     {loading ? (
                                             <tr>
@@ -762,7 +862,157 @@ const SpecificBatchPage = () => {
                                         </td>
                                     </tr>
                                 )}
-                                    </tbody>
+                                        </tbody>
+                                )}
+
+                                {activeTab === "tab2" && (
+                                         <tbody>
+                                         {loading ? (
+                                                 <tr>
+                                                     <td colSpan="100%" className="text-center py-4">
+                                                         <Spin size="large" />
+                                                     </td>
+                                                 </tr>
+                                         
+                                         ) : students?.available_students.length > 0 ? (
+                                             students?.available_students.map((item, index) => (
+                                             <tr key={item.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 scroll-smooth">
+                                                 <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
+                                                 {index + 1}
+                                                 </td>
+                                                 {/* <td className="px-3 py-2 md:px-1">
+                                                     {item.id}
+                                                 </td> */}
+                                                 {/* <td> {isCertificateIssued ? <CheckCircleOutlined className="text-green-500 text-md"/> : ''} </td> */}
+                                                 
+                                                 <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.student.id)}>
+                                                     {item.enrollment_no}
+                                                 </td>
+                                                 
+     
+                                                 <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.student.id)}>
+                                                     {item.name}
+                                                 </td>
+                                                 {/* <td className="px-3 py-2 md:px-1">
+                                                     {item.dob}
+                                                 </td> */}
+                                                 <td className="px-3 py-2 md:px-1">
+                                                     {item.phone}
+                                                 </td>
+                                                 <td className="px-3 py-2 md:px-1">
+                                                     {item.email}
+                                                 </td>
+                                                 {/* <td className="px-3 py-2 md:px-1">
+                                                     {new Date(item.student.date_of_joining).toLocaleDateString("en-GB", {
+                                                         day: "2-digit",
+                                                         month: "2-digit",
+                                                         year: "numeric",
+                                                     })}
+                                                 </td> */}
+                                                 <td className="px-3 py-2 md:px-1">
+                                                 <Avatar.Group
+                                                             max={{
+                                                                 count: 2,
+                                                                 style: {
+                                                                     color: "#f56a00",
+                                                                     backgroundColor: "#fde3cf",
+                                                                     height: "24px", // Match avatar size
+                                                                     width: "24px", // Match avatar size
+                                                                 }
+                                                             }}
+                                                         >
+                                                             {item.courses_names?.map((name, index) => (
+                                                                 <Tooltip key={index} title={name} placement="top">
+                                                                     <Avatar
+                                                                         size={24}
+                                                                         style={{ backgroundColor: "#87d068" }}
+                                                                     >
+                                                                         {name[0]}
+                                                                     </Avatar>
+                                                                 </Tooltip>
+                                                             ))}
+                                                         </Avatar.Group>
+                                                 </td>
+     
+                                                 <td className="px-3 py-2 md:px-1">
+                                                     <Tag bordered={false} color={item.mode === "Offline" ? "green" : item.mode === "Online" ? "red" : "geekblue"}>
+                                                         {item.mode}
+                                                     </Tag>
+                                                 </td>
+     
+                                                 <td className="px-3 py-2 md:px-1">
+                                                     <Tag bordered={false} color={item.language === 'Hindi'? 'green' : item.language === 'English'? 'volcano' : 'blue'}>
+                                                         {item.language}
+                                                     </Tag>
+                                                 </td>
+     
+                                                 <td className="px-3 py-2 md:px-1">
+                                                     <Tag bordered={false} color={item.preferred_week === "Weekdays" ? "cyan" : item.preferred_week === "Weekends" ? "gold" : "geekblue" }>
+                                                         {item.preferred_week}
+                                                     </Tag>
+                                                 </td>
+                                                 <td className="px-3 py-2 md:px-1">
+                                                     {item.location == '1' ? <Tag color="blue">Saket</Tag> : item.location == "2" ? <Tag color="magenta">Laxmi Nagar</Tag> : <Tag color="blue">Both</Tag>}
+                                                 </td>
+                                                 <td className="px-3 py-2 md:px-1">
+                                                     {item.course_counsellor_name}
+                                                 </td>
+                                                 <td className="px-3 py-2 md:px-1">
+                                                     {item.support_coordinator_name}
+                                                 </td>
+                                                 {/* <td className="px-3 py-2 md:px-1">
+                                                     <Switch
+                                                         size="small"
+                                                         checkedChildren={<CheckOutlined />}
+                                                         unCheckedChildren={<CloseOutlined />}
+                                                         checked={studentStatuses[item.id] || false} // Get correct status per trainer
+                                                         onChange={(checked) => handleToggle(checked, item.id)}
+                                                         style={{
+                                                             backgroundColor: studentStatuses[item.id] ? "#38b000" : "gray", // Change color when checked
+                                                         }}
+                                                     />
+                                                 </td> */}
+                                                 <td > 
+                                                    <Button 
+                                                         color="primary" 
+                                                         variant="filled" 
+                                                         className="rounded-lg w-auto pl-3 pr-3 py-0 my-1 mr-1"
+                                                         onClick={(e) => {
+                                                             e.stopPropagation(); // Prevent the click from bubbling to the <td> click handler
+                                                             handleAddStudentToBatch(item.id);  // Open the form with selected course data
+                                                         }}
+                                                     >
+                                                         +
+                                                     </Button>
+                                                     {/* <Popconfirm
+                                                         title={`Remove ${item.name}`}
+                                                         description="Are you sure you want to Remove this Student?"
+                                                         onConfirm={() => confirm(item.id, item.name)}
+                                                         onCancel={cancel}
+                                                         okText="Yes"
+                                                         cancelText="No"
+                                                     >
+                                                         <Button 
+                                                             color="danger" 
+                                                             variant="filled" 
+                                                             className="rounded-lg w-auto px-3"
+                                                             onClick={(e) => e.stopPropagation()} // Prevent the click from triggering the Edit button
+                                                         >
+                                                             <ClearOutlined />
+                                                         </Button>
+                                                 </Popconfirm> */}
+                                                 </td>
+                                             </tr>
+                                         ))
+                                     ) : (
+                                         <tr>
+                                             <td colSpan="100%" className="text-center py-4 text-gray-500">
+                                                 <Empty description="No Students found" />
+                                             </td>
+                                         </tr>
+                                     )}
+                                         </tbody>
+                                )}
                                     </table>
                                         {/* <ul>
                                             {specificBatch?.students.map((student, index) => (
@@ -779,7 +1029,7 @@ const SpecificBatchPage = () => {
                 </div>
             </div>
             <CreateStudentForm isOpen={isModalOpen} selectedStudentData={selectedStudent || {}} onClose={() => setIsModalOpen(false)} />
-            <AddStudentModal isOpen={isAddStudentModalOpen} onClose={() => setIsAddStudentModalOpen(false)} />
+            <AddStudentModal isOpen={isAddStudentModalOpen}  onClose={() => setIsAddStudentModalOpen(false)} />
             <CreateBatchForm isOpen={isBatchModalOpen} selectedBatchData={selectedBatch|| {}}  onClose={() => setIsBatchModalOpen(false)} />
 
         </div>

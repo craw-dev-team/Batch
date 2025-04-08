@@ -155,14 +155,26 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
             setLoading(false);
         
             if (error.response) {
-                console.error("Server Error Response:", error.response.data);
+                console.error("Server Error Response:", error.response);
         
-                // Extract error messages and show each one separately
-                Object.entries(error.response.data).forEach(([key, value]) => {
-                    value.forEach((msg) => {
-                        message.error(`${msg}`);
+                const errorData = error.response.data?.error;
+        
+                if (typeof errorData === "string") {
+                    // Simple error message as a string
+                    message.error(errorData);
+                } else if (typeof errorData === "object" && errorData !== null) {
+                    // Object of error messages
+                    Object.entries(errorData).forEach(([key, value]) => {
+                        if (Array.isArray(value)) {
+                            value.forEach((msg) => message.error(`${msg}`));
+                        } else {
+                            message.error(`${key}: ${value}`);
+                        }
                     });
-                });
+                } else {
+                    message.error("An unknown error occurred.");
+                }
+        
             } else if (error.request) {
                 console.error("No Response from Server:", error.request);
                 message.error("No response from server. Please check your internet connection.");
@@ -262,23 +274,52 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
                                 onChange={(value) => handleChange('batchTime', value)}
                             /> */}
                             <Select name="batchTime" value={batchFormData.batchTime ? String(batchFormData.batchTime) : null} onChange={(value) => handleChange("batchTime", value)} className='w-full border-gray-300' size='large' placeholder='Select Batch Timing' 
-                                                               options={[
-                                                                { value: '1', label: '10:00 - 12:00' },
-                                                                { value: '2', label: '12:00 - 02:00' },
-                                                                { value: '3', label: '03:00 - 05:00' },
-                                                                { value: '4', label: '05:00 - 06:30' },
-                                                                { value: '9', label: '06:00 - 07:00' },
-                                                                { value: '7', label: '07:00 - 09:00' },
-                                                                { value: '8', label: '10:00 - 05:00' },
-                                                                { value: '5', label: '10:00 - 02:00 - Weekends' },
-                                                                { value: '10', label: '12:30 - 02:30 - Weekdays' },
-                                                                { value: '11', label: '07:00 - 08:30 - Weekdays' },
-                                                                { value: '12', label: '05:00 - 07:00 - Weekdays' },
-                                                                { value: '13', label: '08:00 - 09:00 - Weekdays' },
-                                                                { value: '14', label: '12:00 - 02:00 - Weekends' },
-                                                                { value: '15', label: '07:00 - 08:30 - Weekdays' },
-                                                            ]}
-                                />
+                                 dropdownRender={menu => <div>{menu}</div>} // required to ensure styling applies properly
+                                 options={[
+                                        { value: '1', label: '10:00 - 12:00' },
+                                        { value: '2', label: '12:00 - 02:00' },
+                                        { value: '3', label: '03:00 - 05:00' },
+                                        { value: '4', label: '05:00 - 06:30' },
+                                        { value: '9', label: '06:00 - 07:00' },
+                                        { value: '7', label: '07:00 - 09:00' },
+                                        { value: '8', label: '10:00 - 05:00' },
+                               
+                                   // Weekends
+                                   { value: '5', label: <div style={{ backgroundColor: '#fffbe6' }}>10:00 - 02:00 - Weekends</div> },
+                                   { value: '14', label: <div style={{ backgroundColor: '#fffbe6' }}>12:00 - 02:00 - Weekends</div> },
+                               
+                                   // Weekdays
+                                   { value: '10', label: <div style={{ backgroundColor: '#c3f3fa' }}>12:30 - 02:30 - Weekdays</div> },
+                                   { value: '11', label: <div style={{ backgroundColor: '#c3f3fa' }}>07:00 - 08:30 - Weekdays</div> },
+                                   { value: '12', label: <div style={{ backgroundColor: '#c3f3fa' }}>05:00 - 07:00 - Weekdays</div> },
+                                   { value: '13', label: <div style={{ backgroundColor: '#c3f3fa' }}>08:00 - 09:00 - Weekdays</div> },
+                                   { value: '15', label: <div style={{ backgroundColor: '#c3f3fa' }}>07:00 - 08:30 - Weekdays</div> },
+                                 ]}
+                                 filterOption={(input, option) => {
+                                    const labelText = typeof option.label === 'string'
+                                      ? option.label
+                                      : option.label?.props?.children || ''; // safely get text inside <div>
+                                      
+                                    return labelText.toLowerCase().includes(input.toLowerCase());
+                                  }}
+                                showSearch
+                                //    options={[
+                                //     { value: '1', label: '10:00 - 12:00' },
+                                //     { value: '2', label: '12:00 - 02:00' },
+                                //     { value: '3', label: '03:00 - 05:00' },
+                                //     { value: '4', label: '05:00 - 06:30' },
+                                //     { value: '9', label: '06:00 - 07:00' },
+                                //     { value: '7', label: '07:00 - 09:00' },
+                                //     { value: '8', label: '10:00 - 05:00' },
+                                //     { value: '5', label: '10:00 - 02:00 - Weekends' },
+                                //     { value: '10', label: '12:30 - 02:30 - Weekdays' },
+                                //     { value: '11', label: '07:00 - 08:30 - Weekdays' },
+                                //     { value: '12', label: '05:00 - 07:00 - Weekdays' },
+                                //     { value: '13', label: '08:00 - 09:00 - Weekdays' },
+                                //     { value: '14', label: '12:00 - 02:00 - Weekends' },
+                                //     { value: '15', label: '07:00 - 08:30 - Weekdays' },
+                                // ]}
+                            />
                                 {errors.batchTime && <p className="text-red-500 text-sm">{errors.batchTime}</p>}
                             </div>
 
@@ -374,7 +415,7 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
                             {/* Dropdown for Trainer Selection */}
                             <div className="col-span-2 sm:col-span-2">
                                 <label htmlFor="trainer" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Trainer</label>
-                                <Select name="trainer" className='w-full border-gray-300' size='large'placeholder='Select Trainer' 
+                                <Select name="trainer" className='w-full border-gray-300' size='large' placeholder="Select Trainer" 
                                 showSearch  // This enables search functionality
                                         
                                 onChange={(value) => handleChange("trainer", value)} 

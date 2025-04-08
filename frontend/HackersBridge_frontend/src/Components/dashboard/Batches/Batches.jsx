@@ -261,13 +261,14 @@ const Batches = () => {
 
     const searchFilteredBatches = searchTerm
     ? filteredBatchesByStatus.filter((batch) =>
-        batch.batch_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        batch.course_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        batch.trainer_name.toLowerCase().includes(searchTerm.toLowerCase()) 
-    )
+        (batch.batch_id?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+        (batch.course_name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+        (batch.trainer_name?.toLowerCase() || "").includes(searchTerm.toLowerCase())
+      )
     : filteredBatchesByStatus;
+  
 
-
+    // HANDLE NAVIGATE TO BATCH INFO
     const handleBatchClick =  async (batchId) => {
         if (!batchId) return;
         const encodedBatchId = btoa(batchId);
@@ -275,6 +276,7 @@ const Batches = () => {
     };
 
 
+    // HANDLE NAVIGATE TO TRAINER INFO
     const handleTrainerClick =  async (trainerId) => {
         if (!trainerId) return;
         const encodedTrainerId = btoa(trainerId); 
@@ -522,11 +524,11 @@ const Batches = () => {
         <>
 <div className="w-auto pt-4 px-2 mt-14 darkmode">
     <BatchCards handleTabClick={handleTabClick} activeTab={activeTab}/>
-    <div className="relative w-full h-full shadow-md sm:rounded-lg darkmode border border-gray-50 dark:border dark:border-gray-600">
+    <div className="relative w-full h-full shadow-md sm:rounded-lg darkmode border border-gray-50">
             <div className="w-full px-4 py-3 text flex justify-between font-semibold ">
                 <h1>All Batches</h1>
                 <div>
-                    <button onClick={() =>  { setIsModalOpen(true); setSelectedBatch(null); }} type="button" className="focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Create Batch +</button>
+                    <button onClick={() =>  { setIsModalOpen(true); setSelectedBatch(null); }} type="button" className="focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5">Create Batch +</button>
                 </div>
             </div>
 
@@ -772,7 +774,9 @@ const Batches = () => {
                     })}
                 </td>
                 <td className="px-3 py-2 md:px-1">{item.course_name}</td>
+
                 <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.trainer)}>{item.trainer_name}</td>
+                
                 <td className="px-3 py-2 md:px-1 relative">
                     <Avatar.Group
                        max={{

@@ -7,6 +7,7 @@ import axios from "axios";
 import dayjs from "dayjs";
 import BASE_URL from "../../../ip/Ip";
 import { useAuth } from "../AuthContext/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 
 
@@ -24,6 +25,7 @@ const AvailableBatches = () => {
 
     const { availableTrainers, loading, fetchTrainers } = useTrainerForm();
 
+    const navigate = useNavigate();
     
     const handleTabClick = (tab) => {
         setActiveTab(tab);
@@ -34,7 +36,7 @@ const AvailableBatches = () => {
         
     }, [availableTrainers])
 
-
+    // THIS FUNCTION CREATE BATCH OF TRAINER'S FREE TIME 
     const handleCreateClick = (trainer) => {
         setSelectedBatch({
             ...trainer, 
@@ -95,6 +97,21 @@ const AvailableBatches = () => {
       return sorted;
     }, [searchFilteredBatches, sortByName, sortByStartTime]);
     
+  
+    // HANDLE NAVIGATE TO TRAINER INFO
+    const handleTrainerClick =  async (trainerId) => {    
+        if (!trainerId) return;
+        const encodedTrainerId = btoa(trainerId); 
+        navigate(`/trainers/${encodedTrainerId}`);
+    };
+
+    
+    // HANDLE NAVIGATE TO BATCH INFO
+    const handleBatchClick =  async (batchId) => {            
+        if (!batchId) return;
+        const encodedBatchId = btoa(batchId); 
+        navigate(`/batches/${encodedBatchId}`);
+    };
 
 
     return (
@@ -230,10 +247,10 @@ const AvailableBatches = () => {
                                 <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
                                     {index + 1}
                                 </td>
-                                <td className="px-3 py-2 md:px-1 font-semibold">
+                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.tr_id)}>
                                     {item.trainer_id}
                                 </td>
-                                <td className="px-3 py-2 md:px-1 font-semibold">
+                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.tr_id)}>
                                     {item.name} 
                                 </td>
                                 <td className="px-3 py-2 md:px-1">
@@ -361,8 +378,8 @@ const AvailableBatches = () => {
                         sortedFutureAvailableTrainers.map((item, index) => (
                     <tr key={index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
                         <td className="px-3 py-2 md:px-2 font-medium text-gray-900 dark:text-white">{index + 1}</td>
-                        <td className="px-3 py-2 md:px-1 font-semibold">{item.trainer_id}</td>
-                        <td className="px-3 py-2 md:px-1 font-semibold">{item.name}</td>
+                        <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.tr_id)}>{item.trainer_id}</td>
+                        <td className="px-3 py-2 md:px-1 ">{item.name}</td>
                         <td className="px-3 py-2 md:px-1">
                         {new Date(`1970-01-01T${item.start_time}`).toLocaleString("en-US", {
                         hour: "numeric",
@@ -388,13 +405,17 @@ const AvailableBatches = () => {
                         year: "numeric",
                     })}</td>
                         <td className="px-3 py-2 md:px-1 font-semibold">{item.batch_course}</td>
-                        <td className="px-3 py-2 md:px-1 font-bold">{item.batch_id}</td>
+                        <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleBatchClick(item.batch__id)}>{item.batch_id}</td>
                         <td className="px-3 py-2 md:px-1">
                             <Tag bordered={false} color={item.batch_week === "Weekdays" ? "cyan" : item.batch_week === "Weekends" ? "gold" : "geekblue" }>
                                 {item.batch_week}
                             </Tag>
                         </td>
-                        <td className="px-3 py-2 md:px-1">{item.free_days} Days</td>
+
+                        <td className="px-3 py-2 md:px-1">
+                            {item.free_days >= 0 ? item.free_days + " Days" : item.free_days}
+                        </td>
+
                         <td className="px-3 py-2 md:px-1">
                         <button 
                             onClick={() => handleCreateClick(item)} 
@@ -416,7 +437,7 @@ const AvailableBatches = () => {
                 </tbody>
             </table>
             </div>
-        </div>
+            </div>
         
             )}
 
@@ -519,7 +540,7 @@ const CreateAvailableBatchForm = ({ isOpen, onClose, selectedBatch }) => {
         start_date: formattedData.startDate,
         end_date: formattedData.endDate,
         course: formattedData.course?.id,
-        trainer: selectedBatch?.formattedData.preferredWeek,
+        trainer: selectedBatch?.preferredWeek,
         mode: formattedData.mode,
         language: formattedData.language,
         location: selectedBatch?.location_id,
@@ -550,6 +571,8 @@ const CreateAvailableBatchForm = ({ isOpen, onClose, selectedBatch }) => {
                 { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
             );
             successMessage = "Batch added successfully!";
+            console.log(response);
+            
         }
 
         if (response.status >= 200 && response.status < 300) {
@@ -629,22 +652,35 @@ const convertTo12HourFormat = (time) => {
                /> */}
                <Select name="batchTime" onChange={(value) => handleChange("batchTime", value)} className='w-full border-gray-300' size='large' placeholder='Select Batch Timing' 
                    value={batchFormData.batchTime ? String(batchFormData.batchTime) : null}
-                   options={[
-                    { value: '1', label: '10:00 - 12:00' },
-                    { value: '2', label: '12:00 - 02:00' },
-                    { value: '3', label: '03:00 - 05:00' },
-                    { value: '4', label: '05:00 - 06:30' },
-                    { value: '9', label: '06:00 - 07:00' },
-                    { value: '7', label: '07:00 - 09:00' },
-                    { value: '8', label: '10:00 - 05:00' },
-                    { value: '5', label: '10:00 - 02:00 - Weekends' },
-                    { value: '10', label: '12:30 - 02:30 - Weekdays' },
-                    { value: '11', label: '07:00 - 08:30 - Weekdays' },
-                    { value: '12', label: '05:00 - 07:00 - Weekdays' },
-                    { value: '13', label: '08:00 - 09:00 - Weekdays' },
-                    { value: '14', label: '12:00 - 02:00 - Weekends' },
-                    { value: '15', label: '07:00 - 08:30 - Weekdays' },
-                ]}
+                    dropdownRender={menu => <div>{menu}</div>} // required to ensure styling applies properly
+                    options={[
+                           { value: '1', label: '10:00 - 12:00' },
+                           { value: '2', label: '12:00 - 02:00' },
+                           { value: '3', label: '03:00 - 05:00' },
+                           { value: '4', label: '05:00 - 06:30' },
+                           { value: '9', label: '06:00 - 07:00' },
+                           { value: '7', label: '07:00 - 09:00' },
+                           { value: '8', label: '10:00 - 05:00' },
+                      
+                        // Weekends
+                      { value: '5', label: <div style={{ backgroundColor: '#fffbe6' }}>10:00 - 02:00 - Weekends</div> },
+                      { value: '14', label: <div style={{ backgroundColor: '#fffbe6' }}>12:00 - 02:00 - Weekends</div> },
+                        
+                      // Weekdays
+                      { value: '10', label: <div style={{ backgroundColor: '#c3f3fa' }}>12:30 - 02:30 - Weekdays</div> },
+                      { value: '11', label: <div style={{ backgroundColor: '#c3f3fa' }}>07:00 - 08:30 - Weekdays</div> },
+                      { value: '12', label: <div style={{ backgroundColor: '#c3f3fa' }}>05:00 - 07:00 - Weekdays</div> },
+                      { value: '13', label: <div style={{ backgroundColor: '#c3f3fa' }}>08:00 - 09:00 - Weekdays</div> },
+                      { value: '15', label: <div style={{ backgroundColor: '#c3f3fa' }}>07:00 - 08:30 - Weekdays</div> },
+                    ]}
+                    filterOption={(input, option) => {
+                        const labelText = typeof option.label === 'string'
+                          ? option.label
+                          : option.label?.props?.children || ''; // safely get text inside <div>
+                          
+                        return labelText.toLowerCase().includes(input.toLowerCase());
+                      }}
+                    showSearch
                    />
                    {/* {errors.batchTime && <p className="text-red-500 text-sm">{errors.batchTime}</p>} */}
                </div>
