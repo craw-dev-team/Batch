@@ -80,7 +80,7 @@ const SpecificStudentLogs = () => {
                     <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
                         { index + 1}
                     </td>
-                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.id)}>
+                    <td className="px-3 py-2 md:px-1">
                         {item.actor}
                     </td>
 
@@ -88,8 +88,8 @@ const SpecificStudentLogs = () => {
                         {item.object_repr}
                     </td>
 
-                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.id)}>
-                    {/* {typeof item.changes === "object"
+                    <td className="px-3 py-2 md:px-1">
+                    {typeof item.changes === "object"
                         ? Object.entries(item.changes).map(([key, value]) => {
                             if (typeof value === "object" && value.old !== undefined && value.new !== undefined) {
                             return `${key}: ${value.old} ➝ ${value.new}\n`;
@@ -97,7 +97,7 @@ const SpecificStudentLogs = () => {
                             return `${key}: ${JSON.stringify(value)}\n`;
                             }
                         }).join("")
-                        : item.changes} */}
+                        : item.changes}
                     </td>
                     <td className="px-3 py-2 md:px-1">
                         {item.changes_text}
@@ -111,63 +111,6 @@ const SpecificStudentLogs = () => {
                     <td className="px-3 py-2 md:px-1">
                         {dayjs(item.timestamp).format("DD-MM-YYYY hh:mm A")}
                     </td>
-                    {/* <td className="px-3 py-2 md:px-1">
-
-                    </td>
-                    <td className="px-3 py-2 md:px-1">
-                       
-                    </td>
-                    <td className="px-3 py-2 md:px-1">
-
-                    </td>
-                    <td className="px-3 py-2 md:px-1">
-
-                    </td>
-                    <td className="px-3 py-2 md:px-1">
-
-                    </td> */}
-                    {/* <td className="px-3 py-2 md:px-1">
-                        <Switch
-                            size="small"
-                            checkedChildren={<CheckOutlined />}
-                            unCheckedChildren={<CloseOutlined />}
-                            checked={studentStatuses[item.id] || false} // Get correct status per trainer
-                            onChange={(checked) => handleToggle(checked, item.id)}
-                            style={{
-                                backgroundColor: studentStatuses[item.id] ? "#38b000" : "gray", // Change color when checked
-                              }}
-                        />
-                    </td> */}
-                    {/* <td > <Button 
-                            color="primary" 
-                            variant="filled" 
-                            className="rounded-lg w-auto pl-3 pr-3 py-0 my-1 mr-1"
-                            onClick={(e) => {
-                                e.stopPropagation(); // Prevent the click from bubbling to the <td> click handler
-                                handleEditClick(item);  // Open the form with selected course data
-                                setIsModalOpen(true);   // Open the modal
-                            }}
-                        >
-                            <EditOutlined />
-                        </Button>
-                        <Popconfirm
-                            title="Delete the Student"
-                            description="Are you sure you want to delete this Student?"
-                            onConfirm={() => confirm(item.id)}
-                            onCancel={cancel}
-                            okText="Yes"
-                            cancelText="No"
-                        >
-                            <Button 
-                                color="danger" 
-                                variant="filled" 
-                                className="rounded-lg w-auto px-3"
-                                onClick={(e) => e.stopPropagation()} // Prevent the click from triggering the Edit button
-                            >
-                                <DeleteOutlined />
-                            </Button>
-                    </Popconfirm>
-                    </td> */}
                 </tr>
             ))
         ) : (

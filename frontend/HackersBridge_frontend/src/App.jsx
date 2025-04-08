@@ -32,6 +32,8 @@ import { SpecificCoordinatorProvider } from "./Components/dashboard/Contexts/Spe
 import SpecificCoordinatorPage from "./Components/dashboard/SpecificPage/SpecificCoordinatorPage";
 import AllLogs from "./Components/dashboard/AllLogs/AllLogs";
 import { AllLogsProvider } from "./Components/dashboard/AllLogsContext/AllLogsContext";
+import BooksHome from "./Pages/BooksHome";
+import { BookFormProvider } from "./Components/dashboard/BooksContext/BookFormContext";
 
 
 
@@ -107,6 +109,7 @@ function App() {
                           <Route path={route.ADD_DETAILS_COUNSELLORS_PATH} element={<CounsellorsHome />} />
                           <Route path="/studentsdata/:type" element={<StudentsList />} />
                           <Route path={route.ALL_LOGS_PATH} element={<AllLogs />} />
+                          <Route path={route.BOOKS_PATH} element={<BooksHome />} />
                         </Routes>
                       </Content>
                     </Layout>
@@ -137,7 +140,9 @@ const AppProviders = ({ children }) => {
                               <SpecificBatchProvider>
                                 <SpecificCoordinatorProvider>
                                   <AllLogsProvider>
-                                  {children}
+                                    <BookFormProvider>
+                                      {children}
+                                    </BookFormProvider>
                                   </AllLogsProvider>
                                 </SpecificCoordinatorProvider>
                               </SpecificBatchProvider>

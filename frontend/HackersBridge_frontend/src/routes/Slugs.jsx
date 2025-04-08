@@ -6,6 +6,7 @@ export const COURSES_PATH = "/courses";
 export const ADD_DETAILS_COORDINATORS_PATH = "/add-details/coordinators/";
 export const ADD_DETAILS_COUNSELLORS_PATH = "/add-details/counsellors/";
 export const ALL_LOGS_PATH = "/all-logs/";
+export const BOOKS_PATH = "/all-books/";
 
 // export const SPECIFIC_PAGE_PATH = "/specific-data";
 // export const FIREWALLRULES_PATH = "/firewallrules";

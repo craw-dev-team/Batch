@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Spin, Empty } from 'antd';
 import dayjs from "dayjs";
 import { useSpecificCoordinator } from "../../Contexts/SpecificCoordinators";
@@ -12,6 +12,7 @@ const SpecificCoordinatorActivityLogs = () => {
 
     const { activity_logs } = specificCoordinator?.Coordinator_Info || [];
     
+    const navigate = useNavigate();
 
     useEffect(() => {        
         if (coordinatorId) {
@@ -27,6 +28,13 @@ const SpecificCoordinatorActivityLogs = () => {
         }
     },[]);
 
+
+    // HANDLE NAVIGATE TO TRAINER INFO
+    const handleCoordinatorClick =  async (coordinatorId) => {
+        if (!coordinatorId) return;
+        const encodedCoordinatorId = btoa(coordinatorId); 
+        navigate(`/add-details/coordinators/${encodedCoordinatorId}`);
+    };
     console.log(specificCoordinator);
     
     
@@ -85,7 +93,7 @@ const SpecificCoordinatorActivityLogs = () => {
                     <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
                         { index + 1}
                     </td>
-                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.id)}>
+                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleCoordinatorClick(item.id)}>
                         {item.actor}
                     </td>
 
