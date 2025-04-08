@@ -88,6 +88,7 @@ class TrainerSerializer(serializers.ModelSerializer):
             # ✅ Avoid duplicate User creation
             user, created = User.objects.get_or_create(
                 username=validated_data['trainer_id'],
+                first_name=trainer.name,
                 defaults={
                     'email': validated_data['email'],
                     'password': temp_password,

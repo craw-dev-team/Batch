@@ -51,6 +51,7 @@ urlpatterns = [
     path('student-course/edit/<int:id>/', StudentCourseEditAPIView.as_view(), name='student-course-edit'),
     path('generate-certificate/<int:id>/', GenerateCertificateAPIView.as_view(), name='generate-certificate'),
     path('download-certificate/<int:id>/', DownloadCertificateAPIView.as_view(), name='download_certificate'),
+    # path('email-tracker/<int:id>/', email_open_tracker, name='email-tracker'),
     
     path('trainers/', TrainerListAPIviews.as_view(), name='trainer-list'),
     path('trainers/add/', AddTrainerAPIView.as_view(), name='add_trainer_api'),
@@ -62,6 +63,7 @@ urlpatterns = [
     
     path('batches/', BatchAPIView.as_view(), name='batch-list'),
     path('batches/add/', BatchCreateAPIView.as_view(), name='add_batch_api'),
+    path('batches-logs/', BatchLogListView.as_view(), name='batches-logs'),
     path('batches/info/<int:id>/', BatchInfoAPIView.as_view(), name='info_batch_api'),
     path('batches/edit/<int:id>/', BatchEditAPIView.as_view(), name='edit_batch_api'),
     path('batches/delete/<int:id>/', BatchDeleteAPIView.as_view(), name='delete_batch_api'),
@@ -71,6 +73,12 @@ urlpatterns = [
     path('batch/remove-student/<int:batch_id>/', BatchRemoveStudentAPIView.as_view(), name='remove_student_from_batch'),
     path('batch-student-assignment/update/<int:assignment_id>/', BatchStudentAssignmentUpdateAPIView.as_view(), name='update_batch_student_assignment'),
     path('batch-generate-certificate/<int:id>/', GenerateBatchCertificateAPIView.as_view(), name='generate-certificate'),
+
+    path('books/', BookListAPIView.as_view(), name='book-list'),
+    path('books/add/', BookCreateAPIView.as_view(), name='book-add'),
+    path('books/edit/<int:id>/', BookUpdateAPIView.as_view(), name='book-edit'),
+    path('books/delete/<int:id>/', BookDeleteAPIView.as_view(), name='book-delete'),
+    
 ]
 
 

@@ -594,11 +594,26 @@ class LogEntrySerializer(serializers.ModelSerializer):
         queryset=ContentType.objects.all(), slug_field='model'
     )
     actor = serializers.StringRelatedField()  # Shows actor's username
+    actor_first_name = serializers.CharField(source='actor.first_name', read_only=True)
 
     class Meta:
         model = LogEntry
         fields = [
             'id', 'cid', 'content_type', 'object_id', 'object_pk', 
             'object_repr', 'action', 'changes', 'changes_text',
-            'serialized_data', 'actor', 'remote_addr', 'timestamp', 'additional_data'
+            'serialized_data', 'actor', 'remote_addr', 'timestamp', 'additional_data', 'actor_first_name'
         ]
+
+
+
+class BookSerializer(serializers.ModelSerializer):
+    course_name = serializers.CharField(source='course.name', read_only=True)
+    last_updated_by = serializers.CharField(source='last_update_user.first_name', read_only=True)
+
+    class Meta:
+        model = Book
+        fields = [
+            'id', 'book_id', 'name', 'version', 'course', 'course_name', 'stock',
+            'status', 'last_update_user', 'last_updated_by', 'last_update_datetime', 'gen_time'
+        ]
+        read_only_fields = ['last_update_user', 'last_update_datetime', 'gen_time']
