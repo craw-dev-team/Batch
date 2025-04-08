@@ -664,6 +664,7 @@ const convertTo12HourFormat = (time) => {
                       
                         // Weekends
                       { value: '5', label: <div style={{ backgroundColor: '#fffbe6' }}>10:00 - 02:00 - Weekends</div> },
+                      { value: '6', label: <div style={{ backgroundColor: '#fffbe6' }}>03:00 - 06:30 - Weekends</div> },
                       { value: '14', label: <div style={{ backgroundColor: '#fffbe6' }}>12:00 - 02:00 - Weekends</div> },
                         
                       // Weekdays
