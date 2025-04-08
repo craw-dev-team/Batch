@@ -45,9 +45,7 @@ class Student(models.Model):
     status = models.CharField(max_length=25, null=True, blank=True, choices=STATUS, default='Active')
     course_counsellor = models.ForeignKey("Counsellor.Counsellor", on_delete=models.SET_NULL, null=True)
     support_coordinator = models.ForeignKey("Coordinator.Coordinator", null=True, blank=True, on_delete=models.SET_NULL )
-    note = models.TextField(max_length=200, null=True, blank=True)
     profile_picture = models.ImageField(upload_to='student/profile_pics/', null=True, blank=True)  # Stores image path
-
     dob = models.DateField(null=True, blank=True)
     last_update_user = models.ForeignKey("nexus.CustomUser", on_delete=models.SET_NULL, null=True, blank=True, related_name='student_update')
     # last_update_coordinated = models.ForeignKey("Coordinator.Coordinator", on_delete=models.CASCADE, related_name='student_update', null=True, blank=True)
@@ -55,6 +53,7 @@ class Student(models.Model):
     last_update_datetime = models.DateTimeField(default=timezone.now)
     gen_time = models.DateTimeField(default=timezone.now)
     installment = models.OneToOneField('Installment', on_delete=models.CASCADE, null=True, blank=True, related_name='installment')
+    # note = models.TextField(max_length=200, null=True, blank=True)
 
     def save(self, *args, **kwargs):
         if not self.enrollment_no:
@@ -70,6 +69,9 @@ class Student(models.Model):
 
     def __str__(self):
         return self.name + '-' + self.enrollment_no
+
+
+
 
 class Installment(models.Model):
     MODES = [
@@ -126,7 +128,20 @@ class StudentCourse(models.Model):  # ✅ Through Model
     course = models.ForeignKey("nexus.Course", on_delete=models.CASCADE)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Not Started')
     certificate_date = models.DateField(null=True, blank=True)
+    email_opened = models.BooleanField(null=True, blank=True, default=False)
+    email_opened_at = models.DateTimeField(null=True, blank=True)
     student_certificate_allotment = models.BooleanField(null=True, blank=True, default=False) 
 
     class Meta:
         unique_together = ('student', 'course')
+
+
+
+class StudentNotes(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="notes")
+    note = models.TextField(null=True, blank=True)
+    last_update_datetime = models.DateTimeField(default=timezone.now)
+    create_by = models.ForeignKey("nexus.CustomUser", on_delete=models.SET_NULL, related_name='student_note', null=True, blank=True)
+
+    def __str__(self):
+        return f"Note for {self.student.name}"

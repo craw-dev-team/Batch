@@ -268,6 +268,11 @@ class CoordinatorInfoAPIView(APIView):
         coordinator_logs = LogEntry.objects.filter(content_type=coordinator_ct, object_id=coordinator.id).order_by('-timestamp')
         serializer_logs = LogEntrySerializer(coordinator_logs, many=True).data
 
+        # Fetch activity logs for this coordinator
+        user = User.objects.get(username=coordinator.coordinator_id)
+        activity_logs = LogEntry.objects.filter(actor=user).order_by('-timestamp')
+        activity_serializer_logs = LogEntrySerializer(activity_logs, many=True).data
+
         Coordinator_Info = {
             'coordinator':CoordinatorSerializer(coordinator).data,
             'coordinator_batch_upcomimg':list(coordinator_batch_upcomimg.values()),
@@ -275,6 +280,7 @@ class CoordinatorInfoAPIView(APIView):
             'coordinator_batch_completed':list(coordinator_batch_completed.values()),
             'coordinator_batch_hold':list(coordinator_batch_hold.values()),
             'coordinator_logs':serializer_logs,
+            'activity_logs':activity_serializer_logs,
         }
 
 
@@ -293,3 +299,4 @@ class CoordinatorLogListView(APIView):
         logs = LogEntry.objects.filter(content_type=coordinator_ct).order_by('=timestamp')
         serializer = LogEntrySerializer(logs, many=True)
         return Response(serializer.data)
+    

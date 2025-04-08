@@ -146,6 +146,7 @@ class TrainerAvailabilityAPIView(APIView):
                                 'location_id': getattr(trainer.location, 'id', None),
                                 'email': trainer.email,
                                 'phone': trainer.phone,
+                                'batch__id': last_batch.id,
                                 'batch_id': last_batch.batch_id,
                                 'batch_course': last_batch.course.name,
                                 'batch_week': last_batch.preferred_week,
@@ -157,10 +158,8 @@ class TrainerAvailabilityAPIView(APIView):
                                 'week': timeslot.week_type
                             })
 
-        # Sort trainers by the number of free days (earliest availability first)
-        future_availability_trainers.sort(key=lambda x: x['free_days'] if isinstance(x['free_days'], int) else float('inf'))
         # ✅ Sort by earliest availability
-        # future_availability_trainers.sort(key=lambda x: x['free_days'])
+        future_availability_trainers.sort(key=lambda x: x['free_days'])
 
         return Response({
             'free_trainers': free_trainers,

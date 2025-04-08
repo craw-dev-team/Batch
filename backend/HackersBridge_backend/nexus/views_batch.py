@@ -153,7 +153,7 @@ class BatchCreateAPIView(APIView):
                     action=LogEntry.Action.CREATE,
                     changes=f"Created new batch: {batch.batch_id} by {request.user.username}",
                     serialized_data=json.dumps(model_to_dict(batch.trainer) if batch.trainer else {}, default=str),
-                    changes_text=f"Batch '{batch.batch_id}' created by {request.user.username}",
+                    changes_text=f"A new batch (ID: {batch.batch_id}) was successfully created by {request.user.get_full_name() or request.user.username} for the course '{batch.course.name}' at {batch.batch_time.start_time.strftime('%I:%M %p')} - {batch.batch_time.end_time.strftime('%I:%M %p')} ({batch.preferred_week}, {batch.mode})",
                     additional_data="Batch",
                     actor=request.user,
                     timestamp=now()
@@ -218,7 +218,9 @@ class BatchEditAPIView(APIView):
                 action=LogEntry.Action.UPDATE,
                 changes=", ".join(changes) + (". " + trainer_changes if trainer_changes else ""),
                 serialized_data=json.dumps(new_data, default=str),  # Store updated data
-                changes_text=f"Batch '{batch.batch_id}' updated by {request.user.username}. " + ", ".join(changes) + (". " + trainer_changes if trainer_changes else ""),
+                changes_text = (f"The batch '{batch.batch_id}' was updated by {request.user.get_full_name() or request.user.username}. "
+                                f"Changes made: {', '.join(changes)}"
+                                f"{'. ' + trainer_changes if trainer_changes else ''}"),
                 additional_data="Batch",
                 actor=request.user,
                 timestamp=now()
@@ -324,7 +326,7 @@ class AvailableStudentsAPIView(APIView):
         completed_students = Student.objects.filter(batch__in=completed_batches).values_list('id', flat=True)
         filters &= ~Q(id__in=completed_students)
 
-
+        
         # ❌ Exclude students whose course status is completed in StudentCourse model
         completed_course_students = StudentCourse.objects.filter(
             course=batch.course,
@@ -450,7 +452,11 @@ class BatchAddStudentAPIView(APIView):
                 action=LogEntry.Action.UPDATE,
                 changes=f"Added students {', '.join(student_names)} to batch {batch.batch_id} by {request.user.username}",
                 serialized_data=json.dumps({"added_students": student_names, "batch": batch.batch_id}, default=str),
-                changes_text=f"Students {', '.join(student_names)} added to batch '{batch.batch_id}' by {request.user.username}",
+               changes_text=(f"{request.user.get_full_name() or request.user.username} added {len(student_names)} student(s) "
+                                f"({', '.join(student_names)}) to batch '{batch.batch_id}'."
+                                + (
+                                    f" Updated their course status to \"{student_update_status}\" based on batch status."
+                                    if student_update_status else "")),
                 additional_data="Batch",
                 actor=request.user,
                 timestamp=now()
@@ -521,7 +527,11 @@ class BatchRemoveStudentAPIView(APIView):
                 action=LogEntry.Action.UPDATE,
                 changes=f"Removed students {', '.join(student_names)} from batch {batch.batch_id} by {request.user.username}",
                 serialized_data=json.dumps({"removed_students": student_names, "batch": batch.batch_id}, default=str),
-                changes_text=f"Students {', '.join(student_names)} removed from batch '{batch.batch_id}' by {request.user.username}",
+                changes_text=(f"{request.user.get_full_name() or request.user.username} removed {len(student_names)} student(s) "
+                            f"({', '.join(student_names)}) from batch '{batch.batch_id}'. "
+                            f"Updated their course status based on batch state: "
+                            f"{'Running → Denied' if batch.status == 'Running' else 'Upcoming → Not Started'}."
+                        ),
                 additional_data="Batch",
                 actor=request.user,
                 timestamp=now()
@@ -531,7 +541,6 @@ class BatchRemoveStudentAPIView(APIView):
             "message": "Students removed successfully, and course status updated.",
             "removed_students": [s.id for s in removed_students]
         }, status=status.HTTP_200_OK)
-
 
 
 
@@ -552,9 +561,15 @@ class BatchInfoAPIView(APIView):
         batch_serializer = BatchSerializer(batch)  # Serialize batch details
         student_serializer = BatchStudentAssignmentSerializer(student_assignments, many=True)  # Serialize students with status
 
+        # Fetch logs for this Batch
+        batch_ct = ContentType.objects.get_for_model(Batch)
+        batch_logs = LogEntry.objects.filter(content_type=batch_ct, object_id=batch.id).order_by('-timestamp')
+        serialized_logs = LogEntrySerializer(batch_logs, many=True).data
+
         return Response({
             'batch': batch_serializer.data,
-            'students': student_serializer.data
+            'students': student_serializer.data,
+            'batch_logs': serialized_logs,
         }, status=status.HTTP_200_OK)
     
 
@@ -725,6 +740,18 @@ class GenerateBatchCertificateAPIView(APIView):
         return Response(response_data, status=status.HTTP_200_OK)
     
 
+class BatchLogListView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error':'Unauthorized' }, status=status.HTTP_403_FORBIDDEN)
+
+        batch_ct = ContentType.objects.get_for_model(Batch)
+        logs = LogEntry.objects.filter(content_type=batch_ct).order_by('-timestamp')
+        serializer = LogEntrySerializer(logs, many=True)
+        return Response(serializer.data)
 
 
 
@@ -754,3 +781,4 @@ class LogEntryListAPIView(APIView):
         # Serialize the filtered queryset
         serializer = LogEntrySerializer(queryset, many=True)
         return Response(serializer.data)
+

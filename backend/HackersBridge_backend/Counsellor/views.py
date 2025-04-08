@@ -232,9 +232,15 @@ class CousellorInfoAPIView(APIView):
         serializer_logs = LogEntrySerializer(counsellor_logs, many=True).data
 
 
+        # Fetch activity logs for this counsellor
+        user = User.objects.get(username=counsellor.counsellor_id)
+        activity_logs = LogEntry.objects.filter(actor=user).order_by('-timestamp')
+        activity_serializer_logs = LogEntrySerializer(activity_logs, many=True).data
+
         Counsellor_Info = {
             'counsellor':CounsellorSerializer(counsellor).data,
             'counsellor_logs':serializer_logs,
+            'activity_logs':activity_serializer_logs,
         } 
 
         return Response({'Counsellor_Info':Counsellor_Info}, status=status.HTTP_200_OK)
