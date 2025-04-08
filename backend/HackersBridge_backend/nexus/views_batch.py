@@ -757,28 +757,34 @@ class BatchLogListView(APIView):
 
 class LogEntryListAPIView(APIView):
     """API to list and filter log entries."""
-    authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
+    authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         """Retrieve and filter log entries based on query parameters."""
         if request.user.role not in ['admin', 'coordinator']:
             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
-        
+
         queryset = LogEntry.objects.all().order_by('-timestamp')
 
+        # Filters
         action = request.query_params.get('action')
-        actor = request.query_params.get('actor')
+        actor_username = request.query_params.get('actor_username')
+        actor_firstname = request.query_params.get('actor_firstname')
         object_id = request.query_params.get('object_id')
 
         if action:
-            queryset = queryset.filter(action=action)
-        if actor:
-            queryset = queryset.filter(actor__username=actor)
+            queryset = queryset.filter(action__iexact=action)
+
+        if actor_username:
+            queryset = queryset.filter(actor__username__iexact=actor_username)
+
+        if actor_firstname:
+            queryset = queryset.filter(actor__first_name__iexact=actor_firstname)
+
         if object_id:
             queryset = queryset.filter(object_id=object_id)
 
-        # Serialize the filtered queryset
         serializer = LogEntrySerializer(queryset, many=True)
         return Response(serializer.data)
 

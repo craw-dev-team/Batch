@@ -82,16 +82,21 @@ class Location(models.Model):
     def __str__(self):
         return self.locality
 
-
 class Book(models.Model):
+    STATUS = [
+        ('Available', 'Available'),
+        ('Not', 'Not'),
+    ]
+
     book_id = models.CharField(max_length=10, unique=True)
-    name = models.CharField(max_length=25)
-    book_stock = models.IntegerField()
+    name = models.CharField(max_length=50)
+    version = models.CharField(max_length=25)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    # last_update_coordinator = models.ForeignKey("Coordinator.Coordinator", on_delete=models.CASCADE, related_name='book_update')
-    # create_coordinator = models.ForeignKey("Coordinator.Coordinator", on_delete=models.CASCADE, related_name='book_create')
-    book_create_user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='book_create')
-    last_update_user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='book_update')
+    stock = models.IntegerField()
+    status = models.CharField(max_length=20, choices=STATUS, default='Available')  # Fixed default value
+    last_update_user = models.ForeignKey(
+        CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='book_update'
+    )
     last_update_datetime = models.DateTimeField(default=timezone.now)
     gen_time = models.DateTimeField(default=timezone.now)
 

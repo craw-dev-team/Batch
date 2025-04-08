@@ -226,7 +226,8 @@ class StudentSerializer(serializers.ModelSerializer):
                 user = User.objects.create_user(
                     username=student.enrollment_no,  # Use provided enrollment_no
                     email=email,
-                    password=temp_password
+                    password=temp_password,
+                    first_name=student.name,
                 )
                 user.role = 'student'  # Ensure role exists in `User` model
                 user.save()
@@ -288,7 +289,7 @@ class StudentCourseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = StudentCourse
-        fields = ['id', 'student', 'student_name', 'enrollment_no', 'course', 'status', 'certificate_date', 'student_certificate_allotment']
+        fields = ['id', 'student', 'student_name', 'enrollment_no', 'course', 'status', 'certificate_date', 'student_certificate_allotment', 'gen_time']
 
 
 
