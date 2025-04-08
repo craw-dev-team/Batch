@@ -1,11 +1,18 @@
 import React, { useState, useMemo } from "react";
 import { useTrainerForm } from "../Trainercontext/TrainerFormContext";
 import { Avatar, Tooltip, Tag } from 'antd';
+import { CreateAvailableBatchForm } from "../Batches/AvailableBatches";
+import { useNavigate } from "react-router-dom";
 
 const AvailableTrainers = () => {
   const [sortByName, setSortByName] = useState(false);
   const [sortByStartTime, setSortByStartTime] = useState(false);
   const { availableTrainers, loading } = useTrainerForm();
+
+  const [isModalOpen, setIsModalOpen] = useState(false); 
+  const [selectedBatch, setSelectedBatch] = useState(null);
+
+  const navigate = useNavigate();
 
   const freeTrainers = availableTrainers?.free_trainers ?? [];
 
@@ -30,6 +37,25 @@ const AvailableTrainers = () => {
   
     return sorted;
   }, [freeTrainers, sortByName, sortByStartTime]);
+
+
+     // THIS FUNCTION CREATE BATCH OF TRAINER'S FREE TIME 
+     const handleCreateClick = (trainer) => {
+      setSelectedBatch({
+          ...trainer, 
+          courses: trainer.course?.map(([id, name]) => ({ id, name })) || [], // Extract id & name
+      });
+      setIsModalOpen(true);
+  };
+  
+  
+  // HANDLE NAVIGATE TO TRAINER INFO
+  const handleTrainerClick =  async (trainerId) => {    
+    if (!trainerId) return;
+    const encodedTrainerId = btoa(trainerId); 
+    navigate(`/trainers/${encodedTrainerId}`);
+  };
+
 
   return (
     <div className={"overflow-hidden pb-2"}>
@@ -72,6 +98,9 @@ const AvailableTrainers = () => {
             <th scope="col" className="px-3 py-3 md:px-1">
                 Free Since
             </th>
+            <th scope="col" className="px-3 py-3 md:px-1">
+                Create Batch
+            </th>
           
             
         </tr>
@@ -83,10 +112,10 @@ const AvailableTrainers = () => {
                     <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
                         {index + 1}
                     </td>
-                    <td className="px-3 py-2 md:px-1 font-semibold">
+                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.tr_id)}>
                         {item.trainer_id}
                     </td>
-                    <td className="px-3 py-2 md:px-1">
+                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.tr_id)}>
                         {item.name} 
                     </td>
                     <td className="px-3 py-2 md:px-1">
@@ -142,7 +171,16 @@ const AvailableTrainers = () => {
                     <td className="px-3 py-2 md:px-1">
                     {item.free_days >= 0 ? item.free_days + " Days" : item.free_days}
                     </td>
-                   
+                    
+                    <td className="px-3 py-2 md:px-1">
+                      <button 
+                          onClick={() => handleCreateClick(item)} 
+                          type="button" 
+                          className="focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800"
+                      >
+                        Create +
+                      </button>
+                    </td>
                 </tr>
               ))
             ) : (
@@ -155,6 +193,8 @@ const AvailableTrainers = () => {
                     </td>
                 </tr>
             )}
+                <CreateAvailableBatchForm isOpen={isModalOpen} selectedBatch={selectedBatch} onClose={() => setIsModalOpen(false)} />
+            
       </tbody>
   </table>
   </div>

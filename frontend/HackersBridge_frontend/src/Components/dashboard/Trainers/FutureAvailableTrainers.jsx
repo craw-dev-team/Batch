@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Tooltip, Tag, Empty } from 'antd';
 import { useTrainerForm } from "../Trainercontext/TrainerFormContext";
+import { useNavigate } from "react-router-dom";
 
 const FutureAvailableTrainers = () => {
     const [sortByName, setSortByName] = useState(false);
     const [sortByStartTime, setSortByStartTime] = useState(false);
     const { availableTrainers, loading } = useTrainerForm();
 
-  const futureAvailableTrainers = availableTrainers?.future_availability_trainers ?? [];
+    const navigate = useNavigate();
+
+    const futureAvailableTrainers = availableTrainers?.future_availability_trainers ?? [];
     
     const toggleSortByName = () => {
       setSortByName((prev) => !prev);
@@ -30,6 +33,21 @@ const FutureAvailableTrainers = () => {
     
       return sorted;
     }, [futureAvailableTrainers, sortByName, sortByStartTime]);
+
+    
+      // HANDLE NAVIGATE TO TRAINER INFO
+    const handleTrainerClick =  async (trainerId) => {    
+        if (!trainerId) return;
+        const encodedTrainerId = btoa(trainerId); 
+        navigate(`/trainers/${encodedTrainerId}`);
+    };
+
+    // HANDLE NAVIGATE TO BATCH INFO
+    const handleBatchClick =  async (batchId) => {            
+        if (!batchId) return;
+        const encodedBatchId = btoa(batchId); 
+        navigate(`/batches/${encodedBatchId}`);
+    };
 
 
   return (
@@ -88,7 +106,7 @@ const FutureAvailableTrainers = () => {
                             <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
                                 {index + 1}
                             </td>
-                            <td className="px-3 py-2 md:px-1 font-semibold">
+                            <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.tr_id)}>
                                 {item.trainer_id}
                             </td>
                             <td className="px-3 py-2 md:px-1">
@@ -128,7 +146,7 @@ const FutureAvailableTrainers = () => {
                             {/* <td className="px-3 py-2 md:px-1">
                                 {item.mode}
                             </td> */}
-                            <td className="px-3 py-2 md:px-1">
+                            <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleBatchClick(item.batch__id)}>
                                 {item.batch_id}
                             </td>
                           
