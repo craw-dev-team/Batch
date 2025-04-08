@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom"
 import { useSpecificStudent } from "../Contexts/SpecificStudent";
-import { Dropdown, message, Tag, DatePicker, Button  } from 'antd';
+import { Dropdown, message, Tag, DatePicker, Button, Checkbox  } from 'antd';
 import {  DownOutlined, CheckCircleOutlined, EditOutlined } from '@ant-design/icons';
 import BASE_URL from "../../../ip/Ip";
 import axios from "axios";
@@ -293,11 +293,17 @@ const SpecificStudentPage = () => {
                                         <h1>Address</h1>
                                         <p className="font-semibold">{studentDetails.address || "Not Available"}</p>
                                     </div>
+                                    {specificStudent?.All_in_One?.student_courses?.length > 0 && (() => {
+                                        const allCourses = specificStudent.All_in_One.student_courses;
+                                        const completedCourses = allCourses.filter(course => course.course_status === "Completed");
 
-                                    <div className="col-span-1 px-1 py-1 mt-6">
-                                        <h1>Courses status</h1>
-                                        <p className="font-semibold"></p>
-                                    </div>
+                                        return (
+                                            <div className="col-span-1 px-1 py-1 mt-6">
+                                                <h1>Courses</h1>
+                                                <p  className="font-semibold">{completedCourses.length}/{allCourses.length} completed</p>
+                                            </div>
+                                        );
+                                    })()}
 
                                     </div>
                             </div>
@@ -385,15 +391,17 @@ const SpecificStudentPage = () => {
                                                                 {item.course_taken}
                                                             </td>
 
-                                                            <td></td>
+                                                            <td>
+                                                            <Checkbox></Checkbox>
+                                                            </td>
 
                                                             <td className="px-3 py-2 md:px-1 flex">
                                                                 <DatePicker name='certificateIssueDate' className='border-gray-300' size='small'  placeholder="Certificate issue date"                    
                                                                     disabled={item.course_status !== "Completed"}
                                                                     value={certificateData[item.id] 
-                                                                            ? dayjs(certificateData[item.id])  // ✅ Show selected date 
+                                                                            ? dayjs(certificateData[item.id])  // Show selected date 
                                                                             : item.course_certificate_date 
-                                                                                ? dayjs(item.course_certificate_date)  // ✅ Show date from server
+                                                                                ? dayjs(item.course_certificate_date)  // Show date from server
                                                                                 : null
                                                                     }
                                                                     onChange={(date) => {
@@ -512,6 +520,9 @@ const SpecificStudentPage = () => {
                                                             </th>
                                                             <th scope="col" className="px-3 py-3 md:px-1">
                                                                 End Date
+                                                            </th>
+                                                            <th scope="col" className="px-3 py-3 md:px-1">
+                                                                Trainer
                                                             </th>
                                                             <th scope="col" className="px-3 py-3 md:px-1">
                                                                 course

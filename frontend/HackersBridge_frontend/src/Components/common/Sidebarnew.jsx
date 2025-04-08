@@ -97,6 +97,13 @@ const Sidebarnew = ({ collapsed }) => {
 
         },
         {
+          key: route.BOOKS_PATH,
+          icon:<AuditOutlined />,
+          label: "Books",
+          className: "rounded-md hover:bg-gray-300 dark:hover:bg-[#344c6b] dark:text-gray-300",
+
+        },
+        {
           key: "logout",
           icon: <LoginOutlined />,
           label: "Logout",

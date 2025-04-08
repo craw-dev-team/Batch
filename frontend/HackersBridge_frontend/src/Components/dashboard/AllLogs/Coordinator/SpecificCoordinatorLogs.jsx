@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Spin, Empty } from 'antd';
 import dayjs from "dayjs";
 import { useSpecificCoordinator } from "../../Contexts/SpecificCoordinators";
@@ -12,6 +12,7 @@ const SpecificCoordinatorLogs = () => {
 
     const { coordinator_logs } = specificCoordinator?.Coordinator_Info || [];
     
+    const navigate = useNavigate();
 
     useEffect(() => {        
         if (coordinatorId) {
@@ -27,7 +28,13 @@ const SpecificCoordinatorLogs = () => {
         }
     },[]);
 
-    console.log(specificCoordinator);
+
+    // HANDLE NAVIGATE TO TRAINER INFO
+    const handleCoordinatorClick =  async (coordinatorId) => {
+        if (!coordinatorId) return;
+        const encodedcoordinatorId = btoa(coordinatorId); 
+        navigate(`/add-details/coordinators/${encodedcoordinatorId}`);
+    };
     
     
     
@@ -82,7 +89,7 @@ const SpecificCoordinatorLogs = () => {
                     <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
                         { index + 1}
                     </td>
-                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.id)}>
+                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleCoordinatorClick(item.action)}>
                         {item.actor}
                     </td>
 
@@ -90,7 +97,7 @@ const SpecificCoordinatorLogs = () => {
                         {item.object_repr}
                     </td>
 
-                    <td className="px-3 py-2 md:px-1" onClick={() => handleTrainerClick(item.id)}>
+                    <td className="px-3 py-2 md:px-1">
                     {typeof item.changes === "object"
                         ? Object.entries(item.changes).map(([key, value]) => {
                             if (typeof value === "object" && value.old !== undefined && value.new !== undefined) {
