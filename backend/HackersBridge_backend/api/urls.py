@@ -52,6 +52,7 @@ urlpatterns = [
     path('generate-certificate/<int:id>/', GenerateCertificateAPIView.as_view(), name='generate-certificate'),
     path('download-certificate/<int:id>/', DownloadCertificateAPIView.as_view(), name='download_certificate'),
     # path('email-tracker/<int:id>/', email_open_tracker, name='email-tracker'),
+    path('students/free/', FreeStudentListView.as_view(), name='trainer-availability'),
     
     path('trainers/', TrainerListAPIviews.as_view(), name='trainer-list'),
     path('trainers/add/', AddTrainerAPIView.as_view(), name='add_trainer_api'),
@@ -78,6 +79,7 @@ urlpatterns = [
     path('books/add/', BookCreateAPIView.as_view(), name='book-add'),
     path('books/edit/<int:id>/', BookUpdateAPIView.as_view(), name='book-edit'),
     path('books/delete/<int:id>/', BookDeleteAPIView.as_view(), name='book-delete'),
+    path('student/book/<int:id>/', StudentBookAllotmentAPIView.as_view(), name='student-book-allotment'),
     
 ]
 
