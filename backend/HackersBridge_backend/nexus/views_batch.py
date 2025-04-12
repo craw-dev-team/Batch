@@ -67,7 +67,7 @@ class BatchAPIView(APIView):
         # for batch in batches_ending_soon:
         #     print(batch.end_date, batch.id)
         #     print(" ")
-        running_batch = Batch.objects.filter(status='Running')
+        running_batch = Batch.objects.filter(status='Running').order_by('-gen_time')
         scheduled_batch = Batch.objects.filter(status='Upcoming')
         completed_batch = Batch.objects.filter(status='Completed')
         hold_batch = Batch.objects.filter(status='Hold')

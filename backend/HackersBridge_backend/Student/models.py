@@ -128,10 +128,12 @@ class StudentCourse(models.Model):  # ✅ Through Model
     course = models.ForeignKey("nexus.Course", on_delete=models.CASCADE)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Not Started')
     certificate_date = models.DateField(null=True, blank=True)
+    certificate_issued_at = models.DateTimeField(null=True, blank=True)
     email_opened = models.BooleanField(null=True, blank=True, default=False)
     email_opened_at = models.DateTimeField(null=True, blank=True)
-    student_certificate_allotment = models.BooleanField(null=True, blank=True, default=False) 
-
+    student_certificate_allotment = models.BooleanField(null=True, blank=True, default=False)
+    student_book_allotment = models.BooleanField(null=True, blank=True, default=False)
+ 
     class Meta:
         unique_together = ('student', 'course')
 
@@ -145,3 +147,14 @@ class StudentNotes(models.Model):
 
     def __str__(self):
         return f"Note for {self.student.name}"
+    
+
+
+class BookAllotment(models.Model):
+    book = models.ManyToManyField("nexus.Book")
+    student = models.ManyToManyField(Student)
+    allot_by = models.ForeignKey("nexus.CustomUser", on_delete=models.CASCADE)
+    allotment_datetime = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"{self.book + self.student}"
