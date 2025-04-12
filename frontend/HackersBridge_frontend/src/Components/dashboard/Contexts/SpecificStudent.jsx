@@ -43,7 +43,7 @@ const SpecificStudentProvider = ({ children }) => {
     };
 
     return (
-            <SpecificStudentContext.Provider value={{ specificStudent, fetchSpecificStudent }}>
+            <SpecificStudentContext.Provider value={{ specificStudent, setSpecificStudent, fetchSpecificStudent }}>
                 {children}
             </SpecificStudentContext.Provider>
     )

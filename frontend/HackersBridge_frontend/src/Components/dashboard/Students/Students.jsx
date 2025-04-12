@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import CreateStudentForm from "./CreateStudentForm";
 import axios from "axios";
@@ -85,7 +85,7 @@ const Students = () => {
         );
 
         if (response.status === 204) {
-            // Make sure coursesData is an array before filtering
+            // Make sure Student Data is an array before filtering
             if (Array.isArray(studentData)) {
                 setStudentData(prevStudents => prevStudents.filter(student => student.id !== studentId));
                 
@@ -93,7 +93,7 @@ const Students = () => {
                     setSearchTerm('')
                 }, 2000);
             } else {
-                console.error('coursesData is not an array');
+                console.error('Student Data is not an array');
             }
         }
     } catch (error) {
@@ -157,17 +157,18 @@ const Students = () => {
     };
 
 
-      // Filter students based on the search term (searches by name)
-      const filteredStudents = Array.isArray(studentData)
-        ? studentData.filter(student =>
-            student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            student.phone.toLowerCase().includes(searchTerm.toLowerCase()) || 
-            student.enrollment_no.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            student.support_coordinator_name.toLowerCase().includes(searchTerm.toLowerCase()) 
-            )
-        : [];
+      // Filter students based from all students data 
+        const filteredStudents = useMemo(() => {
+            if (!Array.isArray(studentData)) return [];
 
+            return studentData.filter(student => 
+                student?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                student?.email.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                student.phone.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                student.enrollment_no.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                student.support_coordinator_name.toLowerCase().includes(searchTerm.toLowerCase()) 
+            )
+        },[studentData, searchTerm])
 
             // Ensure currentPage resets to 1 when search term changes
             useEffect(() => {
@@ -221,7 +222,7 @@ const Students = () => {
 
         <div className="grid col-span-2 justify-items-end">
             <div className="flex gap-x-6">
-            <label htmlFor="table-search" className="sr-only">Search</label>
+                <label htmlFor="table-search" className="sr-only">Search</label>
                 <div className="relative">
                     <input onChange={(e) => setSearchTerm(e.target.value.replace(/^\s+/, ''))} value={searchTerm} type="text" id="table-search" placeholder="Search for items"
                         className="block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg w-40 h-7 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" 

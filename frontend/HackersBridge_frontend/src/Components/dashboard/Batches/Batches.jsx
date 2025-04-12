@@ -79,19 +79,36 @@ const Batches = () => {
                 { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
             );
 
-            setBatchData(prevBatch => {
-                if (!prevBatch || !prevBatch.All_Type_Batch || !Array.isArray(prevBatch.All_Type_Batch.batches)) {
-                    return prevBatch; // Return unchanged state if not in the correct format
-                }
+            if (response.status >= 200 && response.status < 300) {
+                // Only update the batch data if it's correctly structured
+                if (
+                    batchData?.All_Type_Batch &&
+                    Array.isArray(batchData.All_Type_Batch.batches)
+                ) {
+                    setBatchData(prevBatch => {
+                        const updatedBatches = prevBatch.All_Type_Batch.batches.filter(
+                            batch => String(batch.id) !== String(batchId)
+                        );
+    
+                        // Update the batches in the corresponding status category
+                        return {
+                            ...prevBatch,
+                            All_Type_Batch: {
+                                ...prevBatch.All_Type_Batch,
+                                batches: updatedBatches, // Update the batches array
+                            },
+                        };
+                    });
             
-                return {
-                    ...prevBatch,
-                    All_Type_Batch: {
-                        ...prevBatch.All_Type_Batch,
-                        batches: prevBatch.All_Type_Batch.batches.filter(batch => batch.id !== batchId),
-                    }
-                };
-            });
+                    setTimeout(() => {
+                        setSearchTerm('');
+                    }, 2000);
+                } else {
+                    console.error('batchData is not an array or properly structured');
+                }
+            } else {
+                message.error('Failed to delete batch');
+            }
             
    
         } catch (error) {
@@ -120,7 +137,6 @@ const Batches = () => {
     // Confirm and Cancel Handler for delete button 
     const confirm = (batchId) => {
         handleDelete(batchId);
-        message.success('Batch Deleted Successfully');
     };
 
     const cancel = () => {
@@ -258,14 +274,21 @@ const Batches = () => {
         }
     };
     
-
-    const searchFilteredBatches = searchTerm
-    ? filteredBatchesByStatus.filter((batch) =>
-        (batch.batch_id?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-        (batch.course_name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-        (batch.trainer_name?.toLowerCase() || "").includes(searchTerm.toLowerCase())
-      )
-    : filteredBatchesByStatus;
+    // FILTER BATCH FROM ALL BATCHES BASED ON THE SEARCH INPUT (BATCHID, COURSENAME, TRAINERNAME)
+    const searchFilteredBatches = useMemo(() => {
+        const term = searchTerm.toLowerCase();
+      
+        if (!searchTerm) return filteredBatchesByStatus;
+      
+        return filteredBatchesByStatus.filter(batch => {
+          return (
+            (batch.batch_id?.toLowerCase() || "").includes(term) ||
+            (batch.course_name?.toLowerCase() || "").includes(term) ||
+            (batch.trainer_name?.toLowerCase() || "").includes(term)
+          );
+        });
+      }, [filteredBatchesByStatus, searchTerm, batchData]);
+      
   
 
     // HANDLE NAVIGATE TO BATCH INFO
@@ -537,10 +560,10 @@ const Batches = () => {
                 <div className="flex gap-x-4 h-auto flex-wrap justify-between">
                     
                     <div className="relative ">
-                            <Badge count={countBatchesByType.running ?? 0} size="small">
+                            <Badge count={countBatchesByType.running ?? 0} overflowCount={999} size="small">
                         <button
                             onClick={() => handleTabClick("running")}
-                            className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200  
+                            className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200
                                 ${activeTab === "running" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                                 >
                             Active
@@ -549,7 +572,7 @@ const Batches = () => {
                             {/* <Badge count={countBatchesByType.endingsoon}> */}
                         <button
                             onClick={() => handleTabClick("scheduled")}
-                            className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
+                            className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200
                                 ${activeTab === "scheduled" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                             >
                             Scheduled
@@ -558,7 +581,7 @@ const Batches = () => {
                             {/* <Badge count={countBatchesByType.endingsoon}> */}
                         <button
                             onClick={() => handleTabClick("hold")}
-                            className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
+                            className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200
                                 ${activeTab === "hold" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                             >
                             Hold
@@ -567,7 +590,7 @@ const Batches = () => {
                             {/* <Badge count={countBatchesByType.endingsoon}> */}
                         <button
                             onClick={() => handleTabClick("endingsoon")}
-                            className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
+                            className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200
                                 ${activeTab === "endingsoon" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                             >
                             Ending Soon
@@ -576,7 +599,7 @@ const Batches = () => {
                             {/* <Badge count={countBatchesByType.endingsoon}> */}
                         <button
                             onClick={() => handleTabClick("completed")}
-                            className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
+                            className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200
                                 ${activeTab === "completed" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                             >
                             Completed 
@@ -691,10 +714,10 @@ const Batches = () => {
                     <th scope="col" className="px-3 py-3 md:px-1">
                         Students
                     </th>
-                    <th scope="col" className="px-3 py-3 md:px-1 cursor-pointer">
+                    <th scope="col" className="px-3 py-3 md:px-1">
                         Mode 
                         <Tooltip title="Sort by Mode" placement="top">
-                        <Dropdown menu={modeMenu} trigger={["click"]}>
+                        <Dropdown menu={modeMenu} >
                             <Button type="text" icon={<FilterOutlined  style={{ color: sortByMode ? "blue" : "black" }} className="w-3"/>} />
                         </Dropdown>
                         </Tooltip>
@@ -702,7 +725,7 @@ const Batches = () => {
                     <th scope="col" className="px-3 py-3 md:px-1">
                         Language 
                         <Tooltip title="Sort by Language" placement="top">
-                        <Dropdown menu={languageMenu} trigger={["click"]}>
+                        <Dropdown menu={languageMenu} >
                             <Button type="text" icon={<FilterOutlined  style={{ color: sortByLanguage ? "blue" : "black" }} className="w-3"/>} />
                         </Dropdown>
                         </Tooltip>
@@ -710,7 +733,7 @@ const Batches = () => {
                     <th scope="col" className="px-3 py-3 md:px-1">
                         Preferred Week
                         <Tooltip title="Sort by Preferred Week" placement="top">
-                        <Dropdown menu={preferredWeekMenu} trigger={["click"]}>
+                        <Dropdown menu={preferredWeekMenu} >
                             <Button type="text" icon={<FilterOutlined style={{ color: sortByPreferredWeek ? "blue" : "black" }} className="w-3"/>} />
                         </Dropdown>
                         </Tooltip>
@@ -718,7 +741,7 @@ const Batches = () => {
                     <th scope="col" className="px-3 py-3 md:px-1">
                         Location
                         <Tooltip title="Sort by Location" placement="top">
-                        <Dropdown menu={locationMenu} trigger={["click"]}>
+                        <Dropdown menu={locationMenu} >
                             <Button type="text" icon={<FilterOutlined style={{ color: sortByLocation ? "blue" : "black" }} className="w-3"/>} />
                         </Dropdown>
                         </Tooltip>

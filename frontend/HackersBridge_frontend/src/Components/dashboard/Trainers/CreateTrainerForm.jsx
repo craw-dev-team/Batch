@@ -118,7 +118,7 @@ const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
                 // profile_picture: studentFormData.studentProfilePicture,
             };
 
-            console.log("Final Payload:", JSON.stringify(payload, null, 2));
+            // console.log("Final Payload:", JSON.stringify(payload, null, 2));
 
             try {
                 setLoading(true); // Start loading
@@ -431,7 +431,6 @@ const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
                                     { value: '7', label: '07:00 - 09:00' },
                                     { value: '8', label: '10:00 - 05:00' },
                                     { value: '5', label: '10:00 - 02:00 - Weekends' },
-                                    { value: '6', label: '03:00 - 06:30 - Weekends' },
                                     { value: '10', label: '12:30 - 02:30 - Weekdays' },
                                     { value: '11', label: '07:00 - 08:30 - Weekdays' },
                                     { value: '12', label: '05:00 - 07:00 - Weekdays' },

@@ -51,15 +51,17 @@ const AvailableBatches = () => {
 
     const filteredTrainers = activeTab === "tab1" ? freeTrainers : futureAvailableTrainers;
 
-//    filter batches based on trainer name and location 
-    const searchFilteredBatches = searchTerm
-    ? filteredTrainers.filter((batch) =>
-        batch.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        batch.location.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    : filteredTrainers;
-   
-   
+    // filter batches based on trainer name and location 
+    const searchFilteredBatches = useMemo(() => {
+            if (!searchTerm) return filteredTrainers;
+
+            return filteredTrainers.filter((trainer) =>
+                trainer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                trainer.location.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+    },[searchTerm, filteredTrainers])
+    
+
     
     // FOR SORTING BY NAME AND START TIME 
     const toggleSortByName = () => {
@@ -545,11 +547,10 @@ const CreateAvailableBatchForm = ({ isOpen, onClose, selectedBatch }) => {
         language: formattedData.language,
         location: selectedBatch?.location_id,
         student: selectedBatch.student || [],
-
         status: formattedData.status,
     };
 
-    console.log("Final Payload:", JSON.stringify(payload, null, 2));
+    // console.log("Final Payload:", JSON.stringify(payload, null, 2));
 
     try {
         setLoading(true); // Start loading
@@ -664,7 +665,6 @@ const convertTo12HourFormat = (time) => {
                       
                         // Weekends
                       { value: '5', label: <div style={{ backgroundColor: '#fffbe6' }}>10:00 - 02:00 - Weekends</div> },
-                      { value: '6', label: <div style={{ backgroundColor: '#fffbe6' }}>03:00 - 06:30 - Weekends</div> },
                       { value: '14', label: <div style={{ backgroundColor: '#fffbe6' }}>12:00 - 02:00 - Weekends</div> },
                         
                       // Weekdays

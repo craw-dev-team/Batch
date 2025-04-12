@@ -26,7 +26,7 @@ const BatchCards = ({ handleTabClick, activeTab }) => {
         </Col>
         <Col span={4}>
           <Card title={countBatchesByType.hold ?? '0'} variant="borderless" className={`font-semibold cursor-pointer ${activeTab === "hold" ? "bg-blue-50" : ""}`} onClick={() => handleTabClick("hold")}>
-          Hold Batches
+            Hold Batches
           </Card>
         </Col>
         <Col span={4}>

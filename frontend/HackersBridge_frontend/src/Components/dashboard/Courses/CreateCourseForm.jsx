@@ -64,7 +64,7 @@ const CreateCourseForm = ({ isOpen, onClose, courseData }) => {
                 duration: courseFormData.courseDuration,
                 certification_body: courseFormData.courseCertification,
             };
-            console.log("Final Payload:", JSON.stringify(payload, null, 2));
+            // console.log("Final Payload:", JSON.stringify(payload, null, 2));
 
             try {
                 setLoading(true); // Start loading

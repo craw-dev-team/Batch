@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback,useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom"
 import { useSpecificBatch } from "../Contexts/SpecificBatch";
 import { DatePicker, Empty, Spin, Avatar, Tooltip, Tag, Button, Popconfirm, message   } from 'antd';
@@ -11,6 +11,7 @@ import CreateStudentForm from "../Students/CreateStudentForm";
 import CreateBatchForm from "../Batches/CreateBatchForm";
 import { useAuth } from "../AuthContext/AuthContext";
 import { useBatchForm } from "../Batchcontext/BatchFormContext";
+import { useSpecificStudent } from "../Contexts/SpecificStudent";
 
 
 // const SpecificBatchPage = () => {
@@ -167,15 +168,15 @@ import { useBatchForm } from "../Batchcontext/BatchFormContext";
 const SpecificBatchPage = () => {
     const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false); 
     const [isModalOpen, setIsModalOpen] = useState(false) 
-    const [activeTab, setActiveTab] = useState('tab1')
+    const [activeTab, setActiveTab] = useState('students')
     // store batch data for editing 
     const [isBatchModalOpen, setIsBatchModalOpen] = useState(false) 
     const [selectedBatch, setSelectedBatch] = useState();
 
     const { batchId } = useParams();
     const { specificBatch, fetchSpecificBatch } = useSpecificBatch();
-
     const {batchFormData, setBatchFormData} = useBatchForm();
+
     const { token } = useAuth();
 
     const [editingField, setEditingField] = useState(null);
@@ -193,6 +194,9 @@ const SpecificBatchPage = () => {
     const [isCertificateIssued, setIsCertificateIssued] = useState(false);
     // store preferred available students for that specific batch
     const [students, setStudents] = useState({});
+    // store search input 
+    const [searchTerm, setSearchTerm] = useState("");
+
     
     const navigate = useNavigate();
     
@@ -200,7 +204,6 @@ const SpecificBatchPage = () => {
     const handleTabClick = (tab) => {
         setActiveTab(tab);
     };
-
 
     
         // HANDLE FETCH PREFFERED AVAILABLE STUDNETS FOR THAT SPECIFIC BATCH
@@ -210,7 +213,7 @@ const SpecificBatchPage = () => {
                     { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
                 );
                 const data = response.data;
-                console.log(data);
+                // console.log(data);
                 
                 if (!data.available_students) {
                     throw new Error("Invalid response format");
@@ -222,7 +225,33 @@ const SpecificBatchPage = () => {
                 console.error("Error fetching students:", error);
             }
         }, [students]);
+
+                
+          // Filter students based on the search term of all students added in that batch
+          const filteredBatchStudents = useMemo(() => {
+            if (!Array.isArray(specificBatch?.students)) return [];
+          
+            return specificBatch.students.filter(item =>
+              item?.student?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              item?.student?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              item?.student?.phone?.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+          }, [specificBatch?.students, searchTerm]);
         
+
+          // Filter students based on the search term of recommended students for that batch
+          const filteredAvailableStudents = useMemo(() => {
+            if (!Array.isArray(students?.available_students)) return [];
+          
+            return students.available_students.filter(item =>
+              item?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              item?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              item?.phone?.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+          }, [students?.available_students, searchTerm]);
+          
+             
+         
 
         // HANDLE FORM SUBMIT AND SEND DATA TO THAT MODAL AND ADD THAT STUDENT IN THAT BATCH 
         const handleAddStudentToBatch = async (studentId) => {
@@ -245,6 +274,7 @@ const SpecificBatchPage = () => {
                         setLoading(false);
                         setBatchFormData((prev) => ({ ...prev, [batch_id]: [] })); // Reset selected students
                         fetchSpecificBatch(batch_id)
+                        fetchAvailableStudents(batch_id)
                     }, 1000);
     
                 } else {
@@ -266,13 +296,14 @@ const SpecificBatchPage = () => {
                 // Decode the ID before using it
                 const originalBatchId = atob(batchId);                
                 // Fetch trainer data with the decoded ID
-                fetchSpecificBatch(originalBatchId);
                 fetchAvailableStudents(originalBatchId)
+                fetchSpecificBatch(originalBatchId);
+                
             } catch (error) {
                 console.error("Error decoding trainer ID:", error);
             }
         }
-    }, [batchId, isCertificateIssued, isBatchModalOpen]);
+    }, [batchId, isCertificateIssued, activeTab ]);
     
 
     useEffect(() => {
@@ -370,7 +401,8 @@ const SpecificBatchPage = () => {
                 if (response.status >= 200 && response.status < 300) {   
                     // console.log(specificBatch);
                                  
-                    fetchSpecificBatch(decodedBatchId);                     
+                    fetchSpecificBatch(decodedBatchId);
+                    // fetchAvailableStudents(decodedBatchId)                     
                 } else {
                     throw new Error("Failed to delete student");
                 }  
@@ -458,16 +490,7 @@ const SpecificBatchPage = () => {
         };
 
 
-        
-    
-        // useEffect(() => {
-        //     if (batchId) {
-        //         const batchId = atob(batchId)
-        //         fetchAvailableStudents(batchId);
-        //     }
-            
-        // },[batchId]);
-
+     
     return (
         <div className="w-auto h-full pt-20 px-2 mt-0">
             <div className="grid grid-cols-6 gap-x-6">
@@ -597,65 +620,93 @@ const SpecificBatchPage = () => {
 
                             <div className="relative ">
                                 <button
-                                    onClick={() => handleTabClick("tab1")}
+                                    onClick={() => handleTabClick("students")}
                                     className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200  
-                                        ${activeTab === "tab1" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                        ${activeTab === "students" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                                         >
                                     Students
                                 </button>
 
                                 <button
-                                    onClick={() => handleTabClick("tab2")}
-                                    className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                                        ${activeTab === "tab2" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
-                                    >
-                                    Recommened Students
+                                    onClick={() => handleTabClick("recommended_students")}
+                                    className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200  
+                                        ${activeTab === "recommended_students" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                        >
+                                    Recommended Students
                                 </button>
                             </div>
 
-                            <div className="flex">
-                                <Button onClick={handleIssueClick}
-                                    variant="outlined"
-                                    color={isCertificateIssued ? "blue" : "green"}
-                                > {isCertificateIssued ? "Certificate Issued" : "Issue Certificate"}
-                                </Button>
-                                    {dateFieldIssueCertificate && (
-                                        <div className="flex mx-1">
-                                            <DatePicker
-                                                open={dateFieldIssueCertificate}
-                                                name="certificateIssueDate"
-                                                className="border-gray-300"
-                                                size="small"
-                                                placeholder="Certificate issue date"
-                                                // value={certificateData[item.id] 
-                                                //         ? dayjs(certificateData[item.id])  // ✅ Show selected date 
-                                                //         : item.course_certificate_date 
-                                                //         ? dayjs(item.course_certificate_date)  // ✅ Show date from server
-                                                //         : null
-                                                // }
-                                                onChange={(date, dateString) => {
-                                                    setCertificateIssueDate(dateString);  // ✅ Store selected date
-                                                }}
-                                            />
-                                            {/* Submit Button */}
-                                            <CheckCircleOutlined
-                                                className="mx-1 text-green-500 text-lg cursor-pointer hover:text-green-700"
-                                                onClick={() => {
-                                                    handleIssueCertificate();
-                                                    setDateFieldIssueCertificate(false);
-                                                }}
-                                            />
 
-                                            {/* Cancel Button */}
-                                            <CloseCircleOutlined
-                                                className="text-red-500 text-lg cursor-pointer hover:text-red-700"
-                                                onClick={() => {
-                                                    setDateFieldIssueCertificate(false);
-                                                }}
-                                            />
-                                        </div>
-                                    )}
-                                <button onClick={() => { setIsAddStudentModalOpen(true) }} type="button" className="ml-2 focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5">Add +</button>
+                            <div className="flex gap-x-3">
+                                <label htmlFor="table-search" className="sr-only">Search</label>
+                                <div className="relative">
+                                    <input onChange={(e) => setSearchTerm(e.target.value.replace(/^\s+/, ''))} value={searchTerm} type="text" id="table-search" placeholder="Search for items"
+                                        className="block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg w-40 h-7 bg-gray-50 focus:ring-blue-500 focus:border-blue-500" 
+                                    />
+                                    <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                                    <button onClick={() => setSearchTerm("")}>
+                                    {searchTerm ? (
+                                            <svg className="w-4 h-4 text-gray-500" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M6.293 6.293a1 1 0 011.414 0L10 8.586l2.293-2.293a1 1 0 111.414 1.414L11.414 10l2.293 2.293a1 1 0 01-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 01-1.414-1.414L8.586 10 6.293 7.707a1 1 0 010-1.414z" clipRule="evenodd"></path>
+                                            </svg>
+                                        ) : (
+                                            <svg className="w-4 h-4 text-gray-500" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"></path>
+                                            </svg>
+                                        )}
+                                    </button>
+                                    </div>
+                                </div>
+               
+
+                                <div className="flex">
+                                        {!dateFieldIssueCertificate && (
+                                            <Button
+                                            onClick={handleIssueClick}
+                                            variant="outlined"
+                                            color={isCertificateIssued ? "blue" : "green"}
+                                            >
+                                            {isCertificateIssued ? "Certificate Issued" : "Issue Certificate"}
+                                            </Button>
+                                        )}
+                                        {dateFieldIssueCertificate && (
+                                            <div className="flex mx-1">
+                                                <DatePicker
+                                                    open={dateFieldIssueCertificate}
+                                                    name="certificateIssueDate"
+                                                    className="border-gray-300"
+                                                    size="small"
+                                                    placeholder="Certificate issue date"
+                                                    // value={certificateData[item.id] 
+                                                    //         ? dayjs(certificateData[item.id])  //  Show selected date 
+                                                    //         : item.course_certificate_date 
+                                                    //         ? dayjs(item.course_certificate_date)  //  Show date from server
+                                                    //         : null
+                                                    // }
+                                                    onChange={(date, dateString) => {
+                                                        setCertificateIssueDate(dateString);  //  Store selected date
+                                                    }}
+                                                />
+                                                {/* Submit Button */}
+                                                <CheckCircleOutlined
+                                                    className="mx-1 text-green-500 text-lg cursor-pointer hover:text-green-700"
+                                                    onClick={() => {
+                                                        handleIssueCertificate();
+                                                        setDateFieldIssueCertificate(false);
+                                                    }}
+                                                />
+
+                                                {/* Cancel Button */}
+                                                <CloseCircleOutlined
+                                                    className="text-red-500 text-lg cursor-pointer hover:text-red-700"
+                                                    onClick={() => {
+                                                        setDateFieldIssueCertificate(false);
+                                                    }}
+                                                />
+                                            </div>
+                                        )}
+                                    <button onClick={() => { setIsAddStudentModalOpen(true) }} type="button" className="ml-2 focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5">Add +</button>
+                                </div>
                             </div>
                         </div>
 
@@ -677,18 +728,12 @@ const SpecificBatchPage = () => {
                                                 <th scope="col" className="px-3 py-3 md:px-1">
                                                     Name
                                                 </th>
-                                                {/* <th scope="col" className="px-3 py-3 md:px-1">
-                                                    Date of Birth
-                                                </th> */}
                                                 <th scope="col" className="px-3 py-3 md:px-1">
                                                     Phone No
                                                 </th>
                                                 <th scope="col" className="px-3 py-3 md:px-1">
                                                     Email
                                                 </th>
-                                                {/* <th scope="col" className="px-3 py-3 md:px-1">
-                                                    Date of Joining
-                                                </th> */}
                                                 <th scope="col" className="px-3 py-3 md:px-1">
                                                     Courses
                                                 </th>
@@ -716,7 +761,8 @@ const SpecificBatchPage = () => {
                                             
                                             </tr>
                                         </thead>
-                                {activeTab === "tab1" && (
+
+                                {activeTab === "students" && (
                                         <tbody>
                                     {loading ? (
                                             <tr>
@@ -725,8 +771,8 @@ const SpecificBatchPage = () => {
                                                 </td>
                                             </tr>
                                     
-                                    ) : specificBatch?.students.length > 0 ? (
-                                        specificBatch?.students.map((item, index) => (
+                                    ) : filteredBatchStudents.length > 0 ? (
+                                        filteredBatchStudents.map((item, index) => (
                                         <tr key={item.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 scroll-smooth">
                                             <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
                                             {index + 1}
@@ -744,22 +790,12 @@ const SpecificBatchPage = () => {
                                             <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.student.id)}>
                                                 {item.student.name}
                                             </td>
-                                            {/* <td className="px-3 py-2 md:px-1">
-                                                {item.dob}
-                                            </td> */}
                                             <td className="px-3 py-2 md:px-1">
                                                 {item.student.phone}
                                             </td>
                                             <td className="px-3 py-2 md:px-1">
                                                 {item.student.email}
                                             </td>
-                                            {/* <td className="px-3 py-2 md:px-1">
-                                                {new Date(item.student.date_of_joining).toLocaleDateString("en-GB", {
-                                                    day: "2-digit",
-                                                    month: "2-digit",
-                                                    year: "numeric",
-                                                })}
-                                            </td> */}
                                             <td className="px-3 py-2 md:px-1">
                                             <Avatar.Group
                                                         max={{
@@ -865,7 +901,7 @@ const SpecificBatchPage = () => {
                                         </tbody>
                                 )}
 
-                                {activeTab === "tab2" && (
+                                {activeTab === "recommended_students" && (
                                          <tbody>
                                          {loading ? (
                                                  <tr>
@@ -874,41 +910,66 @@ const SpecificBatchPage = () => {
                                                      </td>
                                                  </tr>
                                          
-                                         ) : students?.available_students.length > 0 ? (
-                                             students?.available_students.map((item, index) => (
+                                         ) : filteredAvailableStudents.length > 0 ? (
+                                            filteredAvailableStudents.map((item, index) => (
                                              <tr key={item.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 scroll-smooth">
                                                  <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
                                                  {index + 1}
                                                  </td>
                                                  {/* <td className="px-3 py-2 md:px-1">
                                                      {item.id}
-                                                 </td> */}
-                                                 {/* <td> {isCertificateIssued ? <CheckCircleOutlined className="text-green-500 text-md"/> : ''} </td> */}
-                                                 
-                                                 <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.student.id)}>
-                                                     {item.enrollment_no}
-                                                 </td>
-                                                 
+                                                 </td> */}  
+
+                                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.id)}>
+                                                    <Tooltip 
+                                                        color="white"
+                                                        title={
+                                                            Array.isArray(item.complete_course_name) && item.complete_course_name.length > 0 ? (
+                                                            <div className="w-auto max-w-lg bg-white text-black border-none">
+                                                                {/* Dynamically adjusting width */}
+                                                                {item.complete_course_name.map((course, idx) => (
+                                                                <div key={idx} className="py-1"><CheckCircleOutlined className="text-green-500 text-md"/>  {course} - <span className="text-green-500 font-semibold">Completed</span></div>
+                                                                ))}
+                                                            </div>
+                                                            ) : (
+                                                            "No completed courses"
+                                                            )
+                                                        }
+                                                    >
+                                                        <span>{item.enrollment_no}</span>
+                                                    </Tooltip>
+
+                                                </td>
      
-                                                 <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.student.id)}>
-                                                     {item.name}
-                                                 </td>
-                                                 {/* <td className="px-3 py-2 md:px-1">
-                                                     {item.dob}
-                                                 </td> */}
+                                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.id)}> 
+                                                    <Tooltip 
+                                                        color="white"
+                                                        title={
+                                                            Array.isArray(item.complete_course_name) && item.complete_course_name.length > 0 ? (
+                                                            <div className="w-auto max-w-lg bg-white text-black border-none">
+                                                                {/* Dynamically adjusting width */}
+                                                                {item.complete_course_name.map((course, idx) => (
+                                                                <div key={idx} className="py-1"><CheckCircleOutlined className="text-green-500 text-md"/>  {course} - <span className="text-lime-500 font-serif">Completed</span></div>
+                                                                ))}
+                                                            </div>
+                                                            ) : (
+                                                            "No completed courses"
+                                                            )
+                                                        }
+                                                    >
+                                                        <span>{item.name}</span>
+                                                        </Tooltip>
+
+                                                </td>
+
                                                  <td className="px-3 py-2 md:px-1">
                                                      {item.phone}
                                                  </td>
+
                                                  <td className="px-3 py-2 md:px-1">
                                                      {item.email}
                                                  </td>
-                                                 {/* <td className="px-3 py-2 md:px-1">
-                                                     {new Date(item.student.date_of_joining).toLocaleDateString("en-GB", {
-                                                         day: "2-digit",
-                                                         month: "2-digit",
-                                                         year: "numeric",
-                                                     })}
-                                                 </td> */}
+                                                 
                                                  <td className="px-3 py-2 md:px-1">
                                                  <Avatar.Group
                                                              max={{
@@ -960,18 +1021,6 @@ const SpecificBatchPage = () => {
                                                  <td className="px-3 py-2 md:px-1">
                                                      {item.support_coordinator_name}
                                                  </td>
-                                                 {/* <td className="px-3 py-2 md:px-1">
-                                                     <Switch
-                                                         size="small"
-                                                         checkedChildren={<CheckOutlined />}
-                                                         unCheckedChildren={<CloseOutlined />}
-                                                         checked={studentStatuses[item.id] || false} // Get correct status per trainer
-                                                         onChange={(checked) => handleToggle(checked, item.id)}
-                                                         style={{
-                                                             backgroundColor: studentStatuses[item.id] ? "#38b000" : "gray", // Change color when checked
-                                                         }}
-                                                     />
-                                                 </td> */}
                                                  <td > 
                                                     <Button 
                                                          color="primary" 
@@ -984,23 +1033,6 @@ const SpecificBatchPage = () => {
                                                      >
                                                          +
                                                      </Button>
-                                                     {/* <Popconfirm
-                                                         title={`Remove ${item.name}`}
-                                                         description="Are you sure you want to Remove this Student?"
-                                                         onConfirm={() => confirm(item.id, item.name)}
-                                                         onCancel={cancel}
-                                                         okText="Yes"
-                                                         cancelText="No"
-                                                     >
-                                                         <Button 
-                                                             color="danger" 
-                                                             variant="filled" 
-                                                             className="rounded-lg w-auto px-3"
-                                                             onClick={(e) => e.stopPropagation()} // Prevent the click from triggering the Edit button
-                                                         >
-                                                             <ClearOutlined />
-                                                         </Button>
-                                                 </Popconfirm> */}
                                                  </td>
                                              </tr>
                                          ))

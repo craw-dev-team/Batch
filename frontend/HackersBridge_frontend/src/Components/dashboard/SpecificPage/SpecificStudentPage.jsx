@@ -17,7 +17,7 @@ const SpecificStudentPage = () => {
     const [selectedStudent, setSelectedStudent] = useState();
 
     const { studentId } = useParams();
-    const { specificStudent, fetchSpecificStudent } = useSpecificStudent();
+    const { specificStudent, setSpecificStudent, fetchSpecificStudent } = useSpecificStudent();
     const { token } = useAuth();
 
     const [activeTab, setActiveTab] = useState("running");
@@ -104,21 +104,10 @@ const SpecificStudentPage = () => {
             // console.log(response);
             
         } catch (error) {
-            console.log(error);
+            // console.log(error);
             message.error("Failed to update status")
         }
     };
-
-
-
-    // Function to handle the date change
-    // const handleDateChange = (date, dateString) => {
-    //     setCertificateData(prevState => ({
-    //         ...prevState,
-    //         certificateIssueDate: dateString,
-    //     }));
-    // };
-
 
 
 
@@ -135,7 +124,7 @@ const SpecificStudentPage = () => {
                 { certificate_date: certificateIssueDate },
                 { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
             );
-            console.log(response);
+            // console.log(response);
             
 
             if (response.status === 200) {                
@@ -148,7 +137,7 @@ const SpecificStudentPage = () => {
             };
 
         } catch (error) {
-            console.log("error occured", error);
+            // console.log("error occured", error);
             message.error("Something went wrong while issuing the certificate.");
         }
 
@@ -176,7 +165,7 @@ const SpecificStudentPage = () => {
                 link.download = `${courseName}_certificate.pdf`; 
                 document.body.appendChild(link);
                 link.click();
-    
+
                 // Cleanup
                 window.URL.revokeObjectURL(url);
                 document.body.removeChild(link);
@@ -186,11 +175,49 @@ const SpecificStudentPage = () => {
                 message.error("Error downloading certificate");
             }
         } catch (error) {
-            console.error("Error occurred while downloading:", error);
+            // console.error("Error occurred while downloading:", error);
             message.error("Error downloading the certificate");
         }
     };
     
+
+    // HANDLE ISSUE BOOKS TO SPECIFIC STUDENT
+    const handleIssueBook = async (courseId, isChecked, courseName) => {
+        if (!courseId) return null;
+        
+        try {
+            const response = await axios.patch(`${BASE_URL}/api/student/book/${courseId}/`,
+                { Book : isChecked},
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+
+            );            
+
+        setSpecificStudent(prev => ({
+            ...prev,
+            All_in_One: {
+              ...prev.All_in_One,
+              student_courses: prev.All_in_One.student_courses.map(course =>
+                course.id === courseId
+                  ? { ...course, student_book_allotment: isChecked }
+                  : course
+              ),
+            },
+          }));
+
+          if (isChecked) {
+                message.success(`Book alloted Successfully for ${courseName}`)
+          } else {
+            message.success(`Book Unalloted for ${courseName}`)
+          }
+    
+        // console.log("Server response:", response.data);
+       } catch (error) {
+        message.error('Error Issuing Book')
+            // console.error("Error issuing book:", error);
+        
+       }
+        
+    };
     
     return (
         <>
@@ -308,7 +335,7 @@ const SpecificStudentPage = () => {
                                     </div>
                             </div>
 
-                            <div className="px-4 py-4 col-span-6 mt-6 h-auto shadow-md sm:rounded-lg darkmode border border-gray-50 dark:border dark:border-gray-600">
+                            <div className="px-4 py-4 col-span-6 mt-6 h-auto shadow-md sm:rounded-lg border border-gray-50">
                                 <div className="w-full font-semibold">
                                     
                                     <div className="col-span-1 text-lg px-4 py-4">
@@ -392,7 +419,7 @@ const SpecificStudentPage = () => {
                                                             </td>
 
                                                             <td>
-                                                            <Checkbox></Checkbox>
+                                                            <Checkbox onChange={(e) => handleIssueBook(item.id, e.target.checked, item.course_name)} checked={item.student_book_allotment || false}></Checkbox>
                                                             </td>
 
                                                             <td className="px-3 py-2 md:px-1 flex">
@@ -420,7 +447,7 @@ const SpecificStudentPage = () => {
                                                                 >{item.course_certificate_date ? "Issued" : "Issue"}</Button>
                                                             
                                                             {/* button for download certificate */}
-                                                            {item.course_certificate_date && ( // ✅ Only show "Download" button if certificate is issued
+                                                            {item.course_certificate_date && ( // Only show "Download" button if certificate is issued
                                                                     <Button 
                                                                         variant="solid"  
                                                                         className="mx-2 bg-blue-500 text-white"
@@ -433,7 +460,12 @@ const SpecificStudentPage = () => {
 
                                                             <td> {item.course_certificate_date || 'N/A'} </td>
 
-                                                            <td> </td>
+                                                            <td>
+                                                                {item.certificate_issued_at
+                                                                    ? `${new Date(item.certificate_issued_at).toISOString().split("T")[0]} | ${new Date(item.certificate_issued_at).toTimeString().split(" ")[0]}`
+                                                                    : "N/A"}
+                                                            </td>
+
                                                         </tr>
                                                     ))}
                                                     </tbody>
@@ -585,26 +617,6 @@ const SpecificStudentPage = () => {
                                                             </td>
                                                             
                                                             <td className="px-3 py-2 md:px-1 font-semibold">
-                                                                {/* <Avatar.Group
-                                                                    maxCount={2} // Show only 2 avatars initially
-                                                                    maxStyle={{
-                                                                        color: "#f56a00",
-                                                                        backgroundColor: "#fde3cf",
-                                                                        height: "24px", // Match avatar size
-                                                                        width: "24px", // Match avatar size
-                                                                    }}
-                                                                >
-                                                                    {item.course__name
-                                                                        ? item.course__name.split(", ").map((name, index) => (
-                                                                            <Tooltip key={index} title={name} placement="top">
-                                                                                <Avatar size={24} style={{ backgroundColor: "#87d068" }}>
-                                                                                    {name[0]}
-                                                                                </Avatar>
-                                                                            </Tooltip>
-                                                                        ))
-                                                                        : <span>No Course</span>
-                                                                    }
-                                                                </Avatar.Group> */}
                                                                 {item.course__name}
                                                             </td>
                                                             <td className="px-3 py-2 md:px-1">
