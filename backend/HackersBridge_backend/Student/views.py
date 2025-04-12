@@ -5,7 +5,7 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
-from .models import Student, Installment, FeesRecords, StudentCourse
+from .models import Student, Installment, FeesRecords, StudentCourse, StudentNotes
 from .serializer import StudentSerializer, InstallmentSerializer, StudentCourseSerializer, StudentBookAllotmentSerializer
 from nexus.models import Batch, Timeslot, Course
 from django.db.models import Q
@@ -28,23 +28,41 @@ from django.views.decorators.csrf import csrf_exempt
 from datetime import date
 # from django.contrib.auth.models import User
 User = get_user_model()
+from django.db.models import Prefetch
 
 
 # ✅ Student List API (Only for Coordinators)
 class StudentListView(APIView):
-    authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
+    authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         if request.user.role not in ['admin', 'coordinator']:
             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
 
-        students = Student.objects.prefetch_related('courses').select_related('course_counsellor', 'support_coordinator')
+        completed_courses_prefetch = Prefetch(
+            'studentcourse_set',
+            queryset=StudentCourse.objects.select_related('course')
+                .filter(status='Completed'),
+            to_attr='completed_courses'
+        )
+
+        notes_prefetch = Prefetch(
+            'notes',
+            queryset=StudentNotes.objects.select_related('create_by')
+        )
+
+        students = Student.objects.select_related(
+            'course_counsellor', 'support_coordinator', 'location',
+            'last_update_user', 'student_assing_by', 'installment'
+        ).prefetch_related(
+            'courses',
+            completed_courses_prefetch,
+            notes_prefetch
+        )
+
         serializer = StudentSerializer(students, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-
 
 class StudentCrawListView(APIView):
     authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
@@ -434,6 +452,24 @@ class StudentCourseEditAPIView(APIView):
 
 
 
+@csrf_exempt
+@never_cache
+def email_open_tracker(request, id):
+    student_course = get_object_or_404(StudentCourse, id=id)
+
+    # Update a flag or timestamp to indicate the email was opened
+    student_course.email_opened = True
+    student_course.email_opened_at = now()
+    student_course.save(update_fields=['email_opened', 'email_opened_at'])
+
+    # 1x1 transparent GIF
+    pixel = b'GIF89a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00' \
+            b'\xFF\xFF\xFF!\xF9\x04\x01\x00\x00\x00\x00,\x00' \
+            b'\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;'
+
+    return HttpResponse(pixel, content_type='image/gif')
+
+
 
 class GenerateCertificateAPIView(APIView):
     authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
@@ -465,7 +501,8 @@ class GenerateCertificateAPIView(APIView):
             if os.path.exists(file_path):
                 # ✅ Update student_certificate_allotment to True
                 student_course.student_certificate_allotment = True
-                student_course.save(update_fields=['student_certificate_allotment'])
+                student_course.certificate_issued_at = now() 
+                student_course.save(update_fields=['student_certificate_allotment', 'certificate_issued_at'])
 
                 # ✅ Log certificate generation
                 LogEntry.objects.create(
@@ -483,38 +520,60 @@ class GenerateCertificateAPIView(APIView):
                     timestamp=now()
                 )
 
-                # 📧 Send Email Notification
-                subject = f"🎉 Congratulations, {student.name}! Your {course.name} Certificate is Here!"
-                message = f"""
-Dear {student.name},
 
-We’re thrilled to congratulate you on successfully completing the {course.name} course at Craw Cyber Security! 
-Your dedication and hard work have paid off, and we are delighted to issue your official certificate.
+#                 # 📧 Send Email Notification
 
-🏷️ Student Enrollment Number: {student.enrollment_no}
-📅 Date of Issue: {certificate_date}
+#                 subject = f"🎉 Congratulations, {student.name}! Your {course.name} Certificate is Here!"
 
-Your certificate is attached to this email—feel free to showcase it in your portfolio, LinkedIn profile, or anywhere that highlights your achievements. 
-This milestone is just the beginning of your journey in cybersecurity, and we’re excited to see where your skills take you next!
+#                 pixel_url = f"http://192.168.1.18:8000/api/email-tracker/{student_course.id}/"  # ✅ Fixed the pixel URL
 
-If you have any questions or need further assistance, don’t hesitate to reach out.
+#                 html_message = f"""
+# <!DOCTYPE html>
+# <html>
+# <head>
+#     <meta charset="UTF-8">
+#     <title>Certificate Issued</title>
+# </head>
+# <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+#     <p>Dear <strong>{student.name}</strong>,</p>
 
-🚀 Keep learning, keep growing, and keep securing the digital world!
+#     <p>We’re thrilled to congratulate you on successfully completing the <strong>{course.name}</strong> course at <strong>Craw Cyber Security</strong>!</p>
 
-Best regards,  
-🚀 Craw Cyber Security Team  
-📧 training@craw.in  
-📞 +919513805401  
-🌐 https://www.craw.in/
-                """
+#     <p>Your dedication and hard work have paid off, and we are delighted to issue your official certificate.</p>
 
-                from_email = "CRAW SECURITY CERTIFICATE <training@craw.in>"
-                try:
-                    email = EmailMessage(subject, message, from_email, [student.email])
-                    email.attach_file(file_path)  # Attach generated certificate PDF
-                    email.send()
-                except Exception as e:
-                    return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#     <p>
+#         <strong>🏷️ Student Enrollment Number:</strong> {student.enrollment_no}<br>
+#         <strong>📅 Date of Issue:</strong> {certificate_date}
+#     </p>
+
+#     <p>Your certificate is attached to this email—feel free to showcase it in your portfolio, LinkedIn profile, or anywhere that highlights your achievements.</p>
+
+#     <p>This milestone is just the beginning of your journey in cybersecurity, and we’re excited to see where your skills take you next!</p>
+
+#     <p>If you have any questions or need further assistance, don’t hesitate to reach out.</p>
+
+#     <p>🚀 Keep learning, keep growing, and keep securing the digital world!</p>
+
+#     <p>Best regards,<br>
+#     🚀 Craw Cyber Security Team<br>
+#     📧 <a href="mailto:training@craw.in">training@craw.in</a><br>
+#     📞 +91 9513805401<br>
+#     🌐 <a href="https://www.craw.in/">https://www.craw.in/</a>
+#     </p>
+
+#     <img src="{pixel_url}" width="1" height="1" alt="" style="display: none;" />
+# </body>
+# </html>
+# """
+
+#                 from_email = "CRAW SECURITY CERTIFICATE <training@craw.in>"
+#                 try:
+#                     email = EmailMessage(subject, html_message, from_email, [student.email])
+#                     email.content_subtype = "html"  # ✅ Make it HTML email
+#                     email.attach_file(file_path)
+#                     email.send()
+#                 except Exception as e:
+#                     return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
                 # ✅ Fix: Open file WITHOUT closing it prematurely
                 certificate_file = open(file_path, 'rb')
@@ -523,7 +582,6 @@ Best regards,
             return Response({'error': 'Certificate generation failed'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 
 
@@ -646,21 +704,60 @@ class StudentLogListView(APIView):
     
 
 
+
+
+
 class StudentBookAllotmentAPIView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     def patch(self, request, id):
-        # Validate user permission
         if request.user.role not in ['admin', 'coordinator']:
             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
 
-        # Get the StudentCourse instance
         student_course = get_object_or_404(StudentCourse, id=id)
 
-        # Pass student_course and request to serializer context
-        serializer = StudentBookAllotmentSerializer(data=request.data, context={'student_course': student_course, 'request': request})
+        # Capture the old data before changes
+        old_data = model_to_dict(student_course)
+
+        serializer = StudentBookAllotmentSerializer(
+            instance=student_course,
+            data=request.data,
+            partial=True,
+            context={'student_course': student_course, 'request': request}
+        )
+
         if serializer.is_valid():
             serializer.save()
+
+            # Capture the new data after save
+            new_data = model_to_dict(student_course)
+
+            # Track changes
+            changes = {}
+            changes_text = []
+            for field, old_value in old_data.items():
+                new_value = new_data.get(field)
+                if old_value != new_value:
+                    changes[field] = {'from': old_value, 'to': new_value}
+                    changes_text.append(f"{field} changed from '{old_value}' to '{new_value}'")
+
+            # Log the change
+            LogEntry.objects.create(
+                content_type=ContentType.objects.get_for_model(StudentCourse),
+                cid=str(uuid.uuid4()),
+                object_pk=student_course.id,
+                object_id=student_course.id,
+                object_repr=f"Student ID: {student_course.student.enrollment_no} | Student: {student_course.student.name}",
+                action=LogEntry.Action.UPDATE,
+                changes=json.dumps(changes, default=str),
+                serialized_data=json.dumps(new_data, default=str),
+                changes_text=" ".join(changes_text),
+                additional_data="Student",
+                actor=request.user,
+                timestamp=now()
+            )
+
             return Response({'message': 'Book allotted successfully'}, status=status.HTTP_200_OK)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

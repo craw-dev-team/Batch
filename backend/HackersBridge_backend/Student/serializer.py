@@ -143,14 +143,14 @@ class StudentSerializer(serializers.ModelSerializer):
     course_counsellor_name = serializers.SerializerMethodField()
     support_coordinator_name = serializers.SerializerMethodField()
     courses_names = serializers.SerializerMethodField()
+    complete_course_name = serializers.SerializerMethodField()
+    complete_course_id = serializers.SerializerMethodField()
 
     complete_course = serializers.ListField(
         child=serializers.PrimaryKeyRelatedField(queryset=Course.objects.all()),
         write_only=True,
         required=False
     )
-    complete_course_name = serializers.SerializerMethodField()
-    complete_course_id = serializers.SerializerMethodField()
 
     notes = StudentNoteSerializer(many=True, read_only=True)
 
@@ -168,22 +168,23 @@ class StudentSerializer(serializers.ModelSerializer):
         ]
 
     def get_course_counsellor_name(self, obj):
-        return obj.course_counsellor.name if obj.course_counsellor else None
+        return getattr(obj.course_counsellor, 'name', None)
 
     def get_support_coordinator_name(self, obj):
-        return obj.support_coordinator.name if obj.support_coordinator else None
+        return getattr(obj.support_coordinator, 'name', None)
 
     def get_courses_names(self, obj):
-        return [course.name for course in obj.courses.all()]
+        return list(obj.courses.values_list('name', flat=True))
 
     def get_complete_course_name(self, obj):
-        completed_courses = StudentCourse.objects.filter(student=obj, status='Completed')
-        return [student_course.course.name for student_course in completed_courses]
+        if hasattr(obj, 'completed_courses'):
+            return [sc.course.name for sc in obj.completed_courses]
+        return []
 
     def get_complete_course_id(self, obj):
-        completed_courses = StudentCourse.objects.filter(student=obj, status='Completed')
-        return [student_course.course.id for student_course in completed_courses]
-
+        if hasattr(obj, 'completed_courses'):
+            return [sc.course.id for sc in obj.completed_courses]
+        return []
 
     def create(self, validated_data):
         temp_password = get_random_string(length=8)
