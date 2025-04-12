@@ -1,11 +1,12 @@
 from rest_framework import serializers
-from .models import Student, Installment , StudentCourse, StudentNotes
+from .models import Student, Installment , StudentCourse, StudentNotes, BookAllotment
 from django.core.mail import send_mail
 from django.utils.crypto import get_random_string
 from django.contrib.auth import get_user_model
 from rest_framework.authtoken.models import Token
-from nexus.models import Course
+from nexus.models import Course, Book
 from datetime import date
+
 
 User = get_user_model()  # ✅ Dynamically fetch the User model
 
@@ -289,7 +290,9 @@ class StudentCourseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = StudentCourse
-        fields = ['id', 'student', 'student_name', 'enrollment_no', 'course', 'status', 'certificate_date', 'student_certificate_allotment', 'gen_time']
+        fields = ['id', 'student', 'student_name', 'enrollment_no', 'course', 'status', 'certificate_date', 'certificate_issued_at', 'student_certificate_allotment']
+
+        read_only_fields = ['certificate_issued_at']  # ✅ Prevent manual edits
 
 
 
@@ -300,4 +303,89 @@ class StudentCourseSerializer(serializers.ModelSerializer):
 #     date = serializers.DateField(default=date.today)
 
 
-        
+
+
+class StudentBookAllotmentSerializer(serializers.ModelSerializer):
+    Book = serializers.BooleanField()
+    
+    class Meta:
+        model = StudentCourse
+        fields = ['Book']
+
+    def validate(self, attrs):
+        book_flag = attrs.get('Book')
+        student_course = self.context['student_course']
+        course = student_course.course
+
+        if book_flag:
+            # Get available books
+            books = Book.objects.filter(course=course, status='Available', stock__gt=0)
+            if not books.exists():
+                raise serializers.ValidationError({'book': 'No available books for this course.'})
+
+            attrs['books'] = books
+
+        else:
+            allotments = BookAllotment.objects.filter(student=student_course.student)
+            if not allotments.exists():
+                raise serializers.ValidationError({'book': 'No book allotment found to remove.'})
+            attrs['allotments'] = allotments
+
+        return attrs
+    
+    def save(self, **kwargs):
+        student_course = self.context['student_course']
+        student = student_course.student
+        user = self.context['request'].user
+        book_flag = self.validated_data['Book']
+
+        if book_flag is True:
+            # ✅ ALLOT books
+            books = self.validated_data['books']
+
+            # Create BookAllotment
+            book_allotment = BookAllotment.objects.create(allot_by=user)
+            book_allotment.book.set(books)
+            book_allotment.student.add(student)
+
+            # Update StudentCourse flag
+            student_course.student_book_allotment = True
+            student_course.save(update_fields=['student_book_allotment'])
+
+            # Decrease stock
+            for book in books:
+                book.stock -= 1
+                if book.stock <= 0:
+                    book.status = 'Not'
+                book.save(update_fields=['stock', 'status'])
+
+            return book_allotment
+
+        else:
+            # ✅ REMOVE allotment
+            allotments = self.validated_data['allotments']
+            removed_books = []
+
+            for allotment in allotments:
+                if student in allotment.student.all():
+                    books = allotment.book.all()
+                    for book in books:
+                        # Restore stock
+                        book.stock += 1
+                        book.status = 'Available'
+                        book.save(update_fields=['stock', 'status'])
+
+                        removed_books.append(book.name)
+
+                    # Remove student from allotment
+                    allotment.student.remove(student)
+
+                    # Delete allotment if no students left
+                    if allotment.student.count() == 0:
+                        allotment.delete()
+
+            # Update StudentCourse flag
+            student_course.student_book_allotment = False
+            student_course.save(update_fields=['student_book_allotment'])
+
+            return {'removed_books': removed_books}

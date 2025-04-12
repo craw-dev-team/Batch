@@ -6,8 +6,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from .models import Student, Installment, FeesRecords, StudentCourse
-from .serializer import StudentSerializer, InstallmentSerializer, StudentCourseSerializer
-from nexus.models import Batch
+from .serializer import StudentSerializer, InstallmentSerializer, StudentCourseSerializer, StudentBookAllotmentSerializer
+from nexus.models import Batch, Timeslot, Course
 from django.db.models import Q
 from rest_framework.authtoken.models import Token
 from nexus.serializer import BatchStudentAssignment, LogEntrySerializer
@@ -22,7 +22,10 @@ from django.forms.models import model_to_dict
 from django.utils.timezone import now
 import json
 import uuid
-
+from django.http import HttpResponse
+from django.views.decorators.cache import never_cache
+from django.views.decorators.csrf import csrf_exempt
+from datetime import date
 # from django.contrib.auth.models import User
 User = get_user_model()
 
@@ -98,7 +101,29 @@ class StudentCrawListView(APIView):
             "not_enrolled_students": not_enrolled_students_serializer.data,
             "today_added_students": today_serializer.data,
         })
-    
+
+
+
+
+class FreeStudentListView(APIView):
+    def get(self, request):
+
+        # Fetching those student id how have any Not-start course
+        students_ids = StudentCourse.objects.filter(status="Not Started").values_list('student', flat=True).distinct()
+
+        # Fetching student list using student id
+        students = Student.objects.filter(id__in=students_ids)
+
+        # Filter for removing dose student who have any ongoing course
+        student_ongoing = StudentCourse.objects.filter(student__in=students, status="Ongoing").values_list('student', flat=True).distinct()
+
+        student = Student.objects.filter(id__in=students_ids).exclude(id__in=student_ongoing)
+
+        serializer = StudentSerializer(student, many=True)
+
+        return Response(serializer.data)
+
+
 
 
 
@@ -219,8 +244,6 @@ class EditStudentView(APIView):
 
 
 
-
-
 # ✅ Add Fees API
 class AddFeesView(APIView):
     authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
@@ -279,6 +302,8 @@ class StudentInfoAPIView(APIView):
                 'course_taken': Batch.objects.filter(student=student, course=course.course).count(),
                 'course_status': course.status,
                 'course_certificate_date': course.certificate_date,
+                'certificate_issued_at':course.certificate_issued_at,
+                'student_book_allotment':course.student_book_allotment,
             }
             for course in student_courses
         ]
@@ -503,6 +528,7 @@ Best regards,
 
 
 
+
 class DeleteStudentView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
@@ -617,3 +643,24 @@ class StudentLogListView(APIView):
         logs = LogEntry.objects.filter(content_type=student_ct).order_by('-timestamp')
         serializer = LogEntrySerializer(logs, many=True)
         return Response(serializer.data)
+    
+
+
+class StudentBookAllotmentAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, id):
+        # Validate user permission
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
+        # Get the StudentCourse instance
+        student_course = get_object_or_404(StudentCourse, id=id)
+
+        # Pass student_course and request to serializer context
+        serializer = StudentBookAllotmentSerializer(data=request.data, context={'student_course': student_course, 'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': 'Book allotted successfully'}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

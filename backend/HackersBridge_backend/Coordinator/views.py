@@ -10,7 +10,7 @@ from Student.models import Student
 from Student.serializer import StudentSerializer
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
-from nexus.models import Batch
+from nexus.models import Batch, CustomUser
 from Trainer.models import Trainer
 from Trainer.serializer import TrainerSerializer
 from django.contrib.auth import get_user_model
@@ -300,3 +300,4 @@ class CoordinatorLogListView(APIView):
         serializer = LogEntrySerializer(logs, many=True)
         return Response(serializer.data)
     
+
