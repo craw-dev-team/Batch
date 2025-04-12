@@ -158,7 +158,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
             note: formattedData.note,
             // profile_picture: studentFormData.studentProfilePicture,
         };
-        console.log("Final Payload:", JSON.stringify(payload, null, 2));
+        // console.log("Final Payload:", JSON.stringify(payload, null, 2));
 
         try {
             setLoading(true); // Start loading
@@ -189,6 +189,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
                         setLoading(false);
                         onClose();
                         resetStudentForm();
+                        
                     }, 1000);
                 };
   

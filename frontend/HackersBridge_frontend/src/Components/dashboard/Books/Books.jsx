@@ -25,9 +25,8 @@ const Books = () => {
             fetchBooks();  // Fetch courses after deletion
             setIsDeleted(false); // Reset deletion flag
      
-    }, [isDeleted, selectedBook]);
+    }, [isDeleted, selectedBook, bookData]);
     
-console.log(bookData);
 
     // Function to handle Edit button click
     const handleEditClick = (book) => {

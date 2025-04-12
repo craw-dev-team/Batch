@@ -66,7 +66,7 @@ const AllLogs = () => {
                     <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
                         { index + 1}
                     </td>
-                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.id)}>
+                    <td className="px-3 py-2 md:px-1">
                         {item.actor_first_name || item.actor}
                     </td>
 
@@ -74,7 +74,7 @@ const AllLogs = () => {
                         {item.object_repr}
                     </td>
 
-                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.id)}>
+                    <td className="px-3 py-2 md:px-1">
                     {typeof item.changes === "object"
                         ? Object.entries(item.changes).map(([key, value]) => {
                             if (typeof value === "object" && value.old !== undefined && value.new !== undefined) {

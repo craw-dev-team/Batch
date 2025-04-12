@@ -54,7 +54,7 @@ const AddCounsellorForm = ( { isOpen, onClose, counsellorData } ) => {
                 phone: counsellorFormData.counsellorNumber,
                 weekoff: counsellorFormData.counsellorWeekOff,
             };
-            console.log("Final Payload:", JSON.stringify(payload, null, 2));
+            // console.log("Final Payload:", JSON.stringify(payload, null, 2));
 
             try {
                 setLoading(true); // Start loading

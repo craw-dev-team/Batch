@@ -1,5 +1,4 @@
 import Batches from "../Components/dashboard/Batches/Batches";
-import Table1 from "../Components/dashboard/Batches/Table";
 
 
 

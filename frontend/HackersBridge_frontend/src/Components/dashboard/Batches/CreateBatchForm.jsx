@@ -23,7 +23,7 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
     if (!isOpen) return null; // Prevent rendering when not open
 
     const isEditing = Boolean(selectedBatchData?.id);
-    const { batchFormData, setBatchFormData, errors, setErrors, resetBatchForm } = useBatchForm();
+    const { batchFormData, setBatchFormData, errors, setErrors, resetBatchForm, fetchBatches } = useBatchForm();
     const { coursesData, fetchCourses } = useCourseForm();
     const { trainerData, fetchTrainers } = useTrainerForm();
     const { studentData, fetchStudents } = useStudentForm();
@@ -120,7 +120,7 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
                         // profile_picture: studentFormData.studentProfilePicture,
                     };
         
-                    console.log("Final Payload:", JSON.stringify(payload, null, 2));
+                    // console.log("Final Payload:", JSON.stringify(payload, null, 2));
         
         try {
             setLoading(true); // Start loading
@@ -148,6 +148,7 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
                         setLoading(false);
                         onClose();
                         resetBatchForm();
+                        fetchBatches();
                     }, 1000);
                 }
   
@@ -286,7 +287,6 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
                                
                                    // Weekends
                                    { value: '5', label: <div style={{ backgroundColor: '#fffbe6' }}>10:00 - 02:00 - Weekends</div> },
-                                   { value: '6', label: <div style={{ backgroundColor: '#fffbe6' }}>03:00 - 06:30 - Weekends</div> },
                                    { value: '14', label: <div style={{ backgroundColor: '#fffbe6' }}>12:00 - 02:00 - Weekends</div> },
                                
                                    // Weekdays
