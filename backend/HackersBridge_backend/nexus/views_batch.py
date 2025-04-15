@@ -30,103 +30,143 @@ from django.utils.dateparse import parse_date
 
 cid = str(uuid.uuid4())
 
-class BatchAPIView(APIView):
-    """
-    API View for fetching batch details with filtering and trainer availability.
-    """
-    authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
-    permission_classes = [IsAuthenticated]
+# class BatchAPIView(APIView):
+#     """
+#     API View for fetching batch details with filtering and trainer availability.
+#     """
+#     authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
+#     permission_classes = [IsAuthenticated]
     
+#     def get(self, request):
+#         if request.user.role not in ['admin', 'coordinator']:
+#             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+        
+#         batches = Batch.objects.prefetch_related('student').select_related('trainer', 'course', 'location', 'batch_time')
+#         now = timezone.now()
+#         today = date.today()
+
+#         # Update batch statuses
+#         for batch in batches:
+#             students = batch.student.all()
+#             if batch.status not in ['Hold', 'Cancelled']:
+#                 if batch.start_date <= today < batch.end_date:
+#                     batch.status = 'Running'
+#                     batch.save()
+#                     StudentCourse.objects.filter(student__in=students, course=batch.course).update(status='Ongoing')
+#                 elif batch.start_date >= today and batch.end_date >= today:
+#                     batch.status = 'Upcoming'
+#                     batch.save()
+#                     StudentCourse.objects.filter(student__in=students, course=batch.course).update(status='Upcoming')
+#                 elif batch.end_date < today:
+#                     batch.status = 'Completed'
+#                     batch.save()
+#                     StudentCourse.objects.filter(student__in=students, course=batch.course).update(status='Completed')
+
+#         seven_days_later = now + timedelta(days=10)
+#         batches_ending_soon = Batch.objects.filter(end_date__lte=seven_days_later, end_date__gte=now, status='Running').order_by('end_date')
+#         # for batch in batches_ending_soon:
+#         #     print(batch.end_date, batch.id)
+#         #     print(" ")
+#         running_batch = Batch.objects.filter(status='Running').order_by('-gen_time')
+#         scheduled_batch = Batch.objects.filter(status='Upcoming')
+#         completed_batch = Batch.objects.filter(status='Completed')
+#         hold_batch = Batch.objects.filter(status='Hold')
+#         cancelled_batch = Batch.objects.filter(status='Cancelled')
+
+#         # Serialize the batches using the updated BatchSerializer
+#         all_batches_data = {
+#             'batches': BatchSerializer(batches, many=True).data,
+#             'running_batch': BatchSerializer(running_batch, many=True).data,
+#             'batches_ending_soon': BatchSerializer(batches_ending_soon, many=True).data,
+#             'scheduled_batch': BatchSerializer(scheduled_batch, many=True).data,
+#             'completed_batch': BatchSerializer(completed_batch, many=True).data,
+#             'hold_batch': BatchSerializer(hold_batch, many=True).data,
+#             'cancelled_batch': BatchSerializer(cancelled_batch, many=True).data,
+#         }
+
+#         return Response({'All_Type_Batch': all_batches_data}, status=200)
+
+
+
+
+class BatchAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         if request.user.role not in ['admin', 'coordinator']:
             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
-        
-        batches = Batch.objects.prefetch_related('student').select_related('trainer', 'course', 'location', 'batch_time')
-        now = timezone.now()
-        today = date.today()
 
-        # Update batch statuses
+        today = now().date()
+        upcoming_threshold = today + timedelta(days=10)
+
+        # Prefetch and select_related to avoid N+1
+        batches = Batch.objects.prefetch_related('student').select_related(
+            'trainer', 'course', 'location', 'batch_time'
+        )
+
+        # ✅ Cache for batch status update
+        updated_batches = []
+        student_course_updates = []
+
         for batch in batches:
-            students = batch.student.all()
-            if batch.status not in ['Hold', 'Cancelled']:
+            old_status = batch.status
+            if old_status not in ['Hold', 'Cancelled']:
                 if batch.start_date <= today < batch.end_date:
                     batch.status = 'Running'
-                    batch.save()
-                    StudentCourse.objects.filter(student__in=students, course=batch.course).update(status='Ongoing')
-                elif batch.start_date >= today and batch.end_date >= today:
+                elif batch.start_date >= today:
                     batch.status = 'Upcoming'
-                    batch.save()
-                    StudentCourse.objects.filter(student__in=students, course=batch.course).update(status='Upcoming')
                 elif batch.end_date < today:
                     batch.status = 'Completed'
-                    batch.save()
-                    StudentCourse.objects.filter(student__in=students, course=batch.course).update(status='Completed')
 
-        seven_days_later = now + timedelta(days=10)
-        batches_ending_soon = Batch.objects.filter(end_date__lte=seven_days_later, end_date__gte=now, status='Running').order_by('end_date')
-        # for batch in batches_ending_soon:
-        #     print(batch.end_date, batch.id)
-        #     print(" ")
-        running_batch = Batch.objects.filter(status='Running').order_by('-gen_time')
-        scheduled_batch = Batch.objects.filter(status='Upcoming')
-        completed_batch = Batch.objects.filter(status='Completed')
-        hold_batch = Batch.objects.filter(status='Hold')
-        cancelled_batch = Batch.objects.filter(status='Cancelled')
+                if batch.status != old_status:
+                    updated_batches.append(batch)
+                    student_ids = list(batch.student.values_list('id', flat=True))
+                    student_course_updates.append({
+                        'student_ids': student_ids,
+                        'course': batch.course,
+                        'status': batch.status
+                    })
 
-        # Serialize the batches using the updated BatchSerializer
-        all_batches_data = {
-            'batches': BatchSerializer(batches, many=True).data,
-            'running_batch': BatchSerializer(running_batch, many=True).data,
-            'batches_ending_soon': BatchSerializer(batches_ending_soon, many=True).data,
-            'scheduled_batch': BatchSerializer(scheduled_batch, many=True).data,
-            'completed_batch': BatchSerializer(completed_batch, many=True).data,
-            'hold_batch': BatchSerializer(hold_batch, many=True).data,
-            'cancelled_batch': BatchSerializer(cancelled_batch, many=True).data,
-        }
+        # ✅ Bulk update batches
+        if updated_batches:
+            Batch.objects.bulk_update(updated_batches, ['status'])
 
-        return Response({'All_Type_Batch': all_batches_data}, status=200)
-    
-# # Serialize trainers before returning response
-        # current_free_trainers = []
-        # for k, v in free_trainers.items():
-        #     for l, m in v.items():
-        #         trainer_data = TrainerSerializer(m[0]).data  # Serialize trainer object
-        #         current_free_trainers.append({
-        #             'start_time': l.start_time,
-        #             'timeslot': l.id,  # Serialize timeslot ID instead of object
-        #             'end_time': l.end_time,
-        #             **trainer_data,  # Unpack serialized trainer data
-        #             'end_date': m[1].end_date if m[1] else 'No past Batch',
-        #             'free_days': (today - m[1].end_date).days if m[1] else 'No past Batch',
-        #             'course': list(Course.objects.filter(trainer=k).values_list('name', flat=True)),
-        #             'week': 'Weekends' if l.id > 4 else 'Weekdays'
-        #         })
-        
-        #         # Trainers who will be available soon
-        # future_available_trainers = Trainer.objects.annotate(
-        #     batch_count=Count('batch', filter=~Q(batch__status='Completed')),
-        #     next_end_date=Min('batch__end_date', filter=~Q(batch__status='Completed'))
-        # ).prefetch_related(
-        #     Prefetch('batch_set', queryset=Batch.objects.filter(~Q(status='Completed')), to_attr='future_batches')
-        # )
+        # ✅ Bulk update student courses
+        for item in student_course_updates:
+            StudentCourse.objects.filter(
+                student__in=item['student_ids'], course=item['course']
+            ).update(status=item['status'])
 
-        # future_availability_trainers = [
-        #     {
-        #         'trainer': trainer,
-        #         'trainer_id': trainer.trainer_id,
-        #         'will_free': batch.end_date,
-        #         'batch_count': trainer.batch_count,
-        #         'batch_id': batch.batch_id,
-        #         'batch_week': batch.preferred_week,
-        #         'free_days': (batch.end_date - today).days,
-        #         'start_time': batch.batch_time.start_time,
-        #         'end_time': batch.batch_time.end_time
-        #     }
-        #     for trainer in future_available_trainers if trainer.batch_count != 0
-        #     for batch in trainer.future_batches if (batch.end_date - today).days >= 0
-        # ]
+        # ✅ Fetch and categorize batches
+        batch_queryset = batches  # all batches already prefetched
 
-        # future_availability_trainers.sort(key=lambda x: x['free_days'])
+        batches_ending_soon = [b for b in batch_queryset if b.status == 'Running' and b.end_date <= upcoming_threshold]
+        running_batch = [b for b in batch_queryset if b.status == 'Running']
+        scheduled_batch = [b for b in batch_queryset if b.status == 'Upcoming']
+        completed_batch = [b for b in batch_queryset if b.status == 'Completed']
+        hold_batch = [b for b in batch_queryset if b.status == 'Hold']
+        cancelled_batch = [b for b in batch_queryset if b.status == 'Cancelled']
+
+        serializer = BatchSerializer(batch_queryset, many=True)
+        data_map = {b['id']: b for b in serializer.data}
+
+        def map_batch_list(queryset):
+            return [data_map[b.id] for b in queryset if b.id in data_map]
+
+        return Response({
+            'All_Type_Batch': {
+                'batches': list(data_map.values()),
+                'running_batch': map_batch_list(running_batch),
+                'batches_ending_soon': map_batch_list(batches_ending_soon),
+                'scheduled_batch': map_batch_list(scheduled_batch),
+                'completed_batch': map_batch_list(completed_batch),
+                'hold_batch': map_batch_list(hold_batch),
+                'cancelled_batch': map_batch_list(cancelled_batch),
+            }
+        }, status=200)
+
+
 
 class BatchCreateAPIView(APIView):
     authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
@@ -135,8 +175,6 @@ class BatchCreateAPIView(APIView):
     def post(self, request):
         if request.user.role not in ['admin', 'coordinator']:
             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
-        
-        print(f"Received Token: {request.auth}")
 
         serializer = BatchCreateSerializer(data=request.data)
         if serializer.is_valid():
@@ -787,4 +825,3 @@ class LogEntryListAPIView(APIView):
 
         serializer = LogEntrySerializer(queryset, many=True)
         return Response(serializer.data)
-

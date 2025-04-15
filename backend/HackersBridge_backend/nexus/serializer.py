@@ -232,37 +232,24 @@ class TimeslotSerializer(serializers.ModelSerializer):
 
 
 class BatchSerializer(serializers.ModelSerializer):
-    student = serializers.PrimaryKeyRelatedField(queryset=Student.objects.all(), many=True)
-
-    # ✅ Correct usage of TimeslotSerializer
-    batch_time_data = TimeslotSerializer(source="batch_time", many=False, read_only=True)
-
-    # Additional Fields
-    course_name = serializers.SerializerMethodField()
-    student_name = serializers.SerializerMethodField()
-    trainer_name = serializers.SerializerMethodField()
-    batch_location = serializers.SerializerMethodField()
+    student = serializers.PrimaryKeyRelatedField(read_only=True, many=True)
+    batch_time_data = TimeslotSerializer(source="batch_time", read_only=True)
 
     class Meta:
         model = Batch
         fields = [
             'id', 'batch_id', 'course', 'trainer', 'student', 'status',
             'start_date', 'end_date', 'mode', 'language', 'preferred_week',
-            'batch_time', 'batch_time_data',  # ✅ Correctly referenced
-            'location', 'course_name', 'student_name', 'trainer_name', 'batch_location'
+            'batch_time', 'batch_time_data', 'location'
         ]
 
-    def get_student_name(self, obj):
-        return [student.name for student in obj.student.all()]
-    
-    def get_course_name(self, obj):
-        return obj.course.name if obj.course else None
-    
-    def get_trainer_name(self, obj):
-        return obj.trainer.name if obj.trainer else None
-    
-    def get_batch_location(self, obj):
-        return obj.location.locality if obj.location else None
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep['course_name'] = instance.course.name if instance.course else None
+        rep['trainer_name'] = instance.trainer.name if instance.trainer else None
+        rep['batch_location'] = instance.location.locality if instance.location else None
+        rep['student_name'] = [s.name for s in instance.student.all()]
+        return rep
 
     def create(self, validated_data):
         students = validated_data.pop('student', [])  # Extract students list
