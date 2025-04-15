@@ -435,7 +435,7 @@ const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
                                     { value: '11', label: '07:00 - 08:30 - Weekdays' },
                                     { value: '12', label: '05:00 - 07:00 - Weekdays' },
                                     { value: '13', label: '08:00 - 09:00 - Weekdays' },
-                                    { value: '14', label: '12:00 - 02:00 - Weekends' },
+                                    { value: '14', label: '03:00 - 06:30 - Weekends' },
                                     { value: '15', label: '07:00 - 08:30 - Weekdays' },
                                 ]}
                             />

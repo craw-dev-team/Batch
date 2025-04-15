@@ -5,6 +5,7 @@ import { SyncOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { useCourseForm } from '../Coursecontext/CourseFormContext';
 import BASE_URL from '../../../ip/Ip';
+import { useAuth } from '../AuthContext/AuthContext';
 
 
 
@@ -16,7 +17,7 @@ const CreateCourseForm = ({ isOpen, onClose, courseData }) => {
 
     const { courseFormData, setCourseFormData, errors, setErrors, resetCourseForm } = useCourseForm();
     const [ loading, setLoading] = useState(false);
-
+    const { token } = useAuth();
 
     // Reset form data when courseData changes (for Add or Edit mode)
     useEffect(() => {
@@ -74,13 +75,13 @@ const CreateCourseForm = ({ isOpen, onClose, courseData }) => {
                 if (courseData && courseData.id) {
                 // Update existing course (PUT)
                 response = await axios.put(`${BASE_URL}/api/courses/edit/${courseData.id}/`, payload, {
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` }
                 });
                 successMessage = "Course updated successfully!";
                 } else {
                     // Add new course (POST)
                     response = await axios.post(`${BASE_URL}/api/courses/add/`, payload, {
-                        headers: { 'Content-Type': 'application/json' }
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` }
                     });
                     successMessage = "Course added successfully!";
                 }

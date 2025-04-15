@@ -287,7 +287,7 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
                                
                                    // Weekends
                                    { value: '5', label: <div style={{ backgroundColor: '#fffbe6' }}>10:00 - 02:00 - Weekends</div> },
-                                   { value: '14', label: <div style={{ backgroundColor: '#fffbe6' }}>12:00 - 02:00 - Weekends</div> },
+                                   { value: '14', label: <div style={{ backgroundColor: '#fffbe6' }}>03:00 - 06:30 - Weekends</div> },
                                
                                    // Weekdays
                                    { value: '10', label: <div style={{ backgroundColor: '#c3f3fa' }}>12:30 - 02:30 - Weekdays</div> },
