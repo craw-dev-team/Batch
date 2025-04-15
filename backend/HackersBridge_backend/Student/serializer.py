@@ -6,7 +6,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.authtoken.models import Token
 from nexus.models import Course, Book
 from datetime import date
-
+from functools import lru_cache
 
 User = get_user_model()  # ✅ Dynamically fetch the User model
 
@@ -138,11 +138,80 @@ class StudentNoteSerializer(serializers.ModelSerializer):
 
 
 
+# class StudentSerializer(serializers.ModelSerializer):
+#     courses = serializers.PrimaryKeyRelatedField(queryset=Course.objects.all(), many=True)
+#     course_counsellor_name = serializers.CharField(source='course_counsellor.name', read_only=True)
+#     support_coordinator_name = serializers.CharField(source='support_coordinator.name', read_only=True)
+#     # courses_names = serializers.ListField(child=serializers.CharField(), read_only=True)
+#     courses_names = serializers.SerializerMethodField()
+#     complete_course_name = serializers.SerializerMethodField()
+#     complete_course_id = serializers.SerializerMethodField()
+
+#     complete_course = serializers.ListField(
+#         child=serializers.PrimaryKeyRelatedField(queryset=Course.objects.all()),
+#         write_only=True,
+#         required=False
+#     )
+
+#     notes = StudentNoteSerializer(many=True, read_only=True)
+
+#     class Meta:
+#         model = Student
+#         fields = [
+#             'id', 'enrollment_no', 'date_of_joining', 'name', 'email',
+#             'phone', 'alternate_phone', 'address', 'language', 'guardian_name',
+#             'guardian_no', 'courses', 'mode', 'location', 'preferred_week',
+#             'status', 'course_counsellor', 'support_coordinator', 'dob',
+#             'last_update_user', 'student_assing_by', 'last_update_datetime',
+#             'course_counsellor_name', 'support_coordinator_name', 'courses_names',
+#             'complete_course', 'complete_course_id', 'complete_course_name',
+#             'notes'
+#         ]
+
+#     # def get_course_counsellor_name(self, obj):
+#     #     return getattr(obj.course_counsellor, 'name', None)
+
+#     # def get_support_coordinator_name(self, obj):
+#     #     return getattr(obj.support_coordinator, 'name', None)
+
+#     # @lru_cache(maxsize=None)
+#     # def get_courses_names(self, obj):
+#     #     return list(obj.courses.values_list('name', flat=True))
+
+#     # def get_courses_names(self, obj):
+#     #     return list(obj.courses.values_list('name', flat=True))
+
+#     def to_representation(self, instance):
+#         rep = super().to_representation(instance)
+
+#         # Add courses_names efficiently from prefetched data
+#         rep['courses_names'] = [course.name for course in instance.courses.all()]
+
+#         return rep
+
+#     def get_complete_course_name(self, obj):
+#         if hasattr(obj, 'completed_courses'):
+#             return [sc.course.name for sc in obj.completed_courses]
+#         return []
+
+#     def get_complete_course_id(self, obj):
+#         if hasattr(obj, 'completed_courses'):
+#             return [sc.course.id for sc in obj.completed_courses]
+#         return []
+
+
+class SimpleStudentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Student
+        fields = ['id', 'name', 'email', 'phone', 'enrollment_no']
+
+
+
 class StudentSerializer(serializers.ModelSerializer):
     courses = serializers.PrimaryKeyRelatedField(queryset=Course.objects.all(), many=True)
-    course_counsellor_name = serializers.SerializerMethodField()
-    support_coordinator_name = serializers.SerializerMethodField()
-    courses_names = serializers.SerializerMethodField()
+    course_counsellor_name = serializers.CharField(source='course_counsellor.name', read_only=True)
+    support_coordinator_name = serializers.CharField(source='support_coordinator.name', read_only=True)
+
     complete_course_name = serializers.SerializerMethodField()
     complete_course_id = serializers.SerializerMethodField()
 
@@ -162,19 +231,18 @@ class StudentSerializer(serializers.ModelSerializer):
             'guardian_no', 'courses', 'mode', 'location', 'preferred_week',
             'status', 'course_counsellor', 'support_coordinator', 'dob',
             'last_update_user', 'student_assing_by', 'last_update_datetime',
-            'course_counsellor_name', 'support_coordinator_name', 'courses_names',
+            'course_counsellor_name', 'support_coordinator_name',
             'complete_course', 'complete_course_id', 'complete_course_name',
             'notes'
         ]
 
-    def get_course_counsellor_name(self, obj):
-        return getattr(obj.course_counsellor, 'name', None)
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
 
-    def get_support_coordinator_name(self, obj):
-        return getattr(obj.support_coordinator, 'name', None)
+        # Inject fast courses_names here
+        rep['courses_names'] = [course.name for course in instance.courses.all()]
 
-    def get_courses_names(self, obj):
-        return list(obj.courses.values_list('name', flat=True))
+        return rep
 
     def get_complete_course_name(self, obj):
         if hasattr(obj, 'completed_courses'):
@@ -185,7 +253,7 @@ class StudentSerializer(serializers.ModelSerializer):
         if hasattr(obj, 'completed_courses'):
             return [sc.course.id for sc in obj.completed_courses]
         return []
-
+    
     def create(self, validated_data):
         temp_password = get_random_string(length=8)
 

@@ -1,14 +1,14 @@
 import os
-from rest_framework import status
+from rest_framework import status, filters
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from .models import Student, Installment, FeesRecords, StudentCourse, StudentNotes
-from .serializer import StudentSerializer, InstallmentSerializer, StudentCourseSerializer, StudentBookAllotmentSerializer
+from .serializer import StudentSerializer, InstallmentSerializer, StudentCourseSerializer, StudentBookAllotmentSerializer, SimpleStudentSerializer
 from nexus.models import Batch, Timeslot, Course
-from django.db.models import Q
+from django.db.models import Count, Q, Exists, OuterRef
 from rest_framework.authtoken.models import Token
 from nexus.serializer import BatchStudentAssignment, LogEntrySerializer
 from django.utils.timezone import now
@@ -22,6 +22,7 @@ from django.forms.models import model_to_dict
 from django.utils.timezone import now
 import json
 import uuid
+from rest_framework.pagination import PageNumberPagination
 from django.http import HttpResponse
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
@@ -29,10 +30,18 @@ from datetime import date
 # from django.contrib.auth.models import User
 User = get_user_model()
 from django.db.models import Prefetch
+from rest_framework.generics import ListAPIView
+
+# This is student list pagination 
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 30
+    page_size_query_param = 'page_size'
+    max_page_size = 50
 
 
-# ✅ Student List API (Only for Coordinators)
-class StudentListView(APIView):
+
+# ✅ Student List API (Only for Batch List)
+class ALLStudentListView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
@@ -40,10 +49,29 @@ class StudentListView(APIView):
         if request.user.role not in ['admin', 'coordinator']:
             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
 
+        # Only fetch basic student data needed for SimpleStudentSerializer
+        students = Student.objects.only('id', 'name', 'email', 'phone', 'enrollment_no')
+
+        serializer = SimpleStudentSerializer(students, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+# This for student data by paginations
+class StudentListView(ListAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    serializer_class = StudentSerializer
+    pagination_class = StandardResultsSetPagination
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['name', 'phone', 'alternate_phone', 'guardian_no', 'email', 'enrollment_no']
+
+    def get_queryset(self):
+        if self.request.user.role not in ['admin', 'coordinator']:
+            return Student.objects.none()
+        
         completed_courses_prefetch = Prefetch(
-            'studentcourse_set',
-            queryset=StudentCourse.objects.select_related('course')
-                .filter(status='Completed'),
+            'studentcourse_set', 
+            queryset=StudentCourse.objects.select_related('course').filter(status='Completed'),
             to_attr='completed_courses'
         )
 
@@ -52,94 +80,147 @@ class StudentListView(APIView):
             queryset=StudentNotes.objects.select_related('create_by')
         )
 
-        students = Student.objects.select_related(
-            'course_counsellor', 'support_coordinator', 'location',
-            'last_update_user', 'student_assing_by', 'installment'
-        ).prefetch_related(
-            'courses',
-            completed_courses_prefetch,
-            notes_prefetch
-        )
+        student_data = Student.objects.select_related(
+            'course_counsellor', 'support_coordinator', 'location'
+                ).prefetch_related(
+                    'courses',
+                    completed_courses_prefetch,
+                    notes_prefetch
+                ).order_by('-last_update_datetime')
+        return student_data
 
-        serializer = StudentSerializer(students, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+
+
+# class StudentListView(ListAPIView):
+#     authentication_classes = [TokenAuthentication]
+#     permission_classes = [IsAuthenticated]
+#     serializer_class = StudentSerializer
+#     pagination_class = StandardResultsSetPagination
+#     filter_backends = [filters.SearchFilter]
+#     search_fields = ['name', 'phone', 'alternate_phone', 'guardian_no', 'email', 'enrollment_no']
+
+#     def get_queryset(self):
+#         if self.request.user.role not in ['admin', 'coordinator']:
+#             return Student.objects.none()
+        
+#         completed_courses_prefetch = Prefetch(
+#             'studentcourse_set', 
+#             queryset=StudentCourse.objects.select_related('course').filter(status='Completed'),
+#             to_attr='completed_courses'
+#         )
+
+#         notes_prefetch = Prefetch(
+#             'notes',
+#             queryset=StudentNotes.objects.select_related('create_by')
+#         )
+
+#         student_data = Student.objects.select_related(
+#                         'course_counsellor', 'support_coordinator', 'location'
+#                     ).only(
+#                         'id', 'name', 'email', 'phone',  'enrollment_no',
+#                         'course_counsellor__name', 'support_coordinator__name', 'location__locality',
+#                         'dob', 'preferred_week',
+#                         'language', 'mode', 'status', 'date_of_joining'
+#                     ).prefetch_related(
+#                         'courses',
+#                         completed_courses_prefetch,
+#                         notes_prefetch
+#                     ).order_by('-last_update_datetime')
+#         return student_data
+
+
 
 class StudentCrawListView(APIView):
-    authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
+    authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
-    
+
     def get(self, request, *args, **kwargs):
         if request.user.role not in ['admin', 'coordinator']:
             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
-        
-        today = now().date()  # ✅ Get today's date
-        
-        total_students = Student.objects.count()
-        
-        active_students = Student.objects.filter(status='Active')
-        active_students_count = active_students.count()
-        
-        inactive_students = Student.objects.exclude(status='Active')
-        inactive_students_count = inactive_students.count()
-        
-        enrolled_students = Student.objects.filter(
-            id__in=BatchStudentAssignment.objects.values('student')
-        ).distinct()
-        enrolled_students_count = enrolled_students.count()
-        
-        not_enrolled_students = Student.objects.exclude(
-            id__in=BatchStudentAssignment.objects.values('student')
+
+        today = now().date()
+
+        # ✅ Use subquery to check if student is enrolled in a batch
+        enrolled_subquery = BatchStudentAssignment.objects.filter(student=OuterRef('pk'))
+
+        # ✅ Optimized base queryset
+        base_qs = Student.objects.only(
+            'id', 'name', 'email', 'phone', 'enrollment_no', 'status', 'date_of_joining',
+            'course_counsellor_id', 'support_coordinator_id', 'location_id'
+        ).select_related('course_counsellor', 'support_coordinator', 'location')
+
+        # ✅ Annotate enrollment info
+        students = base_qs.annotate(
+            is_enrolled=Exists(enrolled_subquery),
         )
-        not_enrolled_students_count = not_enrolled_students.count()
 
-        # ✅ Filter students added today
-        today_students = Student.objects.filter(date_of_joining=today)
-        today_students_count = today_students.count()
+        student_list = list(students)
 
-        # ✅ Serialize all categories
-        active_students_serializer = StudentSerializer(active_students, many=True)
-        inactive_students_serializer = StudentSerializer(inactive_students, many=True)
-        enrolled_students_serializer = StudentSerializer(enrolled_students, many=True)
-        not_enrolled_students_serializer = StudentSerializer(not_enrolled_students, many=True)
-        today_serializer = StudentSerializer(today_students, many=True)  # ✅ Today's students
+        # ✅ Category filtering
+        total_students = len(student_list)
+        active_students = [s for s in student_list if s.status == 'Active']
+        inactive_students = [s for s in student_list if s.status != 'Active']
+        enrolled_students = [s for s in student_list if s.is_enrolled]
+        today_students = [s for s in student_list if s.date_of_joining == today]
 
-        # ✅ Return the response in a proper dictionary format
+        # ✅ NEW LOGIC: Free students = Not Started courses and no Ongoing courses
+        not_started_ids = StudentCourse.objects.filter(
+            status="Not Started"
+        ).values_list('student', flat=True).distinct()
+
+        ongoing_ids = StudentCourse.objects.filter(
+            student_id__in=not_started_ids,
+            status="Ongoing"
+        ).values_list('student', flat=True).distinct()
+
+        free_students = Student.objects.filter(
+            id__in=not_started_ids
+        ).exclude(id__in=ongoing_ids)
+
+        # ✅ Serializers
+        active_serializer = StudentSerializer(active_students, many=True)
+        inactive_serializer = StudentSerializer(inactive_students, many=True)
+        enrolled_serializer = StudentSerializer(enrolled_students, many=True)
+        today_serializer = StudentSerializer(today_students, many=True)
+        not_enrolled_serializer = StudentSerializer(free_students, many=True)  # 🆕 Renamed
+
         return Response({
             "total_student": total_students,
-            "active_student_count": active_students_count,
-            "inactive_student_count": inactive_students_count,
-            "enrolled_student_count": enrolled_students_count,
-            "not_enrolled_student_count": not_enrolled_students_count,
-            "today_added_student_count": today_students_count,
+            "active_student_count": len(active_students),
+            "inactive_student_count": len(inactive_students),
+            "enrolled_student_count": len(enrolled_students),
+            "not_enrolled_student_count": free_students.count(),
+            "today_added_student_count": len(today_students),
 
-            # ✅ Lists of students
-            "active_students": active_students_serializer.data,
-            "inactive_students": inactive_students_serializer.data,
-            "enrolled_students": enrolled_students_serializer.data,
-            "not_enrolled_students": not_enrolled_students_serializer.data,
+            "active_students": active_serializer.data,
+            "inactive_students": inactive_serializer.data,
+            "enrolled_students": enrolled_serializer.data,
+            "not_enrolled_students": not_enrolled_serializer.data,  # 🆕 This is now the "free students"
             "today_added_students": today_serializer.data,
         })
 
 
 
 
-class FreeStudentListView(APIView):
-    def get(self, request):
+# class FreeStudentListView(APIView):
+#     def get(self, request):
 
-        # Fetching those student id how have any Not-start course
-        students_ids = StudentCourse.objects.filter(status="Not Started").values_list('student', flat=True).distinct()
+#         # Fetching those student id how have any Not-start course
+#         students_ids = StudentCourse.objects.filter(status="Not Started").values_list('student', flat=True).distinct()
 
-        # Fetching student list using student id
-        students = Student.objects.filter(id__in=students_ids)
+#         # Fetching student list using student id
+#         students = Student.objects.filter(id__in=students_ids)
 
-        # Filter for removing dose student who have any ongoing course
-        student_ongoing = StudentCourse.objects.filter(student__in=students, status="Ongoing").values_list('student', flat=True).distinct()
+#         # Filter for removing dose student who have any ongoing course
+#         student_ongoing = StudentCourse.objects.filter(student__in=students, status="Ongoing").values_list('student', flat=True).distinct()
 
-        student = Student.objects.filter(id__in=students_ids).exclude(id__in=student_ongoing)
+#         student = Student.objects.filter(id__in=students_ids).exclude(id__in=student_ongoing)
 
-        serializer = StudentSerializer(student, many=True)
+#         serializer = StudentSerializer(student, many=True)
 
-        return Response(serializer.data)
+#         return Response(serializer.data)
 
 
 
@@ -472,117 +553,93 @@ def email_open_tracker(request, id):
 
 
 class GenerateCertificateAPIView(APIView):
-    authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
-    permission_classes = [IsAuthenticated]
-
-    def patch(self, request, id, *args, **kwargs):
-        if request.user.role not in ['admin', 'coordinator']:
-            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
-
-        student_course = get_object_or_404(StudentCourse, id=id)
-
-        # Ensure course is marked as "Completed"
-        if student_course.status != "Completed":
-            return Response({'error': 'Certificate can only be generated for completed courses'}, status=status.HTTP_400_BAD_REQUEST)
-
-        serializer = StudentCourseSerializer(student_course, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()  # Save partial update first
-
-            # Fetch necessary details
-            student = student_course.student
-            course = student_course.course
-            certificate_no = student.enrollment_no
-            certificate_date = student_course.certificate_date
-
-            # Generate certificate
-            file_path = generate_certificate(course.name, student.name, certificate_no, certificate_date)
-
-            if os.path.exists(file_path):
-                # ✅ Update student_certificate_allotment to True
-                student_course.student_certificate_allotment = True
-                student_course.certificate_issued_at = now() 
-                student_course.save(update_fields=['student_certificate_allotment', 'certificate_issued_at'])
-
-                # ✅ Log certificate generation
-                LogEntry.objects.create(
-                    content_type=ContentType.objects.get_for_model(StudentCourse),
-                    cid=str(uuid.uuid4()),  # ✅ Generate unique correlation ID
-                    object_pk=student_course.id,
-                    object_id=student_course.id,
-                    object_repr=f"Certificate Generated - Student: {student.name} | Course: {course.name}",
-                    action=LogEntry.Action.CREATE,
-                    changes=f"Generated Certificate for Student: {student.name}, Course: {course.name}, Certificate No: {certificate_no}",
-                    actor=request.user,
-                    serialized_data=json.dumps(model_to_dict(student_course), default=str),  # ✅ JSON serialized data
-                    changes_text=f"Certificate generated for {student.name} in {course.name}.",
-                    additional_data="Student",
-                    timestamp=now()
-                )
-
-
-#                 # 📧 Send Email Notification
-
-#                 subject = f"🎉 Congratulations, {student.name}! Your {course.name} Certificate is Here!"
-
-#                 pixel_url = f"http://192.168.1.18:8000/api/email-tracker/{student_course.id}/"  # ✅ Fixed the pixel URL
-
-#                 html_message = f"""
-# <!DOCTYPE html>
-# <html>
-# <head>
-#     <meta charset="UTF-8">
-#     <title>Certificate Issued</title>
-# </head>
-# <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-#     <p>Dear <strong>{student.name}</strong>,</p>
-
-#     <p>We’re thrilled to congratulate you on successfully completing the <strong>{course.name}</strong> course at <strong>Craw Cyber Security</strong>!</p>
-
-#     <p>Your dedication and hard work have paid off, and we are delighted to issue your official certificate.</p>
-
-#     <p>
-#         <strong>🏷️ Student Enrollment Number:</strong> {student.enrollment_no}<br>
-#         <strong>📅 Date of Issue:</strong> {certificate_date}
-#     </p>
-
-#     <p>Your certificate is attached to this email—feel free to showcase it in your portfolio, LinkedIn profile, or anywhere that highlights your achievements.</p>
-
-#     <p>This milestone is just the beginning of your journey in cybersecurity, and we’re excited to see where your skills take you next!</p>
-
-#     <p>If you have any questions or need further assistance, don’t hesitate to reach out.</p>
-
-#     <p>🚀 Keep learning, keep growing, and keep securing the digital world!</p>
-
-#     <p>Best regards,<br>
-#     🚀 Craw Cyber Security Team<br>
-#     📧 <a href="mailto:training@craw.in">training@craw.in</a><br>
-#     📞 +91 9513805401<br>
-#     🌐 <a href="https://www.craw.in/">https://www.craw.in/</a>
-#     </p>
-
-#     <img src="{pixel_url}" width="1" height="1" alt="" style="display: none;" />
-# </body>
-# </html>
-# """
-
-#                 from_email = "CRAW SECURITY CERTIFICATE <training@craw.in>"
-#                 try:
-#                     email = EmailMessage(subject, html_message, from_email, [student.email])
-#                     email.content_subtype = "html"  # ✅ Make it HTML email
-#                     email.attach_file(file_path)
-#                     email.send()
-#                 except Exception as e:
-#                     return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-                # ✅ Fix: Open file WITHOUT closing it prematurely
-                certificate_file = open(file_path, 'rb')
-                return FileResponse(certificate_file, content_type='application/pdf')
-
-            return Response({'error': 'Certificate generation failed'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+     authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
+     permission_classes = [IsAuthenticated]
+ 
+     def patch(self, request, id, *args, **kwargs):
+         if request.user.role not in ['admin', 'coordinator']:
+             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+ 
+         student_course = get_object_or_404(StudentCourse, id=id)
+ 
+         # Ensure course is marked as "Completed"
+         if student_course.status != "Completed":
+             return Response({'error': 'Certificate can only be generated for completed courses'}, status=status.HTTP_400_BAD_REQUEST)
+ 
+         serializer = StudentCourseSerializer(student_course, data=request.data, partial=True)
+         if serializer.is_valid():
+             serializer.save()  # Save partial update first
+ 
+             # Fetch necessary details
+             student = student_course.student
+             course = student_course.course
+             certificate_no = student.enrollment_no
+             certificate_date = student_course.certificate_date
+ 
+             # Generate certificate
+             file_path = generate_certificate(course.name, student.name, certificate_no, certificate_date)
+ 
+             if os.path.exists(file_path):
+                 # ✅ Update student_certificate_allotment to True
+                 student_course.student_certificate_allotment = True
+                 student_course.save(update_fields=['student_certificate_allotment'])
+ 
+                 # ✅ Log certificate generation
+                 LogEntry.objects.create(
+                     content_type=ContentType.objects.get_for_model(StudentCourse),
+                     cid=str(uuid.uuid4()),  # ✅ Generate unique correlation ID
+                     object_pk=student_course.id,
+                     object_id=student_course.id,
+                     object_repr=f"Certificate Generated - Student: {student.name} | Course: {course.name}",
+                     action=LogEntry.Action.CREATE,
+                     changes=f"Generated Certificate for Student: {student.name}, Course: {course.name}, Certificate No: {certificate_no}",
+                     actor=request.user,
+                     serialized_data=json.dumps(model_to_dict(student_course), default=str),  # ✅ JSON serialized data
+                     changes_text=f"Certificate generated for {student.name} in {course.name}.",
+                     additional_data="Student",
+                     timestamp=now()
+                 )
+ 
+                 # 📧 Send Email Notification
+                 subject = f"🎉 Congratulations, {student.name}! Your {course.name} Certificate is Here!"
+                 message = f"""
+ Dear {student.name},
+ 
+ We’re thrilled to congratulate you on successfully completing the {course.name} course at Craw Cyber Security! 
+ Your dedication and hard work have paid off, and we are delighted to issue your official certificate.
+ 
+ 🏷️ Student Enrollment Number: {student.enrollment_no}
+ 📅 Date of Issue: {certificate_date}
+ 
+ Your certificate is attached to this email—feel free to showcase it in your portfolio, LinkedIn profile, or anywhere that highlights your achievements. 
+ This milestone is just the beginning of your journey in cybersecurity, and we’re excited to see where your skills take you next!
+ 
+ If you have any questions or need further assistance, don’t hesitate to reach out.
+ 
+ 🚀 Keep learning, keep growing, and keep securing the digital world!
+ 
+ Best regards,  
+ 🚀 Craw Cyber Security Team  
+ 📧 training@craw.in  
+ 📞 +919513805401  
+ 🌐 https://www.craw.in/
+                 """
+ 
+                 from_email = "CRAW SECURITY CERTIFICATE <training@craw.in>"
+                 try:
+                     email = EmailMessage(subject, message, from_email, [student.email])
+                     email.attach_file(file_path)  # Attach generated certificate PDF
+                     email.send()
+                 except Exception as e:
+                     return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+ 
+                 # ✅ Fix: Open file WITHOUT closing it prematurely
+                 certificate_file = open(file_path, 'rb')
+                 return FileResponse(certificate_file, content_type='application/pdf')
+ 
+             return Response({'error': 'Certificate generation failed'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+ 
+         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 
