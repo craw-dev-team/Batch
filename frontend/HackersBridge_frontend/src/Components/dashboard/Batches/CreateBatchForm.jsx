@@ -4,7 +4,7 @@ import { SyncOutlined, CopyOutlined, RightOutlined  } from '@ant-design/icons';
 import { useBatchForm } from "../Batchcontext/BatchFormContext";
 import { useCourseForm } from "../Coursecontext/CourseFormContext";
 import { useTrainerForm } from "../Trainercontext/TrainerFormContext";
-import { useStudentForm } from "../StudentContext/StudentFormContext";
+import { useStudentForm } from "../Studentcontext/StudentFormContext";
 import axios from "axios";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
@@ -26,7 +26,7 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
     const { batchFormData, setBatchFormData, errors, setErrors, resetBatchForm, fetchBatches } = useBatchForm();
     const { coursesData, fetchCourses } = useCourseForm();
     const { trainerData, fetchTrainers } = useTrainerForm();
-    const { studentData, fetchStudents } = useStudentForm();
+    const { studentData, fetchStudents, allStudentData, fetchAllStudent } = useStudentForm();
     const { token } = useAuth();
     const [ loading, setLoading ] = useState(false);
 
@@ -36,8 +36,11 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
         fetchCourses();
         fetchTrainers();
         fetchStudents();
+        fetchAllStudent();        
         
         if (selectedBatchData) {
+            console.log(selectedBatchData);
+            
             setBatchFormData({
                 batchId: selectedBatchData.batch_id || "",
                 batchTime: selectedBatchData?.batch_time_data?.id || null, 
@@ -120,7 +123,7 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
                         // profile_picture: studentFormData.studentProfilePicture,
                     };
         
-                    // console.log("Final Payload:", JSON.stringify(payload, null, 2));
+                    console.log("Final Payload:", JSON.stringify(payload, null, 2));
         
         try {
             setLoading(true); // Start loading
@@ -448,11 +451,14 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
                                 filterOption={(input, option) =>
                                     option.label.toLowerCase().includes(input.toLowerCase()) // Search filter
                                 }
-                                options={studentData.map(student => ({
-                                    value: student.id,
-                                    label: student.name +" - "+ student.phone,
-                                    phone:  student.phone,
-                                }))}
+                                options={Array.isArray(allStudentData) && allStudentData.length > 0 
+                                    ? allStudentData.map(student => ({
+                                        value: student.id,
+                                        label: `${student.name} - ${student.phone}`, // Show name and phone
+                                        phone: student.phone, // Store phone if necessary
+                                      }))
+                                    : []  // Fallback to an empty array if studentData is empty or not loaded
+                                  }
                                 optionRender={(option) => (
                                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
                                         {/* Left-aligned student name & phone */}

@@ -11,7 +11,7 @@ import SearchBar from "./Components/common/Searchbar";
 import { useEffect, useState } from "react";
 import { CourseFormProvider } from "./Components/dashboard/Coursecontext/CourseFormContext";
 import { BatchFormProvider } from "./Components/dashboard/Batchcontext/BatchFormContext";
-import { StudentFormProvider } from "./Components/dashboard/StudentContext/StudentFormContext";
+import { StudentFormProvider } from "./Components/dashboard/Studentcontext/StudentFormContext";
 import { TrainerFormProvider } from "./Components/dashboard/Trainercontext/TrainerFormContext";
 import { CoordinatorFormProvider } from "./Components/dashboard/AddDetails/Coordinator/CoordinatorContext";
 import { CounsellorFormProvider } from "./Components/dashboard/AddDetails/Counsellor/CounsellorContext";

@@ -34,15 +34,16 @@ const StudentFormProvider = ({ children }) => {
     const [studentData, setStudentData] = useState([]);
     const [loading, setLoading] = useState(false);  // Loading state to manage fetch state
     const [errors, setErrors] = useState({});
-
+    
     const [studentsCounts, setStudentsCounts] = useState();
+    const [allStudentData, setAllStudentData] = useState([]);
     
     // Function to reset form
     const resetStudentForm = () => {
         setStudentFormData(initialFormData);
     };
 
-    const fetchStudents = async () => {
+    const fetchStudents = async ({ page = 1, pageSize = 30, search = '' } = {}) => {
         if (loading) return;  // Prevent multiple fetches at the same time
 
         const token = localStorage.getItem('token');
@@ -54,7 +55,13 @@ const StudentFormProvider = ({ children }) => {
         setLoading(true);  // Set loading state
         try {
             const response = await axios.get(`${BASE_URL}/api/students/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` },
+             params: {
+                page,
+                page_size: pageSize,
+                search,
+            },
+            }
             );
             const data = response?.data;
             // console.log(data);          
@@ -91,9 +98,40 @@ const StudentFormProvider = ({ children }) => {
         const response = await axios.get(`${BASE_URL}/api/studentscraw/`, 
             { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
         );
-        const data = response?.data;
+        const data = response?.data;        
         
         setStudentsCounts(prevData => 
+            JSON.stringify(prevData) !== JSON.stringify(data) ? data : prevData
+        );
+
+        // console.log('Student Count Data ', data)
+    } catch (error) {
+      console.error('Error fetching Batches Data', error);
+    } finally {
+      setLoading(false);
+    }
+};
+
+
+// FETCH ALL STUDENTS
+const fetchAllStudent = async () => {
+    if (loading) return;
+    
+    const token = localStorage.getItem('token');
+    if (!token) {
+        console.error("No token found, user might be logged out.");
+        return;
+    };
+
+    
+    setLoading(true);
+    try {
+        const response = await axios.get(`${BASE_URL}/api/allstudents/`, 
+            { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+        );
+        const data = response?.data;        
+        
+        setAllStudentData(prevData => 
             JSON.stringify(prevData) !== JSON.stringify(data) ? data : prevData
         );
 
@@ -108,7 +146,7 @@ const StudentFormProvider = ({ children }) => {
     
 
     return (
-        <StudentFormContext.Provider value={{ studentFormData, loading, setStudentFormData, errors, setErrors, resetStudentForm, studentData, setStudentData, fetchStudents, studentsCounts, fetchStudentCount  }}>
+        <StudentFormContext.Provider value={{ studentFormData, loading, setStudentFormData, errors, setErrors, resetStudentForm, studentData, setStudentData, fetchStudents, studentsCounts, fetchStudentCount, allStudentData, fetchAllStudent  }}>
             {children}
         </StudentFormContext.Provider>
     );
