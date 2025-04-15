@@ -44,12 +44,20 @@ const Batches = () => {
     };
 
 
+    // useEffect(() => {
+    //     // if (!batchData) {  // Only fetch if batchData is empty
+    //         fetchBatches();
+    //     // }
+    // }, [isModalOpen, isDeleted]);
+     
     useEffect(() => {
-        if (!batchData) {  // Only fetch if batchData is empty
-            fetchBatches();
+        if (!isModalOpen || !batchData || isDeleted) {
+          fetchBatches();
+          if (isDeleted) setIsDeleted(false); // ✅ reset flag after fetch
         }
-    }, [isModalOpen, isDeleted, batchData]); 
-    
+      }, [isModalOpen, isDeleted]);
+      
+      
 
    // Store the original course list when data is first loaded
    useEffect(() => {
@@ -194,6 +202,7 @@ const Batches = () => {
             if (response.status >= 200 && response.status < 300) {
                 message.success("Student added successfully!");
                 setAddStudentDropdown(false); // Close dropdown on success
+                fetchBatches();
             } else {
                 message.error("Student not added.");
             }
@@ -447,26 +456,26 @@ const Batches = () => {
                 onClick: ({ key }) => handleSort(key, "location"),
             };
 
-            const courseMenu = {
-                items: [
-                    ...(coursesData && coursesData.length > 0
-                        ? coursesData.map(course => ({
-                            key: String(course.id), // Ensure ID is a string for Dropdown compatibility
-                            label: (
-                                <span style={{ fontWeight: Number(course.id) === Number(sortByCourse) ? "bold" : "normal" }}>
-                                    {course.name}
-                                </span>
-                            ),
-                        }))
-                        : [
-                            { key: "no-data", label: <span style={{ color: "gray" }}>No courses available</span>, disabled: true }
-                        ]
-                    ),
-                    { type: "divider" },
-                    { key: "clear", label: <span style={{ color: "red", fontWeight: "bold" }}>Clear Filter</span> },
-                ],
-                onClick: ({ key }) => handleSort(Number(key), "course"),
-            };
+            // const courseMenu = {
+            //     items: [
+            //         ...(coursesData && coursesData.length > 0
+            //             ? coursesData.map(course => ({
+            //                 key: String(course.id), // Ensure ID is a string for Dropdown compatibility
+            //                 label: (
+            //                     <span style={{ fontWeight: Number(course.id) === Number(sortByCourse) ? "bold" : "normal" }}>
+            //                         {course.name}
+            //                     </span>
+            //                 ),
+            //             }))
+            //             : [
+            //                 { key: "no-data", label: <span style={{ color: "gray" }}>No courses available</span>, disabled: true }
+            //             ]
+            //         ),
+            //         { type: "divider" },
+            //         { key: "clear", label: <span style={{ color: "red", fontWeight: "bold" }}>Clear Filter</span> },
+            //     ],
+            //     onClick: ({ key }) => handleSort(Number(key), "course"),
+            // };
             
                         
 
@@ -547,7 +556,7 @@ const Batches = () => {
         <>
 <div className="w-auto pt-4 px-2 mt-14 darkmode">
     <BatchCards handleTabClick={handleTabClick} activeTab={activeTab}/>
-    <div className="relative w-full h-full shadow-md sm:rounded-lg darkmode border border-gray-50">
+    <div className="relative w-full h-full shadow-md sm:rounded-lg border border-gray-50r">
             <div className="w-full px-4 py-3 text flex justify-between font-semibold ">
                 <h1>All Batches</h1>
                 <div>
@@ -560,7 +569,7 @@ const Batches = () => {
                 <div className="flex gap-x-4 h-auto flex-wrap justify-between">
                     
                     <div className="relative ">
-                            <Badge count={countBatchesByType.running ?? 0} overflowCount={999} size="small">
+                            <Badge count={countBatchesByType?.running ?? 0} overflowCount={999} size="small">
                         <button
                             onClick={() => handleTabClick("running")}
                             className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200
@@ -717,33 +726,41 @@ const Batches = () => {
                     <th scope="col" className="px-3 py-3 md:px-1">
                         Mode 
                         <Tooltip title="Sort by Mode" placement="top">
-                        <Dropdown menu={modeMenu} >
-                            <Button type="text" icon={<FilterOutlined  style={{ color: sortByMode ? "blue" : "black" }} className="w-3"/>} />
-                        </Dropdown>
+                        <span>
+                            <Dropdown menu={modeMenu} >
+                                <Button type="text" icon={<FilterOutlined  style={{ color: sortByMode ? "blue" : "black" }} className="w-3"/>} />
+                            </Dropdown>
+                        </span>
                         </Tooltip>
                     </th>
                     <th scope="col" className="px-3 py-3 md:px-1">
                         Language 
                         <Tooltip title="Sort by Language" placement="top">
-                        <Dropdown menu={languageMenu} >
-                            <Button type="text" icon={<FilterOutlined  style={{ color: sortByLanguage ? "blue" : "black" }} className="w-3"/>} />
-                        </Dropdown>
+                        <span>
+                            <Dropdown menu={languageMenu} >
+                                <Button type="text" icon={<FilterOutlined  style={{ color: sortByLanguage ? "blue" : "black" }} className="w-3"/>} />
+                            </Dropdown>
+                        </span>
                         </Tooltip>
                     </th>
                     <th scope="col" className="px-3 py-3 md:px-1">
                         Preferred Week
                         <Tooltip title="Sort by Preferred Week" placement="top">
-                        <Dropdown menu={preferredWeekMenu} >
-                            <Button type="text" icon={<FilterOutlined style={{ color: sortByPreferredWeek ? "blue" : "black" }} className="w-3"/>} />
-                        </Dropdown>
+                        <span>
+                            <Dropdown menu={preferredWeekMenu} >
+                                <Button type="text" icon={<FilterOutlined style={{ color: sortByPreferredWeek ? "blue" : "black" }} className="w-3"/>} />
+                            </Dropdown>
+                        </span>
                         </Tooltip>
                     </th>
                     <th scope="col" className="px-3 py-3 md:px-1">
                         Location
                         <Tooltip title="Sort by Location" placement="top">
-                        <Dropdown menu={locationMenu} >
-                            <Button type="text" icon={<FilterOutlined style={{ color: sortByLocation ? "blue" : "black" }} className="w-3"/>} />
-                        </Dropdown>
+                        <span>
+                            <Dropdown menu={locationMenu} >
+                                <Button type="text" icon={<FilterOutlined style={{ color: sortByLocation ? "blue" : "black" }} className="w-3"/>} />
+                            </Dropdown>
+                        </span>
                         </Tooltip>
                     </th>
                     <th scope="col" className="px-3 py-3 md:px-1">
@@ -870,7 +887,8 @@ const Batches = () => {
                                     
                                             {/* Right-aligned icons */}
                                             <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                                                <Tooltip title="Copy Phone Number">
+                                            <Tooltip title="Copy Phone Number">
+                                                <span>
                                                     <CopyOutlined
                                                         style={{ cursor: "pointer", color: "#1890ff" }}
                                                         onClick={(e) => {
@@ -878,16 +896,20 @@ const Batches = () => {
                                                             copyToClipboard(option.data.phone);
                                                         }}
                                                     />
-                                                </Tooltip>
-                                                
-                                                <Tooltip title="Open Student Info">
+                                                </span>
+                                            </Tooltip>
+
+                                            <Tooltip title="Open Student Info">
+                                                <span>
                                                     <RightOutlined
                                                         style={{ cursor: "pointer", color: "blue" }}
                                                         onClick={(e) => {
                                                             handleStudentClickOnSelect(e, option.data.value);
                                                         }}
                                                     />
-                                                </Tooltip>
+                                                </span>
+                                            </Tooltip>
+
                                             </div>
                                         </div>
                                     )}

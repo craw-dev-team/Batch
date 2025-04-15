@@ -500,11 +500,11 @@ const CreateAvailableBatchForm = ({ isOpen, onClose, selectedBatch }) => {
                 startDate: selectedBatch.startDate || "",
                 endDate: selectedBatch.endDate || "",
                 course: selectedBatch.course?.id || "",
-                trainer: selectedBatch.name || "",
-                preferredWeek: selectedBatch.week || "",
+                preferredWeek: selectedBatch.preferred_week || "",
                 mode: selectedBatch.mode || "",
                 language: selectedBatch.languages || "",
                 location: selectedBatch.location || "",
+                trainer: selectedBatch.name || '',
                 student: selectedBatch.student || [],
                 status: selectedBatch.status || "",
             });
@@ -517,7 +517,7 @@ const CreateAvailableBatchForm = ({ isOpen, onClose, selectedBatch }) => {
         ...prev,
         [name]: value
     }));
-    console.log(`${name} updated:`, value); // Debugging
+    // console.log(`${name} updated:`, value); // Debugging
 };
 
 
@@ -542,10 +542,11 @@ const CreateAvailableBatchForm = ({ isOpen, onClose, selectedBatch }) => {
         start_date: formattedData.startDate,
         end_date: formattedData.endDate,
         course: formattedData.course?.id,
-        trainer: selectedBatch?.preferredWeek,
+        preferred_week: selectedBatch?.preferredWeek,
         mode: formattedData.mode,
         language: formattedData.language,
         location: selectedBatch?.location_id,
+        trainer: selectedBatch.tr_id,
         student: selectedBatch.student || [],
         status: formattedData.status,
     };
@@ -571,9 +572,7 @@ const CreateAvailableBatchForm = ({ isOpen, onClose, selectedBatch }) => {
                 payload, 
                 { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
             );
-            successMessage = "Batch added successfully!";
-            console.log(response);
-            
+            successMessage = "Batch added successfully!";            
         }
 
         if (response.status >= 200 && response.status < 300) {

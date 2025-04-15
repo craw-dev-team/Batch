@@ -2,12 +2,12 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import CreateStudentForm from "./CreateStudentForm";
 import axios from "axios";
-import { Button, message, Popconfirm,  Avatar, Tag, Tooltip, Switch, Input, Spin, Empty  } from 'antd';
-import { EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
+import { Button, message, Popconfirm,  Avatar, Tag, Tooltip, Switch, Input, Spin, Empty, Pagination  } from 'antd';
+import { EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
 import BASE_URL from "../../../ip/Ip";
-import { useStudentForm } from "../StudentContext/StudentFormContext";
 import StudentCards from "../SpecificPage/StudentCard";
 import { useAuth } from "../AuthContext/AuthContext";
+import { useStudentForm } from "../Studentcontext/StudentFormContext";
 
 const { Search } = Input;
 
@@ -18,24 +18,38 @@ const Students = () => {
     const [selectedStudent, setSelectedStudent] = useState()
     const [isDeleted, setIsDeleted] = useState(false)
     const [studentStatuses, setStudentStatuses] = useState({}); // Store status per trainer
-    const [searchTerm, setSearchTerm] = useState("");
-
+    
     const { studentData, loading, setLoading, setStudentData, fetchStudents } = useStudentForm();
     const { token } = useAuth();
     
     const navigate = useNavigate();
-
+    
+    const [searchTerm, setSearchTerm] = useState('');
+    const [inputValue, setInputValue] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const studentsPerPage = 20;
+    const pageSize = 30;
 
 
     const handleTabClick = (tab) => {
         setActiveTab(tab);
     };
+
+    // HANDLE SEARCH INPUT AND DEBOUNCE 
+    useEffect(() => {
+        const handler = setTimeout(() => {
+          setSearchTerm(inputValue.trimStart());
+        }, 10000); // debounce delay in ms
+      
+        return () => {
+          clearTimeout(handler); // clear previous timeout on re-typing
+        };
+      }, [inputValue]);
+
+      
     
     useEffect(() => {
-        fetchStudents()        
-    },[!isModalOpen]);
+        fetchStudents({  page: currentPage, pageSize, search: searchTerm, })        
+    },[!isModalOpen, searchTerm, currentPage]);
 
        // Fetch students after deletion or modal interaction
           useEffect(() => {
@@ -45,8 +59,8 @@ const Students = () => {
             
             if (studentData) {
                 // Ensure trainerData.all_data.trainers exists and is an array
-                const studentssArray = Array.isArray(studentData)
-                    ? studentData
+                const studentssArray = Array.isArray(studentData?.results)
+                    ? studentData?.results
                     : [];
     
                 // Set a timeout to wait 2 seconds before initializing statuses
@@ -159,9 +173,9 @@ const Students = () => {
 
       // Filter students based from all students data 
         const filteredStudents = useMemo(() => {
-            if (!Array.isArray(studentData)) return [];
+            if (!Array.isArray(studentData?.results)) return [];
 
-            return studentData.filter(student => 
+            return studentData?.results.filter(student => 
                 student?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 student?.email.toLowerCase().includes(searchTerm.toLowerCase()) || 
                 student.phone.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -171,17 +185,17 @@ const Students = () => {
         },[studentData, searchTerm])
 
             // Ensure currentPage resets to 1 when search term changes
-            useEffect(() => {
-                setCurrentPage(1);
-            }, [searchTerm]);
+            // useEffect(() => {
+            //     setCurrentPage(1);
+            // }, [searchTerm]);
 
-            // Calculate the total pages based on the filtered students
-            const totalPages = Math.ceil(filteredStudents.length / studentsPerPage);
+            // // Calculate the total pages based on the filtered students
+            // const totalPages = Math.ceil(filteredStudents.length / studentsPerPage);
 
-            // Get students for the current page (AFTER SEARCH FILTERING)
-            const indexOfLastStudent = currentPage * studentsPerPage;
-            const indexOfFirstStudent = indexOfLastStudent - studentsPerPage;
-            const currentStudents = filteredStudents.slice(indexOfFirstStudent, indexOfLastStudent);
+            // // Get students for the current page (AFTER SEARCH FILTERING)
+            // const indexOfLastStudent = currentPage * studentsPerPage;
+            // const indexOfFirstStudent = indexOfLastStudent - studentsPerPage;
+            // const currentStudents = filteredStudents.slice(indexOfFirstStudent, indexOfLastStudent);
 
 
     return (
@@ -224,7 +238,12 @@ const Students = () => {
             <div className="flex gap-x-6">
                 <label htmlFor="table-search" className="sr-only">Search</label>
                 <div className="relative">
-                    <input onChange={(e) => setSearchTerm(e.target.value.replace(/^\s+/, ''))} value={searchTerm} type="text" id="table-search" placeholder="Search for items"
+                    <input  value={searchTerm} type="text" id="table-search" placeholder="Search for items"
+                         onChange={(e) => {
+                            const value = e.target.value.trimStart();
+                            setSearchTerm(value);
+                            setCurrentPage(1);
+                          }}
                         className="block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg w-40 h-7 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" 
                     />
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3">
@@ -297,7 +316,7 @@ const Students = () => {
 
         </div>
         {activeTab === 'tab1' && (
-        <div className={`overflow-hidden pb-2 relative ${loading ? "backdrop-blur-md opacity-50 pointer-events-none" : ""}`}>
+        <div className={`overflow-hidden pb-2 relative `}>
             <div className="w-full h-[38rem] overflow-y-auto rounded-lg pb-2">
             <table className="w-full text-xs text-left text-gray-500">
             <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10">
@@ -358,11 +377,11 @@ const Students = () => {
                         </td>
                     </tr>
                
-            ) : currentStudents.length > 0 ? (
-                currentStudents.map((item, index) => (
+            ) : filteredStudents.length > 0 ? (
+                filteredStudents.map((item, index) => (
                 <tr key={item.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 scroll-smooth">
                     <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
-                        {indexOfFirstStudent + index + 1}
+                        {(currentPage - 1) * pageSize + index + 1}
                     </td>
                     {/* <td className="px-3 py-2 md:px-1">
                         {item.id}
@@ -486,9 +505,9 @@ const Students = () => {
             </table>
         </div>
 
-        <div className="w-full h-8 bg-slate-200">
-        <div className="flex justify-center items-center mt-4">
-            <button 
+        {/* <div className="w-full h-14 bg-slate-200"> */}
+        <div className="flex justify-center items-center mt-0 py-3 bg-slate-200">
+            {/* <button 
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} 
                 disabled={currentPage === 1}
                 className="px-4 py-1 mx-3 bg-blue-500 text-white rounded disabled:opacity-50"
@@ -496,17 +515,26 @@ const Students = () => {
                 Previous
             </button>
 
-            <span className="text-gray-700">Page {currentPage} of {totalPages || 1}</span>
+            <span className="text-gray-700">Page {currentPage} of {Math.ceil((studentData?.count || 0) / pageSize)}</span>
 
             <button 
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil((studentData?.count || 0) / pageSize)))}
+                disabled={currentPage >= Math.ceil((studentData?.count || 0) / pageSize)}
                 className="px-4 py-1 mx-3 bg-blue-500 text-white rounded disabled:opacity-50"
             >
                 Next
-            </button>
-        </div>
-        </div>
+            </button> */}
+
+                <Pagination
+                    current={currentPage}
+                    total={studentData?.count || 0}
+                    pageSize={pageSize} // example: 10
+                    onChange={(page) => setCurrentPage(page)}
+                    showSizeChanger={false}    // ✅ hide page size select
+                    showQuickJumper={false}    // ✅ hide quick jump input
+                />
+                </div>
+        {/* </div> */}
 
         </div>
         )}
