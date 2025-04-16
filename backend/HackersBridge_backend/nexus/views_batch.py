@@ -26,7 +26,7 @@ import json
 import uuid
 from pathlib import Path
 from django.utils.dateparse import parse_date
-
+from collections import defaultdict
 
 cid = str(uuid.uuid4())
 
@@ -322,63 +322,83 @@ class BatchDeleteAPIView(APIView):
 
 
 class AvailableStudentsAPIView(APIView):
-    """API to get available students for a batch."""
-    authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
+    authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request, batch_id):
         if request.user.role not in ['admin', 'coordinator']:
             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
 
+        batch = get_object_or_404(Batch.objects.select_related('course', 'location'), id=batch_id)
+        course = batch.course
 
-        batch = get_object_or_404(Batch, id=batch_id)
+        filters = Q(courses__id=course.id, status='Active')
 
-        # Base filter for active students in the same course
-        filters = Q(courses__id=batch.course.id, status='Active')
-
-        # Language filter
         if batch.language != "Both":
             filters &= Q(language__in=[batch.language, "Both"])
-
-        # Week filter
         if batch.preferred_week != "Both":
             filters &= Q(preferred_week__in=[batch.preferred_week, "Both"])
-
-        # Mode filter
         if batch.mode != "Hybrid":
             filters &= Q(mode__in=[batch.mode, "Hybrid"])
-
-        # Location filter (Ensure location comparison is valid)
-        if hasattr(batch.location, 'locality') and batch.location.locality != "Both":
+        if batch.location and batch.location.locality != "Both":
             filters &= Q(location__locality__in=[batch.location.locality, "Both"])
 
+        # Fetch all disqualified student IDs in one go
+        disqualified_ids = set()
 
-        # Exclude students who are in a Running or Upcoming batch of the same course
-        ongoing_batches = Batch.objects.filter(course=batch.course, status__in=['Running', 'Upcoming'])
-        ongoing_students = Student.objects.filter(batch__in=ongoing_batches).values_list('id', flat=True)
-        filters &= ~Q(id__in=ongoing_students)
+        disqualified_ids.update(
+            Student.objects.filter(batch__in=Batch.objects.filter(course=course, status__in=['Running', 'Upcoming']))
+            .values_list('id', flat=True)
+        )
 
+        disqualified_ids.update(
+            Student.objects.filter(batch__in=Batch.objects.filter(course=course, status='Completed'))
+            .values_list('id', flat=True)
+        )
 
-        # ✅ Exclude students who have completed the course
-        completed_batches = Batch.objects.filter(course=batch.course, status='Completed')
-        completed_students = Student.objects.filter(batch__in=completed_batches).values_list('id', flat=True)
-        filters &= ~Q(id__in=completed_students)
+        disqualified_ids.update(
+            StudentCourse.objects.filter(course=course, status='Completed')
+            .values_list('student_id', flat=True)
+        )
 
-        
-        # ❌ Exclude students whose course status is completed in StudentCourse model
-        completed_course_students = StudentCourse.objects.filter(
-            course=batch.course,
-            status='Completed'
-        ).values_list('student_id', flat=True)
-        filters &= ~Q(id__in=completed_course_students)
+        # Base student query
+        students = Student.objects.filter(filters).exclude(id__in=disqualified_ids)
 
+        # ✅ Prerequisite Filtering (In-Memory, Fast)
+        prerequisites = {
+            "Ethical Hacking": ['Basic Networking', 'Linux Essentials'],
+            "AWS Associate": ['Basic Networking', 'Linux Essentials'],
+            "AWS Security": ['AWS Associate'],
+            "Advanced Penetration Testing": ['Ethical Hacking'],
+            "Web Application Security": ['Advanced Penetration Testing'],
+            "Mobile Application Security": ['Web Application Security'],
+            "Cyber Forensics Investigation": ['Ethical Hacking'],
+        }
 
-        # Query the filtered students
-        students = Student.objects.filter(filters)
+        required_courses = prerequisites.get(course.name)
 
-        # Serialize and return filtered student data
+        if required_courses:
+            # Prefetch StudentCourse data for these students
+            student_courses = StudentCourse.objects.filter(
+                student__in=students, course__name__in=required_courses
+            ).values('student_id', 'course__name', 'status')
+
+            student_course_map = defaultdict(dict)
+            for entry in student_courses:
+                student_course_map[entry['student_id']][entry['course__name']] = entry['status']
+
+            eligible_ids = []
+            for s in students:
+                sid = s.id
+                courses = student_course_map.get(sid, {})
+                # ✅ If all required courses are completed or missing
+                if all(courses.get(c) == 'Completed' for c in required_courses) or len(courses) < len(required_courses):
+                    eligible_ids.append(sid)
+
+            students = students.filter(id__in=eligible_ids)
+
         serialized_students = StudentSerializer(students, many=True).data
-        return Response({"available_students": serialized_students}, status=status.HTTP_200_OK)  
+        return Response({"available_students": serialized_students}, status=200)
     
 # Exclude students who are already in the batch
 # enrolled_students = batch.student.values_list('id', flat=True)  # Get IDs of enrolled students
