@@ -172,7 +172,7 @@ class StudentCrawListView(APIView):
 
         ongoing_ids = StudentCourse.objects.filter(
             student_id__in=not_started_ids,
-            status="Ongoing"
+            status__in=['Ongoing', 'Upcoming']
         ).values_list('student', flat=True).distinct()
 
         free_students = Student.objects.filter(

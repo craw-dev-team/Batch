@@ -17,8 +17,8 @@
 # User = get_user_model()
 
 # for i in User.objects.all():
-#     for j in Counsellor.objects.all():
-#         if i.username == j.counsellor_id:
+#     for j in Coordinator.objects.all():
+#         if i.username == j.coordinator_id:
 #             print(j.name)
 #             i.first_name = j.name
 #             i.save()
