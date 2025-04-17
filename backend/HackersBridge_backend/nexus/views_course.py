@@ -8,6 +8,8 @@ from rest_framework.authentication import TokenAuthentication
 from auditlog.models import LogEntry
 from django.contrib.contenttypes.models import ContentType
 from django.utils.timezone import now
+from django.shortcuts import get_object_or_404
+from Student.models import StudentCourse
 import uuid
 import json
 
@@ -223,3 +225,50 @@ class BookDeleteAPIView(APIView):
         # Delete the book after logging
         book.delete()
         return Response({'detail': 'Book deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+
+
+class CourseTakeby(APIView):
+    def get(self, request, id):
+        course = get_object_or_404(Course, id=id)
+        Student_take_by = StudentCourse.objects.filter(course=course).values('id','course__name', 'student', 'status')
+        
+        return Response(Student_take_by)
+    # def get(self, request, id):
+    #     course = get_object_or_404(Course, id=id)
+    #     student_take_by = StudentCourse.objects.filter(course=course)
+    #     serializer = StudentCourseSerializer(student_take_by, many=True)
+    #     return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+
+class CourseTakebyEdit(APIView):
+    def put(self, request, course_id):
+        new_course_id = request.data.get("course")
+        if not new_course_id:
+            return Response({"error": "New course ID not provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            new_course = Course.objects.get(id=new_course_id)
+        except Course.DoesNotExist:
+            return Response({"error": "New course not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        student_courses = StudentCourse.objects.filter(course_id=course_id)
+        updated_instances = []
+        skipped_instances = []
+
+        for sc in student_courses:
+            # Check for existing (student, new_course) pair
+            if StudentCourse.objects.filter(student=sc.student, course=new_course).exists():
+                skipped_instances.append(sc.id)
+                continue
+
+            sc.course = new_course
+
+            sc.save()
+            updated_instances.append(sc.id)
+
+
+        return Response({
+            "updated_student_course_ids": updated_instances,
+            "skipped_due_to_duplicates": skipped_instances
+        }, status=status.HTTP_200_OK)

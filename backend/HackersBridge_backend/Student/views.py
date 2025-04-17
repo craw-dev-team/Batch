@@ -138,68 +138,76 @@ class StudentCrawListView(APIView):
 
     def get(self, request, *args, **kwargs):
         if request.user.role not in ['admin', 'coordinator']:
-            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+            return Response({'error': 'Unauthorized'}, status=403)
 
         today = now().date()
 
-        # ✅ Use subquery to check if student is enrolled in a batch
-        enrolled_subquery = BatchStudentAssignment.objects.filter(student=OuterRef('pk'))
-
-        # ✅ Optimized base queryset
-        base_qs = Student.objects.only(
-            'id', 'name', 'email', 'phone', 'enrollment_no', 'status', 'date_of_joining',
-            'course_counsellor_id', 'support_coordinator_id', 'location_id'
-        ).select_related('course_counsellor', 'support_coordinator', 'location')
-
-        # ✅ Annotate enrollment info
-        students = base_qs.annotate(
-            is_enrolled=Exists(enrolled_subquery),
+        # 1. Subquery to check enrollment
+        enrolled_subquery = BatchStudentAssignment.objects.filter(
+            student=OuterRef('pk')
         )
 
-        student_list = list(students)
+        # 2. Prefetch student course status (just IDs & status)
+        course_prefetch = Prefetch(
+            'studentcourse_set',
+            queryset=StudentCourse.objects.only('student_id', 'status'),
+            to_attr='prefetched_courses'
+        )
 
-        # ✅ Category filtering
-        total_students = len(student_list)
-        active_students = [s for s in student_list if s.status == 'Active']
-        inactive_students = [s for s in student_list if s.status != 'Active']
-        enrolled_students = [s for s in student_list if s.is_enrolled]
-        today_students = [s for s in student_list if s.date_of_joining == today]
+        # 3. Only required fields & relations
+        students_qs = Student.objects.select_related(
+            'course_counsellor', 'support_coordinator', 'location'
+        ).only(
+            'id', 'name', 'email', 'phone', 'enrollment_no', 'status', 'date_of_joining',
+            'course_counsellor_id', 'support_coordinator_id', 'location_id'
+        ).annotate(
+            is_enrolled=Exists(enrolled_subquery)
+        ).prefetch_related(course_prefetch)
 
-        # ✅ NEW LOGIC: Free students = Not Started courses and no Ongoing courses
-        not_started_ids = StudentCourse.objects.filter(
-            status="Not Started"
-        ).values_list('student', flat=True).distinct()
+        # 4. Use iterator() to stream rows instead of loading all in memory
+        active_students, inactive_students = [], []
+        enrolled_students, today_students, free_students = [], [], []
 
-        ongoing_ids = StudentCourse.objects.filter(
-            student_id__in=not_started_ids,
-            status__in=['Ongoing', 'Upcoming']
-        ).values_list('student', flat=True).distinct()
+        for student in students_qs.iterator(chunk_size=500):
+            # Pre-checks
+            if student.status == 'Active':
+                active_students.append(student)
+            else:
+                inactive_students.append(student)
 
-        free_students = Student.objects.filter(
-            id__in=not_started_ids
-        ).exclude(id__in=ongoing_ids)
+            if student.is_enrolled:
+                enrolled_students.append(student)
 
-        # ✅ Serializers
-        active_serializer = StudentSerializer(active_students, many=True)
-        inactive_serializer = StudentSerializer(inactive_students, many=True)
-        enrolled_serializer = StudentSerializer(enrolled_students, many=True)
-        today_serializer = StudentSerializer(today_students, many=True)
-        not_enrolled_serializer = StudentSerializer(free_students, many=True)  # 🆕 Renamed
+            if student.date_of_joining == today:
+                today_students.append(student)
+
+            # Free student logic (from prefetched courses)
+            if hasattr(student, 'prefetched_courses'):
+                statuses = {s.status for s in student.prefetched_courses}
+                if 'Not Started' in statuses and not statuses.intersection({'Ongoing', 'Upcoming'}):
+                    if student.status == 'Active':
+                        free_students.append(student)
+
+        # 5. Fast serialization — only serialize top 100 per list to avoid overload
+        def fast_serialize(students):
+            return StudentSerializer(students[:100], many=True).data
 
         return Response({
-            "total_student": total_students,
+            "total_student": students_qs.count(),
             "active_student_count": len(active_students),
             "inactive_student_count": len(inactive_students),
             "enrolled_student_count": len(enrolled_students),
-            "not_enrolled_student_count": free_students.count(),
+            "not_enrolled_student_count": len(free_students),
             "today_added_student_count": len(today_students),
 
-            "active_students": active_serializer.data,
-            "inactive_students": inactive_serializer.data,
-            "enrolled_students": enrolled_serializer.data,
-            "not_enrolled_students": not_enrolled_serializer.data,  # 🆕 This is now the "free students"
-            "today_added_students": today_serializer.data,
+            "active_students": fast_serialize(active_students),
+            "inactive_students": fast_serialize(inactive_students),
+            "enrolled_students": fast_serialize(enrolled_students),
+            "not_enrolled_students": fast_serialize(free_students),
+            "today_added_students": fast_serialize(today_students),
         })
+
+
 
 
 
