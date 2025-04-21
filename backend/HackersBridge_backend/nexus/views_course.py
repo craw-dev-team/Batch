@@ -9,7 +9,11 @@ from auditlog.models import LogEntry
 from django.contrib.contenttypes.models import ContentType
 from django.utils.timezone import now
 from django.shortcuts import get_object_or_404
-from Student.models import StudentCourse
+from Student.models import StudentCourse, Student
+from Student.serializer import StudentSerializer
+from nexus.serializer import BatchCreateSerializer
+from nexus.models import Batch
+from django.db.models import Prefetch
 import uuid
 import json
 
@@ -119,6 +123,172 @@ class CourseDeleteAPIView(APIView):
 
 
 
+class CourseinfoAPIView(APIView):
+    def get(self, request, id):
+        # Step 1: Get the course
+        course = get_object_or_404(Course, id=id)
+
+        # Step 2: Get student IDs and prefetch full student data efficiently
+        student_ids = StudentCourse.objects.filter(course=course).values_list('student_id', flat=True).distinct()
+        students = Student.objects.filter(id__in=student_ids).select_related(
+            'support_coordinator', 'course_counsellor', 'location'
+        ).prefetch_related(
+            'courses', 'notes', 'studentcourse_set'
+        )
+
+        Student_take_by = StudentSerializer(students, many=True).data
+
+        # Step 3: Fetch related batch data efficiently
+        batches = Batch.objects.filter(course=course).select_related(
+            'course', 'trainer', 'batch_time', 'location', 'batch_coordinator'
+        ).prefetch_related(
+            Prefetch('student', queryset=Student.objects.only('id', 'name'))
+        )
+
+        Batch_take_by = []
+        for batch in batches:
+            Batch_take_by.append({
+                "id": batch.id,
+                "batch_id": batch.batch_id,
+                "course": batch.course.name,
+                "trainer": batch.trainer.name if batch.trainer else None,
+                "mode": batch.mode,
+                "status": batch.status,
+                "start_date": batch.start_date,
+                "end_date": batch.end_date,
+                "preferred_week": batch.preferred_week,
+                "batch_time": str(batch.batch_time) if batch.batch_time else None,
+                "language": str(batch.language) if batch.language else None,
+                "location": str(batch.location) if batch.location else None,
+                "batch_coordinator": str(batch.batch_coordinator) if batch.batch_coordinator else None,
+                "students": [
+                    {"id": student.id, "name": student.name} for student in batch.student.all()
+                ]
+            })
+
+        # Step 4: Final Response
+        course_info = {
+            'course': CourseSerializer(course).data,
+            'Student_take_by': Student_take_by,
+            'Batch_take_by': Batch_take_by
+        }
+
+        return Response({'course_info': course_info})
+
+
+
+
+class CourseTakebyEdit(APIView):
+    def put(self, request, course_id):
+        new_course_id = request.data.get("course")
+        if not new_course_id:
+            return Response({"error": "New course ID not provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            new_course = Course.objects.get(id=new_course_id)
+        except Course.DoesNotExist:
+            return Response({"error": "New course not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        student_courses = StudentCourse.objects.filter(course_id=course_id)
+        updated_instances = []
+        skipped_instances = []
+
+        for sc in student_courses:
+            # Check for existing (student, new_course) pair
+            if StudentCourse.objects.filter(student=sc.student, course=new_course).exists():
+                skipped_instances.append(sc.id)
+                continue
+
+            sc.course = new_course
+
+            sc.save()
+            updated_instances.append(sc.id)
+
+
+        return Response({
+            "updated_student_course_ids": updated_instances,
+            "skipped_due_to_duplicates": skipped_instances
+        }, status=status.HTTP_200_OK)
+
+
+
+
+class StudentCourseUpdate(APIView):
+    def put(self, request, course_id):
+        new_course_id = request.data.get("course")
+        student_list = request.data.get("student", [])
+
+        if not new_course_id:
+            return Response({"error": "New course ID not provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            new_course = Course.objects.get(id=new_course_id)
+        except Course.DoesNotExist:
+            return Response({"error": "New course not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        updated_instances = []
+        skipped_instances = []
+
+        for student_id in student_list:
+            student_courses = StudentCourse.objects.filter(student=student_id, course_id=course_id)
+
+            for sc in student_courses:
+                # Check for existing (student, new_course) pair
+                if StudentCourse.objects.filter(student=sc.student, course=new_course).exists():
+                    skipped_instances.append(sc.id)
+                    continue
+
+                sc.course = new_course
+                sc.save()
+                updated_instances.append(sc.id)
+
+        return Response({
+            "updated_student_course_ids": updated_instances,
+            "skipped_due_to_duplicates": skipped_instances
+        }, status=status.HTTP_200_OK)
+    
+
+
+
+class BatchCourseUpdate(APIView):
+    def put(self, request, course_id):
+        new_course_id = request.data.get("course")
+
+        if not new_course_id:
+            return Response({"error": "New Course ID not provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            new_course = Course.objects.get(id=new_course_id)
+        except Course.DoesNotExist:
+            return Response({"error": "New course not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Get all batches with the given course_id
+        batches = Batch.objects.filter(course_id=course_id)
+        if not batches.exists():
+            return Response({"message": "No batches found for the given course."}, status=status.HTTP_404_NOT_FOUND)
+
+        updated_batches = []
+
+        for batch in batches:
+            serializer = BatchCreateSerializer(instance=batch, data={"course": new_course.id}, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                updated_batches.append(serializer.data)
+            else:
+                return Response({
+                    "error": f"Error updating batch {batch.id}",
+                    "details": serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({
+            "message": f"{len(updated_batches)} batches updated successfully.",
+            "updated_batches": updated_batches
+        }, status=status.HTTP_200_OK)
+    
+
+    
+
+
 class BookListAPIView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
@@ -127,7 +297,8 @@ class BookListAPIView(APIView):
         books = Book.objects.all()  # Latest first
         serializer = BookSerializer(books, many=True)
         return Response(serializer.data)    
-    
+
+
 
 class BookCreateAPIView(APIView):
     authentication_classes = [TokenAuthentication]
@@ -226,49 +397,3 @@ class BookDeleteAPIView(APIView):
         book.delete()
         return Response({'detail': 'Book deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
 
-
-class CourseTakeby(APIView):
-    def get(self, request, id):
-        course = get_object_or_404(Course, id=id)
-        Student_take_by = StudentCourse.objects.filter(course=course).values('id','course__name', 'student', 'status')
-        
-        return Response(Student_take_by)
-    # def get(self, request, id):
-    #     course = get_object_or_404(Course, id=id)
-    #     student_take_by = StudentCourse.objects.filter(course=course)
-    #     serializer = StudentCourseSerializer(student_take_by, many=True)
-    #     return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-
-class CourseTakebyEdit(APIView):
-    def put(self, request, course_id):
-        new_course_id = request.data.get("course")
-        if not new_course_id:
-            return Response({"error": "New course ID not provided."}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            new_course = Course.objects.get(id=new_course_id)
-        except Course.DoesNotExist:
-            return Response({"error": "New course not found."}, status=status.HTTP_404_NOT_FOUND)
-
-        student_courses = StudentCourse.objects.filter(course_id=course_id)
-        updated_instances = []
-        skipped_instances = []
-
-        for sc in student_courses:
-            # Check for existing (student, new_course) pair
-            if StudentCourse.objects.filter(student=sc.student, course=new_course).exists():
-                skipped_instances.append(sc.id)
-                continue
-
-            sc.course = new_course
-
-            sc.save()
-            updated_instances.append(sc.id)
-
-
-        return Response({
-            "updated_student_course_ids": updated_instances,
-            "skipped_due_to_duplicates": skipped_instances
-        }, status=status.HTTP_200_OK)

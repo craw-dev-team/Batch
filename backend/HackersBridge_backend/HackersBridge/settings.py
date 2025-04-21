@@ -50,10 +50,12 @@ INSTALLED_APPS = [
     'Counsellor',
     'Trainer',
     'Student',
+    'Student_login',
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
     'auditlog',
+    'django_filters',
 ]
 
 MIDDLEWARE = [
@@ -63,11 +65,12 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'api.middleware.DailyRequestLoggerMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'auditlog.middleware.AuditlogMiddleware',
-    
 ]
+
 
 ROOT_URLCONF = 'HackersBridge.urls'
 

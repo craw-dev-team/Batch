@@ -240,7 +240,8 @@ class BatchSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'batch_id', 'course', 'trainer', 'student', 'status',
             'start_date', 'end_date', 'mode', 'language', 'preferred_week',
-            'batch_time', 'batch_time_data', 'location'
+            'batch_time', 'batch_time_data', 'location', 'gen_time',
+            'batch_created_by', 'last_update_user', 'last_update_datetime', 'batch_create_datetime'
         ]
 
     def to_representation(self, instance):
@@ -604,3 +605,7 @@ class BookSerializer(serializers.ModelSerializer):
             'status', 'last_update_user', 'last_updated_by', 'last_update_datetime', 'gen_time'
         ]
         read_only_fields = ['last_update_user', 'last_update_datetime', 'gen_time']
+
+
+
+# class CourseTakebyserializer(serializers.ModelField):

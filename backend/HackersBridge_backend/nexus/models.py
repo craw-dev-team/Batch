@@ -149,9 +149,10 @@ class Batch(models.Model):
     batch_coordinator = models.ForeignKey("Coordinator.Coordinator", on_delete=models.SET_NULL, null=True, blank=True)
 
     last_update_user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='batch_update')
-    # last_update_coordinator = models.ForeignKey("Coordinator.Coordinator", on_delete=models.CASCADE, related_name="batches_update", null=True, blank=True)
     batch_created_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='batch_create')
-    last_update_datetime = models.DateTimeField(default=timezone.now)
+    # last_update_coordinator = models.ForeignKey("Coordinator.Coordinator", on_delete=models.CASCADE, related_name="batches_update", null=True, blank=True)
+    batch_create_datetime = models.DateTimeField(default=timezone.now)
+    last_update_datetime = models.DateTimeField(auto_now_add=True)
     gen_time = models.DateTimeField(default=timezone.now)
 
     @property

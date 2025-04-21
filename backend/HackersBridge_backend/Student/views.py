@@ -1,4 +1,7 @@
 import os
+import json
+import uuid
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, filters
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
@@ -20,8 +23,6 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth import get_user_model
 from django.forms.models import model_to_dict
 from django.utils.timezone import now
-import json
-import uuid
 from rest_framework.pagination import PageNumberPagination
 from django.http import HttpResponse
 from django.views.decorators.cache import never_cache
@@ -62,8 +63,9 @@ class StudentListView(ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = StudentSerializer
     pagination_class = StandardResultsSetPagination
-    filter_backends = [filters.SearchFilter]
-    search_fields = ['name', 'phone', 'alternate_phone', 'guardian_no', 'email', 'enrollment_no']
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    search_fields = ['name', 'phone', 'alternate_phone', 'guardian_no', 'email', 'enrollment_no', 'mode', 'preferred_week', 'language', 'support_coordinator__name', 'course_counsellor__name']
+    filterset_fields = ['mode', 'preferred_week', 'language', 'location']  # ✅ Add this line
 
     def get_queryset(self):
         if self.request.user.role not in ['admin', 'coordinator']:
@@ -87,6 +89,7 @@ class StudentListView(ListAPIView):
                     completed_courses_prefetch,
                     notes_prefetch
                 ).order_by('-last_update_datetime')
+        # print(student_data)
         return student_data
 
 
@@ -209,9 +212,6 @@ class StudentCrawListView(APIView):
 
 
 
-
-
-
 # class FreeStudentListView(APIView):
 #     def get(self, request):
 
@@ -283,6 +283,7 @@ class EditStudentView(APIView):
         if request.user.role not in ['admin', 'coordinator']:
             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
 
+        print(request.data)
         student = get_object_or_404(Student, id=id)
         old_student_data = model_to_dict(student)  # Get all old field values
         old_email = student.email  # Store old email before update
@@ -537,27 +538,6 @@ class StudentCourseEditAPIView(APIView):
             }, status=status.HTTP_200_OK)
         
         return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-
-
-
-@csrf_exempt
-@never_cache
-def email_open_tracker(request, id):
-    student_course = get_object_or_404(StudentCourse, id=id)
-
-    # Update a flag or timestamp to indicate the email was opened
-    student_course.email_opened = True
-    student_course.email_opened_at = now()
-    student_course.save(update_fields=['email_opened', 'email_opened_at'])
-
-    # 1x1 transparent GIF
-    pixel = b'GIF89a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00' \
-            b'\xFF\xFF\xFF!\xF9\x04\x01\x00\x00\x00\x00,\x00' \
-            b'\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;'
-
-    return HttpResponse(pixel, content_type='image/gif')
-
 
 
 class GenerateCertificateAPIView(APIView):
