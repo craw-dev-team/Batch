@@ -10,23 +10,23 @@ import { useAuth } from '../AuthContext/AuthContext';
 
 
 
-const CreateCourseForm = ({ isOpen, onClose, courseData }) => {
+const CreateCourseForm = ({ isOpen, onClose, selectedCourseData }) => {
     if(!isOpen) return null;
     
-    const isEditing = Boolean(courseData?.id); 
+    const isEditing = Boolean(selectedCourseData?.id); 
 
     const { courseFormData, setCourseFormData, errors, setErrors, resetCourseForm } = useCourseForm();
     const [ loading, setLoading] = useState(false);
     const { token } = useAuth();
 
-    // Reset form data when courseData changes (for Add or Edit mode)
-    useEffect(() => {
-        if (courseData) {
+    // Reset form data when selectedCourseData changes (for Add or Edit mode)
+    useEffect(() => {        
+        if (selectedCourseData) {
             setCourseFormData({
-                courseName: courseData.name || "",
-                courseCode: courseData.code || "",
-                courseDuration: courseData.duration || "",
-                courseCertification: courseData.certification_body || "",
+                courseName: selectedCourseData.name || "",
+                courseCode: selectedCourseData.code || "",
+                courseDuration: selectedCourseData.duration || "",
+                courseCertification: selectedCourseData.certification_body || "",
             });
         } else {
             resetCourseForm();
@@ -72,9 +72,9 @@ const CreateCourseForm = ({ isOpen, onClose, courseData }) => {
 
                 let response;
                 let successMessage = "";
-                if (courseData && courseData.id) {
+                if (selectedCourseData && selectedCourseData.id) {
                 // Update existing course (PUT)
-                response = await axios.put(`${BASE_URL}/api/courses/edit/${courseData.id}/`, payload, {
+                response = await axios.put(`${BASE_URL}/api/courses/edit/${selectedCourseData.id}/`, payload, {
                     headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` }
                 });
                 successMessage = "Course updated successfully!";
@@ -113,7 +113,7 @@ const CreateCourseForm = ({ isOpen, onClose, courseData }) => {
         };
     return (
         <>
-         <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 z-50">
+            <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 z-50">
             <div className="relative p-2 w-3/6 bg-white rounded-lg shadow-lg dark:bg-gray-700">
                 
                 {/* Modal Header */}
@@ -203,7 +203,7 @@ const CreateCourseForm = ({ isOpen, onClose, courseData }) => {
                     </form>
                 </div>
             </div>
-        </div>
+            </div>
         </>
     )
 };

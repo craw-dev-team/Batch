@@ -10,21 +10,6 @@ import { useSpecificBatch } from '../Contexts/SpecificBatch';
 import { useAuth } from '../AuthContext/AuthContext';
 
 
-// const fetchAvailableStudents = async (batchId) => {
-//     try {
-//         const response = await axios.get(`${BASE_URL}/api/batches/${batchId}/available-students/`);
-//         const data = response.data;
-        
-//         if (!Array.isArray(data.available_students)) {
-//             throw new Error("Invalid response format: Expected an array");
-//         }
-
-//         // Update state with student data
-//         setStudents(data.available_students);
-//     } catch (error) {
-//         console.error("Error fetching students:", error);
-//     }
-// };
 
 
 const AddStudentModal = ({ isOpen, onClose }) => {

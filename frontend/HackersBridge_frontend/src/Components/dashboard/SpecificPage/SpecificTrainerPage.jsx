@@ -77,11 +77,11 @@ const SpecificTrainerPage = () => {
 
     return (
         <>
-        <div className="w-auto h-full pt-20 px-2 mt-0 darkmode">
+        <div className="w-auto h-full pt-20 px-2 mt-0 ">
             <div className="grid grid-cols-5 gap-x-6">
                     {trainerDetails ? (
                     <>
-                <div className="px-4 py-4 col-span-3 h-auto shadow-md sm:rounded-lg border border-gray-50 dark:border">
+                <div className="px-4 py-4 col-span-3 h-auto shadow-md sm:rounded-lg border border-gray-50 bg-white">
                     
                     <div className="w-full h-auto px-1 py-3 text-lg font-semibold flex justify-between">
                         <p># {trainerDetails.trainer_id}</p>
@@ -139,7 +139,7 @@ const SpecificTrainerPage = () => {
                         </div>
                 </div>
 
-                <div className="px-4 py-4 col-span-2 h-auto shadow-md sm:rounded-lg darkmode border border-gray-50 dark:border dark:border-gray-600">
+                <div className="px-4 py-4 col-span-2 h-auto shadow-md sm:rounded-lg darkmode border border-gray-50 bg-white">
                     <div className="w-full h-auto font-semibold">
                         
                         <div className="col-span-1 text-lg px-4 py-4">
@@ -172,7 +172,7 @@ const SpecificTrainerPage = () => {
             )}
            
                     
-                <div className="px-4 py-4 h-auto shadow-md sm:rounded-lg border border-gray-50 dark:border">
+                <div className="px-4 py-4 h-auto shadow-md sm:rounded-lg border border-gray-50 bg-white">
                     
                     <div className="w-full h-auto px-1 py-3 text-lg font-semibold">
                         <h1>Batches Assigned</h1>

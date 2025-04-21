@@ -43,7 +43,7 @@ const StudentFormProvider = ({ children }) => {
         setStudentFormData(initialFormData);
     };
 
-    const fetchStudents = async ({ page = 1, pageSize = 30, search = '' } = {}) => {
+    const fetchStudents = async ({ page = 1, pageSize = 30, search = '', mode = '', language = '', preferred_week = '', location = '' } = {}) => {
         if (loading) return;  // Prevent multiple fetches at the same time
 
         const token = localStorage.getItem('token');
@@ -60,6 +60,10 @@ const StudentFormProvider = ({ children }) => {
                 page,
                 page_size: pageSize,
                 search,
+                mode ,
+                language,
+                preferred_week,
+                location,
             },
             }
             );

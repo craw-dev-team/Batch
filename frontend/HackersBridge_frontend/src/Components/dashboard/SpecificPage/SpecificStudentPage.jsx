@@ -25,6 +25,7 @@ const SpecificStudentPage = () => {
 
     const navigate = useNavigate();
     
+    
     const handleTabClick = (tab) => {
         setActiveTab(tab);
     };
@@ -211,7 +212,7 @@ const SpecificStudentPage = () => {
           }
     
         // console.log("Server response:", response.data);
-       } catch (error) {
+        } catch (error) {
         message.error('Error Issuing Book')
             // console.error("Error issuing book:", error);
         
@@ -335,7 +336,7 @@ const SpecificStudentPage = () => {
                                     </div>
                             </div>
 
-                            <div className="px-4 py-4 col-span-6 mt-6 h-auto shadow-md sm:rounded-lg border border-gray-50">
+                            <div className="px-4 py-4 col-span-6 mt-6 h-auto shadow-md sm:rounded-lg border border-gray-50 bg-white">
                                 <div className="w-full font-semibold">
                                     
                                     <div className="col-span-1 text-lg px-4 py-4">
@@ -488,7 +489,7 @@ const SpecificStudentPage = () => {
 
                     
                                 
-                            <div className="px-4 py-4 h-auto shadow-md sm:rounded-lg border border-gray-50 dark:border">
+                            <div className="px-4 py-4 h-auto shadow-md sm:rounded-lg border border-gray-50 bg-white">
                                 
                                 <div className="w-full h-auto px-1 py-3 text-lg font-semibold">
                                     <h1>Enrolled Batches</h1>

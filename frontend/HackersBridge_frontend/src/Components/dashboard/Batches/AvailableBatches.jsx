@@ -349,12 +349,12 @@ const AvailableBatches = () => {
                     <th className="px-3 py-3 md:px-1">Trainer ID</th>
                     <th className="px-3 py-3 md:px-1 cursor-pointer" onClick={toggleSortByName}>
                         <Tooltip title="sort by Trainer Name" placement="right">
-                        Trainer Name {sortByName ? "▲" : "▼"} 
+                            Trainer Name {sortByName ? "▲" : "▼"} 
                         </Tooltip>
                     </th>
                     <th className="px-3 py-3 md:px-1 cursor-pointer" onClick={toggleSortByStartTime}>
                         <Tooltip title="sort by Trainer Name" placement="right">
-                        Start Time {sortByStartTime  ? "▲" : "▼"} 
+                            Start Time {sortByStartTime  ? "▲" : "▼"} 
                         </Tooltip>
                     </th>
                     <th className="px-3 py-3 md:px-1">End Time</th>

@@ -11,7 +11,7 @@ const AllLogsProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
 
 
-    const fetchAllLogs = useCallback (async () => {
+    const fetchAllLogs = useCallback (async ({ page = 1, pageSize = 100, search = '' } = {}) => {
         if (loading) return;
        
         const token = localStorage.getItem('token');
@@ -23,7 +23,13 @@ const AllLogsProvider = ({ children }) => {
         setLoading(true);
         try {
             const response = await axios.get(`${BASE_URL}/api/logs/`,
-            { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+            { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` },
+            params: {
+              page,
+              page_size: pageSize,
+              search,
+          },
+          }
             );
             const data = response.data;
             // console.log(data);

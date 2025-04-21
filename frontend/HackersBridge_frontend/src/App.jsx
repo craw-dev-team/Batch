@@ -104,6 +104,7 @@ function App() {
                           <Route path={route.TRAINERS_PATH} element={<TrainersHome />} />
                           <Route path="/trainers/:trainerId" element={<SpecificTrainerPage />} />
                           <Route path={route.COURSES_PATH} element={<CoursesHome />} />
+                          <Route path="/course/:courseId" element={<SpecificCoursePage />} />
                           <Route path={route.ADD_DETAILS_COORDINATORS_PATH} element={<CoordinatorsHome />} />
                           <Route path="/add-details/coordinators/:coordinatorId" element={<SpecificCoordinatorPage />} />
                           <Route path={route.ADD_DETAILS_COUNSELLORS_PATH} element={<CounsellorsHome />} />

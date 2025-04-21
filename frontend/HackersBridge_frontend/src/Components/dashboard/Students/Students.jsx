@@ -2,8 +2,8 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import CreateStudentForm from "./CreateStudentForm";
 import axios from "axios";
-import { Button, message, Popconfirm,  Avatar, Tag, Tooltip, Switch, Input, Spin, Empty, Pagination  } from 'antd';
-import { EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
+import { Button, message, Popconfirm,  Avatar, Tag, Tooltip, Switch, Input, Spin, Empty, Pagination, Dropdown  } from 'antd';
+import { EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined, FilterOutlined , RightOutlined } from '@ant-design/icons';
 import BASE_URL from "../../../ip/Ip";
 import StudentCards from "../SpecificPage/StudentCard";
 import { useAuth } from "../AuthContext/AuthContext";
@@ -30,15 +30,30 @@ const Students = () => {
     const pageSize = 30;
 
 
+    // for filtering data based on mode, language, preferred week, location
+    const [sortByMode, setSortByMode] = useState(null);
+    const [sortByLanguage, setSortByLanguage] = useState(null);
+    const [sortByPreferredWeek, setSortByPreferredWeek] = useState(null);
+    const [sortByLocation, setSortByLocation] = useState(null);
+
+
     const handleTabClick = (tab) => {
         setActiveTab(tab);
     };
 
-    // HANDLE SEARCH INPUT AND DEBOUNCE 
+
+    // FETCH STUDENTDATA OM MOUNT
     useEffect(() => {
+        fetchStudents({  page: currentPage, pageSize, search: searchTerm, mode: sortByMode, language: sortByLanguage, preferred_week: sortByPreferredWeek, location: sortByLocation })        
+    },[!isModalOpen, searchTerm, currentPage, sortByMode, sortByLanguage, sortByPreferredWeek, sortByLocation]);
+
+    console.log(studentData);
+    
+    // HANDLE SEARCH INPUT AND DEBOUNCE 
+    useEffect(() => {        
         const handler = setTimeout(() => {
           setSearchTerm(inputValue.trimStart());
-        }, 10000); // debounce delay in ms
+        }, 500); // debounce delay in ms
       
         return () => {
           clearTimeout(handler); // clear previous timeout on re-typing
@@ -46,27 +61,22 @@ const Students = () => {
       }, [inputValue]);
 
       
-    
-    useEffect(() => {
-        fetchStudents({  page: currentPage, pageSize, search: searchTerm, })        
-    },[!isModalOpen, searchTerm, currentPage]);
 
        // Fetch students after deletion or modal interaction
           useEffect(() => {
-            // fetchStudents();  // Fetch courses after deletion
             setIsDeleted(false); // Reset deletion flag
    
             
             if (studentData) {
                 // Ensure trainerData.all_data.trainers exists and is an array
-                const studentssArray = Array.isArray(studentData?.results)
+                const studentsArray = Array.isArray(studentData?.results)
                     ? studentData?.results
                     : [];
     
                 // Set a timeout to wait 2 seconds before initializing statuses
                 const timer = setTimeout(() => {
                     const initialStatuses = {};
-                    studentssArray.forEach((student) => {
+                    studentsArray.forEach((student) => {
                         initialStatuses[student.id] = student.status === "Active"; 
                     });
     
@@ -143,13 +153,14 @@ const Students = () => {
     };
 
 
-     // Handle Toggle of trainer active and inactive 
+    // Handle Toggle of trainer active and inactive 
      const handleToggle = async (checked, studentId) => {
         const newStatus = checked ? "Active" : "Inactive";
         
         //  Optimistically update UI before API call
         setStudentStatuses((prev) => ({ ...prev, [studentId]: checked }));
-    
+        console.log("Sending to server:", { status: newStatus });
+
         try {
             await axios.put(`${BASE_URL}/api/students/edit/${studentId}/`, 
                 { status: newStatus },
@@ -170,32 +181,105 @@ const Students = () => {
         navigate(`/students/${encodedTrainerId}`);
     };
 
+        
+        // HANDLE SORTING OF THE DATA BASED ON MODE, LANGUAGE, PREFERRED WEEK, LOCATION
+        // const sortedBatches = useMemo(() => {
+        //     let sorted = [...studentData?.results];
+        
+        
+        //     // Apply Filters (Mode, Language, Preferred Week, Location, Course)
+        //     if (sortByMode) {
+        //         sorted = sorted.filter(student => student.mode === sortByMode);
+        //     }
+        
+        //     if (sortByLanguage) {
+        //         sorted = sorted.filter(student => student.language === sortByLanguage);
+        //     }
+        
+        //     if (sortByPreferredWeek) {
+        //         sorted = sorted.filter(student => student.preferred_week === sortByPreferredWeek);
+        //     }
+        
+        //     if (sortByLocation) {
+        //         sorted = sorted.filter(student => student.location === sortByLocation);
+        //     }
+        
+        //     return sorted;
+        // }, [studentData?.results, sortByMode, sortByLanguage, sortByPreferredWeek, sortByLocation]);
+        
 
-      // Filter students based from all students data 
-        const filteredStudents = useMemo(() => {
-            if (!Array.isArray(studentData?.results)) return [];
 
-            return studentData?.results.filter(student => 
-                student?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                student?.email.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                student.phone.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                student.enrollment_no.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                student.support_coordinator_name.toLowerCase().includes(searchTerm.toLowerCase()) 
-            )
-        },[studentData, searchTerm])
+        const handleSort = async (key, filterType) => {
+            console.log(key);
+            if (key === "clear") {
+                
+                if (filterType === "mode") setSortByMode(null);
+                if (filterType === "language") setSortByLanguage(null);
+                if (filterType === "preferred_week") setSortByPreferredWeek(null);
+                if (filterType === "location") setSortByLocation(null);
+                
+                return;
+            }
+        
+            if (filterType === "mode") setSortByMode(key);
+            if (filterType === "language") setSortByLanguage(key);
+            if (filterType === "preferred_week") setSortByPreferredWeek(key);
+            if (filterType === "location") setSortByLocation(key);
+        
+        };
 
-            // Ensure currentPage resets to 1 when search term changes
-            // useEffect(() => {
-            //     setCurrentPage(1);
-            // }, [searchTerm]);
 
-            // // Calculate the total pages based on the filtered students
-            // const totalPages = Math.ceil(filteredStudents.length / studentsPerPage);
+        const modeMenu = {
+            items: [
+                { key: "Online", label: <span style={{ color: "red" }}>Online</span> },
+                { key: "Offline", label: <span style={{ color: "green" }}>Offline</span> },
+                { key: "Hybrid", label: <span style={{ color: "blue" }}>Hybrid</span> },
+                { type: "divider" },
+                { key: "clear", label:  <span style={{ color: "red", fontWeight: "bold" }}>Clear Filter</span> },
+            ],
+            onClick: ({ key }) => {
+                if (key === "clear") {
+                  setSortByMode(""); // clear filter
+                } else {
+                  setSortByMode(key); // apply mode filter
+                }
+              },
+        };
 
-            // // Get students for the current page (AFTER SEARCH FILTERING)
-            // const indexOfLastStudent = currentPage * studentsPerPage;
-            // const indexOfFirstStudent = indexOfLastStudent - studentsPerPage;
-            // const currentStudents = filteredStudents.slice(indexOfFirstStudent, indexOfLastStudent);
+
+        const languageMenu = {
+            items: [
+                { key: "Hindi", label: <span style={{ color: "green" }}>Hindi</span> },
+                { key: "English", label: <span style={{ color: "red" }}>English</span> },
+                { key: "Both", label: <span style={{ color: "blue" }}>Both</span> },
+                { type: "divider" },
+                { key: "clear", label:  <span style={{ color: "red", fontWeight: "bold" }}>Clear Filter</span> },
+            ],
+            onClick: ({ key }) => handleSort(key, "language"),
+        };
+
+        const preferredWeekMenu = {
+            items: [
+                { key: "Weekdays", label: <span style={{ color: "gray" }}>Weekdays</span> },
+                { key: "Weekends", label: <span style={{ color: "gray" }}>Weekends</span> },
+                { key: "both", label: <span style={{ color: "gray" }}>Both</span> },
+                { type: "divider" },
+                { key: "clear", label:  <span style={{ color: "red", fontWeight: "bold" }}>Clear Filter</span> },
+            ],
+            onClick: ({ key }) => handleSort(key, "preferred_week"),
+        };
+
+        const locationMenu = {
+            items: [
+                { key: "1", label: <span style={{ color: "blue" }}>Saket</span> },
+                { key: "2", label: <span style={{ color: "magenta" }}>Laxmi Nagar</span> },
+                { key: "3", label: <span style={{ color: "blue" }}>Both</span> },
+                { type: "divider" },
+                { key: "clear", label:  <span style={{ color: "red", fontWeight: "bold" }}>Clear Filter</span> },
+            ],
+            onClick: ({ key }) => handleSort(Number(key), "location"),
+        };
+
 
 
     return (
@@ -321,6 +405,12 @@ const Students = () => {
             <table className="w-full text-xs text-left text-gray-500">
             <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10">
                 <tr>
+                    <td scope="col" className="p-2">
+                        <div className="flex items-center">
+                            <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
+                            <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
+                        </div>
+                    </td>
                     <th scope="col" className="px-3 py-3 md:px-2">
                         s.No
                     </th>
@@ -343,16 +433,44 @@ const Students = () => {
                         Courses
                     </th>
                     <th scope="col" className="px-3 py-3 md:px-1">
-                        Language
+                        Mode
+                        <Tooltip title="Sort by Mode" placement="top">
+                        <span>
+                            <Dropdown menu={modeMenu} >
+                                <Button type="text" icon={<FilterOutlined  style={{ color: sortByMode ? "blue" : "black" }} className="w-3"/>} />
+                            </Dropdown>
+                        </span>
+                        </Tooltip>
                     </th>
                     <th scope="col" className="px-3 py-3 md:px-1">
-                        Mode
+                        Language
+                        <Tooltip title="Sort by Language" placement="top">
+                        <span>
+                            <Dropdown menu={languageMenu} >
+                                <Button type="text" icon={<FilterOutlined  style={{ color: sortByLanguage ? "blue" : "black" }} className="w-3"/>} />
+                            </Dropdown>
+                        </span>
+                        </Tooltip>
                     </th>
                     <th scope="col" className="px-3 py-3 md:px-1">
                         Preferred Week
+                        <Tooltip title="Sort by Preferred Week" placement="top">
+                        <span>
+                            <Dropdown menu={preferredWeekMenu} >
+                                <Button type="text" icon={<FilterOutlined style={{ color: sortByPreferredWeek ? "blue" : "black" }} className="w-3"/>} />
+                            </Dropdown>
+                        </span>
+                        </Tooltip>
                     </th>
                     <th scope="col" className="px-3 py-3 md:px-1">
                         Location
+                        <Tooltip title="Sort by Location" placement="top">
+                        <span>
+                            <Dropdown menu={locationMenu} >
+                                <Button type="text" icon={<FilterOutlined style={{ color: sortByLocation ? "blue" : "black" }} className="w-3"/>} />
+                            </Dropdown>
+                        </span>
+                        </Tooltip>
                     </th>
                     <th scope="col" className="px-3 py-3 md:px-1">
                         course Counsellor
@@ -377,9 +495,15 @@ const Students = () => {
                         </td>
                     </tr>
                
-            ) : filteredStudents.length > 0 ? (
-                filteredStudents.map((item, index) => (
-                <tr key={item.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 scroll-smooth">
+            ) : studentData?.results?.length > 0 ? (
+                studentData.results.map((item, index) => (
+                <tr key={item.id} className="bg-white border-b border-gray-200 hover:bg-gray-50 scroll-smooth">
+                    <td scope="col" className="p-2">
+                        <div className="flex items-center">
+                            <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
+                            <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
+                        </div>
+                    </td>
                     <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
                         {(currentPage - 1) * pageSize + index + 1}
                     </td>
@@ -429,39 +553,47 @@ const Students = () => {
                                 ))}
                             </Avatar.Group>
                     </td>
+
+
+                    <td className="px-3 py-2 md:px-1">
+                    <Tag bordered={false} color={item.mode == 'Offline'? 'green' : item.mode == 'Online'? 'volcano' : 'geekblue'}>{item.mode}</Tag>
+                    </td>
+
                     <td className="px-3 py-2 md:px-1">
                     <Tag bordered={false} color={item.language == 'Hindi'? 'green' : item.language == 'English'? 'volcano' : 'blue'}>{item.language}</Tag>
                     </td>
-                    <td className="px-3 py-2 md:px-1">
-                    <Tag bordered={false} color={item.mode == 'Offline'? 'green' : item.mode == 'Online'? 'volcano' : 'geekblue'}>{item.mode}</Tag>
 
-                    </td>
                     <td className="px-3 py-2 md:px-1">
                         <Tag bordered={false} color={item.preferred_week === "Weekdays" ? "cyan" : item.preferred_week === "Weekends" ? "gold" : "geekblue" }>
                             {item.preferred_week}
                         </Tag>
                     </td>
+
                     <td className="px-3 py-2 md:px-1">
-                        {item.location == '1' ? <Tag color="blue">Saket</Tag> : item.location == "2" ? <Tag color="magenta">Laxmi Nagar</Tag> : <Tag color="geekblue">Both</Tag> }
+                        {item.location == "1" ? <Tag color="blue">Saket</Tag> : item.location == "2" ? <Tag color="magenta">Laxmi Nagar</Tag> : <Tag color="geekblue">Both</Tag> }
                     </td>
+
                     <td className="px-3 py-2 md:px-1">
                         {item.course_counsellor_name}
                     </td>
+
                     <td className="px-3 py-2 md:px-1">
                         {item.support_coordinator_name}
                     </td>
+                    
                     <td className="px-3 py-2 md:px-1">
                         <Switch
                             size="small"
                             checkedChildren={<CheckOutlined />}
                             unCheckedChildren={<CloseOutlined />}
-                            checked={studentStatuses[item.id] || false} // Get correct status per trainer
+                            checked={studentStatuses[item.id] || false} // Get correct status per student
                             onChange={(checked) => handleToggle(checked, item.id)}
                             style={{
                                 backgroundColor: studentStatuses[item.id] ? "#38b000" : "gray", // Change color when checked
                               }}
                         />
                     </td>
+
                     <td > <Button 
                             color="primary" 
                             variant="filled" 

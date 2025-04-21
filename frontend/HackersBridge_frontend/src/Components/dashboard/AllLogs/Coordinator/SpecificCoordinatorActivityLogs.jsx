@@ -1,19 +1,24 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Spin, Empty } from 'antd';
+import { Spin, Empty, Pagination } from 'antd';
 import dayjs from "dayjs";
 import { useSpecificCoordinator } from "../../Contexts/SpecificCoordinators";
 
 
 
 const SpecificCoordinatorActivityLogs = () => {
-    const { specificCoordinator, loading, fetchSpecificCoordinator } = useSpecificCoordinator();
+    const { loading, activityLogs, fetchSpecificCoordinatorActivityLogs } = useSpecificCoordinator();
     const { coordinatorId } = useParams();
 
-    const { activity_logs } = specificCoordinator?.Coordinator_Info || [];
     
     const navigate = useNavigate();
 
+    const [searchTerm, setSearchTerm] = useState('');
+    const [inputValue, setInputValue] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 50;
+
+    
     useEffect(() => {        
         if (coordinatorId) {
             try {
@@ -21,12 +26,31 @@ const SpecificCoordinatorActivityLogs = () => {
                 const originalCoordinatorId = atob(coordinatorId);
 
                 // Fetch trainer data with the decoded ID
-                fetchSpecificCoordinator(originalCoordinatorId);
+                fetchSpecificCoordinatorActivityLogs(originalCoordinatorId, {
+                    page: currentPage,
+                    pageSize,
+                    search: searchTerm,
+                    type: "activity_logs",
+                });
             } catch (error) {
                 console.error("Error decoding trainer ID:", error);
             }
         }
-    },[]);
+    },[coordinatorId, currentPage, pageSize, searchTerm]);
+
+
+     // HANDLE SEARCH INPUT AND DEBOUNCE 
+     useEffect(() => {
+        const handler = setTimeout(() => {
+          setSearchTerm(inputValue.trimStart());
+        }, 10000); // debounce delay in ms
+      
+        return () => {
+          clearTimeout(handler); // clear previous timeout on re-typing
+        };
+      }, [inputValue]);
+
+      
 
 
     // HANDLE NAVIGATE TO TRAINER INFO
@@ -35,7 +59,6 @@ const SpecificCoordinatorActivityLogs = () => {
         const encodedCoordinatorId = btoa(coordinatorId); 
         navigate(`/add-details/coordinators/${encodedCoordinatorId}`);
     };
-    console.log(specificCoordinator);
     
     
     
@@ -87,11 +110,11 @@ const SpecificCoordinatorActivityLogs = () => {
                         </td>
                     </tr>
                
-            ) : Array.isArray(activity_logs) && activity_logs.length > 0 ? (
-                activity_logs.map((item, index) => (
+            ) : Array.isArray(activityLogs?.results) && activityLogs?.results.length > 0 ? (
+                activityLogs?.results.map((item, index) => (
                 <tr key={item.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 scroll-smooth">
                     <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
-                        { index + 1}
+                        {(currentPage - 1) * pageSize + index + 1}
                     </td>
                     <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleCoordinatorClick(item.id)}>
                         {item.actor}
@@ -127,63 +150,6 @@ const SpecificCoordinatorActivityLogs = () => {
                     <td className="px-3 py-2 md:px-1">
                         {dayjs(item.timestamp).format("DD-MM-YYYY hh:mm A")}
                     </td>
-                    {/* <td className="px-3 py-2 md:px-1">
-
-                    </td>
-                    <td className="px-3 py-2 md:px-1">
-                       
-                    </td>
-                    <td className="px-3 py-2 md:px-1">
-
-                    </td>
-                    <td className="px-3 py-2 md:px-1">
-
-                    </td>
-                    <td className="px-3 py-2 md:px-1">
-
-                    </td> */}
-                    {/* <td className="px-3 py-2 md:px-1">
-                        <Switch
-                            size="small"
-                            checkedChildren={<CheckOutlined />}
-                            unCheckedChildren={<CloseOutlined />}
-                            checked={studentStatuses[item.id] || false} // Get correct status per trainer
-                            onChange={(checked) => handleToggle(checked, item.id)}
-                            style={{
-                                backgroundColor: studentStatuses[item.id] ? "#38b000" : "gray", // Change color when checked
-                              }}
-                        />
-                    </td> */}
-                    {/* <td > <Button 
-                            color="primary" 
-                            variant="filled" 
-                            className="rounded-lg w-auto pl-3 pr-3 py-0 my-1 mr-1"
-                            onClick={(e) => {
-                                e.stopPropagation(); // Prevent the click from bubbling to the <td> click handler
-                                handleEditClick(item);  // Open the form with selected course data
-                                setIsModalOpen(true);   // Open the modal
-                            }}
-                        >
-                            <EditOutlined />
-                        </Button>
-                        <Popconfirm
-                            title="Delete the Student"
-                            description="Are you sure you want to delete this Student?"
-                            onConfirm={() => confirm(item.id)}
-                            onCancel={cancel}
-                            okText="Yes"
-                            cancelText="No"
-                        >
-                            <Button 
-                                color="danger" 
-                                variant="filled" 
-                                className="rounded-lg w-auto px-3"
-                                onClick={(e) => e.stopPropagation()} // Prevent the click from triggering the Edit button
-                            >
-                                <DeleteOutlined />
-                            </Button>
-                    </Popconfirm>
-                    </td> */}
                 </tr>
             ))
         ) : (
@@ -196,6 +162,17 @@ const SpecificCoordinatorActivityLogs = () => {
             </tbody>
             </table>
         </div>
+
+            <div className="flex justify-center items-center mt-0 py-3 bg-slate-200">
+                <Pagination
+                    current={currentPage}
+                    total={activityLogs?.count || 0}
+                    pageSize={pageSize} // example: 10
+                    onChange={(page) => setCurrentPage(page)}
+                    showSizeChanger={false}    // hide page size select
+                    showQuickJumper={false}    // hide quick jump input
+                />
+            </div>
 
         </div>
                 </div>

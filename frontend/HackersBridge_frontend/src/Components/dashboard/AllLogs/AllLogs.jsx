@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, message, Popconfirm, Avatar, Tooltip, Select, Tag, Dropdown, Badge, Spin, Empty, Menu } from 'antd';
+import { Button, message, Popconfirm, Avatar, Tooltip, Select, Tag, Dropdown, Pagination, Spin, Empty, Menu } from 'antd';
 import dayjs from "dayjs";
 import { useAllLogs } from "../AllLogsContext/AllLogsContext";
 
@@ -8,19 +8,62 @@ import { useAllLogs } from "../AllLogsContext/AllLogsContext";
 const AllLogs = () => {
     const { allLogsData, loading, fetchAllLogs } = useAllLogs();
 
+    const [searchTerm, setSearchTerm] = useState('');
+    const [inputValue, setInputValue] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 100;
 
+console.log(allLogsData);
 
+        // HANDLE SEARCH INPUT AND DEBOUNCE 
+        useEffect(() => {
+            const handler = setTimeout(() => {
+              setSearchTerm(inputValue.trimStart());
+            }, 10000); // debounce delay in ms
+          
+            return () => {
+              clearTimeout(handler); // clear previous timeout on re-typing
+            };
+          }, [inputValue]);
 
-    useEffect(() => {
-        fetchAllLogs();
-    },[]);
+        
+        // FETCH STUDENTdATA OM MOUNT
+        useEffect(() => {
+            fetchAllLogs({  page: currentPage, pageSize, search: searchTerm, });
+        },[searchTerm, currentPage]);
     
+
     return (
         <>
            <div className="w-auto pt-4 px-2 mt-16 bg-white">
                 <div className="relative w-full h-auto shadow-md sm:rounded-lg border border-gray-50 dark:border dark:border-gray-600">
                     <div className="w-full px-4 py-3 text flex justify-between font-semibold ">
                         <h1>All Logs</h1>
+
+                        <label htmlFor="table-search" className="sr-only">Search</label>
+                            <div className="relative">
+                                <input  value={searchTerm} type="text" id="table-search" placeholder="Search for items"
+                                    onChange={(e) => {
+                                        const value = e.target.value.trimStart();
+                                        setSearchTerm(value);
+                                        setCurrentPage(1);
+                                    }}
+                                    className="block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg w-40 h-7 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" 
+                                />
+                                <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                                <button onClick={() => setSearchTerm("")}>
+                                {searchTerm ? (
+                                        <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M6.293 6.293a1 1 0 011.414 0L10 8.586l2.293-2.293a1 1 0 111.414 1.414L11.414 10l2.293 2.293a1 1 0 01-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 01-1.414-1.414L8.586 10 6.293 7.707a1 1 0 010-1.414z" clipRule="evenodd"></path>
+                                        </svg>
+                                    ) : (
+                                        <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"></path>
+                                        </svg>
+                                    )}
+                                </button>
+                                </div>
+                            </div>
                     </div>
 
                     <div className={`overflow-hidden pb-2 relative `}>
@@ -60,11 +103,11 @@ const AllLogs = () => {
                         </td>
                     </tr>
                
-            ) : Array.isArray(allLogsData) && allLogsData.length > 0 ? (
-                allLogsData.map((item, index) => (
+            ) : Array.isArray(allLogsData?.results) && allLogsData?.results.length > 0 ? (
+                allLogsData?.results.map((item, index) => (
                 <tr key={item.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 scroll-smooth">
                     <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
-                        { index + 1}
+                        { (currentPage -1) * pageSize + index + 1}
                     </td>
                     <td className="px-3 py-2 md:px-1">
                         {item.actor_first_name || item.actor}
@@ -166,6 +209,17 @@ const AllLogs = () => {
             </tbody>
             </table>
         </div>
+            
+            <div className="flex justify-center items-center py-3 bg-slate-300">
+            <Pagination
+                    current={currentPage}
+                    total={allLogsData?.count || 0}
+                    pageSize={pageSize} // example: 10
+                    onChange={(page) => setCurrentPage(page)}
+                    showSizeChanger={false}    // ✅ hide page size select
+                    showQuickJumper={false}    // ✅ hide quick jump input
+                />
+            </div>
 
 
         </div>

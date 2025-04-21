@@ -53,7 +53,7 @@ const Batches = () => {
     useEffect(() => {
         if (!isModalOpen || !batchData || isDeleted) {
           fetchBatches();
-          if (isDeleted) setIsDeleted(false); // ✅ reset flag after fetch
+          if (isDeleted) setIsDeleted(false); // reset flag after fetch
         }
       }, [isModalOpen, isDeleted]);
       
@@ -668,12 +668,12 @@ const Batches = () => {
         <table className="w-full text-xs text-left text-gray-500 dark:text-gray-400 ">
             <thead className="text-xs text-gray-700 uppercase bg-blue-50 dark:bg-gray-700 dark:text-gray-400 sticky top-0 z-10">
                 <tr>
-                    {/* <th scope="col" className="p-4">
+                    <th scope="col" className="p-2">
                         <div className="flex items-center">
-                            <input id="checkbox-all-search" type="checkbox" className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
+                            <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
                             <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
                         </div>
-                    </th> */}
+                    </th>
                     <th scope="col" className="px-3 py-3 md:px-2">
                         S.No
                     </th>
@@ -782,10 +782,18 @@ const Batches = () => {
     ) : sortedBatches.length > 0 ? (
         sortedBatches.map((item, index) => (
             <tr key={index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 scroll-smooth">
+                <td scope="col" className="p-2">
+                    <div className="flex items-center">
+                        <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
+                        <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
+                    </div>
+                </td>
                 <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900 dark:text-white">
                     {index + 1}
                 </td>
-                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleBatchClick(item.id)}>{item.batch_id}</td>
+                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleBatchClick(item.id)}>
+                    {item.batch_id}
+                </td>
                 <td className="px-3 py-2 md:px-1">
                     {new Date(`1970-01-01T${item.batch_time_data?.start_time}`).toLocaleString("en-US", {
                     hour: "numeric",
@@ -818,6 +826,30 @@ const Batches = () => {
                 <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.trainer)}>{item.trainer_name}</td>
                 
                 <td className="px-3 py-2 md:px-1 relative">
+                {/* <Avatar.Group
+                    max={{
+                        count: 2,
+                        style: {
+                        color: "#f56a00",
+                        backgroundColor: "#fde3cf",
+                        height: "24px",
+                        width: "24px",
+                        },
+                    }}
+                    >
+                    {item.student_name?.slice(0, 0).map((name, index) => (
+                        <Avatar size={24} style={{ backgroundColor: "#87d068" }}>
+                            {name[0]}
+                        </Avatar>
+                    ))}
+                    {item.student_name?.map((name, index) => (
+                        <Avatar key={index} size={24} style={{ display: "none" }}>
+                        {name[0]}
+                        </Avatar>
+                    ))}
+                </Avatar.Group> */}
+
+
                     <Avatar.Group
                        max={{
                             count: 2,
@@ -835,11 +867,12 @@ const Batches = () => {
                                     size={24}
                                     style={{ backgroundColor: "#87d068" }}
                                 >
-                                    {name[0]} {/* Show initials if no avatar */}
+                                    {name[0]} 
                                 </Avatar>
                             </Tooltip>
                         ))}
                     </Avatar.Group>
+
                     <div className="relative inline-block">
                         <Button
                             disabled={item.status === "Cancelled" || item.status === "Completed"}

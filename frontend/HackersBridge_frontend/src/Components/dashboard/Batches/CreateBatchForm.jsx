@@ -26,7 +26,7 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
     const { batchFormData, setBatchFormData, errors, setErrors, resetBatchForm, fetchBatches } = useBatchForm();
     const { coursesData, fetchCourses } = useCourseForm();
     const { trainerData, fetchTrainers } = useTrainerForm();
-    const { studentData, fetchStudents, allStudentData, fetchAllStudent } = useStudentForm();
+    const { fetchStudents, allStudentData, fetchAllStudent } = useStudentForm();
     const { token } = useAuth();
     const [ loading, setLoading ] = useState(false);
 
@@ -123,7 +123,7 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
                         // profile_picture: studentFormData.studentProfilePicture,
                     };
         
-                    console.log("Final Payload:", JSON.stringify(payload, null, 2));
+                    // console.log("Final Payload:", JSON.stringify(payload, null, 2));
         
         try {
             setLoading(true); // Start loading

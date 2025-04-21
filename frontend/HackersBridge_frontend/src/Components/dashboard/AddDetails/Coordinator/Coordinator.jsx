@@ -328,8 +328,8 @@ const Coordinators = () => {
                                         <EditOutlined />
                                     </Button>
                                     <Popconfirm
-                                        title="Delete the Course"
-                                        description="Are you sure you want to delete this course?"
+                                        title="Delete the Coordinator"
+                                        description="Are you sure you want to delete this Coordinator?"
                                         onConfirm={() => confirm(item.id)}
                                         onCancel={cancel}
                                         okText="Yes"
