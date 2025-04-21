@@ -52,7 +52,7 @@ urlpatterns = [
     path('student-course/edit/<int:id>/', StudentCourseEditAPIView.as_view(), name='student-course-edit'),
     path('generate-certificate/<int:id>/', GenerateCertificateAPIView.as_view(), name='generate-certificate'),
     path('download-certificate/<int:id>/', DownloadCertificateAPIView.as_view(), name='download_certificate'),
-    # path('email-tracker/<int:id>/', email_open_tracker, name='email-tracker'),
+    path('email-tracker/<int:id>/', email_open_tracker, name='email-tracker'),
     # path('students/free/', FreeStudentListView.as_view(), name='trainer-availability'),
     
     path('trainers/', TrainerListAPIviews.as_view(), name='trainer-list'),
@@ -81,6 +81,10 @@ urlpatterns = [
     path('books/edit/<int:id>/', BookUpdateAPIView.as_view(), name='book-edit'),
     path('books/delete/<int:id>/', BookDeleteAPIView.as_view(), name='book-delete'),
     path('student/book/<int:id>/', StudentBookAllotmentAPIView.as_view(), name='student-book-allotment'),
+    path('course/info/<int:id>/', CourseinfoAPIView.as_view(), name='course-take'),
+    path('course/take-edit/<int:course_id>/', CourseTakebyEdit.as_view(), name='course-take-edit'),
+    path('student-course/update/<int:course_id>/', StudentCourseUpdate.as_view(), name='course-take-edit'),
+    path('batch-course/update/<int:course_id>/', BatchCourseUpdate.as_view(), name='course-take-edit'),
     
 ]
 

@@ -2,7 +2,7 @@ import  os
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, filters
 from .models import Batch, BatchStudentAssignment
 from .serializer import BatchSerializer, BatchCreateSerializer, BatchStudentAssignmentSerializer, LogEntrySerializer
 from Trainer.serializer import TrainerSerializer
@@ -27,8 +27,22 @@ import uuid
 from pathlib import Path
 from django.utils.dateparse import parse_date
 from collections import defaultdict
-
+from rest_framework.generics import ListAPIView
+from rest_framework.pagination import PageNumberPagination
 cid = str(uuid.uuid4())
+
+
+
+
+# 🔹 Pagination class
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 100
+    page_size_query_param = 'page_size'
+    max_page_size = 200
+
+
+
+
 
 # class BatchAPIView(APIView):
 #     """
@@ -141,12 +155,12 @@ class BatchAPIView(APIView):
         # ✅ Fetch and categorize batches
         batch_queryset = batches  # all batches already prefetched
 
-        batches_ending_soon = [b for b in batch_queryset if b.status == 'Running' and b.end_date <= upcoming_threshold]
-        running_batch = [b for b in batch_queryset if b.status == 'Running']
-        scheduled_batch = [b for b in batch_queryset if b.status == 'Upcoming']
-        completed_batch = [b for b in batch_queryset if b.status == 'Completed']
-        hold_batch = [b for b in batch_queryset if b.status == 'Hold']
-        cancelled_batch = [b for b in batch_queryset if b.status == 'Cancelled']
+        batches_ending_soon = [b for b in batch_queryset.order_by('end_date') if b.status == 'Running' and b.end_date <= upcoming_threshold]
+        running_batch = [b for b in batch_queryset.order_by('-start_date') if b.status == 'Running']
+        scheduled_batch = [b for b in batch_queryset.order_by('-start_date') if b.status == 'Upcoming']
+        completed_batch = [b for b in batch_queryset.order_by('-end_date') if b.status == 'Completed']
+        hold_batch = [b for b in batch_queryset.order_by('end_date') if b.status == 'Hold']
+        cancelled_batch = [b for b in batch_queryset.order_by('-end_date') if b.status == 'Cancelled']
 
         serializer = BatchSerializer(batch_queryset, many=True)
         data_map = {b['id']: b for b in serializer.data}
@@ -399,10 +413,117 @@ class AvailableStudentsAPIView(APIView):
 
         serialized_students = StudentSerializer(students, many=True).data
         return Response({"available_students": serialized_students}, status=200)
-    
+
+
+
+
+# class AvailableStudentsAPIView(APIView):
+#     """API to get available students for a batch."""
+#     authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
+#     permission_classes = [IsAuthenticated]
+
+#     def get(self, request, batch_id):
+#         if request.user.role not in ['admin', 'coordinator']:
+#             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
+
+#         batch = get_object_or_404(Batch, id=batch_id)
+
+#         # Base filter for active students in the same course
+#         filters = Q(courses__id=batch.course.id, status='Active')
+
+#         # Language filter
+#         if batch.language != "Both":
+#             filters &= Q(language__in=[batch.language, "Both"])
+
+#         # Week filter
+#         if batch.preferred_week != "Both":
+#             filters &= Q(preferred_week__in=[batch.preferred_week, "Both"])
+
+#         # Mode filter
+#         if batch.mode != "Hybrid":
+#             filters &= Q(mode__in=[batch.mode, "Hybrid"])
+
+#         # Location filter (Ensure location comparison is valid)
+#         if hasattr(batch.location, 'locality') and batch.location.locality != "Both":
+#             filters &= Q(location__locality__in=[batch.location.locality, "Both"])
+
+
+#         # Exclude students who are in a Running or Upcoming batch of the same course
+#         ongoing_batches = Batch.objects.filter(course=batch.course, status__in=['Running', 'Upcoming'])
+#         ongoing_students = Student.objects.filter(batch__in=ongoing_batches).values_list('id', flat=True)
+#         filters &= ~Q(id__in=ongoing_students)
+
+
+#         # ✅ Exclude students who have completed the course
+#         completed_batches = Batch.objects.filter(course=batch.course, status='Completed')
+#         completed_students = Student.objects.filter(batch__in=completed_batches).values_list('id', flat=True)
+#         filters &= ~Q(id__in=completed_students)
+
+        
+#         # ❌ Exclude students whose course status is completed in StudentCourse model
+#         completed_course_students = StudentCourse.objects.filter(
+#             course=batch.course,
+#             status='Completed'
+#         ).values_list('student_id', flat=True)
+#         filters &= ~Q(id__in=completed_course_students)
+
+#         # Query the filtered students
+#         students = Student.objects.filter(filters)
+
+#         # ✅ Apply Ethical Hacking required pre-requisite check
+
+#         prerequisites = {
+#             "Ethical Hacking": ['Basic Networking', 'Linux Essentials'],
+#             "AWS Associate": ['Basic Networking', 'Linux Essentials'],
+#             "AWS Security": ['AWS Associate'],
+#             "Advanced Penetration Testing": ['Ethical Hacking'],
+#             "Web Application Security":['Advanced Penetration Testing'],
+#             "Mobile Application Security": ['Web Application Security'],
+#             "Cyber Forensics Investigation": ['Ethical Hacking'],
+#         }
+
+#         required_courses = prerequisites.get(batch.course.name)
+
+#         if required_courses:
+#             course_statuses = StudentCourse.objects.filter(
+#                 student__in=students,
+#                 course__name__in=required_courses
+#             ).values('student_id', 'course__name', 'status')
+
+#             student_course_map = defaultdict(dict)
+#             for entry in course_statuses:
+#                 student_course_map[entry['student_id']][entry['course__name']] = entry['status']
+
+#             eligible_ids = []
+#             for student in students:
+#                 sid = student.id
+#                 course_data = student_course_map.get(sid, {})
+
+#                 # ✅ Case 1: Has both and both completed
+#                 if all(course_data.get(course) == 'Completed' for course in required_courses):
+#                     eligible_ids.append(sid)
+
+#                 # ✅ Case 2: Missing one or both courses (not enrolled)
+#                 elif len(course_data) < len(required_courses):
+#                     eligible_ids.append(sid)
+
+#             students = students.filter(id__in=eligible_ids)
+#         else:
+#             print("No prerequisites. Skipping filter.")
+
+#         serialized_students = StudentSerializer(students, many=True).data
+#         return Response({"available_students": serialized_students}, status=status.HTTP_200_OK)  
+
+
+
+
+
 # Exclude students who are already in the batch
 # enrolled_students = batch.student.values_list('id', flat=True)  # Get IDs of enrolled students
 # filters &= ~Q(id__in=enrolled_students)  # Exclude them from the queryset
+
+
 
 
 class AvailableTrainersAPIView(APIView):
@@ -813,23 +934,85 @@ class BatchLogListView(APIView):
 
 
 
-class LogEntryListAPIView(APIView):
-    """API to list and filter log entries."""
+
+# 🔹 List API View
+# class LogEntryListAPIView(ListAPIView):
+#     """Paginated log listing with filters (standard page-based)."""
+#     serializer_class = LogEntrySerializer
+#     authentication_classes = [TokenAuthentication]
+#     permission_classes = [IsAuthenticated]
+#     pagination_class = StandardResultsSetPagination
+#     filter_backends = [filters.SearchFilter]
+#     search_fields = ['object_repr', 'additional_data', 'actor__first_name', 'actor__username']
+
+#     def get_queryset(self):
+#         user = self.request.user
+
+#         if user.role not in ['admin', 'coordinator']:
+#             return LogEntry.objects.none()
+
+#         queryset = LogEntry.objects.all().order_by('-timestamp')
+
+#         # Apply filters
+#         action = self.request.query_params.get('action')
+#         actor_username = self.request.query_params.get('actor_username')
+#         actor_firstname = self.request.query_params.get('actor_firstname')
+#         object_id = self.request.query_params.get('object_id')
+
+#         if action:
+#             queryset = queryset.filter(action__iexact=action)
+
+#         if actor_username:
+#             queryset = queryset.filter(actor__username__iexact=actor_username)
+
+#         if actor_firstname:
+#             queryset = queryset.filter(actor__first_name__iexact=actor_firstname)
+
+#         if object_id:
+#             queryset = queryset.filter(object_id=object_id)
+
+#         log_counts = (
+#             LogEntry.objects
+#             .filter(actor__role='coordinator')
+#             .values('actor__id', 'actor__username', 'actor__first_name')
+#             .annotate(log_count=Count('id'))
+#             .order_by('-log_count')
+#         )
+
+#         info = {
+#                     'queryset':queryset,
+#                     'log_counts':log_counts
+#                 }
+
+#         return info
+
+
+
+# from rest_framework.response import Response
+# from django.db.models import Count
+
+class LogEntryListAPIView(ListAPIView):
+    """Paginated log listing with filters (standard page-based)."""
+    serializer_class = LogEntrySerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
+    pagination_class = StandardResultsSetPagination
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['object_repr', 'additional_data', 'actor__first_name', 'actor__username']
 
-    def get(self, request):
-        """Retrieve and filter log entries based on query parameters."""
-        if request.user.role not in ['admin', 'coordinator']:
-            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+    def get_queryset(self):
+        user = self.request.user
+
+        if user.role not in ['admin', 'coordinator']:
+            return LogEntry.objects.none()
 
         queryset = LogEntry.objects.all().order_by('-timestamp')
 
-        # Filters
-        action = request.query_params.get('action')
-        actor_username = request.query_params.get('actor_username')
-        actor_firstname = request.query_params.get('actor_firstname')
-        object_id = request.query_params.get('object_id')
+        # Apply filters
+        action = self.request.query_params.get('action')
+        actor_username = self.request.query_params.get('actor_username')
+        actor_firstname = self.request.query_params.get('actor_firstname')
+        object_id = self.request.query_params.get('object_id')
 
         if action:
             queryset = queryset.filter(action__iexact=action)
@@ -843,5 +1026,19 @@ class LogEntryListAPIView(APIView):
         if object_id:
             queryset = queryset.filter(object_id=object_id)
 
-        serializer = LogEntrySerializer(queryset, many=True)
-        return Response(serializer.data)
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        today = timezone.now().date()
+        
+        log_counts = (
+            LogEntry.objects
+            .filter(actor__role='coordinator', timestamp__date=today)
+            .values('actor__id', 'actor__username', 'actor__first_name')
+            .annotate(log_count=Count('id'))
+            .order_by('-log_count')
+        )
+
+        response.data['log_counts_by_coordinator'] = log_counts
+        return response

@@ -1,3 +1,5 @@
+import json
+import uuid
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -11,8 +13,6 @@ from auditlog.models import LogEntry
 from django.contrib.contenttypes.models import ContentType
 from django.forms.models import model_to_dict
 from django.utils.timezone import now
-import json
-import uuid
 from django.utils.dateparse import parse_date
 
 

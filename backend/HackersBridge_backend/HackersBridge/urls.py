@@ -23,6 +23,7 @@ urlpatterns = [
     path('nexus/',include('nexus.urls')),
     path('Student/',include('Student.urls')),
     path('Trainer/',include('Trainer.urls')),
-    path('Coordinator/',include('Coordinator.urls')),
     path('Counsellor/',include('Counsellor.urls')),
+    path('Coordinator/',include('Coordinator.urls')),
+    path('Student_login/',include('Student_login.urls')),
 ]
