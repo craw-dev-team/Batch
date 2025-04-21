@@ -239,12 +239,12 @@ const Trainers = () => {
         <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10">
                 <tr>
                     {/* <th></th> */}
-                    {/* <th scope="col" className="p-4">
+                    <th scope="col" className="p-2">
                         <div className="flex items-center">
-                            <input id="checkbox-all-search" type="checkbox" className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
+                            <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
                             <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
                         </div>
-                    </th> */}
+                    </th>
                     <th scope="col" className="px-3 py-3 md:px-2">
                         S.No
                     </th>
@@ -360,12 +360,15 @@ const Trainers = () => {
             {filteredTrainers.length > 0 ? (
             filteredTrainers.map((item, index) => (
                 <tr key={index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 scroll-smooth">
+                     <td scope="col" className="p-2">
+                        <div className="flex items-center">
+                            <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
+                            <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
+                        </div>
+                    </td>
                     <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
                         {index + 1}
                     </td>
-                    {/* <td className="px-3 py-2 md:px-1">
-                        {item.id}
-                    </td> */}
                     <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.id)}>
                         {item.trainer_id}
                     </td>

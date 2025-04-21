@@ -3,33 +3,12 @@ import axios from "axios";
 import BASE_URL from "../../../ip/Ip";
 import { message } from "antd";
 
-const AuthContext = createContext();
+const StudentAuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {
+export const StudentAuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem("token") || "");
   const [loading, setLoading] = useState(true);
-
-
-
-
-
-  // const register = async (userData) => {
-  //   // if (!token) {
-  //   //     console.error("No token found, user might be logged out.");
-  //   //     return;
-  //   // };
-
-  //   try {
-  //     await axios.post(`${BASE_URL}/api/register/`, 
-  //       userData,
-  //       // { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
-  //     );
-  //     message.success("Registration successful");
-  //   } catch (error) {
-  //     message.error(error.response?.data?.error || "Registration failed");
-  //   }
-  // };
 
 
   const login = async (username, password) => {
@@ -48,14 +27,6 @@ export const AuthProvider = ({ children }) => {
         setToken(response.data.token);
         setUser({ username: response.data.username, role: response.data.role });
         
-
-        localStorage.setItem("token", response.data.token);
-        localStorage.setItem(
-          "user",
-          JSON.stringify({ username: response.data.username, role: response.data.role })
-        );
-
-        return true;
       }
     } catch (error) {
       console.error("Login failed:", error.response || error.message);
@@ -89,25 +60,18 @@ const logout = (redirect = true) => {
       return; // Prevent redundant logouts
   }
 
-  setUser(null);
-  setToken("");
-
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
-  delete axios.defaults.headers.common["Authorization"];
-
   if (redirect) {
-      window.location.href = "/login"; // Redirect only when necessary
+      window.location.href = "/"; // Redirect only when necessary
   }
 };
 
 
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <StudentAuthContext.Provider value={{ user, token, login, logout }}>
       {children}
-    </AuthContext.Provider>
+    </StudentAuthContext.Provider>
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => useContext(StudentAuthContext);

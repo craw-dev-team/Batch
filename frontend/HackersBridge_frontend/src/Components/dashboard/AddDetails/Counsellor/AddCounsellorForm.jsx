@@ -109,7 +109,7 @@ const AddCounsellorForm = ( { isOpen, onClose, counsellorData } ) => {
                  {/* Modal Header */}
                  <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600 border-gray-200">
                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                     {isEditing ? "Edit Councellor Details" : "Add New Councellor"}
+                     {isEditing ? "Edit Counsellor Details" : "Add New Counsellor"}
                      </h3>
                      <button
                         onClick={() => { handleClose(); }}
@@ -197,7 +197,7 @@ const AddCounsellorForm = ( { isOpen, onClose, counsellorData } ) => {
                             <SyncOutlined spin className="mr-2" />
                             Processing...
                         </>
-                    ) : isEditing ? "Save Changes" : "Add Councellor"}
+                    ) : isEditing ? "Save Changes" : "Add Counsellor"}
                 </button>
                    </div>
                 </form>

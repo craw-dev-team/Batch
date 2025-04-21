@@ -116,7 +116,7 @@ const AddBookForm = ({ isOpen, onClose, bookData }) => {
                 {/* Modal Header */}
                 <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600 border-gray-200">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                         {isEditing ? "Edit Course" : "Add New Course"}
+                         {isEditing ? "Edit Book" : "Add New Book"}
                     </h3>
                     <button
                        onClick={() => { handleClose() }}
@@ -191,7 +191,7 @@ const AddBookForm = ({ isOpen, onClose, bookData }) => {
                                 <SyncOutlined spin className="mr-2" />
                                 Processing...
                             </>
-                        ) : isEditing ? "Save Changes" : "Add Course"}
+                        ) : isEditing ? "Save Changes" : "Add Book"}
                     </button>
                     </div>
                     </form>

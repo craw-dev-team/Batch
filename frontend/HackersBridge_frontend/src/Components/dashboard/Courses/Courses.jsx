@@ -6,6 +6,7 @@ import axios from "axios";
 import { useCourseForm } from "../Coursecontext/CourseFormContext";
 import BASE_URL from "../../../ip/Ip";
 import { useAuth } from "../AuthContext/AuthContext";
+import { Navigate, useNavigate } from "react-router-dom";
 
 
 const Courses = () => {
@@ -15,6 +16,9 @@ const Courses = () => {
     const [isDeleted, setIsDeleted] = useState(false)
     const { coursesData, loading, setCoursesData, fetchCourses } = useCourseForm();
     const { token } = useAuth();
+    
+    const navigate = useNavigate();
+
     
     const handleTabClick = (tab) => {
         setActiveTab(tab);
@@ -35,7 +39,7 @@ const Courses = () => {
         setIsDeleted(false)
     };
 
-   // Delete Function
+    // Delete Function
     const handleDelete = async (courseId) => {
         if (!courseId) return;
 
@@ -57,7 +61,7 @@ const Courses = () => {
         }
     };
 
-// Confirm and Cancel Handlers
+    // Confirm and Cancel Handlers
     const confirm = (courseId) => {
         handleDelete(courseId); // Call delete function with course ID
         message.success('Course Deleted Successfully');
@@ -67,6 +71,13 @@ const Courses = () => {
         message.error('Course Deletion Cancelled');
     };
    
+
+    // HANDLE NAVIGATE TO SPECIFIC PAGE 
+    const handleCourseClick = (courseId) => {
+        if (!courseId) return;
+        const encodedCourseId = btoa(courseId);
+        navigate(`/course/${encodedCourseId}`)
+    };
 
     return (
         <>
@@ -200,11 +211,11 @@ const Courses = () => {
                
             ) : coursesData && Array.isArray(coursesData) && coursesData.length > 0 ? (
                 coursesData.map((item, index) => (
-                <tr key={item.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 scroll-smooth">
+                <tr key={item.id} className="bg-white border-b  border-gray-200 hover:bg-gray-50 scroll-smooth">
                     <td className="p-3 px-3 py-2 md:px-1 font-medium text-gray-900">
                         {index + 1}
                     </td>
-                    <th scope="row" className="px-3 py-2 md:px-1 font-medium text-gray-900  dark:text-white">
+                    <th scope="row" className="px-3 py-2 md:px-1 font-medium text-gray-900 cursor-pointer" onClick={() => handleCourseClick(item.id)}>
                        {item.name}
                     </th>
                     <td className="px-3 py-2 md:px-1">

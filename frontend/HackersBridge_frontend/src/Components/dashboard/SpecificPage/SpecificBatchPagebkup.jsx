@@ -250,7 +250,6 @@ const SpecificBatchPage = () => {
             );
           }, [students?.available_students, searchTerm]);
           
-             console.log(filteredAvailableStudents);
              
          
 
@@ -515,7 +514,7 @@ console.log(updatedValues);
                     </div>
 
                     <div className="grid 2xl:grid-cols-6 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-2 px-4 py-4 gap-4">
-                        {[
+                    {[
                             { label: "Trainer", key: "trainer_name" },
                             { label: "Course", key: "course_name" },
                             { label: "Start Time", key: "batch_time_data.start_time" },
@@ -524,35 +523,95 @@ console.log(updatedValues);
                             { label: "Location", key: "batch_location" },
                             { label: "Language", key: "language" },
                             { label: "Mode", key: "mode" },
+                            { label: "Status", key: "status" },
                             { label: "Start Date", key: "start_date" },
                             { label: "End Date", key: "end_date" },
-                            { label: "Status", key: "status" },
                             { label: "Created on", key: "end_date" },
                             { label: "Last Updated on", key: "gen_time" },
                             { label: "Updated by", key: "last_update_user" },
-                        ].map(({ label, key }) => {
-                            const value = getNestedValue(updatedValues, key);
-                          
-                            let displayValue = "N/A";
-                            if (value) {
-                              if (["start_date", "end_date"].includes(key)) {
-                                displayValue = dayjs(value).format("DD/MM/YYYY");
-                              } else if (["batch_time_data.start_time", "batch_time_data.end_time"].includes(key)) {
-                                displayValue = dayjs(value, "HH:mm:ss").format("hh:mm A");
-                              } else if (key === "gen_time") {
-                                displayValue = dayjs(value).format("DD/MM/YYYY hh:mm A");
-                              } else {
-                                displayValue = value;
-                              }
-                            }
-                          
-                            return (
-                              <div key={key} className="col-span-1 px-1 py-1 lg:mt-0 sm:mt-6">
-                                <p>{label}</p>
-                                <div className="font-semibold">{displayValue}</div>
-                              </div>
-                            );
-                          })}
+                        ].map(({ label, key }) => (
+                        <div key={key} className="col-span-1 px-1 py-1 lg:mt-0 sm:mt-6">
+                            <strong>{label}:</strong>
+                            <div className="flex items-center gap-2">
+                                {editingField === key ? (
+                                    key === "start_date" ? (
+                                        <div className="flex items-center gap-2">
+                                            {/* Date Picker */}
+                                    <DatePicker
+                                        open={isDatePickerOpen}
+                                        value={updatedValues.start_date ? dayjs(updatedValues.start_date, "YYYY-MM-DD") : null}
+                                        onChange={(date, dateString) => handleChange("start_date", dateString)}
+                                        className="border-gray-300"
+                                        size="large"
+                                        placeholder="Select Start Date"
+                                    />
+
+                                    {/* Submit Button */}
+                                    <CheckCircleOutlined
+                                        className="text-green-500 text-lg cursor-pointer hover:text-green-700"
+                                        onClick={() => {
+                                            saveChanges("start_date");
+                                            setIsDatePickerOpen(false);
+                                        }}
+                                    />
+
+                                    {/* Cancel Button */}
+                                    <CloseCircleOutlined
+                                        className="text-red-500 text-lg cursor-pointer hover:text-red-700"
+                                        onClick={() => {
+                                            setIsDatePickerOpen(false);
+                                            setEditingField(null);
+                                        }}
+                                    />
+                                </div>
+                            ) : (
+                                <input
+                                    type="text"
+                                    className="border p-1 rounded w-full"
+                                    value={getNestedValue(updatedValues, key) || ""}
+                                    onChange={(e) => handleChange(key, e.target.value)}
+                                    onBlur={() => saveChanges(key)}
+                                    onKeyDown={(e) => e.key === "Enter" && saveChanges(key)}
+                                    autoFocus
+                                />
+                                )
+                            ) : (
+                                <p className="font-semibold">
+                                    {key === "start_date"
+                                        ? new Date(updatedValues.start_date).toLocaleDateString("en-GB")
+                                        : getNestedValue(updatedValues, key) || "N/A"}
+                                </p>
+                            )}
+
+                            {/* Edit Icon */}
+                            {!isDatePickerOpen && (
+                                <EditOutlined
+                                    className="cursor-pointer text-gray-500 hover:text-gray-700"
+                                    onClick={() => {
+                                        handleEdit(key);
+                                        if (key === "start_date") setIsDatePickerOpen(true);
+                                    }}
+                                />
+                            )}
+                        </div>
+                    </div>
+                ))}
+
+                        {/* Formatted Start Date */}
+                        {/* <div className="col-span-1 px-1 py-1 lg:mt-0 md:mt-0 sm:mt-6">
+                            <h1>Start Date</h1>
+                            <p className="font-semibold">
+                                {new Date(updatedValues.start_date).toLocaleDateString("en-GB")}
+                            </p>
+                        </div> */}
+
+                        {/* Formatted End Date */}
+                        {/* <div className="col-span-1 px-1 py-1 lg:mt-0 md:mt-0 sm:mt-6">
+                            <h1>End Date</h1>
+                            <p className="font-semibold">
+                                {new Date(updatedValues.end_date).toLocaleDateString("en-GB")}
+                            </p>
+                        </div> */}
                     </div>
                 </div>
 
@@ -661,12 +720,6 @@ console.log(updatedValues);
                                     <table className="w-full text-xs text-left text-gray-500">
                                         <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10">
                                             <tr>
-                                                <th scope="col" className="p-2">
-                                                    <div className="flex items-center">
-                                                        <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
-                                                        <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
-                                                    </div>
-                                                </th>
                                                 <th scope="col" className="px-3 py-3 md:px-2">
                                                     s.No
                                                 </th>
@@ -725,12 +778,6 @@ console.log(updatedValues);
                                     ) : filteredBatchStudents.length > 0 ? (
                                         filteredBatchStudents.map((item, index) => (
                                         <tr key={item.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 scroll-smooth">
-                                            <td scope="col" className="p-2">
-                                                <div className="flex items-center">
-                                                    <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
-                                                    <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
-                                                </div>
-                                            </td>
                                             <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
                                             {index + 1}
                                             </td>
@@ -869,14 +916,8 @@ console.log(updatedValues);
                                          ) : filteredAvailableStudents.length > 0 ? (
                                             filteredAvailableStudents.map((item, index) => (
                                              <tr key={item.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 scroll-smooth">
-                                                <td scope="col" className="p-2">
-                                                    <div className="flex items-center">
-                                                        <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
-                                                        <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
-                                                    </div>
-                                                </td>
-                                                <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
-                                                    {index + 1}
+                                                 <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
+                                                 {index + 1}
                                                  </td>
                                                  {/* <td className="px-3 py-2 md:px-1">
                                                      {item.id}
@@ -890,7 +931,7 @@ console.log(updatedValues);
                                                             <div className="w-auto max-w-lg bg-white text-black border-none">
                                                                 {/* Dynamically adjusting width */}
                                                                 {item.complete_course_name.map((course, idx) => (
-                                                                <div key={idx} className="py-1"><CheckCircleOutlined className="text-lime-600 text-md"/>  {course} - <span className="text-lime-600 font-serif">Completed</span></div>
+                                                                <div key={idx} className="py-1"><CheckCircleOutlined className="text-green-500 text-md"/>  {course} - <span className="text-green-500 font-semibold">Completed</span></div>
                                                                 ))}
                                                             </div>
                                                             ) : (
@@ -911,7 +952,7 @@ console.log(updatedValues);
                                                             <div className="w-auto max-w-lg bg-white text-black border-none">
                                                                 {/* Dynamically adjusting width */}
                                                                 {item.complete_course_name.map((course, idx) => (
-                                                                <div key={idx} className="py-1"><CheckCircleOutlined className="text-lime-600 text-md"/>  {course} - <span className="text-lime-600 font-serif">Completed</span></div>
+                                                                <div key={idx} className="py-1"><CheckCircleOutlined className="text-green-500 text-md"/>  {course} - <span className="text-lime-500 font-serif">Completed</span></div>
                                                                 ))}
                                                             </div>
                                                             ) : (

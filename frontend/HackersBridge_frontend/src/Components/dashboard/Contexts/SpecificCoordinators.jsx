@@ -13,7 +13,7 @@ const SpecificCoordinatorProvider = ({ children }) => {
     const [loading, setLoading] = useState(false);
     const [specificCoordinatorStudents, setSpecificCoordinatorStudents] = useState()
     const [specificCoordinatorTrainers, setSpecificCoordinatorTrainers] = useState()
-
+    const [activityLogs, setActivityLogs] = useState()
 
     const fetchSpecificCoordinator = async (coordinatorId) => {
         if (loading) return;
@@ -28,17 +28,13 @@ const SpecificCoordinatorProvider = ({ children }) => {
 
         try {
             const response = await axios.get(`${BASE_URL}/api/coordinators/info/${coordinatorId}/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` },
+            }
             )
             const data = response?.data
             // console.log(data);
             
-            setSpecificCoordinator(prevData => {
-                if (JSON.stringify(prevData) !== JSON.stringify(data)) {
-                    return data;
-                };
-                return prevData;
-            });
+            setSpecificCoordinator(data);
 
         } catch (error) {
             console.error('Error fetching SpecificCoordinator Data', error)
@@ -117,8 +113,45 @@ const SpecificCoordinatorProvider = ({ children }) => {
         }
     };
 
+
+    // FETCH COORDINATOR ACTIVITY LOGS 
+    const fetchSpecificCoordinatorActivityLogs = async (coordinatorId, { page = 1, pageSize = 50, search = '', type } = {}) => {
+        if (loading) return;
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+            console.error("No token found, user might be logged out.");
+            return;
+        };
+
+        setLoading(true)
+
+        try {
+            const response = await axios.get(`${BASE_URL}/api/coordinators/info/${coordinatorId}/`, 
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` },
+                params: {
+                    page,
+                    page_size: pageSize,
+                    search,
+                    type
+                },
+            }
+            )
+            const data = response?.data
+            // console.log(data);
+            
+            setActivityLogs(data);
+
+        } catch (error) {
+            console.error('Error fetching SpecificCoordinator Data', error)
+        } finally {
+            setLoading(false)
+        };
+    };
+
+
     return (
-        <SpecificCoordinatorContext.Provider value={{ loading, specificCoordinator, fetchSpecificCoordinator, specificCoordinatorStudents, fetchSpecificCoordinatorStudents,specificCoordinatorTrainers, fetchSpecificCoordinatorTrainers }}>
+        <SpecificCoordinatorContext.Provider value={{ loading, specificCoordinator, fetchSpecificCoordinator, specificCoordinatorStudents, fetchSpecificCoordinatorStudents,specificCoordinatorTrainers, fetchSpecificCoordinatorTrainers, activityLogs, fetchSpecificCoordinatorActivityLogs }}>
             {children}
         </SpecificCoordinatorContext.Provider>
     )
