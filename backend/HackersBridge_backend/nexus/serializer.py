@@ -9,20 +9,16 @@ from nexus.models import *
 from Trainer.models import *
 from django.core.mail import send_mail
 from django.utils.crypto import get_random_string
-import random
 from Student.serializer import StudentSerializer
 from auditlog.models import LogEntry
 from django.contrib.contenttypes.models import ContentType
-
+from django.core.mail import EmailMessage
+from django.template.loader import render_to_string
+import random
 
 User = get_user_model()
 
 # **User Registration Serializer**
-class UserRegistrationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ('id', 'username', 'email', 'role')
-
 class UserRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -159,6 +155,7 @@ class VerifyOTPSerializer(serializers.Serializer):
     
 
 
+{
 
 
 # This is For Reset Password
@@ -187,6 +184,7 @@ class VerifyOTPSerializer(serializers.Serializer):
 #             raise serializers.ValidationError("User not found.")
 
 #         return data
+}
 
 
 
@@ -231,6 +229,7 @@ class TimeslotSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+
 class BatchSerializer(serializers.ModelSerializer):
     student = serializers.PrimaryKeyRelatedField(read_only=True, many=True)
     batch_time_data = TimeslotSerializer(source="batch_time", read_only=True)
@@ -241,7 +240,8 @@ class BatchSerializer(serializers.ModelSerializer):
             'id', 'batch_id', 'course', 'trainer', 'student', 'status',
             'start_date', 'end_date', 'mode', 'language', 'preferred_week',
             'batch_time', 'batch_time_data', 'location', 'gen_time',
-            'batch_created_by', 'last_update_user', 'last_update_datetime', 'batch_create_datetime'
+            'batch_created_by', 'last_update_user', 'last_update_datetime',
+            'batch_create_datetime', 'batch_link'
         ]
 
     def to_representation(self, instance):
@@ -250,7 +250,13 @@ class BatchSerializer(serializers.ModelSerializer):
         rep['trainer_name'] = instance.trainer.name if instance.trainer else None
         rep['batch_location'] = instance.location.locality if instance.location else None
         rep['student_name'] = [s.name for s in instance.student.all()]
-        return rep
+
+        # Safely access nested coordinator data
+        coordinator = getattr(instance.trainer, 'coordinator', None)
+        rep['batch_coordinator_name'] = coordinator.name if coordinator else None
+        rep['batch_coordinator_phone'] = coordinator.phone if coordinator else None
+
+        return rep 
 
     def create(self, validated_data):
         students = validated_data.pop('student', [])  # Extract students list
@@ -265,12 +271,16 @@ class BatchSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
     
 
+
 class BatchStudentAssignmentSerializer(serializers.ModelSerializer):
     student = StudentSerializer()
     class Meta:
         model = BatchStudentAssignment
         fields = ['id', 'batch', 'student', 'coordinator', 'student_batch_status']
 
+
+
+{
 # class BatchCreateSerializer(serializers.ModelSerializer):
 #     batch_id = serializers.SerializerMethodField()
 #     student_name = serializers.SerializerMethodField()
@@ -375,6 +385,17 @@ class BatchStudentAssignmentSerializer(serializers.ModelSerializer):
 # from rest_framework import serializers
 # from .models import Batch, Trainer
 
+}
+
+
+
+class AttendanceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Attendance
+        fields = '__all__'
+
+
+
 class BatchCreateSerializer(serializers.ModelSerializer):
     student_name = serializers.SerializerMethodField()
     student = serializers.PrimaryKeyRelatedField(queryset=Student.objects.all(), many=True)
@@ -385,6 +406,7 @@ class BatchCreateSerializer(serializers.ModelSerializer):
             'id', 'batch_id', 'course', 'mode', 'location', 'trainer', 'language', 'status',
             'preferred_week', 'batch_time', 'start_date', 'end_date', 'student', 'student_name'
         ]
+        
         read_only_fields = ['batch_id']
 
     def get_student_name(self, obj):
@@ -402,6 +424,7 @@ class BatchCreateSerializer(serializers.ModelSerializer):
             end_date__gte=start_date
         ).exists()
 
+    # THIS FUNCTION IS CREATED FOR BATCH ID....
     def generate_batch_id(self, course, start_date):
         """Generate a new batch ID dynamically."""
         if not course or not start_date:
@@ -427,6 +450,7 @@ class BatchCreateSerializer(serializers.ModelSerializer):
 
         return f"CRAW-{course_code}{start_year:02d}{new_sequence:03d}"
 
+    # THIS FUNCTION IS CREATED FOR CALCULATE BATCH END-DATE....
     def calculate_end_date(self, start_date, course_duration, preferred_week):
         """Calculate the end date based on course duration and preferred week."""
         if not start_date or not course_duration:
@@ -447,6 +471,48 @@ class BatchCreateSerializer(serializers.ModelSerializer):
             current_date = current_date + timedelta(course_days)
       
         return current_date
+
+    # THIS FUNCTION IS CREATED FOR BATCH ATTENDANCE
+    def create_daily_attendance_records(self, batch, students, start_date, end_date, preferred_week):
+        attendance_objects = []
+        trainer = batch.trainer
+        course = batch.course
+        time_slot = batch.batch_time
+
+        current_date = start_date
+        while current_date <= end_date:
+            weekday = current_date.weekday()
+
+            # Filter days based on preferred_week
+            if preferred_week == "Weekdays" and weekday >= 5:
+                current_date += timedelta(days=1)
+                continue
+            elif preferred_week == "Weekends" and weekday <= 4:
+                current_date += timedelta(days=1)
+                continue
+            elif preferred_week == "Both":
+                pass  # Allow all days
+            elif preferred_week not in ["Weekdays", "Weekends", "Both"]:
+                # Optional: Skip invalid week preferences
+                current_date += timedelta(days=1)
+                continue
+
+            for student in students:
+                attendance_objects.append(Attendance(
+                    student=student,
+                    trainer=trainer,
+                    trainer_name=str(trainer) if trainer else None,
+                    course=course,
+                    course_name=str(course) if course else None,
+                    batch=batch,
+                    time_slot=time_slot,
+                    attendance='Absent',
+                    date=current_date
+                ))
+
+            current_date += timedelta(days=1)
+
+        Attendance.objects.bulk_create(attendance_objects)
 
 
     def create(self, validated_data):
@@ -484,7 +550,7 @@ class BatchCreateSerializer(serializers.ModelSerializer):
         batch = Batch.objects.create(**validated_data)
 
         # Assign students to batch
-        batch.student.set(students)  
+        batch.student.set(students)
 
         # Collect StudentCourse updates in bulk
         student_courses_to_update = []
@@ -499,6 +565,12 @@ class BatchCreateSerializer(serializers.ModelSerializer):
                     student_course.status = 'Completed'
                 student_courses_to_update.append(student_course)
 
+        # Activate student if currently inactive
+        student_obj = Student.objects.filter(id=student.id).first()
+        if student_obj and student_obj.status == 'Inactive':
+            student_obj.status = 'Active'
+            student_obj.save(update_fields=['status'])
+
         # Bulk update StudentCourse status
         if student_courses_to_update:
             StudentCourse.objects.bulk_update(student_courses_to_update, ['status'])
@@ -507,16 +579,31 @@ class BatchCreateSerializer(serializers.ModelSerializer):
         batch.batch_id = self.generate_batch_id(course, start_date)
         batch.save(update_fields=['batch_id', 'end_date'])
 
+        # Create a Student Attendance...
+        self.create_daily_attendance_records(
+                batch=batch,
+                students=students,
+                start_date=batch.start_date,
+                end_date=batch.end_date,
+                preferred_week=preferred_week
+            )
+
         return batch
 
 
     def update(self, instance, validated_data):
         """Update batch details, regenerate batch_id if course changes, and update student statuses."""
 
+        # Track original attendance-related fields
+        old_start_date = instance.start_date
+        old_end_date = instance.end_date
+        old_preferred_week = instance.preferred_week
+
         # Extract relevant fields
         new_course = validated_data.get('course', instance.course)
         new_start_date = validated_data.get('start_date', instance.start_date)
         new_end_date = validated_data.get('end_date', instance.end_date)
+        new_preferred_week = validated_data.get('preferred_week', instance.preferred_week)
         status = validated_data.get('status', instance.status)  # Default to current status if not updated
 
 
@@ -530,14 +617,6 @@ class BatchCreateSerializer(serializers.ModelSerializer):
 
         # Handle student additions/removals and update course status
         students = validated_data.pop('student', None)
-        if students is not None:
-            existing_students = set(instance.student.all())
-            if status == 'Running':
-                StudentCourse.objects.filter(student__in=existing_students, course=instance.course).update(status='Ongoing')
-            elif status == 'Upcoming':
-                StudentCourse.objects.filter(student__in=existing_students, course=instance.course).update(status='Upcoming')
-            elif status == 'Completed':
-                StudentCourse.objects.filter(student__in=existing_students, course=instance.course).update(status='Completed')
 
         if students is not None:
             existing_students = set(instance.student.all())  # Current students in batch
@@ -564,18 +643,106 @@ class BatchCreateSerializer(serializers.ModelSerializer):
                     status=student_status_mapping.get(status, 'Not Started')
                 )
 
-            # Set the updated list of students
+                # Activate added students if currently inactive
+                for student in added_students:
+                    student_obj = Student.objects.filter(id=student.id).first()
+                    if student_obj and student_obj.status == 'Inactive':
+                        student_obj.status = 'Active'
+                        student_obj.save(update_fields=['status'])
+
+            # ✅ Corrected indentation: this should be outside the loop
             instance.student.set(students)
 
-        # Update remaining batch fields
+        # Update remaining fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
-
-        # Save the batch instance
         instance.save()
 
+        # ⚡️ If date or week schedule changed, reset attendance
+        if (
+            old_start_date != new_start_date or
+            old_end_date != new_end_date or
+            old_preferred_week != new_preferred_week
+        ):
+            Attendance.objects.filter(batch=instance).delete()
+            self.create_daily_attendance_records(
+                batch=instance,
+                students=instance.student.all(),
+                start_date=new_start_date,
+                end_date=new_end_date,
+                preferred_week=new_preferred_week
+            )
+
+        # ✅ Always create attendance for new students (even if dates didn't change)
+        if added_students:
+            self.create_daily_attendance_records(
+                batch=instance,
+                students=added_students,
+                start_date=new_start_date,
+                end_date=new_end_date,
+                preferred_week=new_preferred_week
+            )
+
+
+        if removed_students:
+            if status == 'Running':
+                StudentCourse.objects.filter(student__in=removed_students, course=instance.course).update(status='Denied')
+            elif status == 'Upcoming':
+                StudentCourse.objects.filter(student__in=removed_students, course=instance.course).update(status='Not Started')
+
+            # Send removal email to removed students
+            for student in removed_students:
+                subject = f"You have been removed from {instance.course} ({instance.batch_id})"
+                html_message = f"""<html>
+        <head>
+        <meta charset="UTF-8">
+        <title>Removed from Batch</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0;">
+        <div style="max-width: 600px; margin: 40px auto; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); overflow: hidden; color: #000;">
+            <div style="text-align: center; padding: 20px; border-bottom: 1px solid #ddd;">
+                <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 60px;">
+            </div>
+            <div style="padding: 30px; font-size: 16px; color: #000;">
+                <h2 style="text-align: center; font-size: 22px; color: #000;">📢 Batch Update Notice</h2>
+                <p style="color: #000;">Dear <strong>{ student.name }</strong>,</p>
+                <p style="color: #000;">We would like to inform you that you have been removed from the <strong>{ instance.course }</strong> course batch <strong>{ instance.batch_id }</strong>.</p>
+                <p style="color: #000;">If this was unexpected or if you believe this was a mistake, please contact your trainer or Craw Security support immediately.</p>
+                <p style="margin-top: 30px; color: #000;">
+                    📍 <strong>Our Address:</strong><br>
+                    1st Floor, Plot no. 4, Lane no. 2, Kehar Singh Estate, Westend Marg,<br>
+                    Behind Saket Metro Station, New Delhi 110030
+                </p>
+                <p style="color: #000;">
+                    📞 <strong>Phone:</strong> 011-40394315 | +91-9650202445, +91-9650677445<br>
+                    📧 <strong>Email:</strong> training@craw.in<br>
+                    🌐 <strong>Website:</strong> 
+                    <a href="https://www.craw.in" style="text-decoration: underline;">www.craw.in</a>
+                </p>
+                <p style="color: #000;">
+                    Warm regards,<br>
+                    <strong>Craw Cyber Security Pvt Ltd</strong> 🛡️
+                </p>
+            </div>
+            <!-- Footer -->
+            <div style="background-color: #f0f0f0; padding: 18px 20px; text-align: center; font-size: 14px; color: #000; border-top: 1px solid #ddd;">
+                <p style="margin: 0;">© 2025 <strong>Craw Cyber Security Pvt Ltd</strong>. All Rights Reserved.</p>
+                <p style="margin: 5px 0 0;">This is an automated message. Please do not reply.</p>
+            </div>
+        </div>
+        </body>
+        </html>"""
+                from_email = "CRAW SECURITY BATCH <training@craw.in>"
+                try:
+                    email = EmailMessage(subject, html_message, from_email, [student.email])
+                    email.content_subtype = "html"
+                    email.send()
+                except Exception as e:
+                    print(f"Failed to send removal email to {student.email}: {str(e)}")
+            
         return instance
-    
+
+
 
 class LogEntrySerializer(serializers.ModelSerializer):
     content_type = serializers.SlugRelatedField(
@@ -608,4 +775,89 @@ class BookSerializer(serializers.ModelSerializer):
 
 
 
-# class CourseTakebyserializer(serializers.ModelField):
+# class AnnouncementSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Announcement
+#         fields = [
+#             'id', 'subject', 'text', 'file',
+#             'batch', 'student',
+#             'announcement_type', 'created_by',
+#             'gen_time', 'is_active'
+#         ]
+#         read_only_fields = ['gen_time', 'created_by', 'announcement_type']
+
+
+
+class AnnouncementCreateSerializer(serializers.ModelSerializer):
+    Send_to = serializers.ListField(write_only=True, required=False)
+
+    class Meta:
+        model = Announcement
+        fields = ['id', 'subject', 'text', 'file', 'Send_to', 'gen_time']
+
+    def _resolve_recipients(self, identifiers):
+        students, trainers, batches = [], [], []
+
+        for identifier in identifiers:
+            if identifier == 'Students':
+                students.extend(Student.objects.all())
+            elif identifier == 'Trainers':
+                trainers.extend(Trainer.objects.all())
+            # elif identifier == 'batches':
+            #     batches.extend(Batch.objects.all())
+            else:
+                stu = Student.objects.filter(enrollment_no=identifier).first()
+                if stu:
+                    students.append(stu)
+                    continue
+
+                tra = Trainer.objects.filter(trainer_id=identifier).first()
+                if tra:
+                    trainers.append(tra)
+                    continue
+
+                bat = Batch.objects.filter(batch_id=identifier).first()
+                if bat:
+                    batches.append(bat)
+
+        return students, trainers, batches
+
+    
+    def create(self, validated_data):
+        request = self.context['request']
+        send_to = validated_data.pop('Send_to', [])
+        print(send_to)
+        students, trainers, batches = self._resolve_recipients(send_to)
+
+        announcement = Announcement.objects.create(
+            **validated_data,
+            created_by=request.user,
+            announcement_type='Specific' if send_to else 'Overall'
+        )
+
+        # Set M2M fields after creation
+        if students:
+            announcement.student.set(students)
+        if trainers:
+            announcement.trainer.set(trainers)
+        if batches:
+            announcement.batch.set(batches)
+
+        return announcement
+    
+    def update(self, instance, validated_data):
+        send_to = validated_data.pop('Send_to', None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if send_to is not None:
+            students, trainers, batches = self._resolve_recipients(send_to)
+            instance.student.set(students)
+            instance.trainer.set(trainers)
+            instance.batch.set(batches)
+            instance.announcement_type = 'Specific' if send_to else 'Overall'
+            instance.save()
+
+        return instance

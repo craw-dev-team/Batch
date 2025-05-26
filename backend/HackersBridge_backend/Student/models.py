@@ -53,6 +53,7 @@ class Student(models.Model):
     last_update_datetime = models.DateTimeField(default=timezone.now)
     gen_time = models.DateTimeField(default=timezone.now)
     installment = models.OneToOneField('Installment', on_delete=models.CASCADE, null=True, blank=True, related_name='installment')
+    re_permission = models.BooleanField(default=True, null=True, blank=True)
     # note = models.TextField(max_length=200, null=True, blank=True)
 
     def save(self, *args, **kwargs):
@@ -82,7 +83,7 @@ class Installment(models.Model):
     total_fee = models.FloatField(null=True, blank=True)
     down_payment = models.FloatField(null=True, blank=True)
     pay_date = models.DateField(null=True)
-    
+
     emi_day = models.IntegerField(null=True, blank=True)
     total_emi_amount = models.FloatField(null=True, blank=True)
     emi_amount = models.FloatField(null=True, blank=True)
@@ -126,13 +127,14 @@ class StudentCourse(models.Model):  # ✅ Through Model
     
     student = models.ForeignKey(Student, on_delete=models.CASCADE, db_index=True)
     course = models.ForeignKey("nexus.Course", on_delete=models.CASCADE, db_index=True)
+    marks = models.IntegerField(null=True, blank=True)
+    marks_update_date = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Not Started')
     certificate_date = models.DateField(null=True, blank=True)
     certificate_issued_at = models.DateTimeField(null=True, blank=True)
-    email_opened = models.BooleanField(null=True, blank=True, default=False)
-    email_opened_at = models.DateTimeField(null=True, blank=True)
     student_certificate_allotment = models.BooleanField(null=True, blank=True, default=False)
     student_book_allotment = models.BooleanField(null=True, blank=True, default=False)
+    # create_by = models.CharField(max_length=100, null=True, blank=True) 
  
     class Meta:
         unique_together = ('student', 'course')
@@ -142,8 +144,13 @@ class StudentCourse(models.Model):  # ✅ Through Model
 class StudentNotes(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="notes")
     note = models.TextField(null=True, blank=True)
+    create_at = models.DateTimeField(auto_now_add=True, null=True)
     last_update_datetime = models.DateTimeField(default=timezone.now)
     create_by = models.ForeignKey("nexus.CustomUser", on_delete=models.SET_NULL, related_name='student_note', null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        self.last_update_datetime = timezone.now()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Note for {self.student.name}"
@@ -158,3 +165,6 @@ class BookAllotment(models.Model):
 
     def __str__(self):
         return f"{self.book + self.student}"
+    
+
+# class StudentEmails(models.Model):

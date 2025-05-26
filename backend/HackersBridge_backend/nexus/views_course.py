@@ -16,11 +16,12 @@ from nexus.models import Batch
 from django.db.models import Prefetch
 import uuid
 import json
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 
 
 class CourseListAPIView(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -30,7 +31,7 @@ class CourseListAPIView(APIView):
 
 
 class CourseCreateAPIView(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -58,7 +59,7 @@ class CourseCreateAPIView(APIView):
 
 
 class CourseEditAPIView(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def put(self, request, id):
@@ -92,7 +93,7 @@ class CourseEditAPIView(APIView):
 
 
 class CourseDeleteAPIView(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, id):
@@ -124,6 +125,9 @@ class CourseDeleteAPIView(APIView):
 
 
 class CourseinfoAPIView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
     def get(self, request, id):
         # Step 1: Get the course
         course = get_object_or_404(Course, id=id)
@@ -179,6 +183,9 @@ class CourseinfoAPIView(APIView):
 
 
 class CourseTakebyEdit(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
     def put(self, request, course_id):
         new_course_id = request.data.get("course")
         if not new_course_id:
@@ -214,6 +221,9 @@ class CourseTakebyEdit(APIView):
 
 
 class StudentCourseUpdate(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
     def put(self, request, course_id):
         new_course_id = request.data.get("course")
         student_list = request.data.get("student", [])
@@ -251,6 +261,9 @@ class StudentCourseUpdate(APIView):
 
 
 class BatchCourseUpdate(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
     def put(self, request, course_id):
         new_course_id = request.data.get("course")
 
@@ -290,7 +303,7 @@ class BatchCourseUpdate(APIView):
 
 
 class BookListAPIView(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -310,7 +323,7 @@ class BookListAPIView(APIView):
 
 
 class BookCreateAPIView(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -340,7 +353,7 @@ class BookCreateAPIView(APIView):
 
 
 class BookUpdateAPIView(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def put(self, request, id):
@@ -377,7 +390,7 @@ class BookUpdateAPIView(APIView):
 
     
 class BookDeleteAPIView(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, id):

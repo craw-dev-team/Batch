@@ -2,11 +2,15 @@ from django.contrib import admin
 from django.urls import path, include
 from nexus.views_user import *
 from nexus.views_course import *
+from nexus.views_logs import *
 from nexus.views_batch import *
+from nexus.views_announcement import *
+from nexus.views_ticket import *
 from Student.views import *
 from Coordinator.views import *
 from Counsellor.views import *
 from Trainer.views import *
+
 
 urlpatterns = [
     path('login/', UserLoginAPIView.as_view(), name='api-login'),
@@ -50,8 +54,13 @@ urlpatterns = [
     path('students/info/<int:id>/', StudentInfoAPIView.as_view(), name='student-info'),
     path('students/delete/<int:id>/', DeleteStudentView.as_view(), name='delete-student'),
     path('student-course/edit/<int:id>/', StudentCourseEditAPIView.as_view(), name='student-course-edit'),
+    path('student-course/marks/<int:id>/', StudentMarksUpdateAPIView.as_view(), name='student-course-edit'),
     path('generate-certificate/<int:id>/', GenerateCertificateAPIView.as_view(), name='generate-certificate'),
     path('download-certificate/<int:id>/', DownloadCertificateAPIView.as_view(), name='download_certificate'),
+    path('student-attendance/<int:id>/', StudentAttendanceEdit.as_view(), name='student-attendance'),
+    path('student-note-create/',StudentNotesCreateAPIViews.as_view(), name='student-note-edit'),
+    path('student-note-edit/<int:id>/',StudentNotesEditAPIViews.as_view(), name='student-note-edit'),
+
     # path('email-tracker/<int:id>/', email_open_tracker, name='email-tracker'),
     # path('students/free/', FreeStudentListView.as_view(), name='trainer-availability'),
     
@@ -62,19 +71,29 @@ urlpatterns = [
     path('trainers/edit/<int:id>/', EditTrainerAPIView.as_view(), name='edit_trainer_api'),
     path('trainers/delete/<int:id>/', DeleteTrainerAPIView.as_view(), name='delete_trainer_api'),
     path('trainers/availability/', TrainerAvailabilityAPIView.as_view(), name='trainer-availability'),
+    path('trainers/leave_mail/<int:id>/', TrainerLeaveMail.as_view(), name='trainer-leave-mail'),
+    path('trainers/leave_long_mail/<int:id>/', TrainerLongLeaveMail.as_view(), name='trainer-leave-mail'),
     
     path('batches/', BatchAPIView.as_view(), name='batch-list'),
-    path('batches/add/', BatchCreateAPIView.as_view(), name='add_batch_api'),
     path('batches-logs/', BatchLogListView.as_view(), name='batches-logs'),
+    path('batches/add/', BatchCreateAPIView.as_view(), name='add_batch_api'),
     path('batches/info/<int:id>/', BatchInfoAPIView.as_view(), name='info_batch_api'),
     path('batches/edit/<int:id>/', BatchEditAPIView.as_view(), name='edit_batch_api'),
     path('batches/delete/<int:id>/', BatchDeleteAPIView.as_view(), name='delete_batch_api'),
+    path('batch-attendance/<int:id>/', BatchAttendanceView.as_view(), name='batch-attendance'),
     path('batches/<int:batch_id>/add-students/', BatchAddStudentAPIView.as_view(), name='batch_add_student_api'),
     path('batches/<int:batch_id>/available-students/', AvailableStudentsAPIView.as_view(), name='get_available_students'),
     path('batches/<int:batch_id>/available-trainers/', AvailableTrainersAPIView.as_view(), name='get_available_trainers'),
     path('batch/remove-student/<int:batch_id>/', BatchRemoveStudentAPIView.as_view(), name='remove_student_from_batch'),
-    path('batch-student-assignment/update/<int:assignment_id>/', BatchStudentAssignmentUpdateAPIView.as_view(), name='update_batch_student_assignment'),
+    path('batch-link/<int:id>/', BatchOnlinelink.as_view(), name='add_batch_link'),
     path('batch-generate-certificate/<int:id>/', GenerateBatchCertificateAPIView.as_view(), name='generate-certificate'),
+    path('batch-student-assignment/update/<int:assignment_id>/', BatchStudentAssignmentUpdateAPIView.as_view(), name='update_batch_student_assignment'),
+
+    # path('batch-complition/<int:id>/', BatchCompletedEmail.as_view(), name='batch-complition-email'),
+    # path('batch-start/<int:id>/', BatchAddStudentMailAPIView.as_view(), name='batch-start-email'),
+    # path('batch-suspend/<int:id>/', BatchCancelTodayAPIView.as_view(), name='batch-hold-email'),
+    # path('ticket/', TicketAPIView.as_view(), name='ticket'),
+    # path('ticket/status/', TicketStatusUpdate.as_view(), name='ticket-status'),
 
     path('books/', BookListAPIView.as_view(), name='book-list'),
     path('books/add/', BookCreateAPIView.as_view(), name='book-add'),
@@ -85,7 +104,14 @@ urlpatterns = [
     path('course/take-edit/<int:course_id>/', CourseTakebyEdit.as_view(), name='course-take-edit'),
     path('student-course/update/<int:course_id>/', StudentCourseUpdate.as_view(), name='course-take-edit'),
     path('batch-course/update/<int:course_id>/', BatchCourseUpdate.as_view(), name='course-take-edit'),
-    
+
+    path('announcement/', AnnouncementListView.as_view(), name='announcement-create'),
+    path('announcement/create/', AnnouncementCreateAPIView.as_view(), name='announcement-create'),
+    path('announcement/trainer/', AnnouncementTrainerBatchesAPIView.as_view(), name='trainers-announcement'),
+    path('announcement/edit/<int:id>/', AnnouncementEditAPIView.as_view(), name='announcement-edit'),
+    path('announcement/delete/<int:id>/', AnnouncementDeleteAPIView.as_view(), name='announcement-edit'),
+
+    path('emailsender/', EmailSenderAPIView.as_view(), name='email-sender'),
 ]
 
 

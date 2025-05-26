@@ -9,8 +9,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from .models import Student, Installment, FeesRecords, StudentCourse, StudentNotes
-from .serializer import StudentSerializer, InstallmentSerializer, StudentCourseSerializer, StudentBookAllotmentSerializer, SimpleStudentSerializer
-from nexus.models import Batch, Timeslot, Course
+from .serializer import StudentSerializer, StudentNoteSerializer, StudentCourseSerializer, StudentBookAllotmentSerializer, SimpleStudentSerializer
+from nexus.models import Batch, Timeslot, Course, Attendance
 from django.db.models import Count, Q, Exists, OuterRef
 from rest_framework.authtoken.models import Token
 from nexus.serializer import BatchStudentAssignment, LogEntrySerializer
@@ -27,11 +27,17 @@ from rest_framework.pagination import PageNumberPagination
 from django.http import HttpResponse
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
-from datetime import date
-# from django.contrib.auth.models import User
-User = get_user_model()
 from django.db.models import Prefetch
 from rest_framework.generics import ListAPIView
+from rest_framework_simplejwt.authentication import JWTAuthentication
+# from django.contrib.auth.models import User
+from datetime import date
+from django.utils.html import escape
+from django.utils import timezone
+
+User = get_user_model()
+
+
 
 # This is student list pagination 
 class StandardResultsSetPagination(PageNumberPagination):
@@ -43,7 +49,7 @@ class StandardResultsSetPagination(PageNumberPagination):
 
 # ✅ Student List API (Only for Batch List)
 class ALLStudentListView(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -57,14 +63,18 @@ class ALLStudentListView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+
 # This for student data by paginations
 class StudentListView(ListAPIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = StudentSerializer
     pagination_class = StandardResultsSetPagination
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
-    search_fields = ['name', 'phone', 'alternate_phone', 'guardian_no', 'email', 'enrollment_no', 'mode', 'preferred_week', 'language', 'support_coordinator__name', 'course_counsellor__name']
+    search_fields = ['name', 'phone', 'alternate_phone', 
+                     'guardian_no', 'email', 'enrollment_no', 
+                     'mode', 'preferred_week', 'language', 
+                     'support_coordinator__name', 'course_counsellor__name']
     filterset_fields = ['mode', 'preferred_week', 'language', 'location']  # ✅ Add this line
 
     def get_queryset(self):
@@ -94,6 +104,7 @@ class StudentListView(ListAPIView):
 
 
 
+{
 
 
 # class StudentListView(ListAPIView):
@@ -132,11 +143,12 @@ class StudentListView(ListAPIView):
 #                         notes_prefetch
 #                     ).order_by('-last_update_datetime')
 #         return student_data
+}
 
 
 
 class StudentCrawListView(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
@@ -212,6 +224,7 @@ class StudentCrawListView(APIView):
 
 
 
+{
 # class FreeStudentListView(APIView):
 #     def get(self, request):
 
@@ -229,13 +242,12 @@ class StudentCrawListView(APIView):
 #         serializer = StudentSerializer(student, many=True)
 
 #         return Response(serializer.data)
-
-
+}
 
 
 
 class AddStudentView(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -273,10 +285,9 @@ class AddStudentView(APIView):
 
 
 
-
 # ✅ Edit Student API with email update handling
 class EditStudentView(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def put(self, request, id):
@@ -350,11 +361,9 @@ class EditStudentView(APIView):
 
 
 
-
-
 # ✅ Add Fees API
 class AddFeesView(APIView):
-    authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
+    authentication_classes = [JWTAuthentication]  # Ensures user must provide a valid token
     permission_classes = [IsAuthenticated]
 
     def post(self, request, student_id):
@@ -389,8 +398,96 @@ class AddFeesView(APIView):
         
 
 
+{
+# class StudentInfoAPIView(APIView):
+#     authentication_classes = [JWTAuthentication]  # Ensures user must provide a valid token
+#     permission_classes = [IsAuthenticated]
+
+#     def get(self, request, id):
+#         if request.user.role not in ['admin', 'coordinator']:
+#             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+        
+#         # Get the student by ID
+#         student = get_object_or_404(Student, id=id)
+
+#         # Fetch student's enrolled courses
+#         student_courses = StudentCourse.objects.filter(student=student).select_related('course')
+        
+#         student_course_list = [
+#             {
+#                 'id': course.id,
+#                 'course_name': course.course.name,
+#                 'course_taken': Batch.objects.filter(student=student, course=course.course).count(),
+#                 'course_status': course.status,
+#                 'course_certificate_date': course.certificate_date,
+#                 'certificate_issued_at':course.certificate_issued_at,
+#                 'student_book_allotment':course.student_book_allotment,
+#             }
+#             for course in student_courses
+#         ]
+
+#         # Fetch batches based on status
+#         batch_statuses = ['Upcoming', 'Completed', 'Running', 'Hold']
+#         student_batches = {
+#             status: Batch.objects.filter(student=student, status=status).select_related('course', 'trainer', 'batch_time')
+#             for status in batch_statuses
+#         }
+
+#         # Get all upcoming batches for the student's courses
+#         student_course_ids = student_courses.values_list("course_id", flat=True)
+#         all_upcoming_batches = Batch.objects.filter(course_id__in=student_course_ids, status='Upcoming')
+
+#         # Get completed and ongoing course IDs to exclude from upcoming batches
+#         student_completed_course_ids = student_courses.filter(status__in=['Completed', 'Ongoing']).values_list('course_id', flat=True)
+
+#         # Exclude already assigned upcoming batches
+#         filtered_upcoming_batches = all_upcoming_batches.exclude(
+#             course_id__in=student_completed_course_ids
+#         ).exclude(id__in=student_batches['Upcoming'].values_list("id", flat=True))
+
+#         # Update student course status based on batch status
+#         StudentCourse.objects.filter(student=student, course__in=student_batches['Upcoming'].values_list("course_id", flat=True)).update(status='Upcoming')
+
+#         # Get total student count
+#         student_count = Student.objects.count()
+
+#         # ✅ Fetch logs for this student
+#         student_ct = ContentType.objects.get_for_model(Student)
+#         student_logs = LogEntry.objects.filter(content_type=student_ct, object_id=student.id).order_by('-timestamp')
+#         serialized_logs = LogEntrySerializer(student_logs, many=True).data
+
+#         # Build response data
+#         response_data = {
+#             "All_in_One": {
+#                 'student_count': student_count,
+#                 'student': StudentSerializer(student).data,
+#                 'student_courses': student_course_list,
+#                 'student_batch_upcoming': list(student_batches['Upcoming'].values(
+#                     *[field.name for field in Batch._meta.fields], 'course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time'
+#                 )),
+#                 'student_batch_hold': list(student_batches['Hold'].values(
+#                     *[field.name for field in Batch._meta.fields], 'course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time'
+#                 )),
+#                 'student_batch_ongoing': list(student_batches['Running'].values(
+#                     *[field.name for field in Batch._meta.fields], 'course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time'
+#                 )),
+#                 'student_batch_completed': list(student_batches['Completed'].values(
+#                     *[field.name for field in Batch._meta.fields], 'course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time'
+#                 )),
+#                 'all_upcoming_batch': list(filtered_upcoming_batches.values(
+#                     *[field.name for field in Batch._meta.fields], 'course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time'
+#                 )),
+#                 'student_logs': serialized_logs,
+#             }
+#         }
+
+#         return Response(response_data, status=status.HTTP_200_OK)
+}
+
+
+
 class StudentInfoAPIView(APIView):
-    authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request, id):
@@ -451,12 +548,24 @@ class StudentInfoAPIView(APIView):
 
         serialized_logs = LogEntrySerializer(student_logs, many=True).data
 
+        note_fields = [
+                        'id', 
+                        'note', 
+                        'create_at', 
+                        'last_update_datetime', 
+                        'create_by__username', 
+                        'create_by__role'
+                        ]
+
+        student_notes = StudentNotes.objects.filter(student=id).values(*note_fields).order_by('-create_at')
+
         # Build response
         response_data = {
             "All_in_One": {
                 'student_count': Student.objects.count(),
                 'student': StudentSerializer(student).data,
                 'student_courses': student_course_list,
+                'student_notes': student_notes,
                 'student_batch_upcoming': list(student_batches['Upcoming'].values(
                     *[field.name for field in Batch._meta.fields],
                     'course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time'
@@ -482,11 +591,12 @@ class StudentInfoAPIView(APIView):
         }
 
         return Response(response_data, status=status.HTTP_200_OK)
-    
+
+
 
 class StudentCourseEditAPIView(APIView):
     """API to edit an existing StudentCourse record."""
-    authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
+    authentication_classes = [JWTAuthentication]  # Ensures user must provide a valid token
     permission_classes = [IsAuthenticated]
 
     def patch(self, request, id, *args, **kwargs):
@@ -550,100 +660,217 @@ class StudentCourseEditAPIView(APIView):
         return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class GenerateCertificateAPIView(APIView):
-     authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
-     permission_classes = [IsAuthenticated]
- 
-     def patch(self, request, id, *args, **kwargs):
-         if request.user.role not in ['admin', 'coordinator']:
-             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
- 
-         student_course = get_object_or_404(StudentCourse, id=id)
- 
-         # Ensure course is marked as "Completed"
-         if student_course.status != "Completed":
-             return Response({'error': 'Certificate can only be generated for completed courses'}, status=status.HTTP_400_BAD_REQUEST)
- 
-         serializer = StudentCourseSerializer(student_course, data=request.data, partial=True)
-         if serializer.is_valid():
-             serializer.save()  # Save partial update first
- 
-             # Fetch necessary details
-             student = student_course.student
-             course = student_course.course
-             certificate_no = student.enrollment_no
-             certificate_date = student_course.certificate_date
- 
-             # Generate certificate
-             file_path = generate_certificate(course.name, student.name, certificate_no, certificate_date)
- 
-             if os.path.exists(file_path):
-                 # ✅ Update student_certificate_allotment to True
-                 student_course.student_certificate_allotment = True
-                 student_course.save(update_fields=['student_certificate_allotment'])
- 
-                 # ✅ Log certificate generation
-                 LogEntry.objects.create(
-                     content_type=ContentType.objects.get_for_model(StudentCourse),
-                     cid=str(uuid.uuid4()),  # ✅ Generate unique correlation ID
-                     object_pk=student_course.id,
-                     object_id=student_course.id,
-                     object_repr=f"Certificate Generated - Student: {student.name} | Course: {course.name}",
-                     action=LogEntry.Action.CREATE,
-                     changes=f"Generated Certificate for Student: {student.name}, Course: {course.name}, Certificate No: {certificate_no}",
-                     actor=request.user,
-                     serialized_data=json.dumps(model_to_dict(student_course), default=str),  # ✅ JSON serialized data
-                     changes_text=f"Certificate generated for {student.name} in {course.name}.",
-                     additional_data="Student",
-                     timestamp=now()
-                 )
- 
-                 # 📧 Send Email Notification
-                 subject = f"🎉 Congratulations, {student.name}! Your {course.name} Certificate is Here!"
-                 message = f"""
- Dear {student.name},
- 
- We’re thrilled to congratulate you on successfully completing the {course.name} course at Craw Cyber Security! 
- Your dedication and hard work have paid off, and we are delighted to issue your official certificate.
- 
- 🏷️ Student Enrollment Number: {student.enrollment_no}
- 📅 Date of Issue: {certificate_date}
- 
- Your certificate is attached to this email—feel free to showcase it in your portfolio, LinkedIn profile, or anywhere that highlights your achievements. 
- This milestone is just the beginning of your journey in cybersecurity, and we’re excited to see where your skills take you next!
- 
- If you have any questions or need further assistance, don’t hesitate to reach out.
- 
- 🚀 Keep learning, keep growing, and keep securing the digital world!
- 
- Best regards,  
- 🚀 Craw Cyber Security Team  
- 📧 training@craw.in  
- 📞 +919513805401  
- 🌐 https://www.craw.in/
-                 """
- 
-                 from_email = "CRAW SECURITY CERTIFICATE <training@craw.in>"
-                 try:
-                     email = EmailMessage(subject, message, from_email, [student.email])
-                     email.attach_file(file_path)  # Attach generated certificate PDF
-                     email.send()
-                 except Exception as e:
-                     return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
- 
-                 # ✅ Fix: Open file WITHOUT closing it prematurely
-                 certificate_file = open(file_path, 'rb')
-                 return FileResponse(certificate_file, content_type='application/pdf')
- 
-             return Response({'error': 'Certificate generation failed'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
- 
-         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+{
+
+# @csrf_exempt
+# @never_cache
+# def email_open_tracker(request, id):
+#     student_course = get_object_or_404(StudentCourse, id=id)
+
+#     # Update a flag or timestamp to indicate the email was opened
+#     student_course.email_opened = True
+#     student_course.email_opened_at = now()
+#     student_course.save(update_fields=['email_opened', 'email_opened_at'])
+
+#     # 1x1 transparent GIF
+#     pixel = b'GIF89a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00' \
+#             b'\xFF\xFF\xFF!\xF9\x04\x01\x00\x00\x00\x00,\x00' \
+#             b'\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;'
+
+#     return HttpResponse(pixel, content_type='image/gif')
+}
+
+
+
+class GenerateCertificateAPIView(APIView):
+    authentication_classes = [JWTAuthentication]  # Ensures user must provide a valid token
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, id, *args, **kwargs):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
+        student_course = get_object_or_404(StudentCourse, id=id)
+
+        # Ensure course is marked as "Completed"
+        if student_course.status != "Completed":
+            return Response({'error': 'Certificate can only be generated for completed courses'}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = StudentCourseSerializer(student_course, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()  # Save partial update first
+
+            # Fetch necessary details
+            student = student_course.student
+            course = student_course.course
+            certificate_no = student.enrollment_no
+            certificate_date = student_course.certificate_date
+
+            # Generate certificate
+            file_path = generate_certificate(course.name, student.name, certificate_no, certificate_date)
+
+            if os.path.exists(file_path):
+                # ✅ Update student_certificate_allotment to True
+                student_course.student_certificate_allotment = True
+                student_course.certificate_issued_at = now() 
+                student_course.save(update_fields=['student_certificate_allotment', 'certificate_issued_at'])
+
+                # ✅ Log certificate generation
+                LogEntry.objects.create(
+                    content_type=ContentType.objects.get_for_model(StudentCourse),
+                    cid=str(uuid.uuid4()),  # ✅ Generate unique correlation ID
+                    object_pk=student_course.id,
+                    object_id=student_course.id,
+                    object_repr=f"Certificate Generated - Student: {student.name} | Course: {course.name}",
+                    action=LogEntry.Action.CREATE,
+                    changes=f"Generated Certificate for Student: {student.name}, Course: {course.name}, Certificate No: {certificate_no}",
+                    actor=request.user,
+                    serialized_data=json.dumps(model_to_dict(student_course), default=str),  # ✅ JSON serialized data
+                    changes_text=f"Certificate generated for {student.name} in {course.name}.",
+                    additional_data="Student",
+                    timestamp=now()
+                )
+
+
+                # 📧 Send Email Notification
+
+                subject = f"🎉 Congratulations, {student.name}! Your {course.name} Certificate is Here!"
+
+                # pixel_url = f"http://192.168.1.18:8000/api/email-tracker/{student_course.id}/"  # ✅ Fixed the pixel URL
+
+                html_message = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <meta charset="UTF-8">
+        <title>Certificate Issued</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0; color: #000;">
+        <div style="max-width: 600px; margin: 40px auto; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); overflow: hidden;">
+            
+            <!-- Header with Logo -->
+            <div style="text-align: center; padding: 20px; border-bottom: 1px solid #ddd;">
+            <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 60px;">
+            </div>
+
+            <!-- Body -->
+            <div style="padding: 30px; color: #000;">
+            <h2 style="text-align: center; font-size: 24px; margin-bottom: 20px;">🎓 Certificate of Achievement</h2>
+
+            <p style="font-size: 16px; line-height: 1.6;">
+                Dear <strong style="font-weight: bold;">{student.name}</strong>,
+            </p>
+
+            <p style="font-size: 16px; line-height: 1.6;">
+                Congratulations on successfully completing the <strong style="font-weight: bold;">{course}</strong> course at <strong>Craw Cyber Security</strong>! 🎉
+            </p>
+
+            <p style="font-size: 16px; line-height: 1.6;">
+                Your hard work and commitment have paid off, and we are excited to issue your official certificate.
+            </p>
+
+            <div style="background-color: #f1f1f1; padding: 15px; border-radius: 6px; margin: 20px 0;">
+                <p style="font-size: 15px; margin: 6px 0;"><strong>🏷️ Enrollment Number:</strong> {student.enrollment_no}</p>
+                <p style="font-size: 15px; margin: 6px 0;"><strong>📅 Date of Issue:</strong> {certificate_date}</p>
+                <p style="font-size: 15px; margin: 6px 0;"><strong>📎 Certificate:</strong> Attached as PDF</p>
+                <ifream src = "file_path" />
+            </div>
+
+            <p style="font-size: 16px; line-height: 1.6;">
+                Your certificate is attached to this email. Feel free to showcase it in your portfolio, LinkedIn profile, or wherever you wish to highlight your accomplishments.
+            </p>
+
+            <p style="font-size: 16px; line-height: 1.6;">
+                This is a great milestone in your cybersecurity journey, and we’re confident you’ll achieve even more in the future!
+            </p>
+
+            <p style="font-size: 16px; line-height: 1.6;">
+                🔐 Stay passionate, stay curious, and keep securing the digital world!
+            </p>
+
+            <p style="font-size: 16px; line-height: 1.6;">
+                Warm regards,<br>
+                <strong style="font-weight: bold;">Craw Cyber Security Team</strong> 🚀<br>
+                📧 <a href="mailto:training@craw.in" style="text-decoration: underline;">training@craw.in</a><br>
+                📞 +91 9513805401<br>
+                🌐 <a href="https://www.craw.in/" style="text-decoration: underline;">www.craw.in</a>
+            </p>
+            </div>
+
+            <!-- Footer -->
+            <div style="background-color: #f0f0f0; padding: 18px 20px; text-align: center; font-size: 14px; color: #000; border-top: 1px solid #ddd;">
+            <p style="margin: 0;">© 2025 <strong>Craw Cyber Security Pvt Ltd</strong>. All Rights Reserved.</p>
+            <p style="margin: 5px 0 0;">This is an automated message. Please do not reply.</p>
+            </div>
+        </div>
+        </body>
+        </html>
+
+"""
+
+                from_email = "CRAW SECURITY CERTIFICATE <training@craw.in>"
+                try:
+                    email = EmailMessage(subject, html_message, from_email, [student.email])
+                    email.content_subtype = "html"  # ✅ Make it HTML email
+                    email.attach_file(file_path)
+                    email.send()
+                except Exception as e:
+                    return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+                # ✅ Fix: Open file WITHOUT closing it prematurely
+                certificate_file = open(file_path, 'rb')
+                return FileResponse(certificate_file, content_type='application/pdf')
+
+            return Response({'error': 'Certificate generation failed'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+{
+# <!DOCTYPE html>
+# <html>
+# <head>
+#     <meta charset="UTF-8">
+#     <title>Certificate Issued</title>
+# </head>
+# <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+#     <p>Dear <strong>{student.name}</strong>,</p>
+
+#     <p>We’re thrilled to congratulate you on successfully completing the <strong>{course.name}</strong> course at <strong>Craw Cyber Security</strong>!</p>
+
+#     <p>Your dedication and hard work have paid off, and we are delighted to issue your official certificate.</p>
+
+#     <p>
+#         <strong>🏷️ Student Enrollment Number:</strong> {student.enrollment_no}<br>
+#         <strong>📅 Date of Issue:</strong> {certificate_date}
+#     </p>
+
+#     <p>Your certificate is attached to this email—feel free to showcase it in your portfolio, LinkedIn profile, or anywhere that highlights your achievements.</p>
+
+#     <p>This milestone is just the beginning of your journey in cybersecurity, and we’re excited to see where your skills take you next!</p>
+
+#     <p>If you have any questions or need further assistance, don’t hesitate to reach out.</p>
+
+#     <p>🚀 Keep learning, keep growing, and keep securing the digital world!</p>
+
+#     <p>Best regards,<br>
+#     🚀 Craw Cyber Security Team<br>
+#     📧 <a href="mailto:training@craw.in">training@craw.in</a><br>
+#     📞 +91 9513805401<br>
+#     🌐 <a href="https://www.craw.in/">https://www.craw.in/</a>        
+#     </p>
+
+#     <img src="{pixel_url}" width="1" height="1" alt="" style="display: none;" />
+# </body>
+# </html>
+}
 
 
 
 class DeleteStudentView(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, id):
@@ -697,9 +924,8 @@ class DeleteStudentView(APIView):
 
 
 
-
 class DownloadCertificateAPIView(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request, id, *args, **kwargs):
@@ -719,7 +945,7 @@ class DownloadCertificateAPIView(APIView):
         # Ensure the file exists
         if os.path.exists(file_path):
             # ✅ Log certificate download action
-            log_entry = LogEntry.objects.create(
+            LogEntry.objects.create(
                 content_type=ContentType.objects.get_for_model(StudentCourse),
                 cid=str(uuid.uuid4()),
                 object_pk=student_course.id,
@@ -744,8 +970,9 @@ class DownloadCertificateAPIView(APIView):
         return Response({'error': 'Certificate file not found'}, status=status.HTTP_404_NOT_FOUND)
     
 
+
 class StudentLogListView(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -761,13 +988,11 @@ class StudentLogListView(APIView):
         logs = LogEntry.objects.filter(content_type__in=[student_ct, course_ct, notes_ct]).order_by('-timestamp')
         serializer = LogEntrySerializer(logs, many=True)
         return Response(serializer.data)
+    
 
-
-
-
-
+# Book Alloted With Sending Email to Student....
 class StudentBookAllotmentAPIView(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def patch(self, request, id):
@@ -801,11 +1026,84 @@ class StudentBookAllotmentAPIView(APIView):
             book_flag = request.data.get("Book")
             if book_flag:
                 # Allotment action
-                book_names = [book.name for book in result.book.all()]
+                book_names = [book.name for book in result.book.all()] if hasattr(result, "book") else []
                 action_description = f"Allotted books: {', '.join(book_names)}"
+
+                # Send Email to Student
+                student = student_course.student
+                subject = f"🎉 Congratulations, {student.name}! You've been allotted books for {student_course.course.name}"
+                html_message = f"""
+                <!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Book Issued Email</title>
+</head>
+<body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #dddddd;">
+        <tr>
+            <td style="padding: 30px; text-align: center;">
+                <!-- Optional logo -->
+                <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 80px; margin-bottom: 20px;" />
+                <h2 style="color: #007bff;">Thank you for visiting Admin Desk</h2>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 0 30px 30px 30px;">
+                <p>Hello {student.name},</p>
+                <p>
+                    <strong>Books Issued Till Today:</strong>
+                    {''.join([f"<li>{name}</li>" for name in book_names])}
+                </p>
+                <p>
+                    Join Our WhatsApp Channel for Updates:
+                    <a href="https://www.whatsapp.com/channel/0029VaE4JsD29757yPAY9z32" target="_blank">
+                        https://www.whatsapp.com/channel/0029VaE4JsD29757yPAY9z32
+                    </a>
+                </p>
+                <p style="margin-top: 40px;">Best regards,<br>
+                <strong>Craw Cyber Security Pvt Ltd</strong></p>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 20px; text-align: center; background-color: #f1f1f1; font-size: 12px; color: #888888;">
+                Copyright © 2024 Craw Security. All Rights Reserved.
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+                """
+
+                
+                # <!DOCTYPE html>
+                # <html>
+                # <body style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px;">
+                #     <div style="background-color: #ffffff; padding: 20px; border-radius: 8px;">
+                #         <h2 style="color: #2c3e50;">Book Allotment Notification</h2>
+                #         <p>Dear <strong>{student.name}</strong>,</p>
+                #         <p>You have been successfully allotted the following book(s):</p>
+                #         <ul>
+                #             {''.join([f"<li>{name}</li>" for name in book_names])}
+                #         </ul>
+                #         <p>Please collect them at your earliest convenience.</p>
+                #         <br>
+                #         <p>Best regards,<br><strong>CRAW Security Library Team</strong></p>
+                #     </div>
+                # </body>
+                # </html>
+
+                from_email = "CRAW SECURITY BOOK <training@craw.in>"
+                try:
+                    email = EmailMessage(subject, html_message, from_email, [student.email])
+                    email.content_subtype = "html"  # Enable HTML content
+                    email.send()
+                except Exception as e:
+                    return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
             else:
                 # Removal action
-                removed_books = result.get("removed_books", [])
+                removed_books = result.get("removed_books", []) if isinstance(result, dict) else []
                 if removed_books:
                     action_description = f"Removed books: {', '.join(removed_books)}"
                 else:
@@ -820,7 +1118,7 @@ class StudentBookAllotmentAPIView(APIView):
                 cid=str(uuid.uuid4()),
                 object_pk=student_course.id,
                 object_id=student_course.id,
-                object_repr=f"Student ID: {student_course.student.enrollment_no} | Student: {student_course.student.name}",
+                object_repr=f"Student ID: {student.enrollment_no} | Student: {student.name}",
                 action=LogEntry.Action.UPDATE,
                 changes=json.dumps(changes, default=str),
                 serialized_data=json.dumps(new_data, default=str),
@@ -833,3 +1131,396 @@ class StudentBookAllotmentAPIView(APIView):
             return Response({'message': action_description}, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+{
+# class StudentAttendanceEdit(APIView):
+#     authentication_classes = [JWTAuthentication]
+#     permission_classes = [IsAuthenticated]
+
+#     def post(self, request, id):
+#         if request.user.role not in ['admin', 'coordinator']:
+#             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+    
+#         mark = request.data.get('mark')
+        
+#         try:
+#             student_attendance = Attendance.objects.get(id=id)
+            
+#             if mark is True:
+#                 student_attendance.attendance = 'Present'
+
+#                 # Fatching student info
+#                 student = Student.objects.filter(id=student_attendance.student).first()
+
+#                 student_email = student.email
+#                 student_name = student.name
+#                 student_enrollment_no = student.enrollment_no
+#                 batch_name = student_attendance.batch__batch_id
+
+#                 # Send Email to Student For Attendance.....
+#                 subject = f"Batch Attendance of {student_attendance.course}"
+#                 html_message = f"""
+# <!DOCTYPE html>
+# """ 
+#                 from_email = "CRAW SECURITY BATCH <training@craw.in>"
+#                 try:
+#                     email = EmailMessage(subject, html_message, from_email, [student_email])
+#                     email.content_subtype = "html"
+#                     email.send()
+#                 except Exception as e:
+#                     print(f"Failed to send removal email to {student_email} : {str(e)}")
+                
+
+#             else:
+#                 student_attendance.attendance = 'Absent'
+
+#                 subject = f"Batch Attendance of {student_attendance.course}"
+#                 html_message = f"""
+# <!DOCTYPE html>
+# """
+#                 from_email = "CRAW SECURITY BATCH <training@craw.in>"
+#                 try:
+#                     email = EmailMessage(subject, html_message, from_email, [student_email])
+#                     email.content_subtype = "html"
+#                     email.send()
+#                 except Exception as e:
+#                     print(f"Failed to send email to {student_email} : {str(e)}")
+#             student_attendance.save()
+
+#             return Response({
+#                 'success': f"Attendance updated to {student_attendance.attendance}."
+#             }, status=status.HTTP_200_OK)
+
+#         except Attendance.DoesNotExist:
+#             return Response({'error': 'Attendance record not found.'}, status=status.HTTP_404_NOT_FOUND)
+        
+}
+
+
+# Student Attendance and email send to student.....
+class StudentAttendanceEdit(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
+        mark = request.data.get('mark', False)
+
+        try:
+            student_attendance = Attendance.objects.get(id=id)
+
+            student = Student.objects.filter(id=student_attendance.student_id).first()
+            if not student:
+                return Response({'error': 'Student not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+            batch = student_attendance.batch
+            trainer_name = batch.trainer.name if batch and batch.trainer else "N/A"
+            start_time = batch.batch_time.start_time.strftime("%I:%M %p") if batch and batch.batch_time.start_time else "N/A"
+            end_time = batch.batch_time.end_time.strftime("%I:%M %p") if batch and batch.batch_time.end_time else "N/A"
+
+            student_email = student.email
+            student_name = student.name
+            course_name = student_attendance.course if student_attendance.course else "Course"
+            batch_id = batch.batch_id if batch else "N/A"
+            date_str = timezone.now().strftime('%d %B %Y')
+
+            if mark is True:
+                student_attendance.attendance = 'Present'
+                status_text = "marked as <strong style='color: green;'>Present</strong>"
+            else:
+                student_attendance.attendance = 'Absent'
+                status_text = "marked as <strong style='color: red;'>Absent</strong>"
+
+            # Build the email message
+            subject = f"Attendance Update for {course_name} on {date_str}"
+            html_message = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Attendance Update</title>
+            </head>
+            <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0; color: #000;">
+                <div style="max-width: 600px; margin: 40px auto; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); overflow: hidden;">
+                    <div style="text-align: center; padding: 20px; border-bottom: 1px solid #ddd;">
+                        <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 60px;">
+                    </div>
+                    <div style="padding: 30px; color: #000;">
+                        <h2 style="text-align: center; color: #000; font-size: 24px; margin-bottom: 20px;">📋 Attendance Notification</h2>
+                        <p style="font-size: 16px; line-height: 1.6; color: #000;">Dear <strong>{escape(student_name)}</strong>,</p>
+                        <p style="font-size: 16px; line-height: 1.6; color: #000;">Your attendance for today's session of <strong>{escape(str(course_name))}</strong> (Batch ID: {batch_id}) has been {status_text}.</p>
+                        <div style="background-color: #f1f1f1; padding: 15px; border-radius: 6px; margin: 20px 0;">
+                            <p style="font-size: 15px; margin: 6px 0; color: #000;"><strong>📘 Batch ID:</strong> {batch_id}</p>
+                            <p style="font-size: 15px; margin: 6px 0; color: #000;"><strong>🕒 Timing:</strong> {start_time} - {end_time}</p>
+                            <p style="font-size: 15px; margin: 6px 0; color: #000;"><strong>👨‍🏫 Trainer:</strong> {trainer_name}</p>
+                            <p style="font-size: 15px; margin: 6px 0; color: #000;"><strong>📅 Date:</strong> {date_str}</p>
+                        </div>
+                        <p style="font-size: 16px; line-height: 1.6; color: #000;">If this information is incorrect, please contact your coordinator.</p>
+                        <p style="font-size: 15px; margin-top: 30px; line-height: 1.6; color: #000;">
+                            📍 <strong>Our Address:</strong><br>
+                            1st Floor, Plot no. 4, Lane no. 2, Kehar Singh Estate, Westend Marg,<br>
+                            Behind Saket Metro Station, New Delhi 110030
+                        </p>
+                        <p style="font-size: 15px; line-height: 1.6; color: #000;">
+                            📞 <strong>Phone:</strong> 011-40394315 | +91-9650202445, +91-9650677445<br>
+                            📧 <strong>Email:</strong> training@craw.in<br>
+                            🌐 <strong>Website:</strong> 
+                            <a href="https://www.craw.in" style="text-decoration: underline;">www.craw.in</a>
+                        </p>
+                        <p style="font-size: 16px; line-height: 1.6; color: #000;">
+                            Regards,<br>
+                            <strong>Craw Cyber Security Pvt Ltd</strong> 🛡️
+                        </p>
+                    </div>
+                    <div style="background-color: #f0f0f0; padding: 18px 20px; text-align: center; font-size: 14px; border-top: 1px solid #ddd; color: #000;">
+                        <p style="margin: 0;">© 2025 <strong>Craw Cyber Security Pvt Ltd</strong>. All Rights Reserved.</p>
+                        <p style="margin: 5px 0 0;">This is an automated message. Please do not reply.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+
+            """
+
+            try:
+                email = EmailMessage(subject, html_message, "CRAW SECURITY BATCH <training@craw.in>", [student_email])
+                email.content_subtype = "html"
+                email.send()
+            except Exception as e:
+                print(f"Failed to send attendance email to {student_email}: {str(e)}")
+
+            student_attendance.save()
+
+            return Response({
+                'success': f"Attendance updated to {student_attendance.attendance}."
+            }, status=status.HTTP_200_OK)
+
+        except Attendance.DoesNotExist:
+            return Response({'error': 'Attendance record not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+
+# Student Marks Update with Sending Email...
+class StudentMarksUpdateAPIView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, id):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
+        marks = request.data.get('marks')
+        exam_date = request.data.get('exam_date')
+
+        if marks is None or exam_date is None:
+            return Response({'error': 'Marks and exam_date fields are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            marks = int(marks)
+        except ValueError:
+            return Response({'error': 'Marks must be a number.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        student_course = StudentCourse.objects.filter(id=id).select_related('student', 'course').first()
+
+        if not student_course:
+            return Response({'error': 'StudentCourse not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            if student_course and marks is not None:
+                student_course.marks = marks
+                student_course.marks_update_date = date.today()
+                student_course.save()
+                
+        except Exception as e:
+            print(f"Error updating marks: {e}")
+
+
+        student = student_course.student
+        course_name = student_course.course.name
+        student_email = student.email
+        student_name = student.name
+
+        from_email = "CRAW SECURITY BATCH <training@craw.in>"
+
+        if marks/50*100 <= 75:
+            subject = "Exam Result Notification"
+            html_message = f"""<html>
+            <head>
+            <meta charset="UTF-8">
+            <title>Exam Result Notification</title>
+            </head>
+            <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0;">
+            <div style="max-width: 600px; margin: 40px auto; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); overflow: hidden; color: #000;">
+                <div style="text-align: center; padding: 20px; border-bottom: 1px solid #ddd;">
+                    <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 60px;">
+                </div>
+                <div style="padding: 30px; font-size: 16px; color: #000;">
+                    <h2 style="text-align: center; font-size: 22px; color: #000;">📢 Exam Result Notification</h2>
+                    <p style="color: #000;">Dear <strong>{student_name}</strong>,</p>
+                    <p style="color: #000;">You did not pass the <strong>{course_name}</strong> exam held on <strong>{exam_date}</strong>.</p>
+                    <p style="color: #000;">You scored <strong>{marks/50*100} % </strong> marks. Please prepare and try again because our pass marks percentage needs to be above 55%.</p>
+                    <p style="margin-top: 30px; color: #000;">
+                        📍 <strong>Our Address:</strong><br>
+                        1st Floor, Plot no. 4, Lane no. 2, Kehar Singh Estate, Westend Marg,<br>
+                        Behind Saket Metro Station, New Delhi 110030
+                    </p>
+                    <p style="color: #000;">
+                        📞 <strong>Phone:</strong> 011-40394315 | +91-9650202445, +91-9650677445<br>
+                        📧 <strong>Email:</strong> training@craw.in<br>
+                        🌐 <strong>Website:</strong> 
+                        <a href="https://www.craw.in" style="text-decoration: underline;">www.craw.in</a>
+                    </p>
+                    <p style="color: #000;">
+                        Warm regards,<br>
+                        <strong>Craw Cyber Security Pvt Ltd</strong> 🛡️
+                    </p>
+                </div>
+                <div style="background-color: #f0f0f0; padding: 18px 20px; text-align: center; font-size: 14px; color: #000; border-top: 1px solid #ddd;">
+                    <p style="margin: 0;">© 2025 <strong>Craw Cyber Security Pvt Ltd</strong>. All Rights Reserved.</p>
+                    <p style="margin: 5px 0 0;">This is an automated message. Please do not reply.</p>
+                </div>
+            </div>
+            </body>
+            </html>"""
+        else:
+            subject = "🎉 Congratulations on Passing the Exam!"
+            html_message = f"""<html>
+            <head>
+            <meta charset="UTF-8">
+            <title>Exam Success</title>
+            </head>
+            <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0;">
+            <div style="max-width: 600px; margin: 40px auto; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); overflow: hidden; color: #000;">
+                <div style="text-align: center; padding: 20px; border-bottom: 1px solid #ddd;">
+                    <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 60px;">
+                </div>
+                <div style="padding: 30px; font-size: 16px; color: #000;">
+                    <h2 style="text-align: center; font-size: 22px; color: #000;">🎉 Congratulations!</h2>
+                    <p style="color: #000;">Dear <strong>{student_name}</strong>,</p>
+                    <p style="color: #000;">Congratulations on passing your <strong>{course_name}</strong> exam held on <strong>{exam_date}</strong>!</p>
+                    <p style="color: #000;">You scored <strong>{marks/50*100} %</strong> marks. Keep it up the great work!</p>
+                    <p style="margin-top: 30px; color: #000;">
+                        📍 <strong>Our Address:</strong><br>
+                        1st Floor, Plot no. 4, Lane no. 2, Kehar Singh Estate, Westend Marg,<br>
+                        Behind Saket Metro Station, New Delhi 110030
+                    </p>
+                    <p style="color: #000;">
+                        📞 <strong>Phone:</strong> 011-40394315 | +91-9650202445, +91-9650677445<br>
+                        📧 <strong>Email:</strong> training@craw.in<br>
+                        🌐 <strong>Website:</strong> 
+                        <a href="https://www.craw.in" style="text-decoration: underline;">www.craw.in</a>
+                    </p>
+                    <p style="color: #000;">
+                        Warm regards,<br>
+                        <strong>Craw Cyber Security Pvt Ltd</strong> 🛡️
+                    </p>
+                </div>
+                <div style="background-color: #f0f0f0; padding: 18px 20px; text-align: center; font-size: 14px; color: #000; border-top: 1px solid #ddd;">
+                    <p style="margin: 0;">© 2025 <strong>Craw Cyber Security Pvt Ltd</strong>. All Rights Reserved.</p>
+                    <p style="margin: 5px 0 0;">This is an automated message. Please do not reply.</p>
+                </div>
+            </div>
+            </body>
+            </html>"""
+
+        try:
+            email = EmailMessage(subject, html_message, from_email, [student_email])
+            email.content_subtype = "html"
+            email.send()
+        except Exception as e:
+            print(f"Failed to send email to {student_email}: {e}")
+
+        return Response({'message': 'Marks updated and email sent successfully.'}, status=status.HTTP_200_OK)
+
+
+
+# This is for Creating Student Note...
+class StudentNotesCreateAPIViews(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'User is Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        student_id = request.data.get('student_id')
+        note_text = request.data.get('note')
+
+        if not student_id or not note_text:
+            return Response({'error': 'Missing student_id or note'}, status=status.HTTP_400_BAD_REQUEST)
+
+        student = Student.objects.filter(id=student_id).first()
+        if not student:
+            return Response({'error': 'Student not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = StudentNoteSerializer(data={'note': note_text, 'student': student_id})
+        if serializer.is_valid():
+            serializer.save(student=student, create_by=request.user)
+            return Response({
+                "message": "Note created successfully"
+            }, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+         
+
+
+
+# This is for Editing Student Note...
+class StudentNotesEditAPIViews(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, id):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'User is Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        try:
+            note = StudentNotes.objects.get(id=id)
+        except StudentNotes.DoesNotExist:
+            return Response({'detail': 'Note ID is not valid'}, status=status.HTTP_404_NOT_FOUND)
+
+        old_data = model_to_dict(note)
+        serializer = StudentNoteSerializer(note, data=request.data, partial=True)
+
+        if serializer.is_valid():
+            note = serializer.save()  # Save updated fields from serializer
+
+            # ✅ Set updated_by field manually (if you add this field to the model)
+            note.updated_by = request.user
+            note.save()  # Save updated_by and update the timestamp (if overridden in save())
+
+            new_data = model_to_dict(note)
+
+            cid = str(uuid.uuid4())
+
+            changes = {}
+            for field, old_value in old_data.items():
+                new_value = new_data.get(field)
+                if old_value != new_value:
+                    changes[field] = {"old": str(old_value), "new": str(new_value)}
+
+                changes_text = [f"Updated {field} from {change['old']} to {change['new']}" for field, change in changes.items()]
+
+                LogEntry.objects.create(
+                    content_type=ContentType.objects.get_for_model(note),
+                    cid=cid,
+                    object_pk=note.id,
+                    object_id=note.id,
+                    object_repr=f"Coordinator ID: {getattr(note, 'coordinator_id', 'N/A')} | Note ID: {note.id}",
+                    action=LogEntry.Action.UPDATE,
+                    changes=f"Updated student name: {getattr(note.student, 'name', 'Unknown')} by {getattr(request.user, 'name', 'Unknown')}. Changes: {changes}",
+                    serialized_data=json.dumps(new_data, default=str),
+                    changes_text=" ".join(changes_text),
+                    additional_data="Coordinator",
+                    actor=request.user,
+                    timestamp=now()
+                )
+
+                return Response({"message": "Coordinator updated successfully", "note_id": note.id}, status=status.HTTP_200_OK)
+
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
