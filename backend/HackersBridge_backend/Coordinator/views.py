@@ -324,7 +324,7 @@ from django.forms.models import model_to_dict
 from django.utils.timezone import now
 import json
 import uuid
-
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 
 # from django.contrib.auth.models import User
@@ -333,7 +333,7 @@ cid = str(uuid.uuid4())
 # Create your views here.
 
 class CoordinatorListView(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     
     def get(self, request):
@@ -346,7 +346,7 @@ class CoordinatorListView(APIView):
         
 
 class StudentsUnderCoordinatorView(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request, id):
@@ -390,7 +390,7 @@ class TrainerUnderCoordinatorView(APIView):
 
 
 class CoordinatorCreateAPIView(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     
     def post(self, request):
@@ -438,7 +438,7 @@ class CoordinatorCreateAPIView(APIView):
 
 
 class CoordinatorEditAPIView(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     
     def put(self, request, id):
@@ -504,7 +504,7 @@ class CoordinatorEditAPIView(APIView):
 
 
 class CoordinatorDeleteAPIView(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     
     def delete(self, request, id):
@@ -604,7 +604,7 @@ class StandardResultsSetPagination(PageNumberPagination):
 
 
 class CoordinatorInfoAPIView(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def paginate_queryset(self, queryset, request):
@@ -686,7 +686,7 @@ class CoordinatorInfoAPIView(APIView):
 
 
 class CoordinatorLogListView(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = LogEntrySerializer
     pagination_class = StandardResultsSetPagination

@@ -7,6 +7,7 @@ from rest_framework import status
 from nexus.models import *
 from .serializer import TrainerSerializer
 from .models import *
+from Student.models import Student
 from nexus.serializer import LogEntrySerializer
 from Coordinator.models import *
 from Counsellor.models import *
@@ -21,6 +22,12 @@ from auditlog.middleware import AuditlogMiddleware
 from auditlog.models import LogEntry
 from django.contrib.contenttypes.models import ContentType
 from django.forms.models import model_to_dict
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from datetime import time
+from django.core.mail import EmailMessage
+import time as sleep_time 
+from django.utils.dateparse import parse_date
+import calendar
 import json
 import uuid
 
@@ -29,34 +36,53 @@ cid = str(uuid.uuid4())
 
 # For Trainer-List-Only
 class TrainerListAPIviews(APIView):
-    authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
-    
+
     def get(self, request):
         if request.user.role not in ['admin', 'coordinator']:
             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
-        
-        try:
-            trainers = Trainer.objects.prefetch_related('course', 'timeslot').select_related('coordinator', 'teamleader')
-            teamleaders = trainers.filter(is_teamleader=True)  # ✅ Optimized filtering
 
-            all_data = {
+        try:
+            today = date.today()
+
+            trainers = Trainer.objects.prefetch_related('course', 'timeslot').select_related('coordinator', 'teamleader')
+            teamleaders = trainers.filter(is_teamleader=True)
+
+            for trainer in trainers:
+                # Clear expired leave
+                if trainer.leave_end_date and today > trainer.leave_end_date:
+                    trainer.leave_end_date = None
+                    trainer.leave_status = None
+                    trainer.save(update_fields=['leave_end_date', 'leave_status'])
+
+                # This is for Trainer's Change Status...... 
+                # When Trainer weekoff that day trainer status is Inactive...
+                today_name = calendar.day_name[today.weekday()]  # e.g., "Monday"
+
+                if trainer.real_status == False:
+                    if trainer.weekoff == today_name:
+                        trainer.status = "Inactive"
+                        trainer.save(update_fields=['status'])
+                    else:
+                        trainer.status = "Active"
+                        trainer.save(update_fields=['status'])
+
+            data = {
                 "trainers": TrainerSerializer(trainers, many=True).data,
                 "teamleaders": TrainerSerializer(teamleaders, many=True).data
             }
-            
-            return Response({"all_data": all_data}, status=status.HTTP_200_OK)
-        
+
+            return Response({"all_data": data}, status=status.HTTP_200_OK)
+
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)  # ✅ Error handling
-
-
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 
 # For Trainer-Availability-In-CurrentlyFreeTrainers-Or-FutureAvailabilityOfTrainers
 class TrainerAvailabilityAPIView(APIView):
-    authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
+    authentication_classes = [JWTAuthentication]  # Ensures user must provide a valid token
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -172,7 +198,7 @@ class TrainerAvailabilityAPIView(APIView):
 
 class AddTrainerAPIView(APIView):
     """API View to add a new trainer (without creating a user)"""
-    authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
+    authentication_classes = [JWTAuthentication]  # Ensures user must provide a valid token
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -222,7 +248,7 @@ class AddTrainerAPIView(APIView):
 
 class EditTrainerAPIView(APIView):
     """API View to edit an existing trainer"""
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def put(self, request, id):
@@ -272,7 +298,8 @@ class EditTrainerAPIView(APIView):
             # ✅ Check if status changed to Inactive
             if old_trainer_data.get('status') == "Active" and trainer.status == "Inactive":
                 trainer.status_change_date = now().date()
-                trainer.save()
+                trainer.real_status = True
+                trainer.save()  
 
             # ✅ Calculate inactive days
             inactive_days = trainer.calculate_inactive_days()
@@ -307,7 +334,7 @@ class EditTrainerAPIView(APIView):
 
 class DeleteTrainerAPIView(APIView):
     """API View to delete a trainer"""
-    authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
+    authentication_classes = [JWTAuthentication]  # Ensures user must provide a valid token
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, id):
@@ -362,7 +389,7 @@ class DeleteTrainerAPIView(APIView):
 
 
 class TrainerInfoAPIView(APIView):
-    authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
+    authentication_classes = [JWTAuthentication]  # Ensures user must provide a valid token
     permission_classes = [IsAuthenticated]
     
     def get(self, request, id):
@@ -415,7 +442,7 @@ class TrainerInfoAPIView(APIView):
                     'end_date': end_date if end_date else 'No past Batch',
                     'free_days': free_days,
                     'course': list(Course.objects.filter(trainer=trainer).values_list('id', 'name')),
-                    'week': timeslot.week_type
+                    'week': timeslot.week_type,
                 })
 
         # Sort free trainers by max free days first
@@ -512,6 +539,7 @@ class TrainerInfoAPIView(APIView):
 
 
 class TrainerLogListView(APIView):
+    authentication_classes = [JWTAuthentication] 
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -521,6 +549,7 @@ class TrainerLogListView(APIView):
         return Response(serializer.data)
 
 
+{
 # class EditTrainerAPIView(APIView):
 #     """API View to edit an existing trainer"""
 #     authentication_classes = [TokenAuthentication]
@@ -585,4 +614,282 @@ class TrainerLogListView(APIView):
 #             }, status=status.HTTP_200_OK)
         
 #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+}
+
+
+
+
+# This is for sending email when trainer on one day and half day leave.....
+class TrainerLeaveMail(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
+        leave_status = request.data.get('leave_status')
+        cutoff_time = time(hour=14, minute=30)
+
+        try:
+            trainer = Trainer.objects.select_related('coordinator').get(id=id)
+        except Trainer.DoesNotExist:
+            return Response({'error': 'Trainer not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Determine applicable timeslots
+        timeslot_filter = Q()
+        if leave_status == "First Half off":
+            timeslot_filter = Q(start_time__lte=cutoff_time)
+        elif leave_status == "Second Half off":
+            timeslot_filter = Q(start_time__gt=cutoff_time)
+        elif leave_status != "Full Day off":
+            return Response({'message': 'Invalid leave status'}, status=status.HTTP_400_BAD_REQUEST)
+
+        timeslots = Timeslot.objects.filter(timeslot_filter) if leave_status != "Full Day off" else Timeslot.objects.all()
+        trainer.leave_status = leave_status
+        trainer.leave_end_date = date.today()
+        trainer.save(update_fields=["leave_status", "leave_end_date"])
+
+        related_batches = Batch.objects.filter(trainer=trainer, batch_time__in=timeslots, status="Running").select_related("course", "batch_time")
+
+        if not related_batches.exists():
+            return Response({'message': f'No batches found for this trainer in {leave_status.lower()}.'}, status=status.HTTP_200_OK)
+
+        session_date = now().strftime("%d %B %Y")
+
+        for batch in related_batches:
+            student_emails = BatchStudentAssignment.objects.filter(
+                batch=batch
+            ).exclude(student__email__isnull=True).values_list('student__email', flat=True).distinct()
+
+            if not student_emails:
+                continue
+
+            batch_name = batch.course.name
+            session_topic = f"{batch_name} (Offline and Online Training)"
+            session_time = f"{batch.batch_time.start_time.strftime('%I:%M %p')} - {batch.batch_time.end_time.strftime('%I:%M %p')}"
+            trainer_name = trainer.name
+            coordinator = trainer.coordinator
+            coordinator_name = getattr(coordinator, 'name', 'N/A')
+            coordinator_phone = getattr(coordinator, 'phone', 'N/A')
+
+            subject = f"Cancellation of Today’s Session: {session_topic} - {session_time}"
+
+            html_message = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <meta charset="UTF-8">
+        <title>{subject}</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0;">
+        <div style="max-width: 600px; margin: 40px auto; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); overflow: hidden;">
+
+            <!-- Header with Logo -->
+            <div style="text-align: center; padding: 20px; border-bottom: 1px solid #ddd;">
+                <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 60px;">
+            </div>
+
+            <!-- Body -->
+            <div style="padding: 30px;">
+                <h2 style="text-align: center; font-size: 24px; margin-bottom: 20px; color: #000;">❗<span style="color: #000;">Session Cancellation Notice</span></h2>
+
+                <p style="font-size: 16px; line-height: 1.6; color: #000;">
+                    <span style="color: #000;">Dear Students,</span>
+                </p>
+
+                <p style="font-size: 16px; line-height: 1.6; color: #000;">
+                    <span style="color: #000;">We regret to inform you that your session scheduled for today, </span>
+                    <strong style="color: #000;">{session_date}</strong>
+                    <span style="color: #000;">, under the batch </span>
+                    <strong style="color: #000;">{batch_name}</strong>
+                    <span style="color: #000;"> has been </span>
+                    <strong style="color: #000;">cancelled</strong><span style="color: #000;">.</span>
+                </p>
+
+                <p style="font-size: 16px; line-height: 1.6; color: #000;">
+                    <span style="color: #000;">This is due to an urgent matter that requires the immediate attention of our trainer, </span>
+                    <strong style="color: #000;">{trainer_name}</strong>
+                    <span style="color: #000;">. We understand the inconvenience this may cause and sincerely apologize.</span>
+                </p>
+
+                <p style="font-size: 16px; line-height: 1.6; color: #000;">
+                    <span style="color: #000;">We appreciate your understanding and cooperation in this matter. Please stay tuned for the rescheduled session details.</span>
+                </p>
+
+                <p style="margin: 5px 0; font-size: 16px; color: #000;">
+                    <span style="color: #000;">For any further assistance, feel free to reach out to your batch coordinator:</span><br>
+                    <span style="color: #000;">👤 Name: <strong style="color: #000;">{coordinator_name}</strong></span><br>
+                    <span style="color: #000;">📱 Phone: <strong style="color: #000;">{coordinator_phone}</strong></span>
+                </p>  
+
+                <p style="font-size: 16px; line-height: 1.6; color: #000;">
+                    <span style="color: #000;">Warm regards,</span><br>
+                    <strong style="color: #000;">Craw Cyber Security Team</strong>
+                </p>
+
+                <div style="margin-top: 20px; font-size: 14px; line-height: 1.6;">
+                    <p style="color: #000;"><strong style="color: #000;">📞 Contact:</strong> <span style="color: #000;">011-40394315 | +91-9650202445, +91-9650677445</span></p>
+                    <p style="color: #000;"><strong>📧 Email:</strong> <a href="mailto:training@craw.in" style="text-decoration: underline;">training@craw.in</a></p>
+                    <p style="color: #000;"><strong>🌐 Website:</strong> <a href="https://www.craw.in/" style="text-decoration: underline;">www.craw.in</a></p>
+                    <p style="color: #000;">
+                        <strong style="color: #000;">🏢 Address:</strong><br>
+                        <span style="color: #000;">
+                            1st Floor, Plot no. 4, Lane no. 2, Kehar Singh Estate, Westend Marg,<br>
+                            Behind Saket Metro Station, New Delhi – 110030
+                        </span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div style="background-color: #f0f0f0; padding: 18px 20px; text-align: center; font-size: 14px; border-top: 1px solid #ddd;">
+                <p style="margin: 0; color: #000;">© 2025 <strong style="color: #000;">Craw Cyber Security Pvt Ltd</strong>. <span style="color: #000;">All Rights Reserved.</span></p>
+                <p style="margin: 5px 0 0; color: #000;"><span style="color: #000;">This is an automated message. Please do not reply.</span></p>
+            </div>
+        </div>
+        </body>
+        </html>
+                """
+
+            try:
+                email = EmailMessage(subject, html_message, "CRAW SECURITY BATCH <training@craw.in>", list(student_emails))
+                email.content_subtype = "html"
+                email.send(fail_silently=False)
+                sleep_time.sleep(0.1)  # throttle control
+            except Exception as e:
+                return Response({'error': f"Failed to send email for batch {batch.id}: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({
+            'message': f'Leave recorded and mail sent for {leave_status.lower()}.',
+            'slots': list(timeslots.values('id', 'start_time', 'end_time')),
+        }, status=status.HTTP_200_OK)
+
+
+
+
+# This is for sending email when trainer on long leave
+class TrainerLongLeaveMail(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
+        trainer = get_object_or_404(Trainer.objects.select_related('coordinator'), id=id)
+
+        leave_status = request.data.get('leave_status')
+        start_date = parse_date(request.data.get('start_date'))
+        end_date = parse_date(request.data.get('end_date'))
+
+        if not (leave_status == "custom" and start_date and end_date):
+            return Response({'error': 'Missing or invalid leave_status/start_date/end_date.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        related_batches = Batch.objects.filter(
+            trainer=trainer,
+            start_date__lte=start_date,
+            end_date__gte=end_date
+        ).select_related('course', 'batch_time')
+
+        trainer.leave_status = leave_status
+        trainer.leave_end_date = end_date
+        trainer.save(update_fields=["leave_status", "leave_end_date"])
+
+        if not related_batches.exists():
+            return Response({'message': 'No batches found for the given dates.'}, status=status.HTTP_404_NOT_FOUND)
+
+        for batch in related_batches:
+            student_emails = BatchStudentAssignment.objects.filter(
+                batch=batch
+            ).exclude(
+                student__email__isnull=True
+            ).values_list(
+                'student__email', flat=True
+            ).distinct()
+
+            if not student_emails:
+                continue
+
+            session_topic = f"{batch.course.name} (Offline and Online Training)"
+            session_time = f"{batch.batch_time.start_time.strftime('%I:%M %p')} - {batch.batch_time.end_time.strftime('%I:%M %p')}"
+            trainer_name = trainer.name
+            coordinator_name = getattr(trainer.coordinator, 'name', 'N/A')
+            coordinator_phone = getattr(trainer.coordinator, 'phone', 'N/A')
+            subject = f"Cancellation of Today’s Session: {session_topic} - {session_time}"
+
+            html_message = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+            <meta charset="UTF-8">
+            <title>{subject}</title>
+            </head>
+            <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0;">
+            <div style="max-width: 600px; margin: 40px auto; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); overflow: hidden;">
+                <div style="text-align: center; padding: 20px; border-bottom: 1px solid #ddd;">
+                    <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 60px;">
+                </div>
+                <div style="padding: 30px;">
+                    <h2 style="text-align: center; font-size: 24px; margin-bottom: 20px; color: #000;">❗Session Cancellation Notice</h2>
+                    
+                    <p style="font-size: 16px; line-height: 1.6; color: #000;">Dear Students,</p>
+
+                    <p style="font-size: 16px; line-height: 1.6; color: #000;">
+                        We regret to inform you that your classes scheduled between 
+                        <strong style="color: #000;">{start_date.strftime('%d %B %Y')}</strong> and 
+                        <strong style="color: #000;">{end_date.strftime('%d %B %Y')}</strong> 
+                        have been put on hold due to a personal reason concerning your trainer, 
+                        <strong style="color: #000;">{trainer_name}</strong>.
+                    </p>
+
+                    <p style="font-size: 16px; line-height: 1.6; color: #000;">
+                        We understand this may cause inconvenience, and we sincerely apologize for the disruption. 
+                        Please rest assured that we are working to reschedule the sessions, and we will update you with further information soon.
+                    </p>
+
+                    <p style="margin: 5px 0; font-size: 16px; color: #000;">
+                        For any further assistance, feel free to reach out to your batch coordinator:<br>
+                        <span style="color: #000;">👤 Name: <strong style="color: #000;">{coordinator_name}</strong></span><br>
+                        <span style="color: #000;">📱 Phone: <strong style="color: #000;">{coordinator_phone}</strong></span>
+                    </p>  
+
+                    <p style="font-size: 16px; line-height: 1.6; color: #000;">Thank you for your patience and understanding.</p>
+
+                    <p style="font-size: 16px; line-height: 1.6; color: #000;">
+                        Best regards,<br>
+                        <strong style="color: #000;">Craw Cyber Security Team</strong>
+                    </p>
+
+                    <div style="margin-top: 20px; font-size: 14px; line-height: 1.6;">
+                        <p style="color: #000;"><strong style="color: #000;">📞 Contact:</strong> <span style="color: #000;">011-40394315 | +91-9650202445, +91-9650677445</span></p>
+                        <p style="color: #000;"><strong>📧 Email:</strong> <a href="mailto:training@craw.in" style="text-decoration: underline;">training@craw.in</a></p>
+                        <p style="color: #000;"><strong>🌐 Website:</strong> <a href="https://www.craw.in/" style="text-decoration: underline;">www.craw.in</a></p>
+                        <p style="color: #000;">
+                            <strong style="color: #000;">🏢 Address:</strong> 
+                            <span style="color: #000;">
+                                1st Floor, Plot no. 4, Lane no. 2, Kehar Singh Estate, Westend Marg,<br>
+                                Behind Saket Metro Station, New Delhi – 110030
+                            </span>
+                        </p>
+                    </div>
+                </div>
+                <div style="background-color: #f0f0f0; padding: 18px 20px; text-align: center; font-size: 14px; border-top: 1px solid #ddd;">
+                    <p style="margin: 0; color: #000;">© 2025 <strong style="color: #000;">Craw Cyber Security Pvt Ltd</strong>. All rights reserved.</p>
+                    <p style="margin: 5px 0 0; color: #000;">This is an automated message. Please do not reply.</p>
+                </div>
+            </div>
+            </body>
+            </html>
+        """
+            try:
+                email = EmailMessage(subject, html_message, "CRAW SECURITY BATCH <training@craw.in>", list(student_emails))
+                email.content_subtype = "html"
+                email.send()
+                sleep_time.sleep(0.1)  # throttling for safety
+            except Exception as e:
+                return Response({'error': f"Failed to send email for batch {batch.id}: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({
+            'message': f'Leave recorded and emails sent for {leave_status.lower()}.'
+        }, status=status.HTTP_200_OK)

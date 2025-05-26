@@ -37,6 +37,7 @@ class Trainer(models.Model):
     timeslot = models.ManyToManyField("nexus.Timeslot", blank=True)
     languages = models.CharField(max_length=10, null=True, blank=True, choices=PREFERRED_LANGUAGE_CHOICES)
     weekoff = models.CharField(max_length=10, null=True, blank=True, choices=WEEKOFF)
+    real_status = models.BooleanField(default=False)
     location = models.ForeignKey("nexus.Location", null=True, blank=True, on_delete=models.SET_NULL)
     is_teamleader =  models.BooleanField(default=False)
     teamleader = models.ForeignKey(
@@ -49,6 +50,8 @@ class Trainer(models.Model):
     )
 
     coordinator = models.ForeignKey("Coordinator.Coordinator", null=True, blank=True , on_delete=models.SET_NULL)
+    leave_status = models.CharField(max_length=100, null=True, blank=True)
+    leave_end_date = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=10, null=True, blank=True, choices=STATUS, default='Active')
     status_change_date = models.DateField(null=True, blank=True)
     profile_picture = models.ImageField(upload_to='trainer/profile_pics/', null=True, blank=True)  # Stores image path

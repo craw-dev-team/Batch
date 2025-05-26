@@ -30,7 +30,7 @@ class TrainerSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'trainer_id', 'name', 'email', 'phone', 'date_of_joining',
             'experience', 'languages', 'weekoff', 'location', 'is_teamleader', 'status', 'timeslot',
-            'teamleader', 'coordinator', 'course', 'coordinator_name', 'course_names', 'teamleader_name', 'inactive_days'
+            'teamleader', 'coordinator', 'course', 'coordinator_name', 'course_names', 'teamleader_name', 'inactive_days', 'leave_status'
         ]
         extra_kwargs = {
             'trainer_id': {'required': False}
@@ -139,3 +139,6 @@ class TrainerSerializer(serializers.ModelSerializer):
                 User.objects.filter(username=instance.trainer_id).update(email=validated_data['email'])
 
         return instance
+
+
+

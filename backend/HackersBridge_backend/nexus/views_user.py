@@ -14,10 +14,11 @@ from django.contrib.contenttypes.models import ContentType
 from django.forms.models import model_to_dict
 from django.utils.timezone import now
 from django.utils.dateparse import parse_date
-
-
-
+from Student.models import Student
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.db.models import Q
 User = get_user_model()
+
 
 # **User Registration API**
 class UserRegistrationAPIView(APIView):
@@ -57,59 +58,7 @@ class UserRegistrationAPIView(APIView):
     
 
 
-
-# **User Login API**
-class UserLoginAPIView(APIView):
-    def post(self, request):
-        serializer = UserLoginSerializer(data=request.data)
-
-        if serializer.is_valid():
-            user = serializer.validated_data['user']
-            token, created = Token.objects.get_or_create(user=user)
-
-            
-            # ✅ Log user login
-            LogEntry.objects.create(
-                content_type=ContentType.objects.get_for_model(user.__class__),
-                cid=str(uuid.uuid4()),
-                object_pk=user.id,
-                object_id=user.id,
-                object_repr=f"User: {user.username}",
-                action=LogEntry.Action.CREATE,  # Use appropriate action for login
-                changes=f"User {user.username} logged in.",
-                serialized_data=json.dumps({
-                    'username': user.username,
-                    'email': user.email,
-                    'role': user.role
-                }, default=str),
-                changes_text=f"User '{user.username}' logged in via API.",
-                additional_data="User Login",
-                actor=user,
-                timestamp=now()
-            )
-            
-            
-            
-            # Redirect to password reset if it's first login
-            if serializer.validated_data.get('first_login'):
-                return Response({
-                    'message': "First login detected. Please reset your password.",
-                    'redirect_to': "/reset-password/",
-                    'username':user.username,
-                    'token': token.key,
-                    'role':user.role
-                }, status=status.HTTP_307_TEMPORARY_REDIRECT)
-
-            return Response({
-                'username': user.username,
-                'role': user.role,
-                'token': token.key
-            }, status=status.HTTP_200_OK)
-
-        return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-
-
+# # **User Login API**
 # class UserLoginAPIView(APIView):
 #     def post(self, request):
 #         serializer = UserLoginSerializer(data=request.data)
@@ -118,6 +67,7 @@ class UserLoginAPIView(APIView):
 #             user = serializer.validated_data['user']
 #             token, created = Token.objects.get_or_create(user=user)
 
+            
 #             # ✅ Log user login
 #             LogEntry.objects.create(
 #                 content_type=ContentType.objects.get_for_model(user.__class__),
@@ -125,7 +75,7 @@ class UserLoginAPIView(APIView):
 #                 object_pk=user.id,
 #                 object_id=user.id,
 #                 object_repr=f"User: {user.username}",
-#                 action=LogEntry.Action.LOGIN,  # Use appropriate action for login
+#                 action=LogEntry.Action.CREATE,  # Use appropriate action for login
 #                 changes=f"User {user.username} logged in.",
 #                 serialized_data=json.dumps({
 #                     'username': user.username,
@@ -137,8 +87,10 @@ class UserLoginAPIView(APIView):
 #                 actor=user,
 #                 timestamp=now()
 #             )
-
-#             # ✅ Handle first login scenario
+            
+            
+            
+#             # Redirect to password reset if it's first login
 #             if serializer.validated_data.get('first_login'):
 #                 return Response({
 #                     'message': "First login detected. Please reset your password.",
@@ -155,6 +107,75 @@ class UserLoginAPIView(APIView):
 #             }, status=status.HTTP_200_OK)
 
 #         return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+class UserLoginAPIView(APIView):
+    def post(self, request):
+        serializer = UserLoginSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.validated_data['user']
+            refresh = RefreshToken.for_user(user)
+            access_token = str(refresh.access_token)
+            role = user.role
+            username = user.username
+            useremail = user.email
+
+            if role == 'student':
+                student_id = Student.objects.filter(Q(enrollment_no = username) | Q(email = useremail)).values('id', 'enrollment_no', 'name')
+                user_info = {'role': role,
+                            'token':access_token}
+
+                response = Response({'message': 'Login successful',
+                                    'student_id': student_id,
+                                    'user_info':user_info}, status=status.HTTP_200_OK)
+
+                response.set_cookie(
+                    key='access_token',
+                    value=access_token,
+                    httponly=True,
+                    secure=False,
+                    samesite='None'  # Required for cross-site cookies
+                )
+
+                response.set_cookie(
+                    key='user_role',
+                    value=role,
+                    httponly=False,
+                    secure=False,
+                    samesite='None'
+                )
+
+                return response
+            else:
+                user_info = {'role':role,
+                             'token':access_token}
+                response = Response({'message':'Login successful',
+                                     'user_info':user_info}, status=status.HTTP_200_OK)
+                
+                response.set_cookie(
+                    key='access_token',
+                    value=access_token,
+                    httponly=True
+                )
+
+                response.set_cookie(
+                    key='user_role',
+                    value=role,
+                    httponly=False
+                )
+
+                return response
+        return Response(serializer.errors, status=status.HTTP_401_UNAUTHORIZED)
+
+
+
+
+
+
+
+
+
 
 
 

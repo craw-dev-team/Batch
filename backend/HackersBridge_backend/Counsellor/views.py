@@ -17,13 +17,14 @@ from django.forms.models import model_to_dict
 from django.utils.timezone import now
 import json
 import uuid
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 # from django.contrib.auth.models import User
 User = get_user_model()
 cid = str(uuid.uuid4())
 
 class CounsellorListView(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     
     def get(self, request):
@@ -37,7 +38,7 @@ class CounsellorListView(APIView):
 
 
 class StudentsUnderCounsellorView(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request, id):
@@ -63,7 +64,7 @@ class StudentsUnderCounsellorView(APIView):
 
 
 class CounsellorCreateAPIView(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     
     def post(self, request):
@@ -103,7 +104,7 @@ class CounsellorCreateAPIView(APIView):
 
 
 class CounsellorEditAPIView(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     
     def put(self, request, id):
@@ -166,7 +167,7 @@ class CounsellorEditAPIView(APIView):
 
 
 class CounsellorDeleteAPIView(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     
     def delete(self, request, id):
@@ -217,7 +218,7 @@ class CounsellorDeleteAPIView(APIView):
 
 
 class CousellorInfoAPIView(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request, id):
@@ -248,7 +249,7 @@ class CousellorInfoAPIView(APIView):
 
 
 class CounsellorLogListView(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):

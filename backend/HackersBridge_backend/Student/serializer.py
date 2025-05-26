@@ -16,19 +16,37 @@ class InstallmentSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-
 class StudentNoteSerializer(serializers.ModelSerializer):
     create_by_name = serializers.SerializerMethodField()
+    create_at = serializers.SerializerMethodField()
+    student_name = serializers.SerializerMethodField()
 
     class Meta:
         model = StudentNotes
-        fields = ['id', 'note', 'last_update_datetime', 'create_by', 'create_by_name']
+        fields = [
+            'id', 'note', 'last_update_datetime',
+            'create_by', 'create_at',
+            'student',
+            'create_by_name', 'student_name'
+        ]
+        extra_kwargs = {
+            'create_by': {'read_only': True},
+            'student': {'read_only': True},  # ✅ Add this
+        }
 
     def get_create_by_name(self, obj):
         return obj.create_by.username if obj.create_by else None
 
+    def get_create_at(self, obj):
+        if obj.create_at:
+            return obj.create_at.strftime('%Y-%m-%d %H:%M:%S')
+        return None
 
+    def get_student_name(self, obj):
+        return obj.student.name if obj.student else None
 
+    
+{
 # class StudentSerializer(serializers.ModelSerializer):
 #     courses = serializers.PrimaryKeyRelatedField(queryset=Course.objects.all(), many=True)
 #     course_counsellor_name = serializers.SerializerMethodField()
@@ -198,6 +216,7 @@ class StudentNoteSerializer(serializers.ModelSerializer):
 #         if hasattr(obj, 'completed_courses'):
 #             return [sc.course.id for sc in obj.completed_courses]
 #         return []
+}
 
 
 class SimpleStudentSerializer(serializers.ModelSerializer):
