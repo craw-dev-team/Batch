@@ -68,16 +68,20 @@ const AddBookForm = ({ isOpen, onClose, bookData }) => {
                 // Update existing course (PUT)
                 response = await axios.put(`${BASE_URL}/api/books/edit/${bookData.id}/`, 
                     payload, 
-                    { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
-            );
+                    { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                    withCredentials : true
+                }
+                );
                 successMessage = "Book updated successfully!";
                 
                 } else {
                     // Add new course (POST)
                     response = await axios.post(`${BASE_URL}/api/books/add/`, 
                         payload, 
-                        { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
-                );
+                        { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                        withCredentials : true
+                    }
+                    );
                     successMessage = "Book added successfully!";
                 }
 
@@ -111,11 +115,11 @@ const AddBookForm = ({ isOpen, onClose, bookData }) => {
     return (
         <>
          <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 z-50">
-            <div className="relative p-2 w-3/6 bg-white rounded-lg shadow-lg dark:bg-gray-700">
+            <div className="relative p-2 w-3/6 bg-white rounded-lg shadow-lg">
                 
                 {/* Modal Header */}
-                <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600 border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900">
                          {isEditing ? "Edit Book" : "Add New Book"}
                     </h3>
                     <button

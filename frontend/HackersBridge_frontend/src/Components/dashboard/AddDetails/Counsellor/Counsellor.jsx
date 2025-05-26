@@ -61,7 +61,9 @@ const Counsellor = () => {
 
         try {
             const response = await axios.delete(`${BASE_URL}/api/counsellors/delete/${counsellorId}/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                withCredentials : true
+            }
             );
 
             if (response.status === 204) {
@@ -93,18 +95,20 @@ const Counsellor = () => {
     const handleToggle = async (checked, counsellorId, counsellorEmail) => {
         const newStatus = checked ? "Active" : "Inactive";
         
-        // ✅ Optimistically update UI before API call
+        // Optimistically update UI before API call
         setCounsellorStatuses((prev) => ({ ...prev, [counsellorId]: checked }));
     
         try {
             await axios.put(`${BASE_URL}/api/counsellors/edit/${counsellorId}/`, 
                 { status: newStatus, email: counsellorEmail },
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` },
+                withCredentials : true
+            }
             );
             message.success(`counsellor status updated to ${newStatus}`);
         } catch (error) {
             message.error("Failed to update status");
-            // ❌ Revert UI if API fails
+            // Revert UI if API fails
             setCounsellorStatuses((prev) => ({ ...prev, [counsellorId]: !checked }));
         }
     };
@@ -213,14 +217,9 @@ const Counsellor = () => {
                     <div className={`overflow-hidden pb-2 relative ${loading ? "backdrop-blur-md opacity-50 pointer-events-none" : ""}`}>
                         <div className="w-full h-[38rem] overflow-y-auto dark:border-gray-700 rounded-lg pb-2">
                     <table className="w-full text-xs text-left text-gray-500 dark:text-gray-400 ">
-                        <thead className="text-xs text-gray-700 uppercase bg-blue-50 dark:bg-gray-700 dark:text-gray-400 sticky top-0">
+                        <thead className="text-xs text-gray-700 uppercase bg-blue-50 dark:bg-gray-700 dark:text-gray-400 sticky top-0 z-10">
                             <tr>
-                                {/* <th scope="col" className="p-4">
-                                    <div className="flex items-center">
-                                        <input id="checkbox-all-search" type="checkbox" className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
-                                        <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
-                                    </div>
-                                </th> */}
+            
                                 <th scope="col" className="px-3 py-3 md:px-1">
                                     S.No
                                 </th>

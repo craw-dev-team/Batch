@@ -48,7 +48,9 @@ useEffect(() => {
         try {
             const response = await axios.put(`${BASE_URL}/api/students/edit/${studentId}/`, 
                 { status: newStatus },
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                withCredentials : true
+            }
             );
             console.log(response);
             console.log(filteredStudents);

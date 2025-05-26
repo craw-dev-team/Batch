@@ -48,8 +48,6 @@ const SpecificCoursePage = () => {
         const handleEditClick = (course) => {
             setSelectedCourse(course); // Set the selected course data
             setIsModalOpen(true); // Open the modal
-            // console.log(course);
-            
         };
 
         
@@ -59,7 +57,6 @@ const SpecificCoursePage = () => {
             const encodedStudentId = btoa(studentId);
             navigate(`/students/${encodedStudentId}`);
         };
-
 
         // HANDLE NAVIGATE TO BATCH INFO
         const handleBatchClick =  async (batchId) => {

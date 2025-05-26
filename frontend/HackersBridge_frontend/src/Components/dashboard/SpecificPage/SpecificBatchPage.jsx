@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback,useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom"
 import { useSpecificBatch } from "../Contexts/SpecificBatch";
-import { DatePicker, Empty, Spin, Avatar, Tooltip, Tag, Button, Popconfirm, message   } from 'antd';
-import { CheckCircleOutlined, CloseCircleOutlined, EditOutlined, DeleteOutlined, ClearOutlined    } from "@ant-design/icons";
+import { DatePicker, Empty, Spin, Avatar, Tooltip, Tag, Button, Popconfirm, message, Input   } from 'antd';
+import { CheckCircleOutlined, CloseCircleOutlined, EditOutlined, MailOutlined, ClearOutlined    } from "@ant-design/icons";
 import dayjs from "dayjs";
 import axios from 'axios';
 import BASE_URL from "../../../ip/Ip";
@@ -12,6 +12,7 @@ import CreateBatchForm from "../Batches/CreateBatchForm";
 import { useAuth } from "../AuthContext/AuthContext";
 import { useBatchForm } from "../Batchcontext/BatchFormContext";
 import { useSpecificStudent } from "../Contexts/SpecificStudent";
+import EmailPopup from "../../Emails/EmailPopup";
 
 
 // const SpecificBatchPage = () => {
@@ -196,8 +197,13 @@ const SpecificBatchPage = () => {
     const [students, setStudents] = useState({});
     // store search input 
     const [searchTerm, setSearchTerm] = useState("");
+    // store student id's to send email
+    const [showPopup, setShowPopup] = useState(false);
+    const [selectedStudents, setSelectedStudents] = useState([]);
+ 
+    // store the batch class link in input field 
+    const [classLink, setClassLink] = useState('');
 
-    
     const navigate = useNavigate();
     
     
@@ -210,7 +216,9 @@ const SpecificBatchPage = () => {
         const fetchAvailableStudents = useCallback(async (batchId) => {              
             try {
                 const response = await axios.get(`${BASE_URL}/api/batches/${batchId}/available-students/`, 
-                    { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                    { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                    withCredentials : true
+                }
                 );
                 const data = response.data;
                 // console.log(data);
@@ -249,9 +257,7 @@ const SpecificBatchPage = () => {
               item?.phone?.toLowerCase().includes(searchTerm.toLowerCase())
             );
           }, [students?.available_students, searchTerm]);
-          
-             console.log(filteredAvailableStudents);
-             
+                       
          
 
         // HANDLE FORM SUBMIT AND SEND DATA TO THAT MODAL AND ADD THAT STUDENT IN THAT BATCH 
@@ -266,7 +272,9 @@ const SpecificBatchPage = () => {
             try {
                 const response = await axios.post(`${BASE_URL}/api/batches/${batch_id}/add-students/`, 
                     { students: [studentId] }, // Ensure correct payload format
-                    { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                    { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                    withCredentials : true
+                }
                 );
         
                 if (response.status >= 200 && response.status < 300) {
@@ -310,6 +318,7 @@ const SpecificBatchPage = () => {
     useEffect(() => {
         if (specificBatch?.batch) {
             setUpdatedValues(specificBatch.batch);
+            setClassLink(specificBatch?.batch?.batch_link)
         }
     }, [specificBatch]);
 
@@ -377,12 +386,14 @@ const SpecificBatchPage = () => {
     
             await axios.put(`${BASE_URL}/api/batches/edit/${decodedBatchId}`, 
                 updatePayload, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                withCredentials : true
+            }
             );
     
             console.log(`${field} updated successfully`);
         } catch (error) {
-            console.error(`Error updating ${field}:`, error);
+            // console.error(`Error updating ${field}:`, error);
         }
     };
     
@@ -396,7 +407,9 @@ const SpecificBatchPage = () => {
 
             const response = await axios.post(`${BASE_URL}/api/batch/remove-student/${decodedBatchId}/`,  
                 payload,  // Student IDs in the body
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                withCredentials : true
+            }
             );
 
                 if (response.status >= 200 && response.status < 300) {   
@@ -411,7 +424,7 @@ const SpecificBatchPage = () => {
         } catch (error) {
             setLoading(false);
             if (error.response) {
-                console.error("Server Error Response:", error);
+                // console.error("Server Error Response:", error);
             }
         }       
     };
@@ -444,7 +457,8 @@ const SpecificBatchPage = () => {
         const handleEditClick = (student) => {
             setSelectedStudent(student); // Set the selected course data
             setIsModalOpen(true); // Open the modal            
-            // setIsDeleted(false)
+            console.log(student)
+
         };
 
 
@@ -473,7 +487,9 @@ const SpecificBatchPage = () => {
             try {
                 const response = await axios.post(`${BASE_URL}/api/batch-generate-certificate/${batch_id}/`, 
                     payload,
-                    { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                    { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                    withCredentials : true
+                }
                 );
                 
                 if (response.status >= 200 && response.status < 300) {
@@ -490,542 +506,736 @@ const SpecificBatchPage = () => {
             };
         };
 
-console.log(updatedValues);
+
+        // HANDLE EMAIL SENT TO STUDENT BASED ON THE EMAIL TYPE (BATCH START, COMPLETE, WARNING, EXAM, ETC.)
+        
+        // HANDLE SELECT ALL CHECKBOX 
+        const toggleSelectAll = (checked) => {
+            if (checked) {
+              const selected = filteredBatchStudents.map((item) => ({
+                students: item.student.id,
+                emails : item.student.email
+              }));
+              console.log(selected);
+              
+              setSelectedStudents(selected);
+            } else {
+              setSelectedStudents([]);
+            }
+          };
+          
+          
+        
+          const toggleStudent = (id, email) => {
+            setSelectedStudents((prev) => {
+              const exists = prev.find((s) => s.students === id);
+              if (exists) {
+                return prev.filter((s) => s.students !== id);
+              } else {
+                return [...prev, { students: id, emails: email }];
+              }
+            });
+          };
+ 
+
+        //   send the batch class link to the server 
+        const handleSave = async () => {
+            const batch_id = atob(batchId)
+           try {
+                const response = await axios.patch(`${BASE_URL}/api/batch-link/${batch_id}/`,
+                    {batch_link: classLink }, 
+                    { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                    withCredentials : true
+                }
+                );
+
+                if (response.status === 200) {     
+                    message.success("batch Link Added")
+    
+                } else {
+                    message.error("Error issuing certificate", response?.error.message)
+                };
+           } catch (error) {
+            console.log(error);
+            
+           }
+        };
 
      
     return (
-        <div className="w-auto h-full pt-20 px-2 mt-0">
-            <div className="grid grid-cols-6 gap-x-6">
-                <div className="px-4 py-4 col-span-6 h-auto shadow-md sm:rounded-lg border border-gray-50 bg-white">
-                    <div className="w-full h-auto px-1 py-3 text-lg font-semibold flex justify-between">
-                        <p># {updatedValues.batch_id}</p>
+        <>
+            <div className="w-auto h-full pt-16 px-2 mt-0">
+                <div className="grid grid-cols-6 gap-x-6">
+                    <div className="px-4 py-4 col-span-6 h-auto shadow-md sm:rounded-lg border border-gray-50 bg-white">
+                        <div className="w-full h-auto px-1 py-3 text-lg font-semibold flex justify-between">
+                            <p># {updatedValues.batch_id}</p>
 
-                        <Button
-                            color="secondary" 
-                            variant="outlined" 
-                            className="rounded-lg"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleBatchEditClick(updatedValues);
-                                setIsBatchModalOpen(true);
-                            }}>
-                            <EditOutlined />
-                        </Button>
+                            <Button
+                                color="secondary" 
+                                variant="outlined" 
+                                className="rounded-lg"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleBatchEditClick(updatedValues);
+                                    setIsBatchModalOpen(true);
+                                }}>
+                                <EditOutlined />
+                            </Button>
 
-                    </div>
-
-                    <div className="grid 2xl:grid-cols-6 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-2 px-4 py-4 gap-4">
-                        {[
-                            { label: "Trainer", key: "trainer_name" },
-                            { label: "Course", key: "course_name" },
-                            { label: "Start Time", key: "batch_time_data.start_time" },
-                            { label: "End Time", key: "batch_time_data.end_time" },
-                            { label: "Preferred Week", key: "preferred_week" },
-                            { label: "Location", key: "batch_location" },
-                            { label: "Language", key: "language" },
-                            { label: "Mode", key: "mode" },
-                            { label: "Start Date", key: "start_date" },
-                            { label: "End Date", key: "end_date" },
-                            { label: "Status", key: "status" },
-                            { label: "Created on", key: "end_date" },
-                            { label: "Last Updated on", key: "gen_time" },
-                            { label: "Updated by", key: "last_update_user" },
-                        ].map(({ label, key }) => {
-                            const value = getNestedValue(updatedValues, key);
-                          
-                            let displayValue = "N/A";
-                            if (value) {
-                              if (["start_date", "end_date"].includes(key)) {
-                                displayValue = dayjs(value).format("DD/MM/YYYY");
-                              } else if (["batch_time_data.start_time", "batch_time_data.end_time"].includes(key)) {
-                                displayValue = dayjs(value, "HH:mm:ss").format("hh:mm A");
-                              } else if (key === "gen_time") {
-                                displayValue = dayjs(value).format("DD/MM/YYYY hh:mm A");
-                              } else {
-                                displayValue = value;
-                              }
-                            }
-                          
-                            return (
-                              <div key={key} className="col-span-1 px-1 py-1 lg:mt-0 sm:mt-6">
-                                <p>{label}</p>
-                                <div className="font-semibold">{displayValue}</div>
-                              </div>
-                            );
-                          })}
-                    </div>
-                </div>
-
-
-                {/* Students List */}
-                <div className="py-4 col-span-6 mt-6 h-auto shadow-md sm:rounded-lg border border-gray-50  bg-white">
-                    <div className="w-full font-semibold">
-                        <div className="col-span-1 text-lg px-4 py-4 flex justify-between">
-                            {/* <h1>Students</h1> */}
-
-                            <div className="relative ">
-                                <button
-                                    onClick={() => handleTabClick("students")}
-                                    className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200  
-                                        ${activeTab === "students" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
-                                        >
-                                    Students
-                                </button>
-
-                                <button
-                                    onClick={() => handleTabClick("recommended_students")}
-                                    className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200  
-                                        ${activeTab === "recommended_students" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
-                                        >
-                                    Recommended Students
-                                </button>
-                            </div>
-
-
-                            <div className="flex gap-x-3">
-                                <label htmlFor="table-search" className="sr-only">Search</label>
-                                <div className="relative">
-                                    <input onChange={(e) => setSearchTerm(e.target.value.replace(/^\s+/, ''))} value={searchTerm} type="text" id="table-search" placeholder="Search for items"
-                                        className="block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg w-40 h-7 bg-gray-50 focus:ring-blue-500 focus:border-blue-500" 
-                                    />
-                                    <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                                    <button onClick={() => setSearchTerm("")}>
-                                    {searchTerm ? (
-                                            <svg className="w-4 h-4 text-gray-500" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M6.293 6.293a1 1 0 011.414 0L10 8.586l2.293-2.293a1 1 0 111.414 1.414L11.414 10l2.293 2.293a1 1 0 01-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 01-1.414-1.414L8.586 10 6.293 7.707a1 1 0 010-1.414z" clipRule="evenodd"></path>
-                                            </svg>
-                                        ) : (
-                                            <svg className="w-4 h-4 text-gray-500" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"></path>
-                                            </svg>
-                                        )}
-                                    </button>
-                                    </div>
-                                </div>
-               
-
-                                <div className="flex">
-                                        {!dateFieldIssueCertificate && (
-                                            <Button
-                                            onClick={handleIssueClick}
-                                            variant="outlined"
-                                            color={isCertificateIssued ? "blue" : "green"}
-                                            >
-                                            {isCertificateIssued ? "Certificate Issued" : "Issue Certificate"}
-                                            </Button>
-                                        )}
-                                        {dateFieldIssueCertificate && (
-                                            <div className="flex mx-1">
-                                                <DatePicker
-                                                    open={dateFieldIssueCertificate}
-                                                    name="certificateIssueDate"
-                                                    className="border-gray-300"
-                                                    size="small"
-                                                    placeholder="Certificate issue date"
-                                                    // value={certificateData[item.id] 
-                                                    //         ? dayjs(certificateData[item.id])  //  Show selected date 
-                                                    //         : item.course_certificate_date 
-                                                    //         ? dayjs(item.course_certificate_date)  //  Show date from server
-                                                    //         : null
-                                                    // }
-                                                    onChange={(date, dateString) => {
-                                                        setCertificateIssueDate(dateString);  //  Store selected date
-                                                    }}
-                                                />
-                                                {/* Submit Button */}
-                                                <CheckCircleOutlined
-                                                    className="mx-1 text-green-500 text-lg cursor-pointer hover:text-green-700"
-                                                    onClick={() => {
-                                                        handleIssueCertificate();
-                                                        setDateFieldIssueCertificate(false);
-                                                    }}
-                                                />
-
-                                                {/* Cancel Button */}
-                                                <CloseCircleOutlined
-                                                    className="text-red-500 text-lg cursor-pointer hover:text-red-700"
-                                                    onClick={() => {
-                                                        setDateFieldIssueCertificate(false);
-                                                    }}
-                                                />
-                                            </div>
-                                        )}
-                                    <button onClick={() => { setIsAddStudentModalOpen(true) }} type="button" className="ml-2 focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5">Add +</button>
-                                </div>
-                            </div>
                         </div>
 
-                            <div className={`overflow-hidden pb-2 relative `}>
-                                <div className="w-full h-[38rem] overflow-y-auto dark:border-gray-700 rounded-lg pb-2">
-                                    <div className="col-span-1py-2 leading-8">
-                                    <table className="w-full text-xs text-left text-gray-500">
-                                        <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10">
-                                            <tr>
-                                                <th scope="col" className="p-2">
-                                                    <div className="flex items-center">
-                                                        <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
-                                                        <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
-                                                    </div>
-                                                </th>
-                                                <th scope="col" className="px-3 py-3 md:px-2">
-                                                    s.No
-                                                </th>
-                                                {/* <th scope="col" className="px-3 py-3 md:px-1 w-5">
+                        <div className="grid 2xl:grid-cols-6 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-2 px-4 py-4 gap-4">
+                            {[
+                                { label: "Trainer", key: "trainer_name" },
+                                { label: "Course", key: "course_name" },
+                                { label: "Start Time", key: "batch_time_data.start_time" },
+                                { label: "End Time", key: "batch_time_data.end_time" },
+                                { label: "Preferred Week", key: "preferred_week" },
+                                { label: "Location", key: "batch_location" },
+                                { label: "Language", key: "language" },
+                                { label: "Mode", key: "mode" },
+                                { label: "Start Date", key: "start_date" },
+                                { label: "End Date", key: "end_date" },
+                                { label: "Status", key: "status" },
+                                { label: "Created on", key: "batch_create_datetime" },
+                                { label: "Last Updated on", key: "gen_time" },
+                                { label: "Updated by", key: "last_update_user" },
+                            ].map(({ label, key }) => {
+                                const value = getNestedValue(updatedValues, key);
+                            
+                                let displayValue = "N/A";
+                                if (value) {
+                                if (["start_date", "end_date"].includes(key)) {
+                                    displayValue = dayjs(value).format("DD/MM/YYYY");
+                                } else if (["batch_time_data.start_time", "batch_time_data.end_time"].includes(key)) {
+                                    displayValue = dayjs(value, "HH:mm:ss").format("hh:mm A");
+                                } else if (key === "gen_time") {
+                                    displayValue = dayjs(value).format("DD/MM/YYYY hh:mm A");
+                                } else if (key === "batch_create_datetime") {
+                                    displayValue = dayjs(value).format("DD/MM/YYYY hh:mm A");
 
-                                                </th> */}
-                                                <th scope="col" className="px-3 py-3 md:px-1">
-                                                    Enrollment No
-                                                </th>
-                                                <th scope="col" className="px-3 py-3 md:px-1">
-                                                    Name
-                                                </th>
-                                                <th scope="col" className="px-3 py-3 md:px-1">
-                                                    Phone No
-                                                </th>
-                                                <th scope="col" className="px-3 py-3 md:px-1">
-                                                    Email
-                                                </th>
-                                                <th scope="col" className="px-3 py-3 md:px-1">
-                                                    Courses
-                                                </th>
-                                                <th scope="col" className="px-3 py-3 md:px-1">
-                                                    Mode
-                                                </th>
-                                                <th scope="col" className="px-3 py-3 md:px-1">
-                                                    Language
-                                                </th>
-                                                <th scope="col" className="px-3 py-3 md:px-1">
-                                                    Preferred Week
-                                                </th>
-                                                <th scope="col" className="px-3 py-3 md:px-1">
-                                                    Location
-                                                </th>
-                                                <th scope="col" className="px-3 py-3 md:px-1">
-                                                    course Counsellor
-                                                </th>
-                                                <th scope="col" className="px-3 py-3 md:px-1">
-                                                    support Coordinator
-                                                </th>
-                                                <th scope="col" className="px-3 py-3 md:px-1">
-                                                    Action
-                                                </th>
-                                            
-                                            </tr>
-                                        </thead>
+                                } else {
+                                    displayValue = value;
+                                }
+                                }
+                            
+                                return (
+                                <div key={key} className="col-span-1 px-1 py-1 lg:mt-0 sm:mt-6">
+                                    <p>{label}</p>
+                                    <div className="font-semibold">{displayValue}</div>
+                                </div>
+                                );
+                            })}
+                            <div className="h-auto 2xl:col-span-2 col-span-2 lg:col-span-1">
+                                <p>Class Link</p> 
+                                    <div className="flex mt-1">
+                                        <Input value={classLink}  onChange={(e) => setClassLink(e.target.value)} placeholder="Class Link" className="rounded-md h-8 mr-2 hover:border-green-"></Input>
+                                        <CheckCircleOutlined onClick={handleSave} className="mx-1 text-green-500 text-lg cursor-pointer hover:text-green-700"/>
+                                    </div>
+                            </div>
+                        </div>
+                    </div>
 
-                                {activeTab === "students" && (
-                                        <tbody>
-                                    {loading ? (
-                                            <tr>
-                                                <td colSpan="100%" className="text-center py-4">
-                                                    <Spin size="large" />
-                                                </td>
-                                            </tr>
-                                    
-                                    ) : filteredBatchStudents.length > 0 ? (
-                                        filteredBatchStudents.map((item, index) => (
-                                        <tr key={item.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 scroll-smooth">
-                                            <td scope="col" className="p-2">
-                                                <div className="flex items-center">
-                                                    <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
-                                                    <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
-                                                </div>
-                                            </td>
-                                            <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
-                                            {index + 1}
-                                            </td>
-                                            {/* <td className="px-3 py-2 md:px-1">
-                                                {item.id}
-                                            </td> */}
-                                            {/* <td> {isCertificateIssued ? <CheckCircleOutlined className="text-green-500 text-md"/> : ''} </td> */}
-                                            
-                                            <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.student.id)}>
-                                                {item.student.enrollment_no}
-                                            </td>
 
-                                            <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.student.id)}>
-                                                {item.student.name}
-                                            </td>
-                                            <td className="px-3 py-2 md:px-1">
-                                                {item.student.phone}
-                                            </td>
-                                            <td className="px-3 py-2 md:px-1">
-                                                {item.student.email}
-                                            </td>
-                                            <td className="px-3 py-2 md:px-1">
-                                            <Avatar.Group
-                                                        max={{
-                                                            count: 2,
-                                                            style: {
-                                                                color: "#f56a00",
-                                                                backgroundColor: "#fde3cf",
-                                                                height: "24px", // Match avatar size
-                                                                width: "24px", // Match avatar size
-                                                            }
-                                                        }}
-                                                    >
-                                                        {item.student.courses_names?.map((name, index) => (
-                                                            <Tooltip key={index} title={name} placement="top">
-                                                                <Avatar
-                                                                    size={24}
-                                                                    style={{ backgroundColor: "#87d068" }}
-                                                                >
-                                                                    {name[0]}
-                                                                </Avatar>
-                                                            </Tooltip>
-                                                        ))}
-                                                    </Avatar.Group>
-                                            </td>
 
-                                            <td className="px-3 py-2 md:px-1">
-                                                <Tag bordered={false} color={item.student.mode === "Offline" ? "green" : item.student.mode === "Online" ? "red" : "geekblue"}>
-                                                    {item.student.mode}
-                                                </Tag>
-                                            </td>
+                    {/* Students List */}
+                    <div className="py-4 col-span-6 mt-3 h-auto shadow-md sm:rounded-lg border border-gray-50  bg-white">
+                        <div className="w-full font-semibold">
+                            <div className="col-span-1 text-lg px-4 py-4 flex justify-between">
+                                {/* <h1>Students</h1> */}
 
-                                            <td className="px-3 py-2 md:px-1">
-                                                <Tag bordered={false} color={item.student.language === 'Hindi'? 'green' : item.student.language === 'English'? 'volcano' : 'blue'}>
-                                                    {item.student.language}
-                                                </Tag>
-                                            </td>
+                                <div className="relative ">
+                                    <button
+                                        onClick={() => handleTabClick("students")}
+                                        className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200  
+                                            ${activeTab === "students" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                            >
+                                        Students
+                                    </button>
 
-                                            <td className="px-3 py-2 md:px-1">
-                                                <Tag bordered={false} color={item.student.preferred_week === "Weekdays" ? "cyan" : item.student.preferred_week === "Weekends" ? "gold" : "geekblue" }>
-                                                    {item.student.preferred_week}
-                                                </Tag>
-                                            </td>
-                                            <td className="px-3 py-2 md:px-1">
-                                                {item.student.location == '1' ? <Tag color="blue">Saket</Tag> : item.student.location == "2" ? <Tag color="magenta">Laxmi Nagar</Tag> : <Tag color="blue">Both</Tag>}
-                                            </td>
-                                            <td className="px-3 py-2 md:px-1">
-                                                {item.student.course_counsellor_name}
-                                            </td>
-                                            <td className="px-3 py-2 md:px-1">
-                                                {item.student.support_coordinator_name}
-                                            </td>
-                                            {/* <td className="px-3 py-2 md:px-1">
-                                                <Switch
-                                                    size="small"
-                                                    checkedChildren={<CheckOutlined />}
-                                                    unCheckedChildren={<CloseOutlined />}
-                                                    checked={studentStatuses[item.id] || false} // Get correct status per trainer
-                                                    onChange={(checked) => handleToggle(checked, item.id)}
-                                                    style={{
-                                                        backgroundColor: studentStatuses[item.id] ? "#38b000" : "gray", // Change color when checked
-                                                    }}
-                                                />
-                                            </td> */}
-                                            <td > <Button 
-                                                    color="primary" 
-                                                    variant="filled" 
-                                                    className="rounded-lg w-auto pl-3 pr-3 py-0 my-1 mr-1"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation(); // Prevent the click from bubbling to the <td> click handler
-                                                        handleEditClick(item);  // Open the form with selected course data
-                                                        setIsModalOpen(true);   // Open the modal
-                                                    }}
-                                                >
-                                                    <EditOutlined />
-                                                </Button>
-                                                <Popconfirm
-                                                    title={`Remove ${item.student.name}`}
-                                                    description="Are you sure you want to Remove this Student?"
-                                                    onConfirm={() => confirm(item.student.id, item.student.name)}
-                                                    onCancel={cancel}
-                                                    okText="Yes"
-                                                    cancelText="No"
-                                                >
-                                                    <Button 
-                                                        color="danger" 
-                                                        variant="filled" 
-                                                        className="rounded-lg w-auto px-3"
-                                                        onClick={(e) => e.stopPropagation()} // Prevent the click from triggering the Edit button
-                                                    >
-                                                        <ClearOutlined />
-                                                    </Button>
-                                            </Popconfirm>
-                                            </td>
-                                        </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td colSpan="100%" className="text-center py-4 text-gray-500">
-                                            <Empty description="No Students found" />
-                                        </td>
-                                    </tr>
-                                )}
-                                        </tbody>
-                                )}
+                                    <button
+                                        onClick={() => handleTabClick("recommended_students")}
+                                        className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200  
+                                            ${activeTab === "recommended_students" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                            >
+                                        Recommended Students
+                                    </button>
+                                    {/* <button
+                                        onClick={() => handleTabClick("email")}
+                                        className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200  
+                                            ${activeTab === "email" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                            >
+                                        Email
+                                    </button> */}
+                                </div>
 
-                                {activeTab === "recommended_students" && (
-                                         <tbody>
-                                         {loading ? (
-                                                 <tr>
-                                                     <td colSpan="100%" className="text-center py-4">
-                                                         <Spin size="large" />
-                                                     </td>
-                                                 </tr>
-                                         
-                                         ) : filteredAvailableStudents.length > 0 ? (
-                                            filteredAvailableStudents.map((item, index) => (
-                                             <tr key={item.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 scroll-smooth">
-                                                <td scope="col" className="p-2">
-                                                    <div className="flex items-center">
-                                                        <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
-                                                        <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
-                                                    </div>
-                                                </td>
-                                                <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
-                                                    {index + 1}
-                                                 </td>
-                                                 {/* <td className="px-3 py-2 md:px-1">
-                                                     {item.id}
-                                                 </td> */}  
-
-                                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.id)}>
-                                                    <Tooltip 
-                                                        color="white"
-                                                        title={
-                                                            Array.isArray(item.complete_course_name) && item.complete_course_name.length > 0 ? (
-                                                            <div className="w-auto max-w-lg bg-white text-black border-none">
-                                                                {/* Dynamically adjusting width */}
-                                                                {item.complete_course_name.map((course, idx) => (
-                                                                <div key={idx} className="py-1"><CheckCircleOutlined className="text-lime-600 text-md"/>  {course} - <span className="text-lime-600 font-serif">Completed</span></div>
-                                                                ))}
-                                                            </div>
-                                                            ) : (
-                                                            "No completed courses"
-                                                            )
-                                                        }
-                                                    >
-                                                        <span>{item.enrollment_no}</span>
-                                                    </Tooltip>
-
-                                                </td>
-     
-                                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.id)}> 
-                                                    <Tooltip 
-                                                        color="white"
-                                                        title={
-                                                            Array.isArray(item.complete_course_name) && item.complete_course_name.length > 0 ? (
-                                                            <div className="w-auto max-w-lg bg-white text-black border-none">
-                                                                {/* Dynamically adjusting width */}
-                                                                {item.complete_course_name.map((course, idx) => (
-                                                                <div key={idx} className="py-1"><CheckCircleOutlined className="text-lime-600 text-md"/>  {course} - <span className="text-lime-600 font-serif">Completed</span></div>
-                                                                ))}
-                                                            </div>
-                                                            ) : (
-                                                            "No completed courses"
-                                                            )
-                                                        }
-                                                    >
-                                                        <span>{item.name}</span>
-                                                        </Tooltip>
-                                                </td>
-
-                                                 <td className="px-3 py-2 md:px-1">
-                                                     {item.phone}
-                                                 </td>
-
-                                                 <td className="px-3 py-2 md:px-1">
-                                                     {item.email}
-                                                 </td>
-                                                 
-                                                 <td className="px-3 py-2 md:px-1">
-                                                 <Avatar.Group
-                                                             max={{
-                                                                 count: 2,
-                                                                 style: {
-                                                                     color: "#f56a00",
-                                                                     backgroundColor: "#fde3cf",
-                                                                     height: "24px", // Match avatar size
-                                                                     width: "24px", // Match avatar size
-                                                                 }
-                                                             }}
-                                                         >
-                                                             {item.courses_names?.map((name, index) => (
-                                                                 <Tooltip key={index} title={name} placement="top">
-                                                                     <Avatar
-                                                                         size={24}
-                                                                         style={{ backgroundColor: "#87d068" }}
-                                                                     >
-                                                                         {name[0]}
-                                                                     </Avatar>
-                                                                 </Tooltip>
-                                                             ))}
-                                                         </Avatar.Group>
-                                                 </td>
-     
-                                                 <td className="px-3 py-2 md:px-1">
-                                                     <Tag bordered={false} color={item.mode === "Offline" ? "green" : item.mode === "Online" ? "red" : "geekblue"}>
-                                                         {item.mode}
-                                                     </Tag>
-                                                 </td>
-     
-                                                 <td className="px-3 py-2 md:px-1">
-                                                     <Tag bordered={false} color={item.language === 'Hindi'? 'green' : item.language === 'English'? 'volcano' : 'blue'}>
-                                                         {item.language}
-                                                     </Tag>
-                                                 </td>
-     
-                                                 <td className="px-3 py-2 md:px-1">
-                                                     <Tag bordered={false} color={item.preferred_week === "Weekdays" ? "cyan" : item.preferred_week === "Weekends" ? "gold" : "geekblue" }>
-                                                         {item.preferred_week}
-                                                     </Tag>
-                                                 </td>
-                                                 <td className="px-3 py-2 md:px-1">
-                                                     {item.location == '1' ? <Tag color="blue">Saket</Tag> : item.location == "2" ? <Tag color="magenta">Laxmi Nagar</Tag> : <Tag color="blue">Both</Tag>}
-                                                 </td>
-                                                 <td className="px-3 py-2 md:px-1">
-                                                     {item.course_counsellor_name}
-                                                 </td>
-                                                 <td className="px-3 py-2 md:px-1">
-                                                     {item.support_coordinator_name}
-                                                 </td>
-                                                 <td > 
-                                                    <Button 
-                                                         color="primary" 
-                                                         variant="filled" 
-                                                         className="rounded-lg w-auto pl-3 pr-3 py-0 my-1 mr-1"
-                                                         onClick={(e) => {
-                                                             e.stopPropagation(); // Prevent the click from bubbling to the <td> click handler
-                                                             handleAddStudentToBatch(item.id);  // Open the form with selected course data
-                                                         }}
-                                                     >
-                                                         +
-                                                     </Button>
-                                                 </td>
-                                             </tr>
-                                         ))
-                                     ) : (
-                                         <tr>
-                                             <td colSpan="100%" className="text-center py-4 text-gray-500">
-                                                 <Empty description="No Students found" />
-                                             </td>
-                                         </tr>
-                                     )}
-                                         </tbody>
-                                )}
-                                    </table>
-                                        {/* <ul>
-                                            {specificBatch?.students.map((student, index) => (
-                                                <li key={index}>
-                                                    <span className="mr-4">{index + 1} :</span>
-                                                    {student.name}
-                                                </li>
-                                            ))}
-                                        </ul> */}
+                                <div className="w-96 mx-3">
+                                    <label htmlFor="table-search" className="sr-only">Search</label>
+                                    <div className="relative">
+                                        <input onChange={(e) => setSearchTerm(e.target.value.replace(/^\s+/, ''))} value={searchTerm} type="text" id="table-search" placeholder="Search for items"
+                                            className="block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg w-full h-7 bg-gray-50 focus:ring-blue-500 focus:border-blue-500" 
+                                            />
+                                        <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                                        <button onClick={() => setSearchTerm("")}>
+                                        {searchTerm ? (
+                                            <svg className="w-4 h-4 text-gray-500" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M6.293 6.293a1 1 0 011.414 0L10 8.586l2.293-2.293a1 1 0 111.414 1.414L11.414 10l2.293 2.293a1 1 0 01-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 01-1.414-1.414L8.586 10 6.293 7.707a1 1 0 010-1.414z" clipRule="evenodd"></path>
+                                                </svg>
+                                            ) : (
+                                                <svg className="w-4 h-4 text-gray-500" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"></path>
+                                                </svg>
+                                            )}
+                                        </button>
+                                        </div>
                                     </div>
                                 </div>
+
+
+                                <div className="flex gap-x-3">
+                                    {/* button to send certificate  */}
+                                    <div className="flex">
+                                            {!dateFieldIssueCertificate && (
+                                                <Button
+                                                className="px-2 py-1"
+                                                onClick={handleIssueClick}
+                                                variant="outlined"
+                                                color={isCertificateIssued ? "blue" : "green"}
+                                                >
+                                                {isCertificateIssued ? "Certificate Issued" : "Issue Certificate"}
+                                                </Button>
+                                            )}
+                                            {dateFieldIssueCertificate && (
+                                                <div className="flex mx-1">
+                                                    <DatePicker
+                                                        open={dateFieldIssueCertificate}
+                                                        name="certificateIssueDate"
+                                                        className="border-gray-300"
+                                                        size="small"
+                                                        placeholder="Certificate issue date"
+                                                        // value={certificateData[item.id] 
+                                                        //         ? dayjs(certificateData[item.id])  //  Show selected date 
+                                                        //         : item.course_certificate_date 
+                                                        //         ? dayjs(item.course_certificate_date)  //  Show date from server
+                                                        //         : null
+                                                        // }
+                                                        onChange={(date, dateString) => {
+                                                            setCertificateIssueDate(dateString);  //  Store selected date
+                                                        }}
+                                                    />
+                                                    
+                                                    {/* Cancel Button */}
+                                                    <CloseCircleOutlined
+                                                        className="mx-1 text-red-500 text-lg cursor-pointer hover:text-red-700"
+                                                        onClick={() => {
+                                                            setDateFieldIssueCertificate(false);
+                                                        }}
+                                                    />
+
+                                                    {/* Submit Button */}
+                                                    <CheckCircleOutlined
+                                                        className=" text-green-500 text-lg cursor-pointer hover:text-green-700"
+                                                        onClick={() => {
+                                                            handleIssueCertificate();
+                                                            setDateFieldIssueCertificate(false);
+                                                        }}
+                                                    />
+
+                                                </div>
+                                            )}
+
+                                             {/* Button to send email */}
+                                            <Button
+                                                type="button"
+                                                color="success" 
+                                                variant="outlined" 
+                                                className="rounded-lg mx-4 py-1 px-2"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setShowPopup(true);
+                                                
+                                                }}>
+                                                Send email <MailOutlined size="small"/>
+                                            </Button>
+
+                                        <button onClick={() => { setIsAddStudentModalOpen(true) }} type="button" className="focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5">Add +</button>
+                                    </div>
+                                    
+                                </div>
                             </div>
+
+                                <div className={`overflow-hidden pb-2 relative `}>
+                                    <div className="w-full h-[38rem] overflow-y-auto dark:border-gray-700 rounded-lg pb-2">
+                                        <div className="col-span-1py-2 leading-8">
+                                        <table className="w-full text-xs text-left text-gray-500">
+                                            {(activeTab === "students" || activeTab === "recommended_students") && (
+                                            <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10">
+                                                <tr>
+                                                    <th scope="col" className="p-2">
+                                                        <div className="flex items-center">
+                                                            <input id="checkbox-all-search" type="checkbox" onChange={(e) => toggleSelectAll(e.target.checked)} className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
+                                                            <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
+                                                        </div>
+                                                    </th>
+                                                    <th scope="col" className="px-3 py-3 md:px-2">
+                                                        s.No
+                                                    </th>
+                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                        Enrollment No
+                                                    </th>
+                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                        Name
+                                                    </th>
+                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                        Phone No
+                                                    </th>
+                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                        Email
+                                                    </th>
+                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                        Courses
+                                                    </th>
+                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                        Mode
+                                                    </th>
+                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                        Language
+                                                    </th>
+                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                        Preferred Week
+                                                    </th>
+                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                        Location
+                                                    </th>
+                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                        course Counsellor
+                                                    </th>
+                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                        support Coordinator
+                                                    </th>
+                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                        Action
+                                                    </th>
+                                                
+                                                </tr>
+                                            </thead>
+                                            )}
+
+                                            {/* Separate Table Head For Email Tab  */}
+                                            {/* {activeTab === "email" && (
+                                            <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10">
+                                                <tr>
+                                                    <th scope="col" className="p-2">
+                                                        <div className="flex items-center">
+                                                            <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
+                                                            <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
+                                                        </div>
+                                                    </th>
+                                                    <th scope="col" className="px-3 py-3 md:px-2">
+                                                        s.No
+                                                    </th>
+                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                        Enrollment No
+                                                    </th>
+                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                        Name
+                                                    </th>
+                                                    <th scope="col" className="px-3 py-3 md:px-1">  
+                                                        Phone No
+                                                    </th>
+                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                        Email
+                                                    </th>
+                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <button className="px-2 border-2 border-blue-400 rounded-sm"> Batch Start </button>
+                                                    </th>
+                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                        <button className="px-2 border-2 border-blue-400 rounded-sm">Complete</button>
+                                                    </th>
+                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                        Action
+                                                    </th>
+                                                
+                                                </tr>
+                                            </thead>
+                                            )} */}
+
+                                            {activeTab === "students" && (
+                                                    <tbody>
+                                                {loading ? (
+                                                        <tr>
+                                                            <td colSpan="100%" className="text-center py-4">
+                                                                <Spin size="large" />
+                                                            </td>
+                                                        </tr>
+                                                
+                                                ) : filteredBatchStudents.length > 0 ? (
+                                                    filteredBatchStudents.map((item, index) => (
+                                                    <tr key={item.id} className="bg-white font-normal border-b border-gray-200 hover:bg-gray-50 scroll-smooth">
+                                                        <td scope="col" className="p-2">
+                                                            <div className="flex items-center">
+                                                                <input id="checkbox-all-search" type="checkbox" checked={selectedStudents.some((s) => s.students === item.student.id)} onChange={() => toggleStudent(item.student.id, item.student.email)} className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
+                                                                <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
+                                                            </div>
+                                                        </td>
+                                                        <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900">
+                                                        {index + 1}
+                                                        </td>
+                                                        {/* <td className="px-3 py-2 md:px-1">
+                                                            {item.id}
+                                                        </td> */}
+                                                        {/* <td> {isCertificateIssued ? <CheckCircleOutlined className="text-green-500 text-md"/> : ''} </td> */}
+                                                        
+                                                        <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.student.id)}>
+                                                            {item.student.enrollment_no}
+                                                        </td>
+
+                                                        <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.student.id)}>
+                                                            {item.student.name}
+                                                        </td>
+                                                        <td className="px-3 py-2 md:px-1">
+                                                            {item.student.phone}
+                                                        </td>
+                                                        <td className="px-3 py-2 md:px-1">
+                                                            {item.student.email}
+                                                        </td>
+                                                        <td className="px-3 py-2 md:px-1">
+                                                        <Avatar.Group
+                                                                    max={{
+                                                                        count: 2,
+                                                                        style: {
+                                                                            color: "#f56a00",
+                                                                            backgroundColor: "#fde3cf",
+                                                                            height: "24px", // Match avatar size
+                                                                            width: "24px", // Match avatar size
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    {item.student.courses_names?.map((name, index) => (
+                                                                        <Tooltip key={index} title={name} placement="top">
+                                                                            <Avatar
+                                                                                size={24}
+                                                                                style={{ backgroundColor: "#87d068" }}
+                                                                            >
+                                                                                {name[0]}
+                                                                            </Avatar>
+                                                                        </Tooltip>
+                                                                    ))}
+                                                                </Avatar.Group>
+                                                        </td>
+
+                                                        <td className="px-3 py-2 md:px-1">
+                                                            <Tag bordered={false} color={item.student.mode === "Offline" ? "green" : item.student.mode === "Online" ? "red" : "geekblue"}>
+                                                                {item.student.mode}
+                                                            </Tag>
+                                                        </td>
+
+                                                        <td className="px-3 py-2 md:px-1">
+                                                            <Tag bordered={false} color={item.student.language === 'Hindi'? 'green' : item.student.language === 'English'? 'volcano' : 'blue'}>
+                                                                {item.student.language}
+                                                            </Tag>
+                                                        </td>
+
+                                                        <td className="px-3 py-2 md:px-1">
+                                                            <Tag bordered={false} color={item.student.preferred_week === "Weekdays" ? "cyan" : item.student.preferred_week === "Weekends" ? "gold" : "geekblue" }>
+                                                                {item.student.preferred_week}
+                                                            </Tag>
+                                                        </td>
+                                                        <td className="px-3 py-2 md:px-1">
+                                                            {item.student.location == '1' ? <Tag bordered={false} color="blue">Saket</Tag> : item.student.location == "2" ? <Tag bordered={false} color="magenta">Laxmi Nagar</Tag> : <Tag bordered={false} color="blue">Both</Tag>}
+                                                        </td>
+                                                        <td className="px-3 py-2 md:px-1">
+                                                            {item.student.course_counsellor_name}
+                                                        </td>
+                                                        <td className="px-3 py-2 md:px-1">
+                                                            {item.student.support_coordinator_name}
+                                                        </td>
+                                                        <td > <Button 
+                                                                color="primary" 
+                                                                variant="filled" 
+                                                                className="rounded-lg w-auto pl-3 pr-3 py-0 my-1 mr-1"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation(); // Prevent the click from bubbling to the <td> click handler
+                                                                    handleEditClick(item.student);  // Open the form with selected course data
+                                                                    setIsModalOpen(true);   // Open the modal
+                                                                }}
+                                                            >
+                                                                <EditOutlined />
+                                                            </Button>
+                                                            <Popconfirm
+                                                                title={`Remove ${item.student.name}`}
+                                                                description="Are you sure you want to Remove this Student?"
+                                                                onConfirm={() => confirm(item.student.id, item.student.name)}
+                                                                onCancel={cancel}
+                                                                okText="Yes"
+                                                                cancelText="No"
+                                                            >
+                                                                <Button 
+                                                                    color="danger" 
+                                                                    variant="filled" 
+                                                                    className="rounded-lg w-auto px-3"
+                                                                    onClick={(e) => e.stopPropagation()} // Prevent the click from triggering the Edit button
+                                                                >
+                                                                    <ClearOutlined />
+                                                                </Button>
+                                                        </Popconfirm>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            ) : (
+                                                <tr>
+                                                    <td colSpan="100%" className="text-center py-4 text-gray-500">
+                                                        <Empty description="No Students found" />
+                                                    </td>
+                                                </tr>
+                                            )}
+                                                    </tbody>
+                                            )}
+
+                                            {activeTab === "recommended_students" && (
+                                                    <tbody>
+                                                    {loading ? (
+                                                            <tr>
+                                                                <td colSpan="100%" className="text-center py-4">
+                                                                    <Spin size="large" />
+                                                                </td>
+                                                            </tr>
+                                                    
+                                                    ) : filteredAvailableStudents.length > 0 ? (
+                                                        filteredAvailableStudents.map((item, index) => (
+                                                        <tr key={item.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 scroll-smooth">
+                                                            <td scope="col" className="p-2">
+                                                                <div className="flex items-center">
+                                                                    <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
+                                                                    <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
+                                                                </div>
+                                                            </td>
+                                                            <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
+                                                                {index + 1}
+                                                            </td>
+                                                            {/* <td className="px-3 py-2 md:px-1">
+                                                                {item.id}
+                                                            </td> */}  
+
+                                                            <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.id)}>
+                                                                <Tooltip 
+                                                                    color="white"
+                                                                    title={
+                                                                        Array.isArray(item.complete_course_name) && item.complete_course_name.length > 0 ? (
+                                                                        <div className="w-auto max-w-lg bg-white text-black border-none">
+                                                                            {/* Dynamically adjusting width */}
+                                                                            {item.complete_course_name.map((course, idx) => (
+                                                                            <div key={idx} className="py-1"><CheckCircleOutlined className="text-lime-600 text-md"/>  {course} - <span className="text-lime-600 font-serif">Completed</span></div>
+                                                                            ))}
+                                                                        </div>
+                                                                        ) : (
+                                                                        <p className="text-gray-800 font-medium">No completed courses</p>
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    <span>{item.enrollment_no}</span>
+                                                                </Tooltip>
+
+                                                            </td>
+                
+                                                            <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.id)}> 
+                                                                <Tooltip 
+                                                                    color="white"
+                                                                    title={
+                                                                        Array.isArray(item.complete_course_name) && item.complete_course_name.length > 0 ? (
+                                                                        <div className="w-auto max-w-lg bg-white text-black border-none">
+                                                                            {/* Dynamically adjusting width */}
+                                                                            {item.complete_course_name.map((course, idx) => (
+                                                                            <div key={idx} className="py-1"><CheckCircleOutlined className="text-lime-600 text-md"/>  {course} - <span className="text-lime-600 font-serif">Completed</span></div>
+                                                                            ))}
+                                                                        </div>
+                                                                        ) : (
+                                                                        "No completed courses"
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    <span>{item.name}</span>
+                                                                </Tooltip>
+                                                            </td>
+
+                                                            <td className="px-3 py-2 md:px-1">
+                                                                {item.phone}
+                                                            </td>
+
+                                                            <td className="px-3 py-2 md:px-1">
+                                                                {item.email}
+                                                            </td>
+                                                            
+                                                            <td className="px-3 py-2 md:px-1">
+                                                            <Avatar.Group
+                                                                        max={{
+                                                                            count: 2,
+                                                                            style: {
+                                                                                color: "#f56a00",
+                                                                                backgroundColor: "#fde3cf",
+                                                                                height: "24px", // Match avatar size
+                                                                                width: "24px", // Match avatar size
+                                                                            }
+                                                                        }}
+                                                                    >
+                                                                        {item.courses_names?.map((name, index) => (
+                                                                            <Tooltip key={index} title={name} placement="top">
+                                                                                <Avatar
+                                                                                    size={24}
+                                                                                    style={{ backgroundColor: "#87d068" }}
+                                                                                >
+                                                                                    {name[0]}
+                                                                                </Avatar>
+                                                                            </Tooltip>
+                                                                        ))}
+                                                                    </Avatar.Group>
+                                                            </td>
+                
+                                                            <td className="px-3 py-2 md:px-1">
+                                                                <Tag bordered={false} color={item.mode === "Offline" ? "green" : item.mode === "Online" ? "red" : "geekblue"}>
+                                                                    {item.mode}
+                                                                </Tag>
+                                                            </td>
+                
+                                                            <td className="px-3 py-2 md:px-1">
+                                                                <Tag bordered={false} color={item.language === 'Hindi'? 'green' : item.language === 'English'? 'volcano' : 'blue'}>
+                                                                    {item.language}
+                                                                </Tag>
+                                                            </td>
+                
+                                                            <td className="px-3 py-2 md:px-1">
+                                                                <Tag bordered={false} color={item.preferred_week === "Weekdays" ? "cyan" : item.preferred_week === "Weekends" ? "gold" : "geekblue" }>
+                                                                    {item.preferred_week}
+                                                                </Tag>
+                                                            </td>
+                                                            <td className="px-3 py-2 md:px-1">
+                                                                {item.location == '1' ? <Tag color="blue">Saket</Tag> : item.location == "2" ? <Tag color="magenta">Laxmi Nagar</Tag> : <Tag color="blue">Both</Tag>}
+                                                            </td>
+                                                            <td className="px-3 py-2 md:px-1">
+                                                                {item.course_counsellor_name}
+                                                            </td>
+                                                            <td className="px-3 py-2 md:px-1">
+                                                                {item.support_coordinator_name}
+                                                            </td>
+                                                            <td > 
+                                                                <Button 
+                                                                    color="primary" 
+                                                                    variant="filled" 
+                                                                    className="rounded-lg w-auto pl-3 pr-3 py-0 my-1 mr-1"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation(); // Prevent the click from bubbling to the <td> click handler
+                                                                        handleAddStudentToBatch(item.id);  // Open the form with selected course data
+                                                                    }}
+                                                                >
+                                                                    +
+                                                                </Button>
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                ) : (
+                                                    <tr>
+                                                        <td colSpan="100%" className="text-center py-4 text-gray-500">
+                                                            <Empty description="No Students found" />
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                                    </tbody>
+                                            )}
+                                                
+                                                    
+                                            {/* {activeTab === "email" && (
+                                                    <tbody>
+                                                {loading ? (
+                                                        <tr>
+                                                            <td colSpan="100%" className="text-center py-4">
+                                                                <Spin size="large" />
+                                                            </td>
+                                                        </tr>
+                                                
+                                                ) : filteredBatchStudents.length > 0 ? (
+                                                    filteredBatchStudents.map((item, index) => (
+                                                    <tr key={item.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 scroll-smooth">
+                                                        <td scope="col" className="p-2">
+                                                            <div className="flex items-center">
+                                                                <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
+                                                                <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
+                                                            </div>
+                                                        </td>
+                                                        <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
+                                                        {index + 1}
+                                                        </td>
+                                                        
+                                                        <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.student.id)}>
+                                                            {item.student.enrollment_no}
+                                                        </td>
+
+                                                        <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.student.id)}>
+                                                            {item.student.name}
+                                                        </td>
+                                                        <td className="px-3 py-2 md:px-1">
+                                                            {item.student.phone}
+                                                        </td>
+                                                        <td className="px-3 py-2 md:px-1">
+                                                            {item.student.email}
+                                                        </td>
+                                                        <td className="px-3 py-2 md:px-1">
+                                                        <Avatar.Group
+                                                                    max={{
+                                                                        count: 2,
+                                                                        style: {
+                                                                            color: "#f56a00",
+                                                                            backgroundColor: "#fde3cf",
+                                                                            height: "24px", // Match avatar size
+                                                                            width: "24px", // Match avatar size
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    {item.student.courses_names?.map((name, index) => (
+                                                                        <Tooltip key={index} title={name} placement="top">
+                                                                            <Avatar
+                                                                                size={24}
+                                                                                style={{ backgroundColor: "#87d068" }}
+                                                                            >
+                                                                                {name[0]}
+                                                                            </Avatar>
+                                                                        </Tooltip>
+                                                                    ))}
+                                                                </Avatar.Group>
+                                                        </td>
+
+                                                       
+                                                    </tr>
+                                                ))
+                                            ) : (
+                                                <tr>
+                                                    <td colSpan="100%" className="text-center py-4 text-gray-500">
+                                                        <Empty description="No Students found" />
+                                                    </td>
+                                                </tr>
+                                            )}
+                                                    </tbody>
+                                            )} */}
+                                    
+                                        </table>
+                                        </div>
+                                    </div>
+                                </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <CreateStudentForm isOpen={isModalOpen} selectedStudentData={selectedStudent || {}} onClose={() => setIsModalOpen(false)} />
-            <AddStudentModal isOpen={isAddStudentModalOpen}  onClose={() => setIsAddStudentModalOpen(false)} />
-            <CreateBatchForm isOpen={isBatchModalOpen} selectedBatchData={selectedBatch|| {}}  onClose={() => setIsBatchModalOpen(false)} />
+                <CreateStudentForm isOpen={isModalOpen} selectedStudentData={selectedStudent || {}} onClose={() => setIsModalOpen(false)} />
+                <AddStudentModal isOpen={isAddStudentModalOpen}  onClose={() => setIsAddStudentModalOpen(false)} />
+                <CreateBatchForm isOpen={isBatchModalOpen} selectedBatchData={selectedBatch|| {}}  onClose={() => setIsBatchModalOpen(false)} />
 
-        </div>
+            </div>
+
+            <EmailPopup
+                open={showPopup}
+                onClose={() => setShowPopup(false)}
+                selectedStudents={selectedStudents}
+                
+            />
+        </>
     );
 };
 

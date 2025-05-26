@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Col, Row } from 'antd';
-import { useStudentForm } from '../StudentContext/StudentFormContext';
 import { useNavigate } from 'react-router-dom';
+import { useStudentForm } from '../Studentcontext/StudentFormContext';
+
+
+
 
 const StudentCards = () => {
   const { studentsCounts, fetchStudentCount } = useStudentForm();
@@ -13,6 +16,9 @@ const StudentCards = () => {
         fetchStudentCount(); 
 
 }, []);
+
+
+
 
 const total_student = () => {
   navigate(`/students/`)
@@ -47,7 +53,9 @@ const handleCardClick = (cardType, callback) => {
 
 
     return (
-        <Row gutter={14}>
+
+       <>
+         <Row gutter={14}>
         <Col span={4}>
           <Card title={studentsCounts?.total_student || '0'} variant="borderless" className={`font-semibold cursor-pointer ${selectedCard === "total_students" ? "text-blue-500" : "text-black"}`} onClick={() => handleCardClick("total_atudents", total_student)}>
             Total Students
@@ -78,12 +86,8 @@ const handleCardClick = (cardType, callback) => {
             Inactive Students
           </Card>
         </Col>
-        {/* <Col span={4}>
-          <Card title="Card title" variant="borderless">
-            Card content
-          </Card>
-        </Col> */}
-      </Row>
+        </Row>
+       </>
     )
 }
 export default StudentCards;

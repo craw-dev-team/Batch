@@ -45,48 +45,58 @@ const BreadCrumbs = () => {
   const breadcrumbItems = [
     {
       href: "/batches",
-      title: <Link to="/batches"><HomeOutlined /> Home</Link>,
+      title: (
+        <>
+          <HomeOutlined /> Home
+        </>
+      ),
     },
     ...pathSnippets.map((snippet, index) => {
       const path = `/${pathSnippets.slice(0, index + 1).join("/")}`;
-
-      // Check if the snippet matches a static route
+  
       if (breadcrumbNameMap[path]) {
         return {
           href: path,
           title: (
-            <Link to={path}>
+            <>
               {breadcrumbNameMap[path].icon} {breadcrumbNameMap[path].title}
-            </Link>
+            </>
           ),
         };
       }
-
-      // Handle dynamic routes
+  
       if (path.startsWith("/trainers/") && trainerId) {
         return {
           href: `/trainers/${trainerId}`,
-          title: trainerName, // Show Trainer Name instead of ID
+          title: trainerName,
         };
       }
+  
       if (path.startsWith("/students/") && studentId) {
         return {
           href: `/students/${studentId}`,
           title: studentName,
         };
       }
+  
       if (path.startsWith("/batches/") && batchId) {
         return {
           href: `/batches/${batchId}`,
           title: batchCode,
         };
       }
-
-      return null; // Ignore unknown paths
-    }).filter(Boolean), // Remove null values
+  
+      return null;
+    }).filter(Boolean),
   ];
+  
 
-  return <Breadcrumb items={breadcrumbItems} />;
+  return <Breadcrumb
+              items={breadcrumbItems}
+              itemRender={(route, params, routes, paths) =>
+                <Link to={route.href}>{route.title}</Link>
+              }
+            />;
 };
 
 export default BreadCrumbs;

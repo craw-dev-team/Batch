@@ -86,7 +86,9 @@ const Trainers = () => {
         
     try {
         const response = await axios.delete(`${BASE_URL}/api/trainers/delete/${trainerId}/`, 
-            { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+            { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+            withCredentials : true
+        }
         );
 
         if (response.status === 204) {
@@ -140,8 +142,9 @@ const Trainers = () => {
         try {
             await axios.put(`${BASE_URL}/api/trainers/edit/${trainerId}/`, 
                 { status: newStatus, email: trainerEmail },
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
-
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                withCredentials : true
+            }
             );
             message.success(`Trainer status updated to ${newStatus}`);
         } catch (error) {

@@ -52,11 +52,15 @@ const TrainerFormProvider = ({ children }) => {
             setLoading(true);  // Set loading state
             try {
                 const response = await axios.get(`${BASE_URL}/api/trainers/`, 
-                    { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                    { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                    withCredentials : true
+                }
                 );
                 const trainers = response?.data;
                 const available = await axios.get(`${BASE_URL}/api/trainers/availability/`, 
-                    { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                    { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                    withCredentials : true
+                }
                 );
                 const availableTrainer = available?.data;
                 // console.log(availableTrainer);

@@ -36,7 +36,7 @@ const Sidebar = () => {
           </div>
 
         <Menu
-          className='darkmode h-full z-50 pt-6'
+          className='h-full z-50 pt-6'
           onClick={({ key }) => navigate(key)} // Handle navigation
           mode="inline"
           defaultSelectedKeys={[location.pathname]}

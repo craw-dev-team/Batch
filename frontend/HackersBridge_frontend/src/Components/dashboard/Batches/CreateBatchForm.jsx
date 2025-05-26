@@ -38,9 +38,7 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
         fetchStudents();
         fetchAllStudent();        
         
-        if (selectedBatchData) {
-            console.log(selectedBatchData);
-            
+        if (selectedBatchData) {            
             setBatchFormData({
                 batchId: selectedBatchData.batch_id || "",
                 batchTime: selectedBatchData?.batch_time_data?.id || null, 
@@ -56,6 +54,7 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
                 location: selectedBatchData.location || "",
                 student: selectedBatchData.student || [],
                 status: selectedBatchData.status || "",
+                
             });
             
         } else {
@@ -134,14 +133,18 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
             if (selectedBatchData && selectedBatchData.id) {
                 // Update existing course (PUT)
                 response = await axios.put(`${BASE_URL}/api/batches/edit/${selectedBatchData.id}/`, payload, {
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` }
-                });
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    withCredentials : true
+                }
+                );
                 successMessage = "Batch updated successfully!";
                 } else {
                     // Add new course (POST)
                     response = await axios.post(`${BASE_URL}/api/batches/add/`, payload, {
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` }
-                    });
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        withCredentials : true
+                    }
+                    );
                     successMessage = "Batch added successfully!";
                 }
 
@@ -280,28 +283,28 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
                             <Select name="batchTime" value={batchFormData.batchTime ? String(batchFormData.batchTime) : null} onChange={(value) => handleChange("batchTime", value)} className='w-full border-gray-300' size='large' placeholder='Select Batch Timing' 
                                  dropdownRender={menu => <div>{menu}</div>} // required to ensure styling applies properly
                                  options={[
-                                        { value: '1', label: '10:00 - 12:00' },
-                                        { value: '2', label: '12:00 - 02:00' },
-                                        { value: '3', label: '03:00 - 05:00' },
-                                        { value: '4', label: '05:00 - 06:30' },
-                                        { value: '9', label: '06:00 - 07:00' },
-                                        { value: '7', label: '07:00 - 09:00' },
-                                        { value: '8', label: '10:00 - 05:00' },
-                               
-                                   // Weekends
-                                   { value: '5', label: <div style={{ backgroundColor: '#fffbe6' }}>10:00 - 02:00 - Weekends</div> },
-                                   { value: '6', label: <div style={{ backgroundColor: '#fffbe6' }}>03:00 - 06:30 - Weekends</div> },
-                                   { value: '16', label: <div style={{ backgroundColor: '#fffbe6' }}>12:00 - 02:00 - Weekends</div> },
-                                   
-                                   // Weekdays
-                                   { value: '17', label: <div style={{ backgroundColor: '#c3f3fa' }}>10:30 - 12:00 - Weekdays</div> },
-                                   { value: '10', label: <div style={{ backgroundColor: '#c3f3fa' }}>12:30 - 02:30 - Weekdays</div> },
-                                   { value: '11', label: <div style={{ backgroundColor: '#c3f3fa' }}>07:00 - 08:30 - Weekdays</div> },
-                                   { value: '12', label: <div style={{ backgroundColor: '#c3f3fa' }}>05:00 - 07:00 - Weekdays</div> },
-                                   { value: '13', label: <div style={{ backgroundColor: '#c3f3fa' }}>08:00 - 09:00 - Weekdays</div> },
-                                   { value: '14', label: <div style={{ backgroundColor: '#c3f3fa' }}>03:00 - 07:00 - Weekdays</div> },
-                                   { value: '15', label: <div style={{ backgroundColor: '#c3f3fa' }}>06:00 - 07:30 - Weekdays</div> },
-                                 ]}
+                                    { value: '1', label: '10:00 - 12:00' },
+                                    { value: '2', label: '12:00 - 02:00' },
+                                    { value: '3', label: '03:00 - 05:00' },
+                                    { value: '4', label: '05:00 - 06:30' },
+                                    { value: '9', label: '06:00 - 07:00' },
+                                    { value: '7', label: '07:00 - 09:00' },
+                                    { value: '8', label: '10:00 - 05:00' },
+                           
+                                    // Weekends
+                                    { value: '5', label: <div style={{ backgroundColor: '#fffbe6' }}>10:00 - 02:00 - Weekends</div> },
+                                    { value: '6', label: <div style={{ backgroundColor: '#fffbe6' }}>03:00 - 06:30 - Weekends</div> },
+                                    { value: '16', label: <div style={{ backgroundColor: '#fffbe6' }}>12:00 - 02:00 - Weekends</div> },
+                                    
+                                    // Weekdays
+                                    { value: '17', label: <div style={{ backgroundColor: '#c3f3fa' }}>10:30 - 12:00 - Weekdays</div> },
+                                    { value: '10', label: <div style={{ backgroundColor: '#c3f3fa' }}>12:30 - 02:30 - Weekdays</div> },
+                                    { value: '11', label: <div style={{ backgroundColor: '#c3f3fa' }}>07:00 - 08:30 - Weekdays</div> },
+                                    { value: '12', label: <div style={{ backgroundColor: '#c3f3fa' }}>05:00 - 07:00 - Weekdays</div> },
+                                    { value: '13', label: <div style={{ backgroundColor: '#c3f3fa' }}>08:00 - 09:00 - Weekdays</div> },
+                                    { value: '14', label: <div style={{ backgroundColor: '#c3f3fa' }}>03:00 - 07:00 - Weekdays</div> },
+                                    { value: '15', label: <div style={{ backgroundColor: '#c3f3fa' }}>06:00 - 07:30 - Weekdays</div> },
+                                ]}
                                  filterOption={(input, option) => {
                                     const labelText = typeof option.label === 'string'
                                       ? option.label

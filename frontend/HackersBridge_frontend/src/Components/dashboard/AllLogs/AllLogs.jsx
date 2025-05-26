@@ -35,7 +35,7 @@ const AllLogs = () => {
 
     return (
         <>
-           <div className="w-auto pt-4 px-2 mt-16 bg-white">
+           <div className="w-auto pt-4 px-2 mt-12 darkmode">
                 <LogsCountCards />
                 <div className="relative w-full h-auto shadow-md sm:rounded-lg border border-gray-50 dark:border dark:border-gray-600">
                     <div className="w-full px-4 py-3 text flex justify-between font-semibold ">

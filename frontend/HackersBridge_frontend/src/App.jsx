@@ -23,7 +23,7 @@ import SpecificStudentPage from "./Components/dashboard/SpecificPage/SpecificStu
 import { SpecificStudentProvider } from "./Components/dashboard/Contexts/SpecificStudent";
 import Login, { ForgotPassword, ResetPassword, VerifyOTP } from "./Pages/Login";
 import Register from "./Pages/Register";
-import ProtectedRoute, { PublicRoute } from "./Pages/ProtectedRoute";
+import ProtectedRoute, { PublicRoute, StudentRoute } from "./Pages/ProtectedRoute";
 import { AuthProvider } from "./Components/dashboard/AuthContext/AuthContext";
 import { SpecificBatchProvider } from "./Components/dashboard/Contexts/SpecificBatch";
 import SpecificBatchPage from "./Components/dashboard/SpecificPage/SpecificBatchPage";
@@ -34,8 +34,30 @@ import AllLogs from "./Components/dashboard/AllLogs/AllLogs";
 import { AllLogsProvider } from "./Components/dashboard/AllLogsContext/AllLogsContext";
 import BooksHome from "./Pages/BooksHome";
 import { BookFormProvider } from "./Components/dashboard/BooksContext/BookFormContext";
-import SpecificCoursePage from "./Components/dashboard/SpecificPage/SpecificCoursePage";
+import StudentLogin from "./Components/StudentDashboard/Pages/StudentLogin";
+import StudentRegister from "./Components/StudentDashboard/Pages/StudentRegister";
+import StudentInfo from "./Components/StudentDashboard/Dashboard/StudentInfo/StudentDetails/StudentInfo";
+import StudentLayout from "./StudentLayout";
+import StudentDashboardHome from "./Components/StudentDashboard/Pages/StudentDashboardHome";
 import { SpecificCourseProvider } from "./Components/dashboard/Contexts/SpecificCourse";
+import SpecificCoursePage from "./Components/dashboard/SpecificPage/SpecificCoursePage";
+import { StudentAuthProvider } from "./Components/StudentDashboard/Dashboard/StudentAuthContext/StudentAuthContext";
+import DashboardLayout from "./Components/common/DashboardLayout";
+import StudentTrainerChat from "./Components/StudentDashboard/Dashboard/StudentInfo/Chat/StudentTrainerChat";
+import StudentBatches from "./Components/StudentDashboard/Dashboard/StudentInfo/StudentBatches/StudentBatches";
+import StudentAttendance from "./Components/StudentDashboard/Dashboard/StudentInfo/StudentAttendance/StudentAttendance";
+import StudentBatchInfo from "./Components/StudentDashboard/Dashboard/StudentInfo/StudentBatches/StudentBatchesInfo";
+import { StudentBatchProvider } from "./Components/StudentDashboard/Dashboard/StudentInfo/StudentBatches/StudentBatchContext";
+import StudentRecommendedBatches from "./Components/StudentDashboard/Dashboard/StudentInfo/StudentBatches/StudentRecommendedBatches";
+import { StudentAttendanceProvider } from "./Components/StudentDashboard/Dashboard/StudentInfo/StudentAttendance/StudentAttendanceContext";
+import { RequestBatchProvider } from "./Components/StudentDashboard/Dashboard/StudentInfo/StudentBatches/RequestBatch/RequestBatchContext";
+import { StudentCertificateProvider } from "./Components/StudentDashboard/Dashboard/StudentInfo/StudentCertificate/StudentCertificateContext";
+import { AllTicketsProvider } from "./Components/StudentDashboard/Dashboard/Ticket/TicketRaiseContext";
+import AllTickets from "./Components/StudentDashboard/Dashboard/Ticket/AllTickets";
+import StudentCertificate from "./Components/StudentDashboard/Dashboard/StudentInfo/StudentCertificate/StudentCertificate";
+import CreateAnnouncementForm from "./Components/dashboard/Announcement/AnnouncementFormPage";
+import AnnouncementPage from "./Components/dashboard/Announcement/AnnouncementPage";
+import { AnnouncementProvider } from "./Components/dashboard/Announcement/AnnouncementContext";
 
 
 
@@ -44,84 +66,70 @@ const { Content, Header } = Layout;
 function App() {  
   const [collapsed, setCollapsed] = useState(false);
 
-//   const token = localStorage.getItem("token");
-
-//   axios.get(`$${BASE_URL}/api/trainers/`, {
-//     headers: {
-//       Authorization: `token ${token}`,
-//     },
-//   })
-//     .then((response) => console.log(response.data))
-//     .catch((error) => console.error("Error fetching trainers:", error.response));
-  
-
-// useEffect(() => {
-//   axios.interceptors.request.use(
-//     (config) => {
-//       const token = localStorage.getItem("token");
-//       if (token) {
-//         config.headers.Authorization = `token ${token}`;
-//       }
-//       return config;
-//     },
-//     (error) => Promise.reject(error)
-//   );
-  
-  
-// },[])
-
-
   return (
     <AppProviders>
       <AuthProvider>
-        <Router>
-          <Routes>
-            {/* Public Routes */}
-            <Route element={<PublicRoute />}>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/verify-otp" element={<VerifyOTP />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            </Route>
-            
-            {/* Protected Routes including Sidebar & Header */}
-            <Route element={<ProtectedRoute />}>
-              <Route 
-                path="*" 
-                element={
-                  <Layout>
-                    <Sidebarnew collapsed={collapsed} />
-                    <Layout>
-                      <Header className="sticky top-0 z-50 p-0">
-                        <Navbar collapsed={collapsed} setCollapsed={setCollapsed} />
-                        <SearchBar />
-                      </Header>
-                      <Content className="overflow-auto">
-                        <Routes>
-                          <Route path={route.BATCHES_PATH} element={<BatchesHome />} />
-                          <Route path="/batches/:batchId" element={<SpecificBatchPage />} />
-                          <Route path={route.STUDENTS_PATH} element={<StudentsHome />} />
-                          <Route path="/students/:studentId" element={<SpecificStudentPage />} />
-                          <Route path={route.TRAINERS_PATH} element={<TrainersHome />} />
-                          <Route path="/trainers/:trainerId" element={<SpecificTrainerPage />} />
-                          <Route path={route.COURSES_PATH} element={<CoursesHome />} />
-                          <Route path="/course/:courseId" element={<SpecificCoursePage />} />
-                          <Route path={route.ADD_DETAILS_COORDINATORS_PATH} element={<CoordinatorsHome />} />
-                          <Route path="/add-details/coordinators/:coordinatorId" element={<SpecificCoordinatorPage />} />
-                          <Route path={route.ADD_DETAILS_COUNSELLORS_PATH} element={<CounsellorsHome />} />
-                          <Route path="/studentsdata/:type" element={<StudentsList />} />
-                          <Route path={route.ALL_LOGS_PATH} element={<AllLogs />} />
-                          <Route path={route.BOOKS_PATH} element={<BooksHome />} />
-                        </Routes>
-                      </Content>
-                    </Layout>
-                  </Layout>
-                }
-              />
-            </Route>
-          </Routes>
-        </Router>
+        {/* <StudentBatchProvider> */}
+          <Router>
+            <Routes>
+
+              {/* ADMIN/COORDINATOR PUBLIC ROUTES */}
+              <Route element={<PublicRoute />}>
+                <Route path="/" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/verify-otp" element={<VerifyOTP />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+              </Route>
+
+              {/* STUDENT PUBLIC ROUTES */}
+              {/* <Route element={<PublicRoute />}>
+                <Route path="/" element={<StudentLogin />} />
+                <Route path="/student-register" element={<StudentRegister />} />
+              </Route> */}
+
+              {/* STUDENT PROTECTED ROUTES */}
+              <Route element={<StudentRoute />}>
+                <Route path="/student-info" element={<StudentLayout />}>
+                  <Route index element={<StudentDashboardHome />} />
+                  <Route path="student-batches" element={<StudentBatches />} />
+                  <Route path="student-recommended-batches" element={<StudentRecommendedBatches />} />
+                  <Route path="student-batches/:batchId" element={<StudentBatchInfo />} />
+                  <Route path="student-attendance" element={<StudentAttendance />} />
+                  <Route path="student-chat" element={<StudentTrainerChat />} />
+                  <Route path="student-certificates" element={<StudentCertificate />} />
+                  <Route path="all-tickets" element={<AllTickets />} />
+                  {/* <Route path="student-announcement-page" element={<StudentAnnouncementPage />} /> */}
+                </Route>
+              </Route>
+
+              {/* ADMIN/COORDINATOR PROTECTED ROUTES */}
+              <Route element={<ProtectedRoute  />}>
+                <Route
+                  element={<DashboardLayout collapsed={collapsed} setCollapsed={setCollapsed} />}
+                  >
+                  <Route path={route.BATCHES_PATH} element={<BatchesHome />} />
+                  <Route path="/batches/:batchId" element={<SpecificBatchPage />} />
+                  <Route path={route.STUDENTS_PATH} element={<StudentsHome />} />
+                  <Route path="/students/:studentId" element={<SpecificStudentPage />} />
+                  <Route path={route.TRAINERS_PATH} element={<TrainersHome />} />
+                  <Route path="/trainers/:trainerId" element={<SpecificTrainerPage />} />
+                  <Route path={route.COURSES_PATH} element={<CoursesHome />} />
+                  <Route path="/course/:courseId" element={<SpecificCoursePage />} />
+                  <Route path={route.ADD_DETAILS_COORDINATORS_PATH} element={<CoordinatorsHome />} />
+                  <Route path="/add-details/coordinators/:coordinatorId" element={<SpecificCoordinatorPage />} />
+                  <Route path={route.ADD_DETAILS_COUNSELLORS_PATH} element={<CounsellorsHome />} />
+                  <Route path="/studentsdata/:type" element={<StudentsList />} />
+                  <Route path={route.ALL_LOGS_PATH} element={<AllLogs />} />
+                  <Route path={route.BOOKS_PATH} element={<BooksHome />} />
+                  <Route path="announcement-form-page" element={<CreateAnnouncementForm />} />
+                  <Route path={route.ANNOUNCEMENT_PATH} element={<AnnouncementPage />} />
+                  {/* <Route path="tickets-page" element={<TicketsOpera />} /> */}
+                </Route>
+              </Route>
+            </Routes>
+          </Router>
+          {/* </StudentBatchProvider> */}
       </AuthProvider>
     </AppProviders>
   );
@@ -142,13 +150,25 @@ const AppProviders = ({ children }) => {
                             <SpecificStudentProvider>
                               <SpecificBatchProvider>
                                 <SpecificCoordinatorProvider>
-                                  <AllLogsProvider>
-                                    <BookFormProvider>
-                                      <SpecificCourseProvider>
-                                        {children}
-                                      </SpecificCourseProvider>
-                                    </BookFormProvider>
-                                  </AllLogsProvider>
+                                    <SpecificCourseProvider>
+                                      <AllLogsProvider>
+                                        <BookFormProvider>
+                                          <StudentAttendanceProvider>
+                                            <StudentBatchProvider>
+                                              <RequestBatchProvider>
+                                                <StudentCertificateProvider>
+                                                  <AllTicketsProvider>
+                                                    <AnnouncementProvider>
+                                                      {children}
+                                                    </AnnouncementProvider>
+                                                  </AllTicketsProvider>
+                                                </StudentCertificateProvider>
+                                              </RequestBatchProvider>
+                                            </StudentBatchProvider>
+                                          </StudentAttendanceProvider>
+                                        </BookFormProvider>
+                                      </AllLogsProvider>
+                                    </SpecificCourseProvider>
                                 </SpecificCoordinatorProvider>
                               </SpecificBatchProvider>
                             </SpecificStudentProvider>

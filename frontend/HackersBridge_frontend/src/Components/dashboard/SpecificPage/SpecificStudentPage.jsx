@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom"
 import { useSpecificStudent } from "../Contexts/SpecificStudent";
-import { Dropdown, message, Tag, DatePicker, Button, Checkbox  } from 'antd';
+import { Dropdown, message, Tag, DatePicker, Button, Checkbox, Input  } from 'antd';
 import {  DownOutlined, CheckCircleOutlined, EditOutlined } from '@ant-design/icons';
 import BASE_URL from "../../../ip/Ip";
 import axios from "axios";
@@ -9,7 +9,9 @@ import dayjs from "dayjs";
 import CreateStudentForm from "../Students/CreateStudentForm";
 import { useAuth } from "../AuthContext/AuthContext";
 import SpecificStudentLogs from "../AllLogs/Student/SpecificStudentLogs";
+import SpecificStudentNotes from "./SpecificNotesPage";
 
+const { TextArea } = Input;
 
 const SpecificStudentPage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -22,6 +24,9 @@ const SpecificStudentPage = () => {
 
     const [activeTab, setActiveTab] = useState("running");
     const [certificateData, setCertificateData] = useState({});
+    // store student not typed in input field 
+    const [studentNote, setStudentNote] = useState("");
+
 
     const navigate = useNavigate();
     
@@ -98,7 +103,9 @@ const SpecificStudentPage = () => {
         try {
             const response = await axios.patch(`${BASE_URL}/api/student-course/edit/${id}/`, 
                 selectesStatus,
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                withCredentials : true
+            }
             );
             message.success(`Status updated to ${selectesStatus.status}`)
             fetchSpecificStudent(atob(studentId))
@@ -123,7 +130,9 @@ const SpecificStudentPage = () => {
         try {
             const response = await axios.patch(`${BASE_URL}/api/generate-certificate/${courseId}/`, 
                 { certificate_date: certificateIssueDate },
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                withCredentials : true
+            }
             );
             // console.log(response);
             
@@ -150,7 +159,9 @@ const SpecificStudentPage = () => {
         try {
             const response = await axios.get(`${BASE_URL}/api/download-certificate/${courseId}/`, 
                 { responseType: "blob",
-                 headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                    withCredentials : true
+                }
         );
     
             if (response.status === 200) {
@@ -189,10 +200,11 @@ const SpecificStudentPage = () => {
         try {
             const response = await axios.patch(`${BASE_URL}/api/student/book/${courseId}/`,
                 { Book : isChecked},
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
-
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                withCredentials : true
+            }
             );            
-
+            
         setSpecificStudent(prev => ({
             ...prev,
             All_in_One: {
@@ -213,13 +225,38 @@ const SpecificStudentPage = () => {
     
         // console.log("Server response:", response.data);
         } catch (error) {
-        message.error('Error Issuing Book')
-            // console.error("Error issuing book:", error);
+            message.error('No available books for this course')
+            console.error("Error issuing book:", error);
         
        }
         
     };
     
+
+    // HANDLE CREATE NOTE FOR STUDENT
+    const handleCreateNote = async (studentId) => {
+        
+        try {
+            const response = await axios.post(`${BASE_URL}/api/student-note-create/`,
+                { student_id: studentId, note: studentNote },
+                { headers : {"Content-Type" : "application/json", "Authorization" : `Bearer ${token}` },
+                withCredentials : true
+            }
+            )
+            if (response.status >= 200 && response.status <= 204) {
+                message.success("Note Added");
+                setStudentNote("")
+            } else {
+                message.success("Note Not Added")
+            }
+            
+        } catch (error) {
+            console.log("Error sending note to server ", error);
+            
+        }
+    };
+
+
     return (
         <>
             <div className="w-auto h-full pt-14 px-2 mt-0">
@@ -238,6 +275,14 @@ const SpecificStudentPage = () => {
                             ${topTab === "Logs" ? 'border-b-2 border-blue-500 text-black bg-white' : ' text-gray-700 hover:border-b-2 hover:border-blue-400'}`}
                     >
                     Logs
+                    </button>
+                    
+                    <button
+                        onClick={() => handleTopTabClick("Notes")}
+                        className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
+                            ${topTab === "Notes" ? 'border-b-2 border-blue-500 text-black bg-white' : ' text-gray-700 hover:border-b-2 hover:border-blue-400'}`}
+                    >
+                    Notes
                     </button>
                                 
                 </div>
@@ -321,6 +366,7 @@ const SpecificStudentPage = () => {
                                         <h1>Address</h1>
                                         <p className="font-semibold">{studentDetails.address || "Not Available"}</p>
                                     </div>
+
                                     {specificStudent?.All_in_One?.student_courses?.length > 0 && (() => {
                                         const allCourses = specificStudent.All_in_One.student_courses;
                                         const completedCourses = allCourses.filter(course => course.course_status === "Completed");
@@ -332,6 +378,29 @@ const SpecificStudentPage = () => {
                                             </div>
                                         );
                                     })()}
+
+                                    <div className="2xl:col-span-4 col-span-3 mt-6">
+                                        <div className="">
+                                        <label htmlFor="studentNote" className="font-semibold">Add Note</label>
+                                        </div>
+
+                                        <div className="flex gap-4 mt-1">
+                                        <TextArea name="studentNote" size="small" className='rounded-lg border-gray-300 hover:border-blue-300 focus:border-blue-200 focus:ring-blue-300 focus:outline-none placeholder:text-gray-400'
+                                            placeholder="Type Note here..." 
+                                            style={{
+                                                minHeight: '50px',
+                                                maxHeight: '150px',
+                                                overflowY: 'auto',
+                                                resize: 'vertical' 
+                                            }}
+                                            value={studentNote}
+                                            onChange={(e) => setStudentNote(e.target.value)}
+                                            />
+                                        <Button variant="filled" color="blue" onClick={() => handleCreateNote(studentDetails?.id)} className="h-10 w-16 my-auto py-2 px-4 rounded-md font-semibold border border-blue-200">
+                                            Add
+                                        </Button>
+                                            </div>
+                                    </div>
 
                                     </div>
                             </div>
@@ -405,10 +474,10 @@ const SpecificStudentPage = () => {
                                                                         color={
                                                                             item.course_status == "Ongoing" ? "green" :
                                                                             item.course_status == "Upcoming" ? "lime" :
-                                                                            item.course_status == "Not Started" || "not started" ? "geekblue" :
+                                                                            item.course_status == "Not Started" ? "red" :
                                                                             item.course_status == "Completed" ? "blue" :
                                                                             "gray"
-                                                                    }>
+                                                                        }>
                                                                         {item.course_status.replace("_", " ")} <DownOutlined />
                                                                     </Tag>
                                                                 </a>
@@ -667,7 +736,14 @@ const SpecificStudentPage = () => {
                             <SpecificStudentLogs />
                         </>
                     )}
-                            <CreateStudentForm isOpen={isModalOpen} selectedStudentData={selectedStudent || {}} onClose={() => setIsModalOpen(false)} />
+
+                    {topTab === "Notes" && (
+                        <>
+                            <SpecificStudentNotes />
+                        </>
+                    )}
+
+                    <CreateStudentForm isOpen={isModalOpen} selectedStudentData={selectedStudent || {}} onClose={() => setIsModalOpen(false)} />
 
             </div>  
         </>

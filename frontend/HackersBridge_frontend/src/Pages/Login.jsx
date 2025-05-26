@@ -12,27 +12,39 @@ import BASE_URL from "../ip/Ip";
 
 const Login = () => {
   const [credentials, setCredentials] = useState({ username: "", password: "" });
-  const { login } = useAuth();
+  const { universalLogin } = useAuth();
   const navigate = useNavigate();
   const [showpass, setShowpass] = useState(null);
 
   const handleChange = (e) => setCredentials({ ...credentials, [e.target.name]: e.target.value });
 
+
   const handleLogin = async (e) => {
     e.preventDefault();
-
-      const response = await login(credentials.username, credentials.password);
-      // console.log(success);
-      
-      if (response?.success) {
-        message.success('Login successfull');
-
-        setTimeout(() => {
-        navigate("/batches"); 
-      }, 5000);
-
+  
+    try {
+      const response = await universalLogin(credentials.username, credentials.password);
+      if (response?.user_info?.role) {
+        const role = response.user_info.role;
+  
+        message.success("Login successful");
+  
+        if (role === "admin") {
+          navigate("/batches");
+        } else if (role === "student") {
+          navigate("/student-info");
+        } else {
+          message.error("Unknown role!");
+        }
+      } else {
+        message.error("Invalid login response");
       }
-    };
+    } catch (err) {
+      console.error("Login error:", err);
+      message.error("Login failed. Please check credentials.");
+    }
+  };
+  
 
   const navigateToRegister = () => {
     navigate('/register')
@@ -75,7 +87,7 @@ const Login = () => {
                       </div>
 
                   <p className="text-sm font-light flex text-gray-500 dark:text-gray-400">
-                      Didn't have an account? <p onClick={() => navigateToRegister()} className="pl-2 cursor-pointer font-medium text-primary-600 hover:underline dark:text-primary-500">Register here</p>
+                      Didn't have an account? <span onClick={() => navigateToRegister()} className="pl-2 cursor-pointer font-medium text-primary-600 hover:underline dark:text-primary-500">Register here</span>
                   </p>
               </form>
           </div>
@@ -247,7 +259,7 @@ const ResetPassword = () => {
       message.success("Password reset successful !");
     
       setTimeout(() => {
-        navigate("/login");
+        navigate("/");
       }, 1000);
 
     } catch (error) {

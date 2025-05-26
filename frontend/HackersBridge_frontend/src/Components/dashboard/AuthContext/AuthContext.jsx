@@ -6,105 +6,130 @@ import { message } from "antd";
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem("token") || "");
+  const [role, setRole] = useState(localStorage.getItem('role' || ''));
+  const [token, setToken] = useState(localStorage.getItem('token' || ''));
   const [loading, setLoading] = useState(true);
 
 
+  // useEffect(() => {
+  //   const storedUser = localStorage.getItem("role");
+  //   if (token && storedUser) {
+  //     setUser(JSON.parse(storedUser));
+  //   }
+  //   setLoading(false);
+  // }, [token]);
 
 
+  const register = async (userData) => {
+    // if (!token) {
+    //     console.error("No token found, user might be logged out.");
+    //     return;
+    // };
 
-  // const register = async (userData) => {
-  //   // if (!token) {
-  //   //     console.error("No token found, user might be logged out.");
-  //   //     return;
-  //   // };
+    try {
+      await axios.post(`${BASE_URL}/api/register/`, 
+        userData,
+        // { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
+      );
+      message.success("Registration successful");
+    } catch (error) {
+      message.error(error.response?.data?.error || "Registration failed");
+    }
+  };
 
+
+  // const fetchUser = async () => {
   //   try {
-  //     await axios.post(`${BASE_URL}/api/register/`, 
-  //       userData,
-  //       // { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
-  //     );
-  //     message.success("Registration successful");
-  //   } catch (error) {
-  //     message.error(error.response?.data?.error || "Registration failed");
+  //     const res = await axios.get(`${BASE_URL}/Student_login/user_student/`, {
+  //       withCredentials: true,
+  //     });
+
+  //     console.log(res);
+      
+  //     const role = res?.data?.user_info?.role;
+
+  //     if (role) {
+  //       setUser({ ...res.data.user_info });
+  //     } else {
+  //       setUser(null);
+  //     }
+  //   } catch (err) {
+  //     console.error("User fetch failed:", err);
+  //     setUser(null);
+  //   } finally {
+  //     setLoading(false);
   //   }
   // };
 
+  // useEffect(() => {
+  //   fetchUser();
+  // }, []);
 
-  const login = async (username, password) => {
+
+
+  const universalLogin = async (username, password) => {
+    if(!username && !password) return;
+
 
     try {
-      const response = await axios.post(`${BASE_URL}/api/login/`,
-         {
-        username,
-        password,
-      },
-      // { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
-
-    );
-
-      if (response.data.token) {
-        setToken(response.data.token);
-        setUser({ username: response.data.username, role: response.data.role });
-        
-
-        localStorage.setItem("token", response.data.token);
-        localStorage.setItem(
-          "user",
-          JSON.stringify({ username: response.data.username, role: response.data.role })
-        );
-
-        return true;
-      }
+      const response = await axios.post(
+        `${BASE_URL}/api/login/`,
+        { username, password },
+        { withCredentials: true }
+      );
+      // console.log(response); // Check the response format
+  
+      const role = response?.data?.user_info?.role;
+      const token = response?.data?.user_info?.token;
+  
+      setRole(role);
+      setToken(token);
+      localStorage.setItem('role', role)
+      localStorage.setItem('token', token)
+  
+      if (!role) throw new Error("Role not found in response");
+  
+      return response?.data; // Return the full response body to be used in handleLogin
     } catch (error) {
       console.error("Login failed:", error.response || error.message);
-
-      const errorData = error?.response?.data?.error; // Extract nested error object
-
+  
+      const errorData = error?.response?.data?.error;
       if (errorData && typeof errorData === "object") {
-          // Map through error fields dynamically
-          const errorMessages = Object.entries(errorData)
-              .map(([field, messages]) => 
-                  `${Array.isArray(messages) ? messages.join(" ") : messages}`
-              )
-              .join(" | ");
-
-          message.error(errorMessages || "Something went wrong");
+        const errorMessages = Object.entries(errorData)
+          .map(([field, messages]) => 
+            `${Array.isArray(messages) ? messages.join(" ") : messages}`
+          )
+          .join(" | ");
+        message.error(errorMessages || "Something went wrong");
       } else {
-        console.log(error);
-        
-          message.error("Something went wrong");
+        message.error("Something went wrong");
       }
-  }
-};
+    }
+  };
+  
 
 
 
 
 const logout = (redirect = true) => {
-  console.log("Logging out user..."); // Debugging purpose
-  if (!localStorage.getItem("token")) {
-      console.warn("Token already removed, possible unexpected logout.");
-      return; // Prevent redundant logouts
-  }
 
-  setUser(null);
+
+  setRole("");
   setToken("");
 
   localStorage.removeItem("token");
-  localStorage.removeItem("user");
+  localStorage.removeItem("role");
   delete axios.defaults.headers.common["Authorization"];
 
   if (redirect) {
-      window.location.href = "/login"; // Redirect only when necessary
+      window.location.href = "/"; // Redirect only when necessary
   }
 };
 
 
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider value={{ role, token, universalLogin, logout, register }}>
       {children}
     </AuthContext.Provider>
   );

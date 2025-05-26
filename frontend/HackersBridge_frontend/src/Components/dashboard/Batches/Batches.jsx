@@ -39,16 +39,16 @@ const Batches = () => {
 
     const navigate = useNavigate();
 
+    // for Pagination 
+    // const [searchTerm, setSearchTerm] = useState('');
+    // const [inputValue, setInputValue] = useState('');
+    // const [currentPage, setCurrentPage] = useState(1);
+    // const pageSize = 30;
+
     const handleTabClick = (tab) => {
         setActiveTab(tab);
     };
 
-
-    // useEffect(() => {
-    //     // if (!batchData) {  // Only fetch if batchData is empty
-    //         fetchBatches();
-    //     // }
-    // }, [isModalOpen, isDeleted]);
      
     useEffect(() => {
         if (!isModalOpen || !batchData || isDeleted) {
@@ -58,16 +58,33 @@ const Batches = () => {
       }, [isModalOpen, isDeleted]);
       
       
+    //   useEffect(() => {
+    //     fetchBatches({  page: currentPage, pageSize, search: searchTerm, mode: sortByMode, language: sortByLanguage, preferred_week: sortByPreferredWeek, location: sortByLocation })        
+    // },[!isModalOpen, searchTerm, currentPage, sortByMode, sortByLanguage, sortByPreferredWeek, sortByLocation]);
+
+
+    // HANDLE SEARCH INPUT AND DEBOUNCE 
+    // useEffect(() => {        
+    //     const handler = setTimeout(() => {
+    //       setSearchTerm(inputValue.trimStart());
+    //     }, 500); // debounce delay in ms
+      
+    //     return () => {
+    //       clearTimeout(handler); // clear previous timeout on re-typing
+    //     };
+    // }, [inputValue]);
+
 
    // Store the original course list when data is first loaded
-   useEffect(() => {
-    fetchCourses();
+//    useEffect(() => {
+//     fetchCourses();
     
-    if (coursesData.length > 0 && originalCourses.length === 0) {
-        setOriginalCourses([...coursesData]); // Store unmodified data
-    }
-    }, [coursesData]);
+//     if (coursesData.length > 0 && originalCourses.length === 0) {
+//         setOriginalCourses([...coursesData]); // Store unmodified data
+//     }
+//     }, [coursesData]);
     
+
     // Function to handle Edit button click 
     const handleEditClick = (batch) => {
         setSelectedBatch(batch);
@@ -84,7 +101,9 @@ const Batches = () => {
 
         try {
             const response = await axios.delete(`${BASE_URL}/api/batches/delete/${batchId}/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                withCredentials : true
+            }
             );
 
             if (response.status >= 200 && response.status < 300) {
@@ -156,7 +175,9 @@ const Batches = () => {
     const fetchAvailableStudents = useCallback(async (batchId) => {
         try {
             const response = await axios.get(`${BASE_URL}/api/batches/${batchId}/available-students/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                withCredentials : true
+            }
             );
             const data = response.data;
             // console.log(data);
@@ -196,7 +217,9 @@ const Batches = () => {
         try {
             const response = await axios.post(`${BASE_URL}/api/batches/${batchId}/add-students/`, 
                 { students: studentIds }, // Ensure correct payload format
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                withCredentials : true
+            }
             );
     
             if (response.status >= 200 && response.status < 300) {
@@ -266,7 +289,9 @@ const Batches = () => {
         try {
             const response = await axios.put(`${BASE_URL}/api/batches/edit/${batchId}/`,
                 JSON.stringify(updatedData),
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                withCredentials : true
+            }
             );
             if (response.status >= 200 && response.status < 300) {
                 message.success(`Batch status updated successfully to ${status} !`);
@@ -578,7 +603,7 @@ const Batches = () => {
                             Active
                         </button>
                             </Badge>
-                            
+                           
                         <button
                             onClick={() => handleTabClick("scheduled")}
                             className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200
@@ -586,7 +611,7 @@ const Batches = () => {
                             >
                             Scheduled
                         </button>
-                            
+                           
                         <button
                             onClick={() => handleTabClick("hold")}
                             className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200
@@ -594,7 +619,7 @@ const Batches = () => {
                             >
                             Hold
                         </button>
-
+                           
                         <button
                             onClick={() => handleTabClick("endingsoon")}
                             className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200
@@ -602,7 +627,7 @@ const Batches = () => {
                             >
                             Ending Soon
                         </button>
-                            
+                          
                         <button
                             onClick={() => handleTabClick("completed")}
                             className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200
@@ -610,7 +635,7 @@ const Batches = () => {
                             >
                             Completed 
                         </button>
-                            
+                           
                         <button
                             onClick={() => handleTabClick("cancelled")}
                             className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
@@ -618,7 +643,7 @@ const Batches = () => {
                             >
                             Cancelled
                         </button>
-                            
+                          
                     </div>
 
 
@@ -626,17 +651,22 @@ const Batches = () => {
                         <div className="flex gap-x-6">
                             <label htmlFor="table-search" className="sr-only">Search</label>
                             <div className="relative h-auto">
-                                <input onChange={(e) => setSearchTerm(e.target.value.replace(/^\s+/, ''))} value={searchTerm} type="text" id="table-search" placeholder="Search for items"
-                                    className="block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg w-40 h-7 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" 
+                                <input value={searchTerm} type="text" id="table-search" placeholder="Search for items"
+                                    onChange={(e) => {
+                                        const value = e.target.value.trimStart();
+                                        setSearchTerm(value);
+                                        // setCurrentPage(1);
+                                    }}
+                                    className="block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg w-40 h-7 bg-gray-50 focus:ring-blue-500 focus:border-blue-500" 
                                     />
                                 <div className="absolute inset-y-0 right-0 h-auto flex items-center pr-3">
                                 <button onClick={() => setSearchTerm("")}>
                                 {searchTerm ? (
-                                    <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                    <svg className="w-4 h-4 text-gray-500" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
                                             <path fillRule="evenodd" d="M6.293 6.293a1 1 0 011.414 0L10 8.586l2.293-2.293a1 1 0 111.414 1.414L11.414 10l2.293 2.293a1 1 0 01-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 01-1.414-1.414L8.586 10 6.293 7.707a1 1 0 010-1.414z" clipRule="evenodd"></path>
                                         </svg>
                                     ) : (
-                                        <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                        <svg className="w-4 h-4 text-gray-500" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
                                             <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"></path>
                                         </svg>
                                     )}
@@ -652,9 +682,9 @@ const Batches = () => {
         
         {/* {activeTab === 'tab1' && ( */}
         <div className={`overflow-hidden pb-2 relative ${loading ? "backdrop-blur-md opacity-50 pointer-events-none" : ""}`}>
-            <div className="w-full h-[38rem] overflow-y-auto dark:border-gray-700 rounded-lg pb-2">
-        <table className="w-full text-xs text-left text-gray-500 dark:text-gray-400 ">
-            <thead className="text-xs text-gray-700 uppercase bg-blue-50 dark:bg-gray-700 dark:text-gray-400 sticky top-0 z-10">
+            <div className="w-full h-[38rem] overflow-y-auto rounded-lg pb-2">
+        <table className="w-full text-xs text-left text-gray-500">
+            <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10">
                 <tr>
                     <th scope="col" className="p-2">
                         <div className="flex items-center">
@@ -769,10 +799,10 @@ const Batches = () => {
         </tr>
     ) : sortedBatches.length > 0 ? (
         sortedBatches.map((item, index) => (
-            <tr key={index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 scroll-smooth">
+            <tr key={index} className="bg-white border-b border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 scroll-smooth">
                 <td scope="col" className="p-2">
                     <div className="flex items-center">
-                        <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
+                        <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 focus:ring-2"></input>
                         <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
                     </div>
                 </td>

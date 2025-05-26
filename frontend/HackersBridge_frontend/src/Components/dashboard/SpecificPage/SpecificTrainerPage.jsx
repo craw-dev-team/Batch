@@ -1,20 +1,27 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSpecificTrainer } from "../Contexts/SpecificTrainers";
-import { Button, message, Popconfirm, Switch, Avatar, Tooltip, Tag } from 'antd';
-import { EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
+import { Button, message, Select, Popover, Avatar, Tooltip, Tag, DatePicker } from 'antd';
+import { EditOutlined, SyncOutlined, CheckOutlined, DownOutlined } from '@ant-design/icons';
 import CreateTrainerForm from "../Trainers/CreateTrainerForm";
+import dayjs from "dayjs";
+import axios from "axios";
+import BASE_URL from "../../../ip/Ip";
 
 
 
+const { RangePicker } = DatePicker;
 
 const SpecificTrainerPage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTrainer, setSelectedTrainer] = useState();
 
     const { trainerId } = useParams();
-    const { specificTrainer, fetchSpecificTrainer } = useSpecificTrainer();
+    const { specificTrainer, fetchSpecificTrainer, isEditing, setIsEditing, selectedOption, setSelectedOption, 
+        startDate, setStartDate, endDate, setEndDate, loading, handleTrainerStatusChange } = useSpecificTrainer();
     const [activeTab, setActiveTab] = useState("running");
+    const [searchTerm, setSearchTerm] = useState("");
+
     const navigate = useNavigate();
 
     const handleTabClick = (tab) => {
@@ -52,6 +59,25 @@ const SpecificTrainerPage = () => {
             : []
         : [];
 
+        
+        // FILTER BATCH FROM ALL BATCHES BASED ON THE SEARCH INPUT (BATCHID, COURSENAME, TRAINERNAME)
+        const searchFilteredBatches = useMemo(() => {
+            const term = searchTerm.toLowerCase();
+              
+            if (!searchTerm) return filteredBatches;
+              
+            return filteredBatches.filter(batch => {
+                return (
+                    (batch.batch_name?.toLowerCase() || "").includes(term) ||
+                    (batch.course_name?.toLowerCase() || "").includes(term) ||
+                    (batch.batch_mode?.toLowerCase() || "").includes(term) ||
+                    (batch.batch_language?.toLowerCase() || "").includes(term) ||
+                    (batch.batch_preferred_week?.toLowerCase() || "").includes(term) ||
+                    (batch.batch_location?.toLowerCase() || "").includes(term)
+                );
+            });
+        }, [filteredBatches, searchTerm, specificTrainer]);
+              
 
         // FUNCTION HANDLE EDIT TRAINER CLICK
         const handleEditClick = (trainer) => {
@@ -73,32 +99,58 @@ const SpecificTrainerPage = () => {
             navigate(`/batches/${encodedBatchId}`)
         };
 
-    
+         
+        // handle status change to date select in dropdown
+        const handleRangeChange = (value) => {
+            if (value && value.length === 2) {
+              const start = value[0].format("YYYY-MM-DD");
+              const end = value[1].format("YYYY-MM-DD");
+          console.log(start, end);
+          
+              setStartDate(start);
+              setEndDate(end);
+            } else {
+              setStartDate(null);
+              setEndDate(null);
+            }
+          };
+          
+          
+        // RESET DATE FIELD WHEN CLICK ON CANCEL AND DATA IS SENT 
+        const resetTrainerEditForm = () => {
+            setIsEditing(false);
+            setSelectedOption("");
+            setStartDate(null);
+            setEndDate(null);
+          };
+          
 
     return (
         <>
         <div className="w-auto h-full pt-20 px-2 mt-0 ">
-            <div className="grid grid-cols-5 gap-x-6">
+            <div className="grid grid-cols-7 gap-x-4">
                     {trainerDetails ? (
                     <>
-                <div className="px-4 py-4 col-span-3 h-auto shadow-md sm:rounded-lg border border-gray-50 bg-white">
+                <div className="px-4 py-4 col-span-5 h-auto shadow-md sm:rounded-lg border border-gray-50 bg-white">
                     
-                    <div className="w-full h-auto px-1 py-3 text-lg font-semibold flex justify-between">
+                    <d iv className="w-full h-auto px-1 py-3 text-lg font-semibold flex justify-between">
+                        <div className="flex gap-x-10">
                         <p># {trainerDetails.trainer_id}</p>
-                        <Button 
-                            color="secondary" 
-                            variant="outlined" 
-                            className="rounded-lg"
-                            onClick={(e) => {
-                                e.stopPropagation(); // Prevent the click from bubbling to the <td> click handler
-                                handleEditClick(trainerDetails);  // Open the form with selected course data
-                                setIsModalOpen(true);   // Open the modal
-                            }}
-                        >
-                            <EditOutlined />
-                        </Button>
-                    </div>
-                        <div className="grid 2xl:grid-cols-4 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-2 px-4 py-4 gap-4">
+                        </div>
+                            <Button 
+                                color="secondary" 
+                                variant="outlined" 
+                                className="rounded-lg"
+                                onClick={(e) => {
+                                    e.stopPropagation(); // Prevent the click from bubbling to the <td> click handler
+                                    handleEditClick(trainerDetails);  // Open the form with selected course data
+                                    setIsModalOpen(true);   // Open the modal
+                                }}
+                                >
+                                <EditOutlined />
+                            </Button>
+                    </d>
+                    <div className="grid 2xl:grid-cols-4 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-2 px-4 py-4 gap-4">
 
                         <div className="col-span-1 px-1 py-1">
                             <h1 >Name</h1>
@@ -121,7 +173,7 @@ const SpecificTrainerPage = () => {
                             <p className="font-semibold">{trainerDetails.phone}</p>
                         </div>
 
-                        <div className="col-span-1 px-1 py-1 lg:mt-0 sm:mt-6">
+                        <div className="col-span-1 px-1 py-1 2xl:mt-0 lg:mt-6 md:mt-0 sm:mt-6">
                             <h1>Email Address</h1>
                             <p className="font-semibold">{trainerDetails.email}</p>
                         </div>
@@ -136,7 +188,85 @@ const SpecificTrainerPage = () => {
                             <p className="font-semibold">{trainerDetails.experience}</p>
                         </div>
 
+                        <div className="col-span-1 px-1 py-1 mt-6">
+                            <h1>Support</h1>
+                            <p className="font-semibold">{trainerDetails.coordinator_name}</p>
                         </div>
+
+                        <div className="col-span-1 px-1 py-1 mt-6">
+                            <h1>Leave Status</h1>
+                            {!isEditing ? (
+                            <div className="flex items-center gap-2">
+                            <p className="font-semibold text-sm">{trainerDetails?.leave_status || trainerDetails?.leave_status === "custom" ? "Trainer on Leave" : "On Duty"}</p>
+                            <button
+                                onClick={() => setIsEditing(true)}
+                                className="text-gray-500 hover:text-primary"
+                                aria-label="Edit Status"
+                            >
+                                <EditOutlined  />
+                            </button>
+                            </div>
+                            ) : (
+                                    <>
+                                <div className="space-y-2 relative">
+                                <Select
+                                    placeholder='Select Language' 
+                                    className="w-2/3 text-sm rounded border p-1 dark:bg-gray-800 dark:text-white"
+                                    value={selectedOption}
+                                    onChange={(value) => setSelectedOption(value)}
+                                    options={[
+                                        { value: 'First Half off', label: 'First Half Off' },
+                                        { value: 'Second Half off', label: 'Second Half Off' },
+                                        { value: 'Full Day off', label: 'Full Day Off' },
+                                        { value: 'custom', label: 'Custom' },
+                                    ]}
+                                />
+                              
+                                {selectedOption === "custom" && (
+                                  <Popover
+                                    content={
+                                      <RangePicker
+                                        format="YYYY-MM-DD"
+                                        value={[
+                                          startDate ? dayjs(startDate) : null,
+                                          endDate ? dayjs(endDate) : null,
+                                        ]}
+                                        onChange={handleRangeChange}
+                                      />
+                                    }
+                                    open={true}
+                                  >
+                                  </Popover>
+                                )}
+                              </div>
+                              
+                              <div className="flex gap-2 mt-2">
+                                        <button
+                                        onClick={() => handleTrainerStatusChange(trainerDetails?.id)}
+                                        disabled={loading}
+                                        className="text-xs px-3 py-1 bg-blue-500 text-white rounded"
+                                        >
+                                        {loading ? (
+                                            <>
+                                                <SyncOutlined spin className="mr-2" />
+                                                Processing...
+                                            </>
+                                        ) : "Save" }
+                                        </button>
+                                        <button
+                                        onClick={resetTrainerEditForm}
+                                        className="text-xs px-3 py-1 bg-gray-300 dark:bg-gray-700 text-black dark:text-white rounded"
+                                        >
+                                        Cancel
+                                        </button>
+                                    </div>
+                                  </>
+                            
+                            )}
+                        
+                        </div>
+
+                    </div>
                 </div>
 
                 <div className="px-4 py-4 col-span-2 h-auto shadow-md sm:rounded-lg darkmode border border-gray-50 bg-white">
@@ -177,46 +307,76 @@ const SpecificTrainerPage = () => {
                     <div className="w-full h-auto px-1 py-3 text-lg font-semibold">
                         <h1>Batches Assigned</h1>
                     </div>
-                    <div className="flex gap-x-4 h-10">
+                    <div className="flex justify-between gap-x-4 h-10">
                     
-                    <div className="tabs">
-                        <button
-                            onClick={() => handleTabClick("running")}
-                            className={` px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                                ${activeTab === "running" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                        <div className="tabs">
+                            <button
+                                onClick={() => handleTabClick("running")}
+                                className={` px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
+                                    ${activeTab === "running" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                                 >
-                        Active
-                        </button>
+                                Active
+                            </button>
 
-                        <button
-                            onClick={() => handleTabClick("scheduled")}
-                            className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                                ${activeTab === "scheduled" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
-                            >
-                            Upcoming
-                        </button>
-                       
-                        <button
-                            onClick={() => handleTabClick("hold")}
-                            className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                                ${activeTab === "hold" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
-                            >
-                            Hold
-                        </button>
-
-                        <button
-                            onClick={() => handleTabClick("completed")}
-                            className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                                ${activeTab === "completed" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
-                            >
-                            Completed
-                        </button>
-
-                       
+                            <button
+                                onClick={() => handleTabClick("scheduled")}
+                                className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
+                                    ${activeTab === "scheduled" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                >
+                                Upcoming
+                            </button>
                         
+                            <button
+                                onClick={() => handleTabClick("hold")}
+                                className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
+                                    ${activeTab === "hold" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                >
+                                Hold
+                            </button>
+
+                            <button
+                                onClick={() => handleTabClick("completed")}
+                                className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
+                                    ${activeTab === "completed" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                >
+                                Completed
+                            </button>
+
+                        
+                            
+                        </div>
+
+                        <div className="grid col-span-1 justify-items-end">
+                        <div className="flex gap-x-6">
+                            <label htmlFor="table-search" className="sr-only">Search</label>
+                            <div className="relative h-auto">
+                                <input value={searchTerm} type="text" id="table-search" placeholder="Search for items"
+                                    onChange={(e) => {
+                                        const value = e.target.value.trimStart();
+                                        setSearchTerm(value);
+                                        setCurrentPage(1);
+                                    }}
+                                    className="block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg w-40 h-7 bg-gray-50 focus:ring-blue-500 focus:border-blue-500" 
+                                    />
+                                <div className="absolute inset-y-0 right-0 h-8 flex items-center pr-3">
+                                <button onClick={() => setSearchTerm("")}>
+                                {searchTerm ? (
+                                    <svg className="w-4 h-4 text-gray-500 " aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M6.293 6.293a1 1 0 011.414 0L10 8.586l2.293-2.293a1 1 0 111.414 1.414L11.414 10l2.293 2.293a1 1 0 01-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 01-1.414-1.414L8.586 10 6.293 7.707a1 1 0 010-1.414z" clipRule="evenodd"></path>
+                                        </svg>
+                                    ) : (
+                                        <svg className="w-4 h-4 text-gray-500 " aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"></path>
+                                        </svg>
+                                    )}
+                                </button>
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+
                     </div>
 
-                </div>
                         <div className="">
                                 <>
                                <table className="w-full text-xs text-left text-gray-500 dark:text-gray-400 ">
@@ -259,8 +419,8 @@ const SpecificTrainerPage = () => {
                                             </tr>
                                     </thead>
                                         <tbody>
-                                        {Array.isArray(filteredBatches) && filteredBatches.length > 0 ? (
-                                            filteredBatches.map((item, index) => (
+                                        {Array.isArray(searchFilteredBatches) && searchFilteredBatches.length > 0 ? (
+                                            searchFilteredBatches.map((item, index) => (
                                             <tr key={index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 scroll-smooth">
                                                 <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
                                                     {index + 1}
@@ -327,25 +487,21 @@ const SpecificTrainerPage = () => {
                                                     <Tag bordered={false} color={item.batch_mode === "Offline" ? "green" : item.batch_mode === "Online" ? "red" : "geekblue"}>
                                                         {item.batch_mode}
                                                     </Tag>
-                                                    {/* {item.batch_mode} */}
                                                 </td>
                                                 <td className="px-3 py-2 md:px-1">
                                                     <Tag bordered={false} color={item.batch_language === "Hindi" ? "green" : item.batch_language === "English" ? "volcano" : "blue"}>
                                                         {item.batch_language}
                                                     </Tag>
-                                                    {/* {item.batch_language} */}
                                                 </td>
                                                 <td className="px-3 py-2 md:px-1">
                                                     <Tag bordered={false} color={item.batch_location === "Saket" ? "blue" : "magenta" }>
                                                         {item.batch_location}
                                                     </Tag>
-                                                    {/* {item.batch_location} */}
                                                 </td>
                                                 <td className="px-3 py-2 md:px-1">
                                                     <Tag bordered={false} color={item.batch_preferred_week === "Weekdays" ? "cyan" : "gold" }>
                                                         {item.batch_preferred_week}
                                                     </Tag>
-                                                    {/* {item.batch_preferred_week} */}
                                                 </td>
                                             </tr>
                                           ))

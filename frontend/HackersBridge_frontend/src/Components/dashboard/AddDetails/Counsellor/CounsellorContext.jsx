@@ -37,7 +37,9 @@ const CounsellorFormProvider = ({ children }) => {
         setLoading(true);
         try {
             const response = await axios.get(`${BASE_URL}/api/counsellors/`, 
-              { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+              { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              withCredentials : true
+            }
             );
             const data = response?.data;
           //  console.log(data);

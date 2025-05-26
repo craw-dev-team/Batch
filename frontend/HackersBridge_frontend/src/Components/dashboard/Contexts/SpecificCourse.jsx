@@ -27,8 +27,8 @@ const SpecificCourseProvider = ({ children }) => {
 
         try {
             const response = await axios.get(`${BASE_URL}/api/course/info/${courseId}/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` },
-               
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                withCredentials : true
             }
             )
             const data = response?.data
@@ -58,7 +58,9 @@ const SpecificCourseProvider = ({ children }) => {
 
         try {
             const response = await axios.get(`${BASE_URL}/api/coordinators/${coordinatorId}/students/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                withCredentials : true
+            }
             )
             const data = response?.data
             // console.log(data);

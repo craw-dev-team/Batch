@@ -654,28 +654,28 @@ const convertTo12HourFormat = (time) => {
                    value={batchFormData.batchTime ? String(batchFormData.batchTime) : null}
                     dropdownRender={menu => <div>{menu}</div>} // required to ensure styling applies properly
                     options={[
-                           { value: '1', label: '10:00 - 12:00' },
-                           { value: '2', label: '12:00 - 02:00' },
-                           { value: '3', label: '03:00 - 05:00' },
-                           { value: '4', label: '05:00 - 06:30' },
-                           { value: '9', label: '06:00 - 07:00' },
-                           { value: '7', label: '07:00 - 09:00' },
-                           { value: '8', label: '10:00 - 05:00' },
-                      
-                        // Weekends
-                      { value: '5', label: <div style={{ backgroundColor: '#fffbe6' }}>10:00 - 02:00 - Weekends</div> },
-                      { value: '6', label: <div style={{ backgroundColor: '#fffbe6' }}>03:00 - 06:30 - Weekends</div> },
-                      { value: '16', label: <div style={{ backgroundColor: '#fffbe6' }}>12:00 - 02:00 - Weekends</div> },
-                      
-                      // Weekdays
-                      { value: '17', label: <div style={{ backgroundColor: '#c3f3fa' }}>10:30 - 12:00 - Weekdays</div> },
-                      { value: '10', label: <div style={{ backgroundColor: '#c3f3fa' }}>12:30 - 02:30 - Weekdays</div> },
-                      { value: '11', label: <div style={{ backgroundColor: '#c3f3fa' }}>07:00 - 08:30 - Weekdays</div> },
-                      { value: '12', label: <div style={{ backgroundColor: '#c3f3fa' }}>05:00 - 07:00 - Weekdays</div> },
-                      { value: '13', label: <div style={{ backgroundColor: '#c3f3fa' }}>08:00 - 09:00 - Weekdays</div> },
-                      { value: '14', label: <div style={{ backgroundColor: '#c3f3fa' }}>03:00 - 07:00 - Weekdays</div> },
-                      { value: '15', label: <div style={{ backgroundColor: '#c3f3fa' }}>07:00 - 08:30 - Weekdays</div> },
-                    ]}
+                        { value: '1', label: '10:00 - 12:00' },
+                        { value: '2', label: '12:00 - 02:00' },
+                        { value: '3', label: '03:00 - 05:00' },
+                        { value: '4', label: '05:00 - 06:30' },
+                        { value: '9', label: '06:00 - 07:00' },
+                        { value: '7', label: '07:00 - 09:00' },
+                        { value: '8', label: '10:00 - 05:00' },
+                   
+                     // Weekends
+                   { value: '5', label: <div style={{ backgroundColor: '#fffbe6' }}>10:00 - 02:00 - Weekends</div> },
+                   { value: '6', label: <div style={{ backgroundColor: '#fffbe6' }}>03:00 - 06:30 - Weekends</div> },
+                   { value: '16', label: <div style={{ backgroundColor: '#fffbe6' }}>12:00 - 02:00 - Weekends</div> },
+                   
+                   // Weekdays
+                   { value: '17', label: <div style={{ backgroundColor: '#c3f3fa' }}>10:30 - 12:00 - Weekdays</div> },
+                   { value: '10', label: <div style={{ backgroundColor: '#c3f3fa' }}>12:30 - 02:30 - Weekdays</div> },
+                   { value: '11', label: <div style={{ backgroundColor: '#c3f3fa' }}>07:00 - 08:30 - Weekdays</div> },
+                   { value: '12', label: <div style={{ backgroundColor: '#c3f3fa' }}>05:00 - 07:00 - Weekdays</div> },
+                   { value: '13', label: <div style={{ backgroundColor: '#c3f3fa' }}>08:00 - 09:00 - Weekdays</div> },
+                   { value: '14', label: <div style={{ backgroundColor: '#c3f3fa' }}>03:00 - 07:00 - Weekdays</div> },
+                   { value: '15', label: <div style={{ backgroundColor: '#c3f3fa' }}>07:00 - 08:30 - Weekdays</div> },
+                 ]}
                     filterOption={(input, option) => {
                         const labelText = typeof option.label === 'string'
                           ? option.label

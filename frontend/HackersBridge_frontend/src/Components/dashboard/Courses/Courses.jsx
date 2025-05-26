@@ -45,7 +45,9 @@ const Courses = () => {
 
         try {
             const response = await axios.delete(`${BASE_URL}/api/courses/delete/${courseId}/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                withCredentials : true
+            }
             );
 
             if (response.status === 204) {

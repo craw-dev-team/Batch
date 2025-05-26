@@ -7,7 +7,7 @@ import { EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined, FilterOutli
 import BASE_URL from "../../../ip/Ip";
 import StudentCards from "../SpecificPage/StudentCard";
 import { useAuth } from "../AuthContext/AuthContext";
-import { useStudentForm } from "../StudentContext/StudentFormContext";
+import { useStudentForm } from "../Studentcontext/StudentFormContext";
 
 const { Search } = Input;
 
@@ -24,6 +24,7 @@ const Students = () => {
     
     const navigate = useNavigate();
     
+    // for Pagination 
     const [searchTerm, setSearchTerm] = useState('');
     const [inputValue, setInputValue] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
@@ -104,7 +105,9 @@ const Students = () => {
 
     try {
         const response = await axios.delete(`${BASE_URL}/api/students/delete/${studentId}/`, 
-            { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+            { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+            withCredentials : true
+        }
         );
 
         if (response.status === 204) {
@@ -158,12 +161,13 @@ const Students = () => {
         
         //  Optimistically update UI before API call
         setStudentStatuses((prev) => ({ ...prev, [studentId]: checked }));
-        // console.log("Sending to server:", { status: newStatus });
 
         try {
             await axios.put(`${BASE_URL}/api/students/edit/${studentId}/`, 
                 { status: newStatus },
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                withCredentials : true
+            }
             );
             message.success(`Student status updated to ${newStatus}`);
         } catch (error) {
@@ -175,7 +179,7 @@ const Students = () => {
 
 
     const handleStudentClick =  async (studentId) => {
-        if (!studentId) return;
+        if (!studentId) return;        
         const encodedStudentId = btoa(studentId);        
         navigate(`/students/${encodedStudentId}`);
     };
@@ -282,18 +286,18 @@ const Students = () => {
 
     return (
         <>
-<div className="w-auto pt-4 px-2 mt-16">
+<div className="w-auto pt-4 px-2 mt-10">
     <StudentCards />
     <div className="relative w-full h-full shadow-md sm:rounded-lg border border-gray-50 dark:border">
-    <div className="w-full px-4 py-3 text flex justify-between font-semibold ">
-        <h1>All Students</h1>
-            <div>
+    {/* <div className="w-full px-4 py-3 text flex justify-between font-semibold "> */}
+        {/* <h1>All Students</h1> */}
+            {/* <div>
                 <button onClick={() => { setIsModalOpen(true); setSelectedStudent(null); }} type="button" className="focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Add Student +</button>
-            </div>
-        </div>
+            </div> */}
+        {/* </div> */}
 
-        <div className="w-full grid grid-cols-4 grid-flow-row space-y-4 sm:space-y-0 items-center justify-between gap-x-8 px-4 pb-4">
-            <div className="grid col-span-2">
+        <div className="w-full grid grid-cols-3 grid-flow-row space-y-4 sm:space-y-0 items-center justify-between gap-x-8 px-4 py-4">
+            <div className="grid col-span-1">
                 <div className="flex gap-x-4 h-10">
                     
                 <div className="tabs">
@@ -304,29 +308,21 @@ const Students = () => {
                 >
                 Students
             </button>
-            {/* <button
-                onClick={() => handleTabClick('tab2')}
-                className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                    ${activeTab === 'tab2' ? 'bg-[#afc0d1] dark:bg-[#3D5A80] text-black dark:text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
-                >
-                Filter based on course
-            </button> */}
         </div>
 
                 </div>
             </div>
 
-        <div className="grid col-span-2 justify-items-end">
-            <div className="flex gap-x-6">
+            <div className="flex justify-center">
                 <label htmlFor="table-search" className="sr-only">Search</label>
                 <div className="relative">
-                    <input  value={searchTerm} type="text" id="table-search" placeholder="Search for items"
+                    <input value={searchTerm} type="text" id="table-search" placeholder="Search for items"
                          onChange={(e) => {
                             const value = e.target.value.trimStart();
                             setSearchTerm(value);
                             setCurrentPage(1);
                           }}
-                        className="block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg w-40 h-7 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" 
+                        className="block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg w-96 h-7 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" 
                     />
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                        <button onClick={() => setSearchTerm("")}>
@@ -343,60 +339,15 @@ const Students = () => {
                     </div>
                 </div>
 
-        
-
-            {/* <div className="col-span-1 justify-items-end">
-                <button id="dropdownRadioButton" data-dropdown-toggle="dropdownRadio" className="inline-flex items-center text-gray-500 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 font-medium rounded-lg text-xs px-3 py-1.5 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700" type="button">
-                    <svg className="w-3 h-3 text-gray-500 dark:text-gray-400 me-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M10 0a10 10 0 1 0 10 10A10.011 10.011 0 0 0 10 0Zm3.982 13.982a1 1 0 0 1-1.414 0l-3.274-3.274A1.012 1.012 0 0 1 9 10V6a1 1 0 0 1 2 0v3.586l2.982 2.982a1 1 0 0 1 0 1.414Z"/>
-                        </svg>
-                    Last 30 days
-                    <svg className="w-2.5 h-2.5 ms-2.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
-                        <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 1 4 4 4-4"/>
-                    </svg>
-                </button>
-            
-                <div id="dropdownRadio" className="z-10 hidden w-48 bg-white divide-y divide-gray-100 rounded-lg shadow-sm dark:bg-gray-700 dark:divide-gray-600" data-popper-reference-hidden="" data-popper-escaped="" data-popper-placement="top" style={{position: 'absolute', inset: 'auto auto 0px 0px', margin: '0px', transform: 'translate3d(522.5px, 3847.5px, 0px)'}}>
-                    <ul className="p-3 space-y-1 text-sm text-gray-700 dark:text-gray-200" aria-labelledby="dropdownRadioButton">
-                        <li>
-                            <div className="flex items-center p-2 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-600">
-                                <input id="filter-radio-example-1" type="radio" value="" name="filter-radio" className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
-                                <label htmlFor="filter-radio-example-1" className="w-full ms-2 text-sm font-medium text-gray-900 rounded-sm dark:text-gray-300">Last day</label>
-                            </div>
-                        </li>
-                        <li>
-                            <div className="flex items-center p-2 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-600">
-                                <input checked="" id="filter-radio-example-2" type="radio" value="" name="filter-radio" className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
-                                <label htmlFor="filter-radio-example-2" className="w-full ms-2 text-sm font-medium text-gray-900 rounded-sm dark:text-gray-300">Last 7 days</label>
-                            </div>
-                        </li>
-                        <li>
-                            <div className="flex items-center p-2 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-600">
-                                <input id="filter-radio-example-3" type="radio" value="" name="filter-radio" className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
-                                <label htmlFor="filter-radio-example-3" className="w-full ms-2 text-sm font-medium text-gray-900 rounded-sm dark:text-gray-300">Last 30 days</label>
-                            </div>
-                        </li>
-                        <li>
-                            <div className="flex items-center p-2 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-600">
-                                <input id="filter-radio-example-4" type="radio" value="" name="filter-radio" className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
-                                <label htmlFor="filter-radio-example-4" className="w-full ms-2 text-sm font-medium text-gray-900 rounded-sm dark:text-gray-300">Last month</label>
-                            </div>
-                        </li>
-                        <li>
-                            <div className="flex items-center p-2 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-600">
-                                <input id="filter-radio-example-5" type="radio" value="" name="filter-radio" className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
-                                <label htmlFor="filter-radio-example-5" className="w-full ms-2 text-sm font-medium text-gray-900 rounded-sm dark:text-gray-300">Last year</label>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
-            </div> */}
-            </div>
             </div>
 
-        
+            <div className="flex justify-end">
+                <button onClick={() => { setIsModalOpen(true); setSelectedStudent(null); }} type="button" className="focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Add Student +</button>
+            </div>
 
         </div>
+
+
         {activeTab === 'tab1' && (
         <div className={`overflow-hidden pb-2 relative `}>
             <div className="w-full h-[38rem] overflow-y-auto rounded-lg pb-2">
@@ -660,8 +611,8 @@ const Students = () => {
                     total={studentData?.count || 0}
                     pageSize={pageSize} // example: 10
                     onChange={(page) => setCurrentPage(page)}
-                    showSizeChanger={false}    // ✅ hide page size select
-                    showQuickJumper={false}    // ✅ hide quick jump input
+                    showSizeChanger={false}    // hide page size select
+                    showQuickJumper={false}    // hide quick jump input
                 />
                 </div>
         {/* </div> */}

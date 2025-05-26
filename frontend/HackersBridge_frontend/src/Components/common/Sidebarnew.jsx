@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
-  UserSwitchOutlined, UsergroupAddOutlined, UserOutlined, ProductOutlined, ProfileOutlined, UnorderedListOutlined, LoginOutlined, AuditOutlined } from '@ant-design/icons';
+  UserSwitchOutlined, UsergroupAddOutlined, UserOutlined, ProductOutlined, ProfileOutlined, UnorderedListOutlined, LoginOutlined, AuditOutlined, BookOutlined, 
+  NotificationOutlined} from '@ant-design/icons';
 import { Button, Layout, Menu, Spin } from 'antd';
 import useThemeMode from '../../Hooks/useThemeMode';
 const { Header, Sider, Content } = Layout;
@@ -98,8 +99,15 @@ const Sidebarnew = ({ collapsed }) => {
         },
         {
           key: route.BOOKS_PATH,
-          icon:<AuditOutlined />,
+          icon: <BookOutlined />,
           label: "Books",
+          className: "rounded-md hover:bg-gray-300 dark:hover:bg-[#344c6b] dark:text-gray-300",
+
+        },
+        {
+          key: route.ANNOUNCEMENT_PATH,
+          icon: <NotificationOutlined />,
+          label: "Announcements",
           className: "rounded-md hover:bg-gray-300 dark:hover:bg-[#344c6b] dark:text-gray-300",
 
         },

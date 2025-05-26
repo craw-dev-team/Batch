@@ -118,7 +118,7 @@ const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
                 // profile_picture: studentFormData.studentProfilePicture,
             };
 
-            // console.log("Final Payload:", JSON.stringify(payload, null, 2));
+            console.log("Final Payload:", JSON.stringify(payload, null, 2));
 
             try {
                 setLoading(true); // Start loading
@@ -129,14 +129,18 @@ const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
                 if (selectedTrainerData && selectedTrainerData.id) {
                     // Update existing course (PUT)
                     response = await axios.put(`${BASE_URL}/api/trainers/edit/${selectedTrainerData.id}/`, payload, {
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` }
-                    });
-                    successMessage = "Trainer updated successfully!";
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        withCredentials : true
+                    }
+                    );
+                        successMessage = "Trainer updated successfully!";
                     } else {
                         // Add new course (POST)
                         response = await axios.post(`${BASE_URL}/api/trainers/add/`, payload, {
-                            headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` }
-                        });
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                            withCredentials : true
+                        }
+                        );
                         successMessage = "Trainer added successfully!";
                     }
     

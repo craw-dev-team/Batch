@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { DatePicker, Select, Input, Checkbox, message } from 'antd';
 import { SyncOutlined, PlusCircleOutlined, MinusCircleOutlined } from '@ant-design/icons';
-import { useStudentForm } from '../StudentContext/StudentFormContext';
 import axios from 'axios';
 import { useCourseForm } from '../Coursecontext/CourseFormContext';
 import dayjs from "dayjs";
@@ -9,6 +8,7 @@ import BASE_URL from '../../../ip/Ip';
 import { useCoordinatorForm } from '../AddDetails/Coordinator/CoordinatorContext';
 import { useCounsellorForm } from '../AddDetails/Counsellor/CounsellorContext';
 import { useAuth } from '../AuthContext/AuthContext';
+import { useStudentForm } from '../Studentcontext/StudentFormContext';
 
 
 const { TextArea } = Input;
@@ -172,15 +172,19 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
             if (selectedStudentData && selectedStudentData.id) {
                 // Update existing course (PUT)
                 response = await axios.put(`${BASE_URL}/api/students/edit/${selectedStudentData.id}/`, payload, {
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` }
-                });
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    withCredentials : true
+                }
+                );
                     successMessage = "Student updated successfully!";
                 } else {
                     // Add new course (POST)
                     response = await axios.post(`${BASE_URL}/api/students/add/`, payload, {
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` }
-                    });
-                    successMessage = "Student added successfully!";
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        withCredentials : true
+                    }
+                    );
+                        successMessage = "Student added successfully!";
                 };
 
                 if (response.status >= 200 && response.status < 300) {
@@ -262,15 +266,14 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
                         <span className="sr-only">Close modal</span>
                     </button>
                 </div>
-                
-                {/* disabled={isEditing} */}
+
                 {/* Modal Form */}
                 <div className="max-h-[700px] overflow-y-auto p-4 md:p-5">
                     <form className="p-4 md:p-5" onSubmit={handleFormSubmit}>
                     <div className="grid gap-4 mb-4 grid-cols-4">
                         <div className="col-span-1">
                             <label htmlFor="enrollmentNumber" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Enrollment Number</label>
-                            <Input name="enrollmentNumber" value={studentFormData.enrollmentNumber} onChange={(e) => handleChange("enrollmentNumber", e.target.value)} className='rounded-lg border-gray-300' placeholder="Enter Enrollment Number" />
+                            <Input name="enrollmentNumber" value={studentFormData.enrollmentNumber} onChange={(e) => handleChange("enrollmentNumber", e.target.value)} disabled={isEditing} className='rounded-lg border-gray-300' placeholder="Enter Enrollment Number" />
                             {errors.enrollmentNumber && <p className="text-red-500 text-sm">{errors.enrollmentNumber}</p>}
                         </div>
                         
@@ -318,7 +321,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
                                             placeholder="Enter Alternate Phone Number"
                                             onChange={(e) => {
                                                 const inputValue = e.target.value.replace(/\D/g, ""); // Remove non-numeric values
-                                                if (inputValue.length <= 12) {
+                                                if (inputValue.length <= 15) {
                                                     handleChange("alternatePhoneNumber", inputValue);
                                                 }
                                             }}

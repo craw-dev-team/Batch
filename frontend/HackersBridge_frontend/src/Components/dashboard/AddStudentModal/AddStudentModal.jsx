@@ -54,7 +54,9 @@ const AddStudentModal = ({ isOpen, onClose }) => {
         try {
             const response = await axios.post(`${BASE_URL}/api/batches/${batch_id}/add-students/`, 
                 { students: studentIds }, // Ensure correct payload format
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                withCredentials : true
+            }
             );
     
             if (response.status >= 200 && response.status < 300) {
@@ -83,7 +85,9 @@ const AddStudentModal = ({ isOpen, onClose }) => {
     const fetchAvailableStudents = useCallback(async (decodedBatchId) => {        
         try {
             const response = await axios.get(`${BASE_URL}/api/batches/${decodedBatchId}/available-students/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                withCredentials : true
+            }
             );
             const data = response.data;
             // console.log(data);

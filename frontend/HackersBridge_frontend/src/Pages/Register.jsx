@@ -21,12 +21,12 @@ const Register = () => {
     e.preventDefault();
     register(formData);
     setTimeout(() => {
-      navigate('/login')
+      navigate('/')
     }, 3000);
   }
 
   const navigateToLogin = () => {
-    navigate('/login')
+    navigate('/')
   };
 
 
@@ -82,8 +82,8 @@ const Register = () => {
                   </div>
 
                   {/* <button type="submit" class="w-full text-white bg-primary-600 hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center">Create an account</button> */}
-                  <p class="text-sm font-light flex text-gray-500 dark:text-gray-400">
-                      Already have an account? <p onClick={() => navigateToLogin()} class="pl-2 cursor-pointer font-medium text-primary-600 hover:underline">Login here</p>
+                  <p className="text-sm font-light flex text-gray-500 dark:text-gray-400">
+                      Already have an account? <span onClick={() => navigateToLogin()} className="pl-2 cursor-pointer font-medium text-primary-600 hover:underline">Login here</span>
                   </p>
               </form>
           </div>

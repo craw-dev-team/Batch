@@ -65,7 +65,9 @@ const Coordinators = () => {
 
         try {
             const response = await axios.delete(`${BASE_URL}/api/coordinators/delete/${coordinatorId}/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                withCredentials : true
+            }
             );
 
             if (response.status === 204) {
@@ -120,7 +122,9 @@ const Coordinators = () => {
         try {
             await axios.put(`${BASE_URL}/api/coordinators/edit/${coordinatorId}/`, 
                 { status: newStatus, email: coordinatorEmail },
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                withCredentials : true
+            }
             );
             message.success(`Coordinator status updated to ${newStatus}`);
         } catch (error) {

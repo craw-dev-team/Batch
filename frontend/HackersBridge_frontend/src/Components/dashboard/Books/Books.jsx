@@ -41,7 +41,9 @@ const Books = () => {
 
         try {
             const response = await axios.delete(`${BASE_URL}/api/books/delete/${bookId}/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                withCredentials : true
+            }
             );
 
             if (response.status === 204) {
@@ -71,11 +73,11 @@ const Books = () => {
     return (
         <>
        <div className="w-auto pt-4 px-2 mt-16 darkmode">
-    <div className="relative w-full h-full shadow-md sm:rounded-lg darkmode border border-gray-50 dark:border dark:border-gray-600">
-    <div className="w-full px-4 py-3 text flex justify-between font-semibold ">
+    <div className="relative w-full h-full shadow-md sm:rounded-lg darkmode border border-gray-50">
+    <div className="w-full px-4 py-3 flex justify-between font-semibold ">
         <h1>All Books</h1>
             <div>
-                <button onClick={() => { setIsModalOpen(true); setSelectedCourse(null); }} type="button" className="focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Add Book +</button>
+                <button onClick={() => { setIsModalOpen(true); setSelectedCourse(null); }} type="button" className="focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5">Add Book +</button>
             </div>
         </div>
 

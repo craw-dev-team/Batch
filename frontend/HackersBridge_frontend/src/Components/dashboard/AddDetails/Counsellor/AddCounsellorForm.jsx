@@ -64,14 +64,18 @@ const AddCounsellorForm = ( { isOpen, onClose, counsellorData } ) => {
                 if (counsellorData && counsellorData.id) {
                 // Update existing course (PUT)
                 response = await axios.put(`${BASE_URL}/api/counsellors/edit/${counsellorData.id}/`, payload, {
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` }
-                });
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    withCredentials : true
+                }
+                );
                 successMessage = "Counsellors updated successfully!";
                 } else {
                     // Add new course (POST)
                     response = await axios.post(`${BASE_URL}/api/counsellors/add/`, payload, {
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` }
-                    });
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        withCredentials : true
+                    }
+                    );
                     successMessage = "Counsellors added successfully!";
                 }
 

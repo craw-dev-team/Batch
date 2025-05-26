@@ -37,7 +37,9 @@ export const BookFormProvider = ({ children }) => {
         setLoading(true);  // Set loading state
         try {
             const response = await axios.get(`${BASE_URL}/api/books/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                withCredentials : true
+            }
             );
             const data = response?.data;
             
@@ -49,7 +51,7 @@ export const BookFormProvider = ({ children }) => {
                 return prevData;
             });
 
-            // console.log('Courses Data Updated:', data); // ✅ Log new data here
+            // console.log('Courses Data Updated:', data); // Log new data here
         } catch (error) {
             console.error('Error fetching Courses Data', error);
         } finally {

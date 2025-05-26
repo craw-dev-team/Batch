@@ -23,10 +23,11 @@ const SpecificStudentProvider = ({ children }) => {
 
         try {
             const response = await axios.get(`${BASE_URL}/api/students/info/${studentId}/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                withCredentials : true
+            }
             );
             const data = response?.data
-            // console.log(data);
             
             setSpecificStudent(prevData => {
                 if (JSON.stringify(prevData) !== JSON.stringify(data)) {

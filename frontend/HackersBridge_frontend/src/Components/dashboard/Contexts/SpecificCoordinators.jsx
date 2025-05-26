@@ -1,6 +1,7 @@
 import { createContext, useContext, useState } from "react";
 import BASE_URL from "../../../ip/Ip";
 import axios from "axios";
+import { triggerFocus } from "antd/es/input/Input";
 
 
 
@@ -28,7 +29,8 @@ const SpecificCoordinatorProvider = ({ children }) => {
 
         try {
             const response = await axios.get(`${BASE_URL}/api/coordinators/info/${coordinatorId}/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` },
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                withCredentials : true
             }
             )
             const data = response?.data
@@ -58,7 +60,9 @@ const SpecificCoordinatorProvider = ({ children }) => {
 
         try {
             const response = await axios.get(`${BASE_URL}/api/coordinators/${coordinatorId}/students/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                withCredentials : true
+            }
             )
             const data = response?.data
             // console.log(data);
@@ -93,7 +97,9 @@ const SpecificCoordinatorProvider = ({ children }) => {
 
         try {
             const response = await axios.get(`${BASE_URL}/api/coordinators/${coordinatorId}/trainer/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                withCredentials : true
+            }
             )
             const data = response?.data
             // console.log(data);
@@ -128,13 +134,14 @@ const SpecificCoordinatorProvider = ({ children }) => {
 
         try {
             const response = await axios.get(`${BASE_URL}/api/coordinators/info/${coordinatorId}/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` },
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 params: {
                     page,
                     page_size: pageSize,
                     search,
                     type
                 },
+                withCredentials : true
             }
             )
             const data = response?.data

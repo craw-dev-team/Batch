@@ -75,14 +75,18 @@ const CreateCourseForm = ({ isOpen, onClose, selectedCourseData }) => {
                 if (selectedCourseData && selectedCourseData.id) {
                 // Update existing course (PUT)
                 response = await axios.put(`${BASE_URL}/api/courses/edit/${selectedCourseData.id}/`, payload, {
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` }
-                });
-                successMessage = "Course updated successfully!";
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    withCredentials : true
+                }
+                );
+                    successMessage = "Course updated successfully!";
                 } else {
                     // Add new course (POST)
                     response = await axios.post(`${BASE_URL}/api/courses/add/`, payload, {
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` }
-                    });
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        withCredentials : true
+                    }
+                    );
                     successMessage = "Course added successfully!";
                 }
 
