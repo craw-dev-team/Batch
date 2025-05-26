@@ -81,7 +81,7 @@ const SpecificStudentLogs = () => {
                         { index + 1}
                     </td>
                     <td className="px-3 py-2 md:px-1">
-                        {item.actor}
+                        {item.actor_first_name || item.actor}
                     </td>
 
                     <td className="px-3 py-2 md:px-1">

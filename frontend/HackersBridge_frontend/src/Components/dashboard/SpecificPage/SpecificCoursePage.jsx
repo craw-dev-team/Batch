@@ -53,6 +53,14 @@ const SpecificCoursePage = () => {
         };
 
         
+        // HANDLE NAVIGATE TO STUDENT INFO
+        const handleStudentClick =  async (studentId) => {
+            if (!studentId) return;
+            const encodedStudentId = btoa(studentId);
+            navigate(`/students/${encodedStudentId}`);
+        };
+
+
         // HANDLE NAVIGATE TO BATCH INFO
         const handleBatchClick =  async (batchId) => {
             if (!batchId) return;
@@ -212,7 +220,7 @@ const SpecificCoursePage = () => {
                                                     <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
                                                         {index + 1}
                                                     </td>
-                                                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleBatchClick(item.id)}>
+                                                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.id)}>
                                                         {item.enrollment_no}
                                                     </td>
                                                     <td className="px-3 py-2 md:px-1">

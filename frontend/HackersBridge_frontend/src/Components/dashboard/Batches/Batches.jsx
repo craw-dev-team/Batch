@@ -578,7 +578,7 @@ const Batches = () => {
                             Active
                         </button>
                             </Badge>
-                            {/* <Badge count={countBatchesByType.endingsoon}> */}
+                            
                         <button
                             onClick={() => handleTabClick("scheduled")}
                             className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200
@@ -586,8 +586,7 @@ const Batches = () => {
                             >
                             Scheduled
                         </button>
-                            {/* </Badge>      */}
-                            {/* <Badge count={countBatchesByType.endingsoon}> */}
+                            
                         <button
                             onClick={() => handleTabClick("hold")}
                             className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200
@@ -595,8 +594,7 @@ const Batches = () => {
                             >
                             Hold
                         </button>
-                            {/* </Badge> */}
-                            {/* <Badge count={countBatchesByType.endingsoon}> */}
+
                         <button
                             onClick={() => handleTabClick("endingsoon")}
                             className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200
@@ -604,8 +602,7 @@ const Batches = () => {
                             >
                             Ending Soon
                         </button>
-                            {/* </Badge> */}
-                            {/* <Badge count={countBatchesByType.endingsoon}> */}
+                            
                         <button
                             onClick={() => handleTabClick("completed")}
                             className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200
@@ -613,8 +610,7 @@ const Batches = () => {
                             >
                             Completed 
                         </button>
-                            {/* </Badge> */}
-                            {/* <Badge count={countBatchesByType.endingsoon}> */}
+                            
                         <button
                             onClick={() => handleTabClick("cancelled")}
                             className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
@@ -622,15 +618,7 @@ const Batches = () => {
                             >
                             Cancelled
                         </button>
-                            {/* </Badge> */}
-                        
-                            {/* <button
-                            onClick={() => handleTabClick("available_batches")}
-                            className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                                ${activeTab === "available_batches" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
-                            >
-                            Available Batches
-                        </button> */}
+                            
                     </div>
 
 

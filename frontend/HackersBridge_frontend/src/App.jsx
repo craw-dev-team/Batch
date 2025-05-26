@@ -34,6 +34,8 @@ import AllLogs from "./Components/dashboard/AllLogs/AllLogs";
 import { AllLogsProvider } from "./Components/dashboard/AllLogsContext/AllLogsContext";
 import BooksHome from "./Pages/BooksHome";
 import { BookFormProvider } from "./Components/dashboard/BooksContext/BookFormContext";
+import SpecificCoursePage from "./Components/dashboard/SpecificPage/SpecificCoursePage";
+import { SpecificCourseProvider } from "./Components/dashboard/Contexts/SpecificCourse";
 
 
 
@@ -142,7 +144,9 @@ const AppProviders = ({ children }) => {
                                 <SpecificCoordinatorProvider>
                                   <AllLogsProvider>
                                     <BookFormProvider>
-                                      {children}
+                                      <SpecificCourseProvider>
+                                        {children}
+                                      </SpecificCourseProvider>
                                     </BookFormProvider>
                                   </AllLogsProvider>
                                 </SpecificCoordinatorProvider>

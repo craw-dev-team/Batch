@@ -52,7 +52,7 @@ urlpatterns = [
     path('student-course/edit/<int:id>/', StudentCourseEditAPIView.as_view(), name='student-course-edit'),
     path('generate-certificate/<int:id>/', GenerateCertificateAPIView.as_view(), name='generate-certificate'),
     path('download-certificate/<int:id>/', DownloadCertificateAPIView.as_view(), name='download_certificate'),
-    path('email-tracker/<int:id>/', email_open_tracker, name='email-tracker'),
+    # path('email-tracker/<int:id>/', email_open_tracker, name='email-tracker'),
     # path('students/free/', FreeStudentListView.as_view(), name='trainer-availability'),
     
     path('trainers/', TrainerListAPIviews.as_view(), name='trainer-list'),

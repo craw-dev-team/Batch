@@ -396,83 +396,93 @@ class StudentInfoAPIView(APIView):
     def get(self, request, id):
         if request.user.role not in ['admin', 'coordinator']:
             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
-        
-        # Get the student by ID
+
         student = get_object_or_404(Student, id=id)
 
-        # Fetch student's enrolled courses
+        # Fetch student-course relationships
         student_courses = StudentCourse.objects.filter(student=student).select_related('course')
-        
-        student_course_list = [
-            {
+
+        student_course_list = []
+        student_course_ids = []
+
+        for course in student_courses:
+            student_course_list.append({
                 'id': course.id,
                 'course_name': course.course.name,
                 'course_taken': Batch.objects.filter(student=student, course=course.course).count(),
                 'course_status': course.status,
                 'course_certificate_date': course.certificate_date,
-                'certificate_issued_at':course.certificate_issued_at,
-                'student_book_allotment':course.student_book_allotment,
-            }
-            for course in student_courses
-        ]
+                'certificate_issued_at': course.certificate_issued_at,
+                'student_book_allotment': course.student_book_allotment,
+            })
+            student_course_ids.append(course.id)
 
-        # Fetch batches based on status
+        # Batch status categorization
         batch_statuses = ['Upcoming', 'Completed', 'Running', 'Hold']
         student_batches = {
             status: Batch.objects.filter(student=student, status=status).select_related('course', 'trainer', 'batch_time')
             for status in batch_statuses
         }
 
-        # Get all upcoming batches for the student's courses
-        student_course_ids = student_courses.values_list("course_id", flat=True)
-        all_upcoming_batches = Batch.objects.filter(course_id__in=student_course_ids, status='Upcoming')
+        # Filter upcoming batches for enrolled courses not yet completed
+        all_upcoming_batches = Batch.objects.filter(course__in=student_courses.values('course_id'), status='Upcoming')
+        completed_or_ongoing_course_ids = student_courses.filter(status__in=['Completed', 'Ongoing']).values_list('course_id', flat=True)
 
-        # Get completed and ongoing course IDs to exclude from upcoming batches
-        student_completed_course_ids = student_courses.filter(status__in=['Completed', 'Ongoing']).values_list('course_id', flat=True)
-
-        # Exclude already assigned upcoming batches
         filtered_upcoming_batches = all_upcoming_batches.exclude(
-            course_id__in=student_completed_course_ids
-        ).exclude(id__in=student_batches['Upcoming'].values_list("id", flat=True))
+            course_id__in=completed_or_ongoing_course_ids
+        ).exclude(id__in=student_batches['Upcoming'].values_list('id', flat=True))
 
-        # Update student course status based on batch status
-        StudentCourse.objects.filter(student=student, course__in=student_batches['Upcoming'].values_list("course_id", flat=True)).update(status='Upcoming')
+        # Update student course status
+        StudentCourse.objects.filter(
+            student=student,
+            course__in=student_batches['Upcoming'].values_list('course_id', flat=True)
+        ).update(status='Upcoming')
 
-        # Get total student count
-        student_count = Student.objects.count()
-
-        # ✅ Fetch logs for this student
+        # Fetch logs related to Student, StudentCourse, StudentNotes
         student_ct = ContentType.objects.get_for_model(Student)
-        student_logs = LogEntry.objects.filter(content_type=student_ct, object_id=student.id).order_by('-timestamp')
+        course_ct = ContentType.objects.get_for_model(StudentCourse)
+        notes_ct = ContentType.objects.get_for_model(StudentNotes)
+
+        student_logs = LogEntry.objects.filter(
+            content_type__in=[student_ct, course_ct, notes_ct]
+        ).filter(
+            Q(object_id=student.id) | Q(object_id__in=student_course_ids)
+        ).order_by('-timestamp')
+
         serialized_logs = LogEntrySerializer(student_logs, many=True).data
 
-        # Build response data
+        # Build response
         response_data = {
             "All_in_One": {
-                'student_count': student_count,
+                'student_count': Student.objects.count(),
                 'student': StudentSerializer(student).data,
                 'student_courses': student_course_list,
                 'student_batch_upcoming': list(student_batches['Upcoming'].values(
-                    *[field.name for field in Batch._meta.fields], 'course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time'
+                    *[field.name for field in Batch._meta.fields],
+                    'course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time'
                 )),
                 'student_batch_hold': list(student_batches['Hold'].values(
-                    *[field.name for field in Batch._meta.fields], 'course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time'
+                    *[field.name for field in Batch._meta.fields],
+                    'course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time'
                 )),
                 'student_batch_ongoing': list(student_batches['Running'].values(
-                    *[field.name for field in Batch._meta.fields], 'course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time'
+                    *[field.name for field in Batch._meta.fields],
+                    'course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time'
                 )),
                 'student_batch_completed': list(student_batches['Completed'].values(
-                    *[field.name for field in Batch._meta.fields], 'course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time'
+                    *[field.name for field in Batch._meta.fields],
+                    'course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time'
                 )),
                 'all_upcoming_batch': list(filtered_upcoming_batches.values(
-                    *[field.name for field in Batch._meta.fields], 'course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time'
+                    *[field.name for field in Batch._meta.fields],
+                    'course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time'
                 )),
                 'student_logs': serialized_logs,
             }
         }
 
         return Response(response_data, status=status.HTTP_200_OK)
-
+    
 
 class StudentCourseEditAPIView(APIView):
     """API to edit an existing StudentCourse record."""
@@ -742,11 +752,15 @@ class StudentLogListView(APIView):
         if request.user.role not in ['admin', 'coordinator']:
             return Response({'error':'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
 
+        # Get content types for the related models
         student_ct = ContentType.objects.get_for_model(Student)
-        logs = LogEntry.objects.filter(content_type=student_ct).order_by('-timestamp')
+        course_ct = ContentType.objects.get_for_model(StudentCourse)
+        notes_ct = ContentType.objects.get_for_model(StudentNotes)
+
+        # Filter logs related to those models
+        logs = LogEntry.objects.filter(content_type__in=[student_ct, course_ct, notes_ct]).order_by('-timestamp')
         serializer = LogEntrySerializer(logs, many=True)
         return Response(serializer.data)
-    
 
 
 
@@ -761,8 +775,6 @@ class StudentBookAllotmentAPIView(APIView):
             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
 
         student_course = get_object_or_404(StudentCourse, id=id)
-
-        # Capture the old data before changes
         old_data = model_to_dict(student_course)
 
         serializer = StudentBookAllotmentSerializer(
@@ -773,12 +785,10 @@ class StudentBookAllotmentAPIView(APIView):
         )
 
         if serializer.is_valid():
-            serializer.save()
-
-            # Capture the new data after save
+            result = serializer.save()
             new_data = model_to_dict(student_course)
 
-            # Track changes
+            # Track field changes
             changes = {}
             changes_text = []
             for field, old_value in old_data.items():
@@ -787,7 +797,24 @@ class StudentBookAllotmentAPIView(APIView):
                     changes[field] = {'from': old_value, 'to': new_value}
                     changes_text.append(f"{field} changed from '{old_value}' to '{new_value}'")
 
-            # Log the change
+            # Determine action and book details
+            book_flag = request.data.get("Book")
+            if book_flag:
+                # Allotment action
+                book_names = [book.name for book in result.book.all()]
+                action_description = f"Allotted books: {', '.join(book_names)}"
+            else:
+                # Removal action
+                removed_books = result.get("removed_books", [])
+                if removed_books:
+                    action_description = f"Removed books: {', '.join(removed_books)}"
+                else:
+                    action_description = "No books found to remove."
+
+            # Final log message
+            full_changes_text = f"{action_description}. {' '.join(changes_text)}"
+
+            # Log entry
             LogEntry.objects.create(
                 content_type=ContentType.objects.get_for_model(StudentCourse),
                 cid=str(uuid.uuid4()),
@@ -797,12 +824,12 @@ class StudentBookAllotmentAPIView(APIView):
                 action=LogEntry.Action.UPDATE,
                 changes=json.dumps(changes, default=str),
                 serialized_data=json.dumps(new_data, default=str),
-                changes_text=" ".join(changes_text),
-                additional_data="Student",
+                changes_text=full_changes_text,
+                additional_data="Student Book Allotment",
                 actor=request.user,
                 timestamp=now()
             )
 
-            return Response({'message': 'Book allotted successfully'}, status=status.HTTP_200_OK)
+            return Response({'message': action_description}, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

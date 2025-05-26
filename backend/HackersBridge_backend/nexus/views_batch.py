@@ -107,78 +107,110 @@ class BatchAPIView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
+    STATUS_MAPPING = {
+        'Running': 'Ongoing',
+        'Upcoming': 'Upcoming',
+        'Completed': 'Completed',
+        'Hold': 'Not Started',
+        'Cancelled': 'Denied',
+    }
+
     def get(self, request):
         if request.user.role not in ['admin', 'coordinator']:
             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
 
         today = now().date()
+        
         upcoming_threshold = today + timedelta(days=10)
 
-        # Prefetch and select_related to avoid N+1
-        batches = Batch.objects.prefetch_related('student').select_related(
+        # Only select needed fields
+        batches = Batch.objects.select_related(
             'trainer', 'course', 'location', 'batch_time'
-        )
+        ).prefetch_related(Prefetch('student', queryset=Batch.student.rel.model.objects.only('id')))
 
-        # ✅ Cache for batch status update
         updated_batches = []
         student_course_updates = []
 
+        # Process batches and track status changes
         for batch in batches:
             old_status = batch.status
-            if old_status not in ['Hold', 'Cancelled']:
-                if batch.start_date <= today < batch.end_date:
-                    batch.status = 'Running'
-                elif batch.start_date >= today:
-                    batch.status = 'Upcoming'
-                elif batch.end_date < today:
-                    batch.status = 'Completed'
 
-                if batch.status != old_status:
-                    updated_batches.append(batch)
-                    student_ids = list(batch.student.values_list('id', flat=True))
+            if old_status in ['Hold', 'Cancelled']:
+                continue
+
+            # Determine new status
+            if batch.start_date <= today < batch.end_date:
+                new_status = 'Running'
+            elif batch.start_date > today:
+                new_status = 'Upcoming'
+            else:  # batch.end_date < today
+                new_status = 'Completed'
+
+            if new_status != old_status:
+                print("H1")
+                batch.status = new_status
+                updated_batches.append(batch)
+
+                student_ids = list(batch.student.values_list('id', flat=True))
+                if student_ids:
                     student_course_updates.append({
                         'student_ids': student_ids,
-                        'course': batch.course,
-                        'status': batch.status
+                        'course_id': batch.course_id,
+                        'status': new_status
                     })
 
-        # ✅ Bulk update batches
         if updated_batches:
             Batch.objects.bulk_update(updated_batches, ['status'])
 
-        # ✅ Bulk update student courses
-        for item in student_course_updates:
-            StudentCourse.objects.filter(
-                student__in=item['student_ids'], course=item['course']
-            ).update(status=item['status'])
+        for update in student_course_updates:
+            mapped_status = self.STATUS_MAPPING.get(update['status'])
+            if mapped_status:
+                print("Hello")
+                StudentCourse.objects.filter(
+                    student_id__in=update['student_ids'],
+                    course_id=update['course_id']
+                ).update(status=mapped_status)
 
-        # ✅ Fetch and categorize batches
-        batch_queryset = batches  # all batches already prefetched
+        # Batch categorization (in one pass)
+        all_batches = []
+        running, ending_soon, scheduled, completed, hold, cancelled = [], [], [], [], [], []
 
-        batches_ending_soon = [b for b in batch_queryset.order_by('end_date') if b.status == 'Running' and b.end_date <= upcoming_threshold]
-        running_batch = [b for b in batch_queryset.order_by('-start_date') if b.status == 'Running']
-        scheduled_batch = [b for b in batch_queryset.order_by('-start_date') if b.status == 'Upcoming']
-        completed_batch = [b for b in batch_queryset.order_by('-end_date') if b.status == 'Completed']
-        hold_batch = [b for b in batch_queryset.order_by('end_date') if b.status == 'Hold']
-        cancelled_batch = [b for b in batch_queryset.order_by('-end_date') if b.status == 'Cancelled']
+        batch_data_map = {}
+        serializer = BatchSerializer(batches, many=True)
+        for data in serializer.data:
+            batch_data_map[data['id']] = data
 
-        serializer = BatchSerializer(batch_queryset, many=True)
-        data_map = {b['id']: b for b in serializer.data}
+        for batch in batches:
+            batch_data = batch_data_map.get(batch.id)
+            if not batch_data:
+                continue
 
-        def map_batch_list(queryset):
-            return [data_map[b.id] for b in queryset if b.id in data_map]
+            all_batches.append(batch_data)
+
+            if batch.status == 'Running':
+                running.append(batch_data)
+                if batch.end_date <= upcoming_threshold:
+                    ending_soon.append(batch_data)
+            elif batch.status == 'Upcoming':
+                scheduled.append(batch_data)
+            elif batch.status == 'Completed':
+                completed.append(batch_data)
+            elif batch.status == 'Hold':
+                hold.append(batch_data)
+            elif batch.status == 'Cancelled':
+                cancelled.append(batch_data)
 
         return Response({
             'All_Type_Batch': {
-                'batches': list(data_map.values()),
-                'running_batch': map_batch_list(running_batch),
-                'batches_ending_soon': map_batch_list(batches_ending_soon),
-                'scheduled_batch': map_batch_list(scheduled_batch),
-                'completed_batch': map_batch_list(completed_batch),
-                'hold_batch': map_batch_list(hold_batch),
-                'cancelled_batch': map_batch_list(cancelled_batch),
+                'batches': all_batches,
+                'running_batch': running,
+                'batches_ending_soon': ending_soon,
+                'scheduled_batch': scheduled,
+                'completed_batch': completed,
+                'hold_batch': hold,
+                'cancelled_batch': cancelled,
             }
-        }, status=200)
+        }, status=status.HTTP_200_OK)
 
 
 
@@ -357,28 +389,17 @@ class AvailableStudentsAPIView(APIView):
         if batch.location and batch.location.locality != "Both":
             filters &= Q(location__locality__in=[batch.location.locality, "Both"])
 
-        # Fetch all disqualified student IDs in one go
-        disqualified_ids = set()
-
-        disqualified_ids.update(
-            Student.objects.filter(batch__in=Batch.objects.filter(course=course, status__in=['Running', 'Upcoming']))
-            .values_list('id', flat=True)
+        # Disqualified students (already in batches or completed course)
+        disqualified_ids = set(
+            Student.objects.filter(
+                Q(batch__course=course, batch__status__in=['Running', 'Upcoming', 'Completed']) |
+                Q(studentcourse__course=course, studentcourse__status='Completed')
+            ).values_list('id', flat=True)
         )
 
-        disqualified_ids.update(
-            Student.objects.filter(batch__in=Batch.objects.filter(course=course, status='Completed'))
-            .values_list('id', flat=True)
-        )
-
-        disqualified_ids.update(
-            StudentCourse.objects.filter(course=course, status='Completed')
-            .values_list('student_id', flat=True)
-        )
-
-        # Base student query
         students = Student.objects.filter(filters).exclude(id__in=disqualified_ids)
 
-        # ✅ Prerequisite Filtering (In-Memory, Fast)
+        # Prerequisite course checks
         prerequisites = {
             "Ethical Hacking": ['Basic Networking', 'Linux Essentials'],
             "AWS Associate": ['Basic Networking', 'Linux Essentials'],
@@ -387,32 +408,49 @@ class AvailableStudentsAPIView(APIView):
             "Web Application Security": ['Advanced Penetration Testing'],
             "Mobile Application Security": ['Web Application Security'],
             "Cyber Forensics Investigation": ['Ethical Hacking'],
+            "End Point Security": [
+                'Python Programming', 'Basic Networking', 'Linux Essentials',
+                'Ethical Hacking', 'Advanced Penetration Testing',
+                'Cyber Forensics Investigation', 'Web Application Security',
+                'Mobile Application Security'
+            ],
+            "Internet of Things Pentesting": [
+                'Python Programming', 'Basic Networking', 'Linux Essentials',
+                'Ethical Hacking', 'Advanced Penetration Testing',
+                'Cyber Forensics Investigation', 'Web Application Security',
+                'Mobile Application Security'
+            ],
         }
 
         required_courses = prerequisites.get(course.name)
 
         if required_courses:
-            # Prefetch StudentCourse data for these students
             student_courses = StudentCourse.objects.filter(
                 student__in=students, course__name__in=required_courses
             ).values('student_id', 'course__name', 'status')
 
-            student_course_map = defaultdict(dict)
+            course_status_map = defaultdict(dict)
             for entry in student_courses:
-                student_course_map[entry['student_id']][entry['course__name']] = entry['status']
+                course_status_map[entry['student_id']][entry['course__name']] = entry['status']
 
-            eligible_ids = []
-            for s in students:
-                sid = s.id
-                courses = student_course_map.get(sid, {})
-                # ✅ If all required courses are completed or missing
-                if all(courses.get(c) == 'Completed' for c in required_courses) or len(courses) < len(required_courses):
-                    eligible_ids.append(sid)
+            eligible_ids = [
+                sid for sid, course_map in course_status_map.items()
+                if all(course_map.get(course) == 'Completed' for course in required_courses)
+            ]
+
+            # Also include students who have no record of these prerequisites
+            # (to avoid unfair exclusion)
+            all_student_ids = set(students.values_list('id', flat=True))
+            students_with_prereqs = set(course_status_map.keys())
+            students_without_prereqs = all_student_ids - students_with_prereqs
+            eligible_ids.extend(students_without_prereqs)
 
             students = students.filter(id__in=eligible_ids)
 
         serialized_students = StudentSerializer(students, many=True).data
-        return Response({"available_students": serialized_students}, status=200)
+        return Response({"available_students": serialized_students}, status=status.HTTP_200_OK)
+
+
 
 
 

@@ -294,9 +294,18 @@ class BookListAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        books = Book.objects.all()  # Latest first
+        books = Book.objects.all()
+
+        for book in books:
+            if book.stock >= 1 and book.status != 'Available':
+                book.status = 'Available'
+                book.save(update_fields=['status'])
+            elif book.stock == 0 and book.status != 'Not':
+                book.status = 'Not'
+                book.save(update_fields=['status'])
+
         serializer = BookSerializer(books, many=True)
-        return Response(serializer.data)    
+        return Response(serializer.data)
 
 
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Button, message, Popconfirm, Avatar, Tooltip, Select, Tag, Dropdown, Pagination, Spin, Empty, Menu } from 'antd';
 import dayjs from "dayjs";
 import { useAllLogs } from "../AllLogsContext/AllLogsContext";
+import LogsCountCards from "./LogsCountCards";
 
 
 
@@ -13,7 +14,6 @@ const AllLogs = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 100;
 
-console.log(allLogsData);
 
         // HANDLE SEARCH INPUT AND DEBOUNCE 
         useEffect(() => {
@@ -36,6 +36,7 @@ console.log(allLogsData);
     return (
         <>
            <div className="w-auto pt-4 px-2 mt-16 bg-white">
+                <LogsCountCards />
                 <div className="relative w-full h-auto shadow-md sm:rounded-lg border border-gray-50 dark:border dark:border-gray-600">
                     <div className="w-full px-4 py-3 text flex justify-between font-semibold ">
                         <h1>All Logs</h1>

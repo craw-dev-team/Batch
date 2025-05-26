@@ -7,7 +7,7 @@ import { EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined, FilterOutli
 import BASE_URL from "../../../ip/Ip";
 import StudentCards from "../SpecificPage/StudentCard";
 import { useAuth } from "../AuthContext/AuthContext";
-import { useStudentForm } from "../Studentcontext/StudentFormContext";
+import { useStudentForm } from "../StudentContext/StudentFormContext";
 
 const { Search } = Input;
 
@@ -47,7 +47,6 @@ const Students = () => {
         fetchStudents({  page: currentPage, pageSize, search: searchTerm, mode: sortByMode, language: sortByLanguage, preferred_week: sortByPreferredWeek, location: sortByLocation })        
     },[!isModalOpen, searchTerm, currentPage, sortByMode, sortByLanguage, sortByPreferredWeek, sortByLocation]);
 
-    console.log(studentData);
     
     // HANDLE SEARCH INPUT AND DEBOUNCE 
     useEffect(() => {        
@@ -117,14 +116,14 @@ const Students = () => {
                     setSearchTerm('')
                 }, 2000);
             } else {
-                console.error('Student Data is not an array');
+                // console.error('Student Data is not an array');
             }
         }
     } catch (error) {
         setLoading(false);
     
         if (error.response) {
-            console.error("Server Error Response:", error.response.data);
+            // console.error("Server Error Response:", error.response.data);
     
             // Extract error messages and show each one separately
             Object.entries(error.response.data).forEach(([key, value]) => {
@@ -133,10 +132,10 @@ const Students = () => {
                 });
             });
         } else if (error.request) {
-            console.error("No Response from Server:", error.request);
+            // console.error("No Response from Server:", error.request);
             message.error("No response from server. Please check your internet connection.");
         } else {
-            console.error("Error Message:", error.message);
+            // console.error("Error Message:", error.message);
             message.error("An unexpected error occurred.");
         }
     }       
@@ -159,7 +158,7 @@ const Students = () => {
         
         //  Optimistically update UI before API call
         setStudentStatuses((prev) => ({ ...prev, [studentId]: checked }));
-        console.log("Sending to server:", { status: newStatus });
+        // console.log("Sending to server:", { status: newStatus });
 
         try {
             await axios.put(`${BASE_URL}/api/students/edit/${studentId}/`, 
@@ -175,10 +174,10 @@ const Students = () => {
     };
 
 
-    const handleTrainerClick =  async (studentId) => {
+    const handleStudentClick =  async (studentId) => {
         if (!studentId) return;
-        const encodedTrainerId = btoa(studentId);        
-        navigate(`/students/${encodedTrainerId}`);
+        const encodedStudentId = btoa(studentId);        
+        navigate(`/students/${encodedStudentId}`);
     };
 
         
@@ -210,7 +209,6 @@ const Students = () => {
 
 
         const handleSort = async (key, filterType) => {
-            console.log(key);
             if (key === "clear") {
                 
                 if (filterType === "mode") setSortByMode(null);
@@ -510,10 +508,10 @@ const Students = () => {
                     {/* <td className="px-3 py-2 md:px-1">
                         {item.id}
                     </td> */}
-                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.id)}>
+                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.id)}>
                         {item.enrollment_no}
                     </td>
-                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.id)}>
+                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.id)}>
                         {item.name}
                     </td>
                     <td className="px-3 py-2 md:px-1">
