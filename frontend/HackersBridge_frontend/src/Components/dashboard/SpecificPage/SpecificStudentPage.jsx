@@ -10,6 +10,7 @@ import CreateStudentForm from "../Students/CreateStudentForm";
 import { useAuth } from "../AuthContext/AuthContext";
 import SpecificStudentLogs from "../AllLogs/Student/SpecificStudentLogs";
 import SpecificStudentNotes from "./SpecificNotesPage";
+import StudentInfoLoading from "../../../Pages/SkeletonLoading.jsx/StudentInfoLoading";
 
 const { TextArea } = Input;
 
@@ -194,6 +195,45 @@ const SpecificStudentPage = () => {
     
 
     // HANDLE ISSUE BOOKS TO SPECIFIC STUDENT
+    const handleIssueOldBook = async (courseId, isChecked, courseName) => {
+        if (!courseId) return null;
+        
+        try {
+            const response = await axios.patch(`${BASE_URL}/api/student/old_book/${courseId}/`,
+                { old_status : isChecked},
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                withCredentials : true
+            }
+            );
+            
+        setSpecificStudent(prev => ({
+            ...prev,
+            All_in_One: {
+              ...prev.All_in_One,
+              student_courses: prev.All_in_One.student_courses.map(course =>
+                course.id === courseId
+                  ? { ...course, student_old_book_allotment: isChecked }
+                  : course
+              ),
+            },
+          }));
+
+          if (isChecked) {
+                message.success(`Old Book alloted Successfully for ${courseName}`)
+          } else {
+            message.success(`Old Book Unalloted for ${courseName}`)
+          }
+    
+        // console.log("Server response:", response.data);
+        } catch (error) {
+            message.error('No available books for this course')
+            console.error("Error issuing book:", error);
+        
+       }
+        
+    };
+    
+    // Handle Old Book Issue To Students For Temporary Use Only, Will be Removed Later 
     const handleIssueBook = async (courseId, isChecked, courseName) => {
         if (!courseId) return null;
         
@@ -203,7 +243,7 @@ const SpecificStudentPage = () => {
                 { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
                 withCredentials : true
             }
-            );            
+            );
             
         setSpecificStudent(prev => ({
             ...prev,
@@ -231,7 +271,6 @@ const SpecificStudentPage = () => {
        }
         
     };
-    
 
     // HANDLE CREATE NOTE FOR STUDENT
     const handleCreateNote = async (studentId) => {
@@ -379,6 +418,11 @@ const SpecificStudentPage = () => {
                                         );
                                     })()}
 
+                                     <div className="col-span-1 px-1 py-1 mt-6">
+                                        <h1>Status</h1>
+                                        <p className="font-semibold">{studentDetails.status || "Not Available"}</p>
+                                    </div>
+
                                     <div className="2xl:col-span-4 col-span-3 mt-6">
                                         <div className="">
                                         <label htmlFor="studentNote" className="font-semibold">Add Note</label>
@@ -429,10 +473,13 @@ const SpecificStudentPage = () => {
                                                                 Batch Taken
                                                             </th>
                                                             <th scope="col" className="px-3 py-3 md:px-1">
+                                                                Old Books
+                                                            </th>
+                                                            <th scope="col" className="px-3 py-3 md:px-1">
                                                                 Books
                                                             </th>
                                                             <th scope="col" className="px-3 py-3 md:px-1">
-                                                                
+                                                                Issue Certificate
                                                             </th>
                                                             <th scope="col" className="px-3 py-3 md:px-1 md:w-40">
                                                                 Certificate Date
@@ -489,7 +536,11 @@ const SpecificStudentPage = () => {
                                                             </td>
 
                                                             <td>
-                                                            <Checkbox onChange={(e) => handleIssueBook(item.id, e.target.checked, item.course_name)} checked={item.student_book_allotment || false}></Checkbox>
+                                                                <Checkbox onChange={(e) => handleIssueOldBook(item.id, e.target.checked, item.course_name)} checked={item.student_old_book_allotment || false}></Checkbox>
+                                                            </td>
+
+                                                            <td>
+                                                                <Checkbox onChange={(e) => handleIssueBook(item.id, e.target.checked, item.course_name)} checked={item.student_book_allotment || false}></Checkbox>
                                                             </td>
 
                                                             <td className="px-3 py-2 md:px-1 flex">
@@ -511,7 +562,7 @@ const SpecificStudentPage = () => {
                                                                     }}
                                                                     
                                                                 />     
-                                                                <Button variant="solid"   disabled={item.course_status !== "Completed"}
+                                                                <Button variant="solid" disabled={item.course_status !== "Completed"}
                                                                     className={`mx-2 text-gray-50 ${item.course_certificate_date ? "bg-lime-600" : "bg-lime-500"}`}
                                                                     onClick={() => issueCertificate(item.id, certificateData[item.id], item.course_name)}
                                                                 >{item.course_certificate_date ? "Issued" : "Issue"}</Button>
@@ -551,7 +602,9 @@ const SpecificStudentPage = () => {
                             
                                 </>
                                 ) : (
-                                    <p>Loading student data...</p>
+                                    <>
+                                        <StudentInfoLoading/>
+                                    </>
                                 )}
                         </div>
                 
@@ -690,7 +743,7 @@ const SpecificStudentPage = () => {
                                                                 {item.course__name}
                                                             </td>
                                                             <td className="px-3 py-2 md:px-1">
-                                                                <Tag bordered={false} color={item.mode == 'Offline'? 'green' : item.mode == 'online'? 'volcano' : 'geekblue'}>
+                                                                <Tag bordered={false} color={item.mode == 'Offline'? 'green' : item.mode == 'Online'? 'red' : 'geekblue'}>
                                                                     {item.mode}
                                                                 </Tag>
                                                             </td>
@@ -701,13 +754,13 @@ const SpecificStudentPage = () => {
                                                             </td>
 
                                                             <td className="px-3 py-2 md:px-1">
-                                                                <Tag bordered={false} color={item.preferred_week === "Weekdays" ? "cyan" : "gold" }>
+                                                                <Tag bordered={false} color={item.preferred_week === "Weekdays" ? "cyan" : item.preferred_week === "Weekends" ? "gold" : "geekblue"}>
                                                                     {item.preferred_week}
                                                                 </Tag>
                                                             </td>
                                                         
                                                             <td className="px-3 py-2 md:px-1">
-                                                            {item.location == '1' ? <Tag color="blue">Saket</Tag> : item.location == "2" ? <Tag color="magenta">Laxmi Nagar</Tag> : <Tag color="geekblue">Both</Tag>}
+                                                            {item.location == '1' ? <Tag bordered={false} color="blue">Saket</Tag> : item.location == "2" ? <Tag bordered={false} color="magenta">Laxmi Nagar</Tag> : <Tag bordered={false} color="geekblue">Both</Tag>}
                                                             </td>
                                                         </tr>
                                                     ))

@@ -105,7 +105,6 @@ const SpecificTrainerPage = () => {
             if (value && value.length === 2) {
               const start = value[0].format("YYYY-MM-DD");
               const end = value[1].format("YYYY-MM-DD");
-          console.log(start, end);
           
               setStartDate(start);
               setEndDate(end);
@@ -127,8 +126,8 @@ const SpecificTrainerPage = () => {
 
     return (
         <>
-        <div className="w-auto h-full pt-20 px-2 mt-0 ">
-            <div className="grid grid-cols-7 gap-x-4">
+        <div className="w-auto h-full pt-14 px-2 mt-0 ">
+            <div className="grid grid-cols-7 gap-x-2">
                     {trainerDetails ? (
                     <>
                 <div className="px-4 py-4 col-span-5 h-auto shadow-md sm:rounded-lg border border-gray-50 bg-white">
@@ -197,50 +196,54 @@ const SpecificTrainerPage = () => {
                             <h1>Leave Status</h1>
                             {!isEditing ? (
                             <div className="flex items-center gap-2">
-                            <p className="font-semibold text-sm">{trainerDetails?.leave_status || trainerDetails?.leave_status === "custom" ? "Trainer on Leave" : "On Duty"}</p>
+                            <p className="font-semibold text-sm">
+                                {trainerDetails?.leave_status === "custom" ? `${trainerDetails?.leave_start_date} - ${trainerDetails?.leave_end_date}` : trainerDetails?.leave_status || "On Duty"}
+                            </p>
+
                             <button
                                 onClick={() => setIsEditing(true)}
-                                className="text-gray-500 hover:text-primary"
+                                className="text-blue-500 hover:text-primary"
                                 aria-label="Edit Status"
                             >
                                 <EditOutlined  />
                             </button>
                             </div>
                             ) : (
-                                    <>
-                                <div className="space-y-2 relative">
-                                <Select
-                                    placeholder='Select Language' 
-                                    className="w-2/3 text-sm rounded border p-1 dark:bg-gray-800 dark:text-white"
-                                    value={selectedOption}
-                                    onChange={(value) => setSelectedOption(value)}
-                                    options={[
-                                        { value: 'First Half off', label: 'First Half Off' },
-                                        { value: 'Second Half off', label: 'Second Half Off' },
-                                        { value: 'Full Day off', label: 'Full Day Off' },
-                                        { value: 'custom', label: 'Custom' },
-                                    ]}
-                                />
-                              
-                                {selectedOption === "custom" && (
-                                  <Popover
-                                    content={
-                                      <RangePicker
-                                        format="YYYY-MM-DD"
-                                        value={[
-                                          startDate ? dayjs(startDate) : null,
-                                          endDate ? dayjs(endDate) : null,
+                                <>
+                                    <div className="space-y-2 relative">
+                                    <Select
+                                        placeholder='Select Leave Type' 
+                                        className="w-2/3 text-sm rounded border p-1"
+                                        value={selectedOption}
+                                        onChange={(value) => setSelectedOption(value)}
+                                        options={[
+                                            { value: 'First Half off', label: 'First Half Off' },
+                                            { value: 'Second Half off', label: 'Second Half Off' },
+                                            { value: 'Full Day off', label: 'Full Day Off' },
+                                            { value: 'On Duty', label: 'On Duty' },
+                                            { value: 'custom', label: 'Custom' },
                                         ]}
-                                        onChange={handleRangeChange}
-                                      />
-                                    }
-                                    open={true}
-                                  >
-                                  </Popover>
-                                )}
-                              </div>
+                                    />
+                                
+                                    {selectedOption === "custom" && (
+                                    <Popover
+                                        content={
+                                        <RangePicker
+                                            format="YYYY-MM-DD"
+                                            value={[
+                                            startDate ? dayjs(startDate) : null,
+                                            endDate ? dayjs(endDate) : null,
+                                            ]}
+                                            onChange={handleRangeChange}
+                                        />
+                                        }
+                                        open={true}
+                                    >
+                                    </Popover>
+                                    )}
+                                    </div>
                               
-                              <div className="flex gap-2 mt-2">
+                                    <div className="flex gap-2 mt-2">
                                         <button
                                         onClick={() => handleTrainerStatusChange(trainerDetails?.id)}
                                         disabled={loading}
@@ -248,8 +251,8 @@ const SpecificTrainerPage = () => {
                                         >
                                         {loading ? (
                                             <>
-                                                <SyncOutlined spin className="mr-2" />
-                                                Processing...
+                                            <SyncOutlined spin className="mr-2" />
+                                            Processing...
                                             </>
                                         ) : "Save" }
                                         </button>
@@ -260,7 +263,7 @@ const SpecificTrainerPage = () => {
                                         Cancel
                                         </button>
                                     </div>
-                                  </>
+                                </>
                             
                             )}
                         
@@ -269,7 +272,7 @@ const SpecificTrainerPage = () => {
                     </div>
                 </div>
 
-                <div className="px-4 py-4 col-span-2 h-auto shadow-md sm:rounded-lg darkmode border border-gray-50 bg-white">
+                <div className="px-4 py-4 col-span-2 h-auto shadow-md sm:rounded-lg border border-gray-50 bg-white">
                     <div className="w-full h-auto font-semibold">
                         
                         <div className="col-span-1 text-lg px-4 py-4">
@@ -356,7 +359,7 @@ const SpecificTrainerPage = () => {
                                         setSearchTerm(value);
                                         setCurrentPage(1);
                                     }}
-                                    className="block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg w-40 h-7 bg-gray-50 focus:ring-blue-500 focus:border-blue-500" 
+                                    className="2xl:w-80 lg:w-80 md:w-40 h-8 block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500" 
                                     />
                                 <div className="absolute inset-y-0 right-0 h-8 flex items-center pr-3">
                                 <button onClick={() => setSearchTerm("")}>
@@ -410,10 +413,10 @@ const SpecificTrainerPage = () => {
                                                     Language
                                                 </th>
                                                 <th scope="col" className="px-3 py-3 md:px-1">
-                                                    Location
+                                                    Preferred Week
                                                 </th>
                                                 <th scope="col" className="px-3 py-3 md:px-1">
-                                                    Preferred Week
+                                                    Location
                                                 </th>
                                                 
                                             </tr>
@@ -494,13 +497,13 @@ const SpecificTrainerPage = () => {
                                                     </Tag>
                                                 </td>
                                                 <td className="px-3 py-2 md:px-1">
-                                                    <Tag bordered={false} color={item.batch_location === "Saket" ? "blue" : "magenta" }>
-                                                        {item.batch_location}
+                                                    <Tag bordered={false} color={item.batch_preferred_week === "Weekdays" ? "cyan" : "gold" }>
+                                                        {item.batch_preferred_week}
                                                     </Tag>
                                                 </td>
                                                 <td className="px-3 py-2 md:px-1">
-                                                    <Tag bordered={false} color={item.batch_preferred_week === "Weekdays" ? "cyan" : "gold" }>
-                                                        {item.batch_preferred_week}
+                                                    <Tag bordered={false} color={item.batch_location === "Saket" ? "blue" : "magenta" }>
+                                                        {item.batch_location}
                                                     </Tag>
                                                 </td>
                                             </tr>

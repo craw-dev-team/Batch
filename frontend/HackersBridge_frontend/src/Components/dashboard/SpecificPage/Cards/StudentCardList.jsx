@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { Avatar, Tag, Tooltip, Switch, message } from 'antd';
-import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
+import { Avatar, Tag, Tooltip, Dropdown, message, Empty } from 'antd';
+import { CheckOutlined, DownOutlined  } from '@ant-design/icons';
 import StudentCards from "./StudentCard";
 import axios from "axios";
-import BASE_URL from "../../../ip/Ip";
-import { useAuth } from "../AuthContext/AuthContext";
+import BASE_URL from "../../../../ip/Ip";
+import { useAuth } from "../../AuthContext/AuthContext";
 
 
 const StudentsList = () => {
@@ -20,30 +20,26 @@ const StudentsList = () => {
     const navigate = useNavigate();
 
     const filteredStudents = Array.isArray(data) ? data : [];
-    console.log(studentStatuses)
-console.log(filteredStudents);
 
-useEffect(() => {
-    if (Array.isArray(filteredStudents) && filteredStudents.length > 0) {
-        const initialStatuses = {};
-        filteredStudents.forEach((student) => {
-            initialStatuses[student.id] = student.status === "Active";
-        });
+    useEffect(() => {
+        if (Array.isArray(filteredStudents) && filteredStudents.length > 0) {
+            const initialStatuses = {};
+            filteredStudents.forEach((student) => {
+                initialStatuses[student.id] = student.status;
+            });
 
-        console.log("Initialized statuses:", initialStatuses); // Debug
-        setStudentStatuses(initialStatuses);
-    }
-}, [filteredStudents]);
+            setStudentStatuses(initialStatuses);
+        }
+    }, [filteredStudents]);
 
 
 
     // Handle Toggle of trainer active and inactive 
-    const handleToggle = async (checked, studentId) => {
-        const newStatus = checked ? "Active" : "Inactive";
+    const handleStudentStatusChange = async (studentId, newStatus) => {
+        const previousStatus = studentStatuses[studentId]; // store current before update
         
         //  Optimistically update UI before API call
-        setStudentStatuses((prev) => ({ ...prev, [studentId]: checked }));
-        console.log("Sending to server:", JSON.stringify({ status: newStatus }));
+        setStudentStatuses((prev) => ({ ...prev, [studentId]: newStatus }));
 
         try {
             const response = await axios.put(`${BASE_URL}/api/students/edit/${studentId}/`, 
@@ -51,16 +47,13 @@ useEffect(() => {
                 { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
                 withCredentials : true
             }
-            );
-            console.log(response);
-            console.log(filteredStudents);
-            
-            // message.success(`Student status updated to ${newStatus}`);
+            );            
+            message.success(`Student status updated to ${newStatus}`);
         } catch (error) {
             message.error("Failed to update status");
             console.error(error);
             //  Revert UI if API fails
-            setStudentStatuses((prev) => ({ ...prev, [studentId]: !checked }));
+            setStudentStatuses((prev) => ({ ...prev, [studentId]: previousStatus }));
         }
     };
 
@@ -92,36 +85,35 @@ useEffect(() => {
 
     return (
         <>
-        <div className="w-auto pt-4 px-2 mt-14 darkmode">
-            <div className="relative w-full h-full shadow-md sm:rounded-lg darkmode border border-gray-50 dark:border dark:border-gray-600">
-                <div className={`overflow-hidden pb-2 relative `}>
-                    <div className="w-full h-[47.5rem] overflow-y-auto dark:border-gray-700 rounded-lg pb-2">
-                        
-                        <StudentCards/>
+        <div className="w-auto pt-4 px-2 mt-10 darkmode">
+            <div className="relative w-full h-full shadow-md sm:rounded-lg border border-gray-50">
+                <div className={`pb-2 relative`}>
+                    <StudentCards/>
 
-                        <div className="flex justify-between items-center">
-                            <h3 className="text-lg font-semibold my-4 px-4"> {type === "enrolled_students"? "Students Enrolled In Batches": type === "today_added_students"? "Today Added Students" : type === "not_enrolled_students"? "Students Not Enrolled In Batches Yet" : type === "active_students"? "Active Students" : "Inactive Students"}</h3>
-                            <label htmlFor="table-search" className="sr-only">Search</label>
-                            <div className="relative h-auto">
-                                <input onChange={(e) => setSearchTerm(e.target.value.replace(/^\s+/, ''))} value={searchTerm} type="text" id="table-search" placeholder="Search for items"
-                                    className="block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg w-40 h-7 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" 
-                                    />
-                                <div className="absolute inset-y-0 right-0 h-auto flex items-center pr-3">
-                                <button onClick={() => setSearchTerm("")}>
-                                {searchTerm ? (
-                                    <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M6.293 6.293a1 1 0 011.414 0L10 8.586l2.293-2.293a1 1 0 111.414 1.414L11.414 10l2.293 2.293a1 1 0 01-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 01-1.414-1.414L8.586 10 6.293 7.707a1 1 0 010-1.414z" clipRule="evenodd"></path>
-                                        </svg>
-                                    ) : (
-                                        <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"></path>
-                                        </svg>
-                                    )}
-                                </button>
-                                </div>
+                    <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-semibold my-4 px-4"> {type === "enrolled_students"? "Students Enrolled In Batches": type === "today_added_students" ? "Today Added Students" : type === "not_enrolled_students" ? "Students Not Enrolled In Batches Yet" : type === "active_students" ? "Active Students" : "Inactive Students"}</h3>
+                        <label htmlFor="table-search" className="sr-only">Search</label>
+                        <div className="relative h-auto">
+                            <input onChange={(e) => setSearchTerm(e.target.value.replace(/^\s+/, ''))} value={searchTerm} type="text" id="table-search" placeholder="Search for items"
+                                className="2xl:w-96 lg:w-96 md:w-72 h-8 block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500" 
+                                />
+                            <div className="absolute inset-y-0 right-0 h-auto flex items-center pr-3">
+                            <button onClick={() => setSearchTerm("")}>
+                            {searchTerm ? (
+                                <svg className="w-4 h-4 text-gray-500" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M6.293 6.293a1 1 0 011.414 0L10 8.586l2.293-2.293a1 1 0 111.414 1.414L11.414 10l2.293 2.293a1 1 0 01-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 01-1.414-1.414L8.586 10 6.293 7.707a1 1 0 010-1.414z" clipRule="evenodd"></path>
+                                    </svg>
+                                ) : (
+                                    <svg className="w-4 h-4 text-gray-500" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"></path>
+                                    </svg>
+                                )}
+                            </button>
                             </div>
                         </div>
+                    </div>
 
+                    <div className="w-full h-[39rem] overflow-y-auto rounded-lg pb-2">
                         <table className="w-full text-xs text-left text-gray-500">
                         <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10">
                             {["not_enrolled_students", "today_added_students", "enrolled_students", "active_students", "inactive_students"].includes(type) && (
@@ -178,7 +170,7 @@ useEffect(() => {
                         <tbody>
                         {searchFilteredStudents.length > 0 ? (
                             searchFilteredStudents.map((item, index) => (
-                                <tr key={item.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600">
+                                <tr key={item.id} className="bg-white border-b border-gray-200 hover:bg-gray-50">
                                     <td className="px-3 py-2 md:px-2 font-medium text-gray-900 dark:text-white">
                                         {index + 1}
                                     </td>
@@ -239,7 +231,7 @@ useEffect(() => {
                                     </td>
 
                                     <td className="px-3 py-2 md:px-1">
-                                        {item.location == '1' ? <Tag color="blue">Saket</Tag> : item.location == "2" ? <Tag color="magenta">Laxmi Nagar</Tag> : <Tag color="geekblue">Both</Tag>}
+                                        {item.location == '1' ? <Tag bordered={false} color="blue">Saket</Tag> : item.location == "2" ? <Tag bordered={false} color="magenta">Laxmi Nagar</Tag> : <Tag bordered={false} color="geekblue">Both</Tag>}
                                     </td>
 
                                     <td className="px-3 py-2 md:px-1">
@@ -251,28 +243,34 @@ useEffect(() => {
                                     </td>
 
                                     <td className="px-3 py-2 md:px-1">
-                                        <Switch
-                                            size="small"
-                                            checkedChildren={<CheckOutlined />}
-                                            unCheckedChildren={<CloseOutlined />}
-                                            checked={studentStatuses[item.id] ?? false} // Get correct status per Student
-                                            onChange={(checked) => handleToggle(checked, item.id )}
-                                            style={{
-                                                backgroundColor: studentStatuses[item.id] ? "#38b000" : "gray", // Change color when checked
+                                        <Dropdown
+                                            menu={{
+                                                items: ["Active", "Inactive", "Temp Block", "Restricted"]
+                                                    .map((status) => ({
+                                                        key: status,
+                                                        label: status,
+                                                    })),
+                                                onClick: ({ key }) => handleStudentStatusChange(item.id, key),
                                             }}
-                                        />
+                                            >
+                                                <a onClick={(e) => e.preventDefault()}>
+                                                <Tag color={
+                                                    (studentStatuses[item.id] || item.status) === "Active" ? "#28a745" :
+                                                    (studentStatuses[item.id] || item.status) === "Inactive" ? "#6c757d" :
+                                                    (studentStatuses[item.id] || item.status) === "Temp Block" ? "#ff9100" :
+                                                    "#ef233c"
+                                                }>
+                                                    {studentStatuses[item.id || item.status]} <span><DownOutlined /></span>
+                                                </Tag>
+                                            </a>
+                                        </Dropdown>
                                     </td>
                                 </tr>
                             ))
                         ) : (
                             <tr>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td colSpan="6" className="text-center py-3">
-                                    No students found for "{type}"
+                                <td colSpan="100%" className="text-center py-4 text-gray-500">
+                                    <Empty description="No Students Found" />
                                 </td>
                             </tr>
                         )}
