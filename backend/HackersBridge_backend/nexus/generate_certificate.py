@@ -161,7 +161,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from datetime import datetime
 
 # ✅ Correct FONT directory
-FONT_DIR = r'D:\craw-002\PROJECT\backend\HackersBridge_backend\static\fonts'
+FONT_DIR = r'C:\Users\Administrator\Desktop\CRAW\Batch\backend\HackersBridge_backend\static\fonts'
 
 # ✅ Register Custom Fonts
 pdfmetrics.registerFont(TTFont("Roboto", os.path.join(FONT_DIR, "Roboto-Bold.ttf")))
@@ -169,10 +169,10 @@ pdfmetrics.registerFont(TTFont("Corbel", os.path.join(FONT_DIR, "corbel.ttf")))
 pdfmetrics.registerFont(TTFont("Montserrat", os.path.join(FONT_DIR, "Montserrat-Regular.ttf")))
 
 # ✅ Correct TEMPLATE directory
-TEMPLATE_DIR = r'D:\craw-002\PROJECT\backend\HackersBridge_backend\static\templates'
+TEMPLATE_DIR = r'C:\Users\Administrator\Desktop\CRAW\Batch\backend\HackersBridge_backend\static\templates'
 
 # ✅ Correct OUTPUT directory
-OUTPUT_DIR = r'C:\Users\pc\Downloads\cer'
+OUTPUT_DIR = r'C:\Users\Administrator\Desktop\CRAW\Certificate'
 os.makedirs(OUTPUT_DIR, exist_ok=True)  # Ensure the directory exists
 
 # ✅ Certificate File Naming & Storage
@@ -189,10 +189,11 @@ TEMPLATES = {
     'Cyber Forensics Investigation': "forensics.png",
     'Web Application Security': "webapp.png",
     'Mobile Application Security': "mobileapp.png",
-    'Internet Of Things (IOT) Pentesting': "IOT.png",
+    'Internet of Things Pentesting': "IOT.png",
     'End Point Security': "END-POINT.png",
     'AWS Associate': "AWS-ASSOCIATE.png",
-    'SOC Analyst': "soc-analyst.png",
+    'AWS Security': "AWS-SECURITY.png",
+    'SOC Analyst': "SOC-ANALYST.png",
     'CCNA 200-301': "CCNA-200-301.png",
     'CCNP 350-401': "CCNP-350-401.png",
     'CCNP 350-701': "CCNP-350-701.png",
@@ -201,7 +202,6 @@ TEMPLATES = {
     'Eccouncil WAHS': "WAHS.png",
     'Eccouncil WAHS': "WAHS.png",
     'CRTP': "CRTP.png",
-    'CPENT': "CPENT.png",
     'Red Hat RH358': "RED-HAT-RH358.png",
     'Red Hat Rapid Track': "RED-HAT-Rapid-Track.png",
     'Red Hat Openshift': "RED-HAT-Openshift.png",
@@ -212,13 +212,14 @@ TEMPLATES = {
     'COmpTIA Security +': "COmpTIA-Security-+.png",
     'EJPT': "EJPT.png",
     'Python AI': "Python-AI.png",
-    'PEN-200/OSCP': "pentesting.png",
+    'PEN-200/OSCP': "OSCP.png",
     'PEN-210/OSWA': "OSWA.png",
     'Certified Network Defender': "CND.png",
     'Red Hat OpenStack': "Red-Hat-OpenStack.png",
     'ISO': "ISO-27001.png",
     'Devops': "DEVOPS.png",
 }
+
 
 # ✅ Colors & Fonts
 FONT_COURSE = "Roboto"
@@ -295,8 +296,6 @@ def get_certificate_path(course_name, student_name, enrollment_no):
     sanitized_course = course_name.replace(" ", "_").replace("/", "_")
     filename = f"{sanitized_name}_{sanitized_course}_0.pdf"
     return os.path.join(CERTIFICATE_DIR, filename)
-
-
 
 
 # # ✅ Test Function to Generate All Certificates for One Student

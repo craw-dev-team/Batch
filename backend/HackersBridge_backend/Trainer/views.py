@@ -649,9 +649,16 @@ class TrainerLeaveMail(APIView):
         trainer.leave_status = leave_status
         trainer.leave_end_date = date.today()
         trainer.save(update_fields=["leave_status", "leave_end_date"])
+        today = date.today()
+        iso = today.isocalendar()
+        
+        if 1 <= iso.weekday <= 5:
+            day_type = "Weekdays"
+        else:
+            day_type = "Weekends"
 
-        related_batches = Batch.objects.filter(trainer=trainer, batch_time__in=timeslots, status="Running").select_related("course", "batch_time")
-
+        related_batches = Batch.objects.filter(trainer=trainer, batch_time__in=timeslots, status="Running", preferred_week=day_type).select_related("course", "batch_time")
+        
         if not related_batches.exists():
             return Response({'message': f'No batches found for this trainer in {leave_status.lower()}.'}, status=status.HTTP_200_OK)
 
@@ -757,6 +764,23 @@ class TrainerLeaveMail(APIView):
                 email.content_subtype = "html"
                 email.send(fail_silently=False)
                 sleep_time.sleep(0.1)  # throttle control
+
+                # ✅ Log email notification
+                LogEntry.objects.create(
+                    content_type=ContentType.objects.get_for_model(Trainer),
+                    cid=str(uuid.uuid4()),
+                    object_pk=trainer.id,
+                    object_id=trainer.id,
+                    object_repr=f"Trainer: {trainer.name} (ID: {trainer.id})",
+                    action=LogEntry.Action.CREATE,  # Assuming you have `EMAIL` defined in your Action choices
+                    changes=f"Sent cancellation email for {batch.course.name} on {session_date}",
+                    serialized_data=json.dumps(model_to_dict(batch), default=str),
+                    changes_text=f"Email sent to {len(student_emails)} students for session at {session_time}",
+                    additional_data="Trainer Leave Notification",
+                    actor=request.user,
+                    timestamp=now()
+                )
+
             except Exception as e:
                 return Response({'error': f"Failed to send email for batch {batch.id}: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -887,6 +911,23 @@ class TrainerLongLeaveMail(APIView):
                 email.content_subtype = "html"
                 email.send()
                 sleep_time.sleep(0.1)  # throttling for safety
+
+                # ✅ Log successful email
+                LogEntry.objects.create(
+                    content_type=ContentType.objects.get_for_model(Trainer),
+                    cid=str(uuid.uuid4()),
+                    object_pk=trainer.id,
+                    object_id=trainer.id,
+                    object_repr=f"Trainer: {trainer.name} (ID: {trainer.id})",
+                    action=LogEntry.Action.CREATE,
+                    changes=f"Sent long leave cancellation email for batch {batch.id} - {batch.course.name}",
+                    serialized_data=json.dumps(model_to_dict(batch), default=str),
+                    changes_text=f"Emailed {len(student_emails)} students for batch {batch.id} on leave from {start_date} to {end_date}",
+                    additional_data="Trainer Long Leave Notification",
+                    actor=request.user,
+                    timestamp=now()
+                )
+                
             except Exception as e:
                 return Response({'error': f"Failed to send email for batch {batch.id}: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

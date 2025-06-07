@@ -29,8 +29,8 @@ const Login = () => {
   
         message.success("Login successful");
   
-        if (role === "admin") {
-          navigate("/batches");
+        if (role === "coordinator" || role === "admin") {
+          navigate("/batches");``
         } else if (role === "student") {
           navigate("/student-info");
         } else {

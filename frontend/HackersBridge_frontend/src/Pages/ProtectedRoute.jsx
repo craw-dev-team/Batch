@@ -127,7 +127,7 @@ const PublicRoute = () => {
 
   if (loading) return null;
   
-  if (role === "admin") return <Navigate to="/batches" replace />;
+  if (role === "coordinator" || role === "admin") return <Navigate to="/batches" replace />;
   if (role === "student") return <Navigate to="/student-info" replace />;
 
   return <Outlet />;
@@ -145,7 +145,7 @@ const ProtectedRoute = () => {
 
   if (loading) return null;
 
-  if (!role || role !== "admin") {
+  if (!role || (role !== "admin" && role !== "coordinator")) {
     return <Navigate to="/" replace />;
   }
 

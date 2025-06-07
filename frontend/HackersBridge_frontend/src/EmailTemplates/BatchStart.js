@@ -24,11 +24,13 @@ const BatchStart = (data) => {
 
             <!-- Batch Details Card -->
             <div style="background-color: #f1f1f1; padding: 18px; border-radius: 6px; margin: 20px 0; line-height: 1.6;">
-              <p>🆔 <strong>Batch ID:</strong> ${data?.batch?.batch_id}</p>
+              <p>🆔 <strong>Batch Code:</strong> ${data?.batch?.batch_id}</p>
               <p>📅 <strong>Start Date:</strong> ${data?.batch?.start_date}</p>
-              <p>📆 <strong>End Date:</strong> ${data?.batch?.end_date}</p>
-              <p>⏰ <strong>Timing:</strong> ${to12HourFormat(data?.batch?.batch_time_data?.start_time)} - ${to12HourFormat(data?.batch?.batch_time_data?.end_time)}</p>
-              <p>👨‍🏫 <strong>Trainer:</strong> ${data?.batch.trainer_name}</p><br>
+              <p>🕒 <strong>Timing:</strong> ${to12HourFormat(data?.batch?.batch_time_data?.start_time)} - ${to12HourFormat(data?.batch?.batch_time_data?.end_time)}</p>
+              <p>🖥️ <strong>Mode:</strong> ${data?.batch.mode}</p>
+              <p>📅 <strong>Classes on:</strong> ${data?.batch.preferred_week}</p>
+              <p>👤 <strong>Trainer:</strong> ${data?.batch.trainer_name}</p>
+              <p>🛏️ <strong>Trainer Week off:</strong> ${data?.batch.trainer_weekoff}</p><br>
             </div>
 
             <!-- Additional Info -->

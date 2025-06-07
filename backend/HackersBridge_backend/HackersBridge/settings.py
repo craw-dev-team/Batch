@@ -161,12 +161,11 @@ AUTH_PASSWORD_VALIDATORS = [
 """For Email"""
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'  
-EMAIL_PORT = 587  
+EMAIL_PORT = 587
 EMAIL_USE_TLS = True  
 EMAIL_HOST_USER = 'training@craw.in'  # Your Gmail address
 EMAIL_HOST_PASSWORD = 'fjmi bgyj bjjy emcy'  # Your Gmail App Password  
 DEFAULT_FROM_EMAIL = 'CRAW SECURITY CERTIFICATE <training@craw.in>'
-
 
 
 
@@ -218,8 +217,8 @@ REST_FRAMEWORK = {
 # Optional: Token lifetime
 from datetime import timedelta
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(days=1), # minutes=15
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=30), # minutes=15
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 

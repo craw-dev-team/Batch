@@ -251,6 +251,10 @@ class BatchSerializer(serializers.ModelSerializer):
         rep['batch_location'] = instance.location.locality if instance.location else None
         rep['student_name'] = [s.name for s in instance.student.all()]
 
+        # Trainer weekoff (handled manually)
+        rep['trainer_weekoff'] = instance.trainer.weekoff if hasattr(instance.trainer, 'weekoff') else None
+
+
         # Safely access nested coordinator data
         coordinator = getattr(instance.trainer, 'coordinator', None)
         rep['batch_coordinator_name'] = coordinator.name if coordinator else None
@@ -270,6 +274,7 @@ class BatchSerializer(serializers.ModelSerializer):
             instance.student.set(students)  # Update students list
         return super().update(instance, validated_data)
     
+      
 
 
 class BatchStudentAssignmentSerializer(serializers.ModelSerializer):
@@ -529,10 +534,6 @@ class BatchCreateSerializer(serializers.ModelSerializer):
         if Batch.objects.filter(trainer=trainer, batch_time=batch_time, start_date=start_date, preferred_week=preferred_week).exists():
             raise serializers.ValidationError({"error": "A batch with the same trainer, time, and start date already exists."})
 
-        # # Check if trainer is already assigned to another batch at the same time
-        # if Batch.objects.filter(trainer=trainer, batch_time=batch_time, start_date=start_date).exists():
-        #     raise serializers.ValidationError({"error": "Trainer is already assigned to another batch at this time."})
-
         # Check trainer availability
         if not self.is_trainer_available(trainer, start_date, end_date, batch_time, preferred_week):
             raise serializers.ValidationError({"error": "Trainer is unavailable during this period due to overlapping batches."})
@@ -546,11 +547,24 @@ class BatchCreateSerializer(serializers.ModelSerializer):
         # Calculate end date
         validated_data['end_date'] = self.calculate_end_date(start_date, course_duration, preferred_week)
 
-        # Create batch instance first (without batch_id)
+        # ✅ Generate batch_id before creating the batch
+        batch_id = self.generate_batch_id(course, start_date)
+        validated_data['batch_id'] = batch_id
+
+        # ✅ Now safe to create the batch
         batch = Batch.objects.create(**validated_data)
 
         # Assign students to batch
-        batch.student.set(students)
+        batch.student.set(students)  
+
+        # ✅ Create attendance only once
+        self.create_daily_attendance_records(
+            batch=batch,
+            students=students,
+            start_date=batch.start_date,
+            end_date=batch.end_date,
+            preferred_week=preferred_week
+        )
 
         # Collect StudentCourse updates in bulk
         student_courses_to_update = []
@@ -565,31 +579,11 @@ class BatchCreateSerializer(serializers.ModelSerializer):
                     student_course.status = 'Completed'
                 student_courses_to_update.append(student_course)
 
-        # Activate student if currently inactive
-        student_obj = Student.objects.filter(id=student.id).first()
-        if student_obj and student_obj.status == 'Inactive':
-            student_obj.status = 'Active'
-            student_obj.save(update_fields=['status'])
-
         # Bulk update StudentCourse status
         if student_courses_to_update:
             StudentCourse.objects.bulk_update(student_courses_to_update, ['status'])
 
-        # Generate and assign batch_id
-        batch.batch_id = self.generate_batch_id(course, start_date)
-        batch.save(update_fields=['batch_id', 'end_date'])
-
-        # Create a Student Attendance...
-        self.create_daily_attendance_records(
-                batch=batch,
-                students=students,
-                start_date=batch.start_date,
-                end_date=batch.end_date,
-                preferred_week=preferred_week
-            )
-
         return batch
-
 
     def update(self, instance, validated_data):
         """Update batch details, regenerate batch_id if course changes, and update student statuses."""

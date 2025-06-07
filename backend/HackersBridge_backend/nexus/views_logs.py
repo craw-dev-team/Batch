@@ -88,7 +88,7 @@ class LogEntryListAPIView(ListAPIView):
         
         log_counts = (
             LogEntry.objects
-            .filter(actor__role='admin', timestamp__date=today)
+            .filter(actor__role='coordinator', timestamp__date=today)
             .values('actor__id', 'actor__username', 'actor__first_name')
             .annotate(log_count=Count('id'))
             .order_by('-log_count')

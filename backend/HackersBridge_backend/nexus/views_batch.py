@@ -875,6 +875,10 @@ class GenerateBatchCertificateAPIView(APIView):
             <p style="font-size: 16px; line-height: 1.6;">
                 Your hard work and commitment have paid off, and we are excited to issue your official certificate.
             </p>
+            
+            <p style="font-size: 16px; line-height: 1.6;">
+                Share your achievement on LinkedIn and tag <strong>@Craw Cyber Security</strong> to inspire others! Don’t forget to use <strong>#crawsec</strong> and <strong>#lifeatcraw</strong> 🚀
+            </p>
 
             <div style="background-color: #f1f1f1; padding: 15px; border-radius: 6px; margin: 20px 0;">
                 <p style="font-size: 15px; margin: 6px 0;"><strong>🏷️ Enrollment Number:</strong> {student.enrollment_no}</p>
@@ -1009,6 +1013,7 @@ class BatchAttendanceView(APIView):
         return Response({'attendance': serializer.data}, status=status.HTTP_200_OK)
 
 
+
 # THIS IS FOR SENDING EMAIL AND ALSO SAVE IN DATABASE...
 EMAIL_TYPE_MODEL_MAP = {
     "Welcome": WelcomeEmail,
@@ -1020,15 +1025,22 @@ EMAIL_TYPE_MODEL_MAP = {
     "Exam Announcement": ExamAnnouncementEmail,
     "Custom Template": CustomEmail,
 }
+
+
 class EmailSenderAPIView(APIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [JWTAuthentication]
 
     def post(self, request):
-        if request.user.role not in ['admin', 'Coordinator']:
+        if request.user.role not in ['admin', 'coordinator']:
             return Response({'error': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
 
         email_send_to = request.data.get('email_send_to')
+        email_send_cc = request.data.get('email_send_cc')
+        email_send_bcc = request.data.get('email_send_bcc')
+        print('email_send_to', " = " ,email_send_to)
+        print('email_send_cc', " = ", email_send_cc)
+        print('email_send_bcc', " = ", email_send_bcc)
         email_type = request.data.get('email_type')
         email_subject = request.data.get('email_subject')
         email_html = request.data.get('email_html', '')
@@ -1043,30 +1055,40 @@ class EmailSenderAPIView(APIView):
         subject = f"{email_subject}"
         from_email = "CRAW SECURITY <training@craw.in>"
 
-        errors = []
-        sent_to = []
+        def validate_email_list(emails):
+            if isinstance(emails, list):
+                return emails
+            elif isinstance(emails, str):
+                return [emails]
+            return []
 
-        for item in email_send_to:
+        cc_list = validate_email_list(email_send_cc)
+        bcc_input = validate_email_list(email_send_bcc)
+
+        bcc_list = []
+        sent_to = []
+        errors = []
+
+        for item in bcc_input:
             try:
                 student = None
                 email = None
 
-                # Case 1: Try to interpret as student ID
+                # Check if item is student ID or email
                 try:
                     student_id = int(item)
                     student = Student.objects.filter(id=student_id).first()
                     if student:
                         email = student.email
                 except (ValueError, TypeError):
-                    # Not an integer → treat as email
                     email = item
                     student = Student.objects.filter(email=email).first()
 
                 if not email:
-                    errors.append(f"No valid email for entry: {item}")
+                    errors.append(f"No valid email for BCC entry: {item}")
                     continue
 
-                # Create EmailModel instance
+                # Create email model
                 email_instance = EmailModel.objects.create(
                     email_opened=False,
                     email_send_date=timezone.now(),
@@ -1078,43 +1100,77 @@ class EmailSenderAPIView(APIView):
                     email_instance.student.add(student)
 
                 email_instance.save()
-                sent_to.append(email)
-
-                # Prepare HTML message
-                html_message = f"""
-                <!DOCTYPE html> 
-                <html>
-                <head><meta charset="UTF-8"><title>CRAW SECURITY</title></head>
-                <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0;">
-                    <div style="max-width: 600px; margin: 40px auto; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); overflow: hidden;">
-                        <div style="text-align: center; padding: 20px; border-bottom: 1px solid #ddd;">
-                            <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 60px;">
-                        </div>
-                        <div style="padding: 20px; color: #000;">
-                            {email_html}
-                        </div>
-                        <div style="background-color: #f0f0f0; padding: 18px 20px; text-align: center; font-size: 14px; color: #000; border-top: 1px solid #ddd;">
-                            <p style="margin: 0;">© 2025 <strong>Craw Cyber Security Pvt Ltd</strong>. All Rights Reserved.</p>
-                            <p style="margin: 5px 0 0;">This is an automated message. Please do not reply.</p>
-                        </div>
-                    </div>
-                </body>
-                </html>
-                """
-
-                email_message = EmailMessage(subject, html_message, from_email, [email])
-                email_message.content_subtype = "html"
-                email_message.send()
+                bcc_list.append(email)
 
             except Exception as e:
-                errors.append(f"Failed to process {item}: {str(e)}")
+                errors.append(f"Failed to process BCC entry {item}: {str(e)}")
+
+        # Prepare the HTML email
+        html_message = f"""
+        <!DOCTYPE html> 
+        <html>
+        <head><meta charset="UTF-8"><title>CRAW SECURITY</title></head>
+        <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0;">
+            <div style="max-width: 600px; margin: 40px auto; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); overflow: hidden;">
+                <div style="text-align: center; padding: 20px; border-bottom: 1px solid #ddd;">
+                    <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 60px;">
+                </div>
+                <div style="padding: 20px; color: #000;">
+                    {email_html}
+                </div>
+                <div style="background-color: #f0f0f0; padding: 18px 20px; text-align: center; font-size: 14px; color: #000; border-top: 1px solid #ddd;">
+                    <p style="margin: 0;">© 2025 <strong>Craw Cyber Security Pvt Ltd</strong>. All Rights Reserved.</p>
+                    <p style="margin: 5px 0 0;">This is an automated message. Please do not reply.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        try:
+            email_message = EmailMessage(
+                subject=subject,
+                body=html_message,
+                from_email=from_email,
+                to=email_send_to,  # no processing here
+                cc=cc_list,
+                bcc=bcc_list
+            )
+            email_message.content_subtype = "html"
+            email_message.send()
+            sent_to = email_send_to + bcc_list
+
+            # ✅ Add log after email send
+            LogEntry.objects.create(
+                content_type=ContentType.objects.get_for_model(EmailModel),
+                cid=str(uuid.uuid4()),
+                object_pk=str(uuid.uuid4()),  # No specific model instance; using UUID
+                object_id=None,
+                object_repr=f"Email: {subject}",
+                action=LogEntry.Action.CREATE,
+                changes=f"Email sent to: {', '.join(email_send_to)}",
+                serialized_data=json.dumps({
+                    "subject": subject,
+                    "to": email_send_to,
+                    "cc": cc_list,
+                    "bcc": bcc_list,
+                    "email_type": email_type,
+                    "by": request.user.username
+                }, default=str),
+                changes_text=f"{request.user.username} sent an email to {', '.join(email_send_to)} with subject '{subject}'.",
+                additional_data="Email",
+                actor=request.user,
+                timestamp=now()
+            )
+
+
+        except Exception as e:
+            errors.append(f"Failed to send email: {str(e)}")
 
         return Response({
             "message": "Email processing complete.",
             "sent_to": sent_to,
             "errors": errors
         }, status=status.HTTP_200_OK)
-
-
 
 

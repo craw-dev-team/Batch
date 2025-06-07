@@ -62,6 +62,22 @@ class AnnouncementCreateAPIView(APIView):
         serializer = AnnouncementCreateSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             announcement = serializer.save()
+
+            # ✅ Log entry
+            LogEntry.objects.create(
+                content_type=ContentType.objects.get_for_model(announcement),
+                cid=str(uuid.uuid4()),
+                object_pk=str(announcement.id),
+                object_id=announcement.id,
+                object_repr=f"Announcement Subject: {announcement.subject}",
+                action=LogEntry.Action.CREATE,
+                changes=f"Created Announcement by {request.user.username}",
+                serialized_data=json.dumps(model_to_dict(announcement), default=str),
+                changes_text=f"Announcement created with subject '{announcement.subject}' and Text '{announcement.text}'",
+                additional_data="Announcement",
+                actor=request.user,
+                timestamp=now()
+            )
             return Response({'message': 'Announcement created successfully'}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     

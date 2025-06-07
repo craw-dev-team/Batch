@@ -37,7 +37,7 @@ const SpecificCoordinatorPage = () => {
                 fetchSpecificCoordinatorStudents(originalCoordinatorId);
                 fetchSpecificCoordinatorTrainers(originalCoordinatorId);
             } catch (error) {
-                console.error("Error decoding Coordinator ID", error);
+                // console.error("Error decoding Coordinator ID", error);
             }
         }
     },[coordinatorId]);
