@@ -7,6 +7,7 @@ from rest_framework.authtoken.models import Token
 from nexus.models import Course, Book
 from datetime import date
 from functools import lru_cache
+from django.utils import timezone
 
 User = get_user_model()  # ✅ Dynamically fetch the User model
 
@@ -400,7 +401,6 @@ class StudentCourseSerializer(serializers.ModelSerializer):
 
 
 
-
 class StudentBookAllotmentSerializer(serializers.ModelSerializer):
     Book = serializers.BooleanField()
 
@@ -413,19 +413,17 @@ class StudentBookAllotmentSerializer(serializers.ModelSerializer):
         student_course = self.context['student_course']
         student = student_course.student
         course = student_course.course
+        old_book_issued = self.context['old_book_status']
 
         if book_flag:
-            # ✅ Allot book(s)
             books = Book.objects.filter(course=course, status='Available', stock__gt=0)
             if not books.exists():
                 raise serializers.ValidationError({'book': 'No available books for this course.'})
             attrs['books'] = books
         else:
-            # ✅ Remove book(s) for this course only
             allotments = BookAllotment.objects.filter(student=student, book__course=course)
-            if not allotments.exists():
-                return attrs
-            attrs['allotments'] = allotments
+            if allotments.exists():
+                attrs['allotments'] = allotments
 
         return attrs
 
@@ -434,6 +432,7 @@ class StudentBookAllotmentSerializer(serializers.ModelSerializer):
         student = student_course.student
         user = self.context['request'].user
         book_flag = self.validated_data['Book']
+        old_book_issued = self.context['old_book_status']
 
         if book_flag:
             books = self.validated_data['books']
@@ -441,38 +440,120 @@ class StudentBookAllotmentSerializer(serializers.ModelSerializer):
             book_allotment.book.set(books)
             book_allotment.student.add(student)
 
-            # Decrease stock and update status
-            for book in books:
-                book.stock -= 1
-                if book.stock <= 0:
-                    book.status = 'Not'
-                book.save(update_fields=['stock', 'status'])
-
+            # ✅ Always update this flag
             student_course.student_book_allotment = True
             student_course.save(update_fields=['student_book_allotment'])
+
+            # ✅ If it's NOT old allotment → reduce stock
+            if not old_book_issued:
+                for book in books:
+                    book.stock -= 1
+                    if book.stock <= 0:
+                        book.status = 'Not'
+                    book.save(update_fields=['stock', 'status'])
 
             return book_allotment
 
         else:
-            # Remove only books from this course
+            # Handle book removal
             allotments = self.validated_data.get('allotments', [])
             removed_books = []
+            removed_book_objs = []
 
-            for allotment in allotments:
-                if student in allotment.student.all():
-                    books = allotment.book.filter(course=student_course.course)
-                    for book in books:
-                        book.stock += 1
-                        book.status = 'Available'
-                        book.save(update_fields=['stock', 'status'])
-                        removed_books.append(book.name)
-                    allotment.book.remove(*books)
-                    if allotment.book.count() == 0:
-                        allotment.delete()
-                    else:
-                        allotment.student.remove(student)
+            for allot in allotments:
+                books_in_allot = list(allot.book.all())
+                removed_books.extend([book.name for book in books_in_allot])
+                removed_book_objs.extend(books_in_allot)
+                allot.delete()
 
+            # Update student course allotment flag
             student_course.student_book_allotment = False
             student_course.save(update_fields=['student_book_allotment'])
 
+            # ✅ If it's NOT old allotment → restore stock
+            if not old_book_issued:
+                for book in removed_book_objs:
+                    book.stock += 1
+                    if book.stock > 0:
+                        book.status = 'Available'
+                    book.save(update_fields=['stock', 'status'])
+
             return {'removed_books': removed_books}
+
+
+# class StudentBookAllotmentSerialssizer(serializers.ModelSerializer):
+#     Book = serializers.BooleanField()
+
+#     class Meta:
+#         model = StudentCourse
+#         fields = ['Book']
+
+#     def validate(self, attrs):
+#         book_flag = attrs.get('Book')
+#         student_course = self.context['student_course']
+#         student = student_course.student
+#         course = student_course.course
+
+#         if book_flag:
+#             # ✅ Allot book(s)
+#             books = Book.objects.filter(course=course, status='Available', stock__gt=0)
+#             if not books.exists():
+#                 raise serializers.ValidationError({'book': 'No available books for this course.'})
+#             attrs['books'] = books
+#         else:
+#             # ✅ Remove book(s) for this course only
+#             allotments = BookAllotment.objects.filter(student=student, book__course=course)
+#             if not allotments.exists():
+#                 return attrs
+#             attrs['allotments'] = allotments
+
+#         return attrs
+
+#     def save(self, **kwargs):
+#         student_course = self.context['student_course']
+#         student = student_course.student
+#         user = self.context['request'].user
+#         book_flag = self.validated_data['Book']
+
+#         if book_flag:
+#             books = self.validated_data['books']
+#             book_allotment = BookAllotment.objects.create(allot_by=user)
+#             book_allotment.book.set(books)
+#             book_allotment.student.add(student)
+
+#             # Decrease stock and update status
+#             for book in books:
+#                 book.stock -= 1
+#                 if book.stock <= 0:
+#                     book.status = 'Not'
+#                 book.save(update_fields=['stock', 'status'])
+
+#             student_course.student_book_allotment = True
+#             student_course.save(update_fields=['student_book_allotment'])
+
+#             return book_allotment
+
+#         else:
+#             # Remove only books from this course
+#             allotments = self.validated_data.get('allotments', [])
+#             removed_books = []
+
+#             for allotment in allotments:
+#                 if student in allotment.student.all():
+#                     books = allotment.book.filter(course=student_course.course)
+#                     for book in books:
+#                         book.stock += 1
+#                         book.status = 'Available'
+#                         book.save(update_fields=['stock', 'status'])
+#                         removed_books.append(book.name)
+#                     allotment.book.remove(*books)
+#                     if allotment.book.count() == 0:
+#                         allotment.delete()
+#                     else:
+#                         allotment.student.remove(student)
+
+#             student_course.student_book_allotment = False
+#             student_course.save(update_fields=['student_book_allotment'])
+
+#             return {'removed_books': removed_books}
+

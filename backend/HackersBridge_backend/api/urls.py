@@ -92,13 +92,22 @@ urlpatterns = [
     # path('batch-complition/<int:id>/', BatchCompletedEmail.as_view(), name='batch-complition-email'),
     # path('batch-start/<int:id>/', BatchAddStudentMailAPIView.as_view(), name='batch-start-email'),
     # path('batch-suspend/<int:id>/', BatchCancelTodayAPIView.as_view(), name='batch-hold-email'),
-    # path('ticket/', TicketAPIView.as_view(), name='ticket'),
-    # path('ticket/status/', TicketStatusUpdate.as_view(), name='ticket-status'),
+
+    path('ticket/', TicketAPIView.as_view(), name='ticket'),
+    path('ticket/message/<int:id>/', TicketChatMessageAPIView.as_view(), name='ticket-message'),
+    path('ticket/status/<int:id>/', TicketStatusUpdate.as_view(), name='ticket-status'),
+    path('ticket/chat/<int:id>/', TicketChatAPIView.as_view(), name='ticket-chat'),
 
     path('books/', BookListAPIView.as_view(), name='book-list'),
     path('books/add/', BookCreateAPIView.as_view(), name='book-add'),
     path('books/edit/<int:id>/', BookUpdateAPIView.as_view(), name='book-edit'),
     path('books/delete/<int:id>/', BookDeleteAPIView.as_view(), name='book-delete'),
+    # path('books/count/', BookTakeByCountAPIView.as_view(), name='book-delete'),
+    # path('books/student/', BookTakeByStudentListAPIView.as_view(), name='book-delete'),
+    path('books/students/', BookTakeByAllDataAPIView.as_view(), name='book-student'),
+    path('books/students/on_date/', BookIssueFilterAPIView.as_view(), name='book-filter-student'),
+    path('books/info/<int:id>/', BookInfoAPIView.as_view(), name='book-info'),
+    path('student/old_book/<int:id>/', StudentOldBookAllotmentAPIView.as_view(), name='student-book-allotment'),
     path('student/book/<int:id>/', StudentBookAllotmentAPIView.as_view(), name='student-book-allotment'),
     path('course/info/<int:id>/', CourseinfoAPIView.as_view(), name='course-take'),
     path('course/take-edit/<int:course_id>/', CourseTakebyEdit.as_view(), name='course-take-edit'),
@@ -112,6 +121,9 @@ urlpatterns = [
     path('announcement/delete/<int:id>/', AnnouncementDeleteAPIView.as_view(), name='announcement-edit'),
 
     path('emailsender/', EmailSenderAPIView.as_view(), name='email-sender'),
+
+    # path('allbatchchats/', BatchChatsTesting.as_view(), name='email-sender'),
+    # path('batch/chats/<int:id>/', BatchChatMessageAPIView.as_view(), name='batch-chat-message')
 ]
 
 

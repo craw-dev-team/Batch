@@ -274,7 +274,6 @@ class BatchSerializer(serializers.ModelSerializer):
             instance.student.set(students)  # Update students list
         return super().update(instance, validated_data)
     
-      
 
 
 class BatchStudentAssignmentSerializer(serializers.ModelSerializer):
@@ -454,6 +453,7 @@ class BatchCreateSerializer(serializers.ModelSerializer):
             new_sequence = 1
 
         return f"CRAW-{course_code}{start_year:02d}{new_sequence:03d}"
+    
 
     # THIS FUNCTION IS CREATED FOR CALCULATE BATCH END-DATE....
     def calculate_end_date(self, start_date, course_duration, preferred_week):
@@ -584,6 +584,7 @@ class BatchCreateSerializer(serializers.ModelSerializer):
             StudentCourse.objects.bulk_update(student_courses_to_update, ['status'])
 
         return batch
+
 
     def update(self, instance, validated_data):
         """Update batch details, regenerate batch_id if course changes, and update student statuses."""
@@ -820,7 +821,7 @@ class AnnouncementCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         request = self.context['request']
         send_to = validated_data.pop('Send_to', [])
-        print(send_to)
+        # print(send_to)
         students, trainers, batches = self._resolve_recipients(send_to)
 
         announcement = Announcement.objects.create(
@@ -855,3 +856,6 @@ class AnnouncementCreateSerializer(serializers.ModelSerializer):
             instance.save()
 
         return instance
+
+
+ 

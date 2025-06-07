@@ -7,6 +7,7 @@ import datetime
 import random
 import string
 
+
 class CustomUser(AbstractUser):
     ROLE_CHOICES = [
         ('admin', 'Admin'),
@@ -237,7 +238,7 @@ class StudentBatchRequest(models.Model):
     REQUEST_BATCH_CHOICES = [
         ('Pending', 'Pending'),
         ('Approved', 'Approved'),
-        ('Cancelled', 'Cancelled'),
+        ('Rejected', 'Rejected'),
     ]
 
     student = models.ForeignKey('Student.Student', on_delete=models.CASCADE)
@@ -245,11 +246,12 @@ class StudentBatchRequest(models.Model):
     request_type = models.CharField(max_length=50, default='Batch Request')
     request_status = models.CharField(max_length=50, choices=REQUEST_BATCH_CHOICES, default='Pending')
 
-    def __str__(self):
-        return f"{self.student} - {self.batch} - {self.batch_request}"
-    
+    def __str__(self):      
+        return f"{self.student} - {self.batch}"
 
 
+
+{
 # class Ticket(models.Model):
 #     STATUS_CHOICES = [
 #         ('Open', 'Open'),
@@ -315,17 +317,19 @@ class StudentBatchRequest(models.Model):
 #     def __str__(self):
 #         return f"{self.ticket.student.enrollment_no} - {self.sender} - {self.gen_time}"
 
+}
+
+
 
 class Ticket(models.Model):
-
     STATUS_CHOICES = [
-        ('Raise', 'Raise'),
         ('Open', 'Open'),
-        ('Ongoing', 'Ongoing'),
+        ('Answered', 'Answered'),
+        ('Customer-Reply', 'Customer-Reply'),
         ('Closed', 'Closed'),
     ]
 
-    ISSUE_TYPE = [
+    ISSUE_TYPE_CHOICES = [
         ('Book', 'Book'),
         ('Batch', 'Batch'),
         ('Certificate', 'Certificate'),
@@ -336,14 +340,22 @@ class Ticket(models.Model):
         ('Other', 'Other')
     ]
 
+    PRIORITY_CHOICES = [
+        ('High', 'High'),
+        ('Medium', 'Medium'),
+        ('Low', 'Low')
+    ]
+
     student = models.ForeignKey('Student.Student', on_delete=models.CASCADE, related_name='tickets')
     title = models.CharField(max_length=255)
     ticket_id = models.CharField(max_length=5, unique=True, editable=False, blank=True)
-    issue_type = models.CharField(max_length=50, choices=ISSUE_TYPE, default='Other')
+    issue_type = models.CharField(max_length=50, choices=ISSUE_TYPE_CHOICES, default='Other')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Raise')
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='Low')
+    assigned_to = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
+    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return f"{self.student.enrollment_no} - {self.issue_type} - {self.title} - {self.status}"
@@ -358,7 +370,6 @@ class Ticket(models.Model):
             random_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
             if not Ticket.objects.filter(ticket_id=random_id).exists():
                 return random_id
-
 
 
 class TicketChat(models.Model):
@@ -404,7 +415,6 @@ class Announcement(models.Model):
 
     def __str__(self):
         return f"{self.subject} - created by {self.created_by}"
-
 
 
 class WelcomeEmail(models.Model):
@@ -509,3 +519,49 @@ class CustomEmail(models.Model):
 
     def __str__(self):
         return f"{self.email_subject} - Send by {self.send_by}"
+
+
+{
+
+# class Chats(models.Model):
+#     batch = models.ForeignKey('Batch', on_delete=models.CASCADE)
+#     message = models.TextField(null=True, blank=True)
+#     gen_time = models.DateTimeField(default=timezone.now)
+
+#     # Generic sender field (could be Student, Trainer, or Coordinator)
+#     sender_content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+#     sender_object_id = models.PositiveIntegerField()
+#     sender = GenericForeignKey('sender_content_type', 'sender_object_id')
+
+#     def __str__(self):
+#         return f"{self.sender} - {self.message[:30]}"
+
+}
+
+
+
+class Chats(models.Model):
+    batch = models.ForeignKey(Batch, on_delete=models.CASCADE, related_name='chats')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Chat - Batch: {self.batch.name}"
+
+
+class ChatMessage(models.Model):
+    SENDER_CHOICES = [
+        ('student', 'student'),
+        ('trainer', 'trainer'),
+        ('coordinator', 'coordinator'),
+        ('admin', 'admin'),
+    ]
+
+    chat = models.ForeignKey(Chats, on_delete=models.CASCADE, related_name='messages')
+    sender = models.CharField(max_length=20, choices=SENDER_CHOICES)
+    send_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='sent_messages')
+    message = models.TextField()
+    gen_time = models.DateTimeField(default=timezone.now)
+    
+    def __str__(self):
+        sender_name = self.send_by.name if self.send_by else "Unknown"
+        return f"{sender_name} - {self.sender} - {self.gen_time.strftime('%Y-%m-%d %H:%M:%S')}"

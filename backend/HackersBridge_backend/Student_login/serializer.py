@@ -6,7 +6,7 @@ from django.utils.crypto import get_random_string
 from django.contrib.auth import authenticate, get_user_model
 from rest_framework.authtoken.models import Token
 from rest_framework_simplejwt.tokens import RefreshToken
-from nexus.models import Course, Book, Ticket
+from nexus.models import Course, Book, Ticket, TicketChat
 from datetime import date
 from functools import lru_cache
 from django.db.models import Q
@@ -14,30 +14,15 @@ from django.db.models import Q
 
 User = get_user_model()  # ✅ Dynamically fetch the User model
 
-
-# # **User Login Serializer**
-# class StudentLoginSerializer(serializers.Serializer):
-#     username = serializers.CharField()
-#     password = serializers.CharField(write_only=True)
-
-#     def validate(self, data):
-#         username = data.get('username')
-#         password = data.get('password')
-
-#         user = authenticate(username=username, password=password)
-#         if not user:
-#             raise serializers.ValidationError("Invalid username or password")
-
-#         # Check if it's the first login
-#         if user.first_login:
-#             return {'user': user}
-#         return {'user': user}
+class TicketChatSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TicketChat
+        fields = '__all__'
 
 
+class TicketSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Ticket
+        fields = '__all__'
 
-# class StudentTicketSerializer(serializers.Serializer):
-#     class meta:
-#         model = Ticket
-#         fields = '__all__'
-    
 

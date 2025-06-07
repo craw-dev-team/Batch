@@ -24,7 +24,9 @@ class Student(models.Model):
     ]
     STATUS = [
         ('Active','Active'),
-        ('Inactive','Inactive')
+        ('Inactive','Inactive'),
+        ('Temp Block','Temp Block'),
+        ('Restricted','Restricted'),
     ]
 
     # student_id = models.CharField(max_length=15, unique=True)
@@ -134,6 +136,7 @@ class StudentCourse(models.Model):  # ✅ Through Model
     certificate_issued_at = models.DateTimeField(null=True, blank=True)
     student_certificate_allotment = models.BooleanField(null=True, blank=True, default=False)
     student_book_allotment = models.BooleanField(null=True, blank=True, default=False)
+    student_old_book_allotment = models.BooleanField(null=True, blank=True, default=False)
     # create_by = models.CharField(max_length=100, null=True, blank=True) 
  
     class Meta:

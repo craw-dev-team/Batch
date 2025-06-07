@@ -50,10 +50,42 @@ class AnnouncementListView(APIView):
 
 
 # This is for Create a new announcement.....
+# class AnnouncementCreateAPIView(APIView):
+#     authentication_classes = [JWTAuthentication]
+#     permission_classes = [IsAuthenticated]
+#     parser_classes = [JSONParser, MultiPartParser, FormParser]  # Add JSONParser
+
+#     def post(self, request):
+#         if request.user.role not in ['admin', 'coordinator']:
+#             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+        
+#         serializer = AnnouncementCreateSerializer(data=request.data, context={'request': request})
+#         if serializer.is_valid():
+#             announcement = serializer.save()
+
+#             # ✅ Log entry
+#             LogEntry.objects.create(
+#                 content_type=ContentType.objects.get_for_model(announcement),
+#                 cid=str(uuid.uuid4()),
+#                 object_pk=str(announcement.id),
+#                 object_id=announcement.id,
+#                 object_repr=f"Announcement Title: {announcement.title}",
+#                 action=LogEntry.Action.CREATE,
+#                 changes=f"Created Announcement by {request.user.username}",
+#                 serialized_data=json.dumps(model_to_dict(announcement), default=str),
+#                 changes_text=f"Announcement created with title '{announcement.title}'",
+#                 additional_data="Announcement",
+#                 actor=request.user,
+#                 timestamp=now()
+#             )
+
+#             return Response({'message': 'Announcement created successfully'}, status=status.HTTP_200_OK)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
 class AnnouncementCreateAPIView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
-    parser_classes = [JSONParser, MultiPartParser, FormParser]  # Add JSONParser
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
 
     def post(self, request):
         if request.user.role not in ['admin', 'coordinator']:
@@ -62,6 +94,7 @@ class AnnouncementCreateAPIView(APIView):
         serializer = AnnouncementCreateSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             announcement = serializer.save()
+            # print(announcement.ti)
 
             # ✅ Log entry
             LogEntry.objects.create(
@@ -78,10 +111,10 @@ class AnnouncementCreateAPIView(APIView):
                 actor=request.user,
                 timestamp=now()
             )
-            return Response({'message': 'Announcement created successfully'}, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
 
+            return Response({'message': 'Announcement created successfully'}, status=status.HTTP_200_OK)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 # This is for Edit the announcement......
@@ -121,6 +154,26 @@ class AnnouncementDeleteAPIView(APIView):
                             status=status.HTTP_403_FORBIDDEN)
 
         announcement = get_object_or_404(Announcement, id=id)
+
+        # Capture announcement data before deletion
+        serialized_announcement = model_to_dict(announcement)
+
+        # Log the deletion
+        LogEntry.objects.create(
+            content_type=ContentType.objects.get_for_model(announcement),
+            cid=str(uuid.uuid4()),
+            object_pk=str(announcement.id),
+            object_id=announcement.id,
+            object_repr=f"Announcement Subject: {announcement.subject}",
+            action=LogEntry.Action.DELETE,  # Corrected action
+            changes=f"Deleted Announcement by {request.user.username}",
+            serialized_data=json.dumps(serialized_announcement, default=str),
+            changes_text=f"Announcement with subject '{announcement.subject}' and text '{announcement.text}' was deleted",
+            additional_data="Announcement",
+            actor=request.user,
+            timestamp=now()
+        )
+
         announcement.delete()
 
         return Response({'message': 'Announcement deleted successfully.'},

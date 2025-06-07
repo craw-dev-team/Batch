@@ -8,14 +8,15 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
-# from .serializer import StudentLoginSerializer
+from .serializer import TicketChatSerializer, TicketSerializer
 from Student.serializer import StudentSerializer
 from nexus.serializer import BatchSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.authtoken.models import Token
-from Student.models import Student, StudentCourse, StudentNotes
-from nexus.models import Batch, Attendance, StudentBatchRequest, Announcement, Ticket, TicketChat
+from Student.models import Student, StudentCourse, StudentNotes, BookAllotment
+from nexus.models import Batch, Attendance, StudentBatchRequest, Announcement, Ticket, TicketChat, Book, Chats, ChatMessage
+from Coordinator.models import Coordinator
 from django.db.models import Q
 from django.contrib.auth import authenticate, get_user_model
 from rest_framework.exceptions import AuthenticationFailed
@@ -170,6 +171,7 @@ class StudentMeView(APIView):
 
 
 
+
 class StudentInfoView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -182,21 +184,20 @@ class StudentInfoView(APIView):
         user_name = request.user.username
 
         try:
-            student = Student.objects.get(Q(enrollment_no=user_name) | Q(email=user_email))
+            student = Student.objects.select_related('course_counsellor', 'support_coordinator').get(
+                Q(enrollment_no=user_name) | Q(email=user_email)
+            )
         except Student.DoesNotExist:
             return Response({'error': 'Student not found.'}, status=status.HTTP_404_NOT_FOUND)
 
         def mask_phone(phone):
-            if phone and len(phone) >= 4:
-                return phone[:5] + 'X' * (len(phone) - 4)
-            return phone
+            return phone[:5] + 'X' * (len(phone) - 4) if phone and len(phone) >= 4 else phone
 
         def mask_email(email):
             if email and '@' in email:
                 name, domain = email.split('@', 1)
-                return name[:5] + 'X' * (len(name) - 5) + '@' + domain
+                return name[:5] + 'X' * (len(name) - 5) + '@' + domain if len(name) > 5 else 'XXXXX@' + domain
             return email
-
 
         student_info = {
             'id': student.id,
@@ -208,31 +209,34 @@ class StudentInfoView(APIView):
             'mode': student.mode,
             'preferred_week': student.preferred_week,
             'language': student.language,
-            'course_counsellor': student.course_counsellor.name,
-            'support_coordinator': student.support_coordinator.name,
+            'course_counsellor': student.course_counsellor.name if student.course_counsellor else None,
+            'support_coordinator': student.support_coordinator.name if student.support_coordinator else None,
             'address': student.address,
         }
 
         student_courses = StudentCourse.objects.filter(student=student).select_related('course')
 
-        student_course_list = [
-            {
+        student_course_list = []
+        for course in student_courses:
+            # Fetch book allotment date (if any)
+            book_allotment = BookAllotment.objects.filter(student=student, book__course=course.course).first()
+            book_date = book_allotment.allotment_datetime if book_allotment else None
+
+            student_course_list.append({
                 'id': course.id,
                 'course_name': course.course.name if course.course else None,
                 'course_status': course.status,
                 'student_book_allotment': course.student_book_allotment,
+                'student_book_date': book_date,
                 'course_certificate_date': course.certificate_date,
                 'certificate_issued_at': course.certificate_issued_at,
                 'course_taken': Batch.objects.filter(student=student, course=course.course).count() if course.course else 0,
-            }
-            for course in student_courses
-        ]
+            })
 
         return Response({
             'studentinfo': student_info,
             'studentcourse': student_course_list
         }, status=status.HTTP_200_OK)
-    
 
 {
 # class StudentBatchListView(APIView):
@@ -387,6 +391,7 @@ class StudentBatchInfoView(APIView):
                         'trainer__name',
                         'trainer__weekoff',
                         'trainer__status',
+                        'batch_link',
                     ]
 
         batch_data = Batch.objects.filter(id=id).values(*batch_fields)
@@ -396,6 +401,35 @@ class StudentBatchInfoView(APIView):
         today = date.today() 
 
         student_attendance = Attendance.objects.filter(student=student, batch_id = id).values('id', 'date', 'attendance')
+        student_certificate = StudentCourse.objects.filter(student=student, course=batch.course).select_related('course')
+
+        certificates = []
+
+        for sc in student_certificate:
+            file_path = get_certificate_path(sc.course.name, sc.student.name, sc.student.enrollment_no)
+
+            if os.path.exists(file_path):
+                with open(file_path, "rb") as f:
+                    base64_pdf = base64.b64encode(f.read()).decode("utf-8")
+
+                download_url = request.build_absolute_uri(
+                    reverse('student_certificate_download', kwargs={'course_id': sc.course.id})
+                )
+
+                certificates.append({
+                    'course_name': sc.course.name,
+                    'certificate_available': True,
+                    'certificate_date': sc.certificate_date,
+                    'pdf_base64': base64_pdf,
+                    'download_url': download_url,
+                    'message': 'Certificate'
+                })
+            else:
+                certificates.append({
+                    'course_name': sc.course.name,
+                    'certificate_available': False,
+                    'message': 'Certificate not generated yet.'
+                })
 
         # Percentage DATA on  Attendance...
         total_count = student_attendance.count()
@@ -409,7 +443,8 @@ class StudentBatchInfoView(APIView):
                          'total_absent':absent_count,
                          'total_present':present_count,
                          'total_days':total_count,
-                         'overall_percentage':overall_percentage
+                         'overall_percentage':overall_percentage,
+                         'certificate':certificates
                          }, status=status.HTTP_200_OK)
 
 
@@ -445,6 +480,14 @@ class BatchCertificateDownloadView(APIView):
         else:
             return Response({'error': 'Certificate file not found'}, status=status.HTTP_404_NOT_FOUND)
 
+
+
+# class  BatchAttencdancerequest(APIView):
+#     authentication_classes = [JWTAuthentication]
+#     permission_classes = [IsAuthenticated]
+
+#     def get(self, request, id):
+#         if 
 
 
 {
@@ -894,7 +937,7 @@ class StudentAttendanceListView(APIView):
 #             return Response({'message': 'Student is not eligible or already enrolled in this batch.'}, status=status.HTTP_404_NOT_FOUND)
 }
 
-        
+# This is for Creating Batch Request..
 class StudentBatchRequestAPI(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -989,15 +1032,11 @@ class StudentAnnouncementAPIView(APIView):
         if not student:
             return Response({'error': 'Student not found'}, status=status.HTTP_404_NOT_FOUND)
         
-        All_Announcement = Announcement.objects.all().values('subject', 
-                                                                'text', 
-                                                                'file', 
-                                                                'batch__batch_id', 
-                                                                'student', 
-                                                                'created_by', 
-                                                                'announcement_type',
-                                                                'gen_time'
-                                                                )
+        All_Announcement = Announcement.objects.filter(student=student).values(
+                                                                                'subject',
+                                                                                'text',
+                                                                                'gen_time'
+                                                                                )
 
         return Response({'All_Announcement' : All_Announcement}, status=status.HTTP_200_OK)
 
@@ -1081,23 +1120,35 @@ class StudentTicketCreateAPIView(APIView):
         user_name = request.user.username
         user_role = request.user.role
 
+        # Get the student
         student = Student.objects.filter(Q(enrollment_no=user_name) | Q(email=user_email)).first()
         if not student:
             return Response({'error': 'Student not found'}, status=status.HTTP_403_FORBIDDEN)
 
+        # Extract ticket fields
         title = request.data.get('title')
         issue_type = request.data.get('issue_type')
         message = request.data.get('message')
+        priority = request.data.get('priority', 'Medium')  # default priority if not provided
 
         if not title or not issue_type or not message:
             return Response({'error': 'Title, issue_type, and message are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Get the assigned coordinator (User) based on student.support_coordinator
+        coordinator = getattr(student, 'support_coordinator', None)
+        assigned_user = None
+        if coordinator and coordinator.email:
+            assigned_user = User.objects.filter(email=coordinator.email).first()
+            print(assigned_user.id)
 
         # Create ticket
         ticket = Ticket.objects.create(
             student=student,
             title=title,
             issue_type=issue_type,
-            status='Raise'
+            priority=priority,
+            status='Open',
+            assigned_to=assigned_user
         )
 
         # Add initial chat message
@@ -1110,15 +1161,299 @@ class StudentTicketCreateAPIView(APIView):
         return Response({
             'success': True,
             'ticket_id': ticket.id,
-            'title': ticket.title,
+            'ticket_ref': ticket.ticket_id,
+            'title': ticket. title,
             'issue_type': ticket.issue_type,
+            'priority': ticket.priority,
             'status': ticket.status
         }, status=status.HTTP_201_CREATED)
+
     
 
+# This is for Geting Chats in Ticket
 class StudentTicketChatAPIView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
+    def get(self, request, id):
+        if request.user.role != 'student':
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        try:
+            ticket = Ticket.objects.get(id=id)
+
+        except Ticket.DoesNotExist:
+            return Response({'error': 'Ticket not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        chats = TicketChat.objects.filter(ticket=ticket)
+        
+
+        for chat in chats:
+            if chat.sender in ['admin', 'coordinator']:
+                chat.message_status = 'Open'
+                chat.save()
+
+        chat_serializer = TicketChatSerializer(chats, many=True)
+        ticket_serializer = TicketSerializer(ticket)
+
+        return Response({
+            'all_message': chat_serializer.data,
+            'ticket_info': ticket_serializer.data
+        }, status=status.HTTP_200_OK)
+    
+
+
+
+class StudentTicketChatMessageAPIView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
     def post(self, request, id):
-        return Response("Hello")
+        if request.user.role != 'student':
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
+        message = request.data.get('message')
+        if not message:
+            return Response({'error': 'Message is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        ticket = get_object_or_404(Ticket, id=id)
+        user_email = request.user.email
+        user_name = request.user.username
+
+        student = Student.objects.filter(Q(enrollment_no=user_name) | Q(email=user_email)).first()
+
+        # Optional: Make sure the ticket belongs to the logged-in student
+        if ticket.student != student:
+            return Response({'error': 'This ticket does not belong to you.'}, status=status.HTTP_403_FORBIDDEN)
+
+        # Update ticket status based on current state
+        if ticket.status == 'Answered':
+            ticket.status = 'Customer-Reply'
+            ticket.save()
+        elif ticket.status == 'Closed':
+            ticket.status = 'Open'
+            ticket.save()
+
+        # Create the chat message
+        chat = TicketChat.objects.create(
+            ticket=ticket,
+            sender=request.user.role,
+            message=message
+        )
+
+        serializer = TicketChatSerializer(chat)
+
+        return Response({
+            'success': True,
+            'ticket_id': ticket.id,
+            'ticket_title': ticket.title,
+            'issue_type': ticket.issue_type,
+            'ticket_status': ticket.status,
+            'message_info': serializer.data
+        }, status=status.HTTP_201_CREATED)
+
+
+
+
+class StudentTicketstatus(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id):
+        if request.user.role != 'student':
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
+        update_status = 'Closed'
+        
+        if not update_status:
+            return Response({'error': 'Missing update_status in request'}, status=status.HTTP_400_BAD_REQUEST)
+
+        ticket = get_object_or_404(Ticket, id=id)
+        user_email = request.user.email
+        user_name = request.user.username
+
+        student = Student.objects.filter(Q(enrollment_no=user_name) | Q(email=user_email)).first()
+        # Optionally: Check if the ticket belongs to the student making the request
+        if ticket.student != student:
+            return Response({'error': 'You do not have permission to update this ticket.'}, status=status.HTTP_403_FORBIDDEN)
+
+        ticket.status = update_status
+        ticket.save()
+
+        return Response({'message': 'Status updated successfully.'}, status=status.HTTP_200_OK)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class StudentALLBatchChatsAPIViews(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role != 'student':
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
+        # Get student based on enrollment number or email
+        student = Student.objects.filter(
+            Q(enrollment_no=request.user.username) | Q(email=request.user.email)
+        ).first()
+
+        if not student:
+            return Response({'error': 'Student not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Get all batches the student is part of (adjust if using a through model)
+        batches = Batch.objects.filter(student=student)
+
+        if not batches.exists():
+            return Response({'error': 'No batches found for student'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Get Chats related to these batches and return only batch ID and code
+        chats = Chats.objects.filter(batch__in=batches).select_related('batch')
+
+        batch_list = [
+            {
+                'batch_id': chat.batch.id,
+                'batch_code': chat.batch.batch_id
+            }
+            for chat in chats
+        ]
+
+        return Response({'all_batch_chats': batch_list}, status=status.HTTP_200_OK)
+
+
+
+
+# from rest_framework.views import APIView
+# from rest_framework.response import Response
+# from rest_framework.permissions import IsAuthenticated
+# from rest_framework import status
+# from django.db.models import Q
+
+class StudentBatchChatsMessage(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, id):
+        if request.user.role != 'student':
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
+        # Identify the student
+        student = Student.objects.filter(
+            Q(enrollment_no=request.user.username) | Q(email=request.user.email)
+        ).first()
+
+        if not student:
+            return Response({'error': 'Student not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Ensure batch is assigned to this student
+        batch = Batch.objects.filter(id=id, student=student).first()
+        if not batch:
+            return Response({'error': 'Batch not found or not assigned to the student'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Fetch chat associated with the batch
+        chat_ids = Chats.objects.filter(batch=batch).values_list('id', flat=True)
+        if not chat_ids:
+            return Response({'error': 'No chat found for this batch'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Fetch messages once
+        messages_queryset = ChatMessage.objects.filter(chat__in=chat_ids).select_related('send_by', 'chat__batch')
+
+        final_messages = []
+        self_messages = []
+
+        for msg in messages_queryset:
+            sender_name = "CRAW Support" if msg.sender in ['coordinator', 'admin'] else (msg.send_by.first_name if msg.send_by else "Unknown")
+
+            message_data = {
+                'id': msg.id,
+                'chat__batch__batch_id': msg.chat.batch.batch_id,
+                'sender': msg.sender,
+                'send_by': sender_name,
+                'message': msg.message,
+                'gen_time': msg.gen_time
+            }
+
+            final_messages.append(message_data)
+
+            # If message was sent by the logged-in student
+            if msg.send_by == request.user:
+                self_messages.append(message_data)
+
+        return Response({
+            'messages': final_messages,
+            'self_message': self_messages
+        }, status=status.HTTP_200_OK)
+
+
+
+
+class StudentBatchChatsMessageSender(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id):
+        if request.user.role != 'student':
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
+        message = request.data.get('message')
+        if not message:
+            return Response({'error': 'Message is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Identify the student
+        student = Student.objects.filter(
+            Q(enrollment_no=request.user.username) | Q(email=request.user.email)
+        ).first()
+        
+        if not student:
+            return Response({'error': 'Student not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Ensure batch is assigned to this student
+        batch = Batch.objects.filter(id=id, student=student).first()
+        if not batch:
+            return Response({'error': 'Batch not found or not assigned to the student'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Fetch chat associated with the batch
+        chat = Chats.objects.filter(batch=batch).first()
+        if not chat:
+            return Response({'error': 'No chat found for this batch'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Create the message
+        ChatMessage.objects.create(
+            chat=chat,
+            sender=request.user.role ,
+            send_by=request.user,    # Ensure this aligns with your SENDER_CHOICES
+            message=message,
+        )
+
+        return Response({'success': 'Message sent successfully'}, status=status.HTTP_201_CREATED)
+
+        
+        
+
