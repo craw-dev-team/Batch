@@ -75,7 +75,7 @@ class StudentListView(ListAPIView):
                      'guardian_no', 'email', 'enrollment_no', 
                      'mode', 'preferred_week', 'language', 
                      'support_coordinator__name', 'course_counsellor__name', 'date_of_joining']
-    filterset_fields = ['mode', 'preferred_week', 'language', 'location']  # ✅ Add this line
+    filterset_fields = ['mode', 'preferred_week', 'language', 'location', 'status']  # ✅ Add this line {, 'date_of_joining'}
 
     def get_queryset(self):
         if self.request.user.role not in ['admin', 'coordinator']:
@@ -511,6 +511,7 @@ class StudentInfoAPIView(APIView):
                 'course_certificate_date': course.certificate_date,
                 'certificate_issued_at': course.certificate_issued_at,
                 'student_book_allotment': course.student_book_allotment,
+                'student_old_book_allotment': course.student_old_book_allotment,
             })
             student_course_ids.append(course.id)
 
@@ -773,7 +774,7 @@ class GenerateCertificateAPIView(APIView):
             <p style="font-size: 16px; line-height: 1.6;">
                 Share your achievement on LinkedIn and tag <strong>@Craw Cyber Security</strong> to inspire others! Don’t forget to use <strong>#crawsec</strong> and <strong>#lifeatcraw</strong> 🚀
             </p>
-
+            
             <div style="background-color: #f1f1f1; padding: 15px; border-radius: 6px; margin: 20px 0;">
                 <p style="font-size: 15px; margin: 6px 0;"><strong>🏷️ Enrollment Number:</strong> {student.enrollment_no}</p>
                 <p style="font-size: 15px; margin: 6px 0;"><strong>📅 Date of Issue:</strong> {certificate_date}</p>
@@ -992,9 +993,179 @@ class StudentLogListView(APIView):
         logs = LogEntry.objects.filter(content_type__in=[student_ct, course_ct, notes_ct]).order_by('-timestamp')
         serializer = LogEntrySerializer(logs, many=True)
         return Response(serializer.data)
-    
 
-# Book Alloted With Sending Email to Student....
+
+
+{
+
+# # Book Alloted With Sending Email to Student....
+# class StudentBookAllotmentAPIView(APIView):
+#     authentication_classes = [JWTAuthentication]
+#     permission_classes = [IsAuthenticated]
+
+#     def patch(self, request, id):
+#         if request.user.role not in ['admin', 'coordinator']:
+#             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
+#         student_course = get_object_or_404(StudentCourse, id=id)
+#         old_data = model_to_dict(student_course)
+
+#         serializer = StudentBookAllotmentSerializer(
+#             instance=student_course,
+#             data=request.data,
+#             partial=True,
+#             context={'student_course': student_course, 'request': request}
+#         )
+
+#         if serializer.is_valid():
+#             result = serializer.save()
+#             new_data = model_to_dict(student_course)
+
+#             # Track field changes
+#             changes = {}
+#             changes_text = []
+#             for field, old_value in old_data.items():
+#                 new_value = new_data.get(field)
+#                 if old_value != new_value:
+#                     changes[field] = {'from': old_value, 'to': new_value}
+#                     changes_text.append(f"{field} changed from '{old_value}' to '{new_value}'")
+
+#             # Determine action and book details
+#             book_flag = request.data.get("Book")
+#             if book_flag:
+#                 # Allotment action
+#                 book_names = [book.name for book in result.book.all()] if hasattr(result, "book") else []
+#                 action_description = f"Allotted books: {', '.join(book_names)}"
+
+#                 # Send Email to Student
+#                 student = student_course.student
+# #                 subject = f"🎉 Congratulations, {student.name}! You've been allotted books for {student_course.course.name}"
+# #                 html_message = f"""
+# #                 <!DOCTYPE html>
+# # <html>
+# # <head>
+# #     <meta charset="UTF-8">
+# #     <title>Book Issued Email</title>
+# # </head>
+# # <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0;">
+# #     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #dddddd;">
+# #         <tr>
+# #             <td style="padding: 30px; text-align: center;">
+# #                 <!-- Optional logo -->
+# #                 <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 80px; margin-bottom: 20px;" />
+# #                 <h2 style="color: #007bff;">Thank you for visiting Admin Desk</h2>
+# #             </td>
+# #         </tr>
+# #         <tr>
+# #             <td style="padding: 0 30px 30px 30px;">
+# #                 <p>Hello {student.name},</p>
+# #                 <p>
+# #                     <strong>Books Issued Till Today:</strong>
+# #                     {''.join([f"<li>{name}</li>" for name in book_names])}
+# #                 </p>
+# #                 <p>
+# #                     Join Our WhatsApp Channel for Updates:
+# #                     <a href="https://www.whatsapp.com/channel/0029VaE4JsD29757yPAY9z32" target="_blank">
+# #                         https://www.whatsapp.com/channel/0029VaE4JsD29757yPAY9z32
+# #                     </a>
+# #                 </p>
+# #                 <p style="margin-top: 40px;">Best regards,<br>
+# #                 <strong>Craw Cyber Security Pvt Ltd</strong></p>
+# #             </td>
+# #         </tr>
+# #         <tr>
+# #             <td style="padding: 20px; text-align: center; background-color: #f1f1f1; font-size: 12px; color: #888888;">
+# #                 Copyright © 2024 Craw Security. All Rights Reserved.
+# #             </td>
+# #         </tr>
+# #     </table>
+# # </body>
+# # </html>
+# #                 """
+
+                
+#                 # <!DOCTYPE html>
+#                 # <html>
+#                 # <body style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px;">
+#                 #     <div style="background-color: #ffffff; padding: 20px; border-radius: 8px;">
+#                 #         <h2 style="color: #2c3e50;">Book Allotment Notification</h2>
+#                 #         <p>Dear <strong>{student.name}</strong>,</p>
+#                 #         <p>You have been successfully allotted the following book(s):</p>
+#                 #         <ul>
+#                 #             {''.join([f"<li>{name}</li>" for name in book_names])}
+#                 #         </ul>
+#                 #         <p>Please collect them at your earliest convenience.</p>
+#                 #         <br>
+#                 #         <p>Best regards,<br><strong>CRAW Security Library Team</strong></p>
+#                 #     </div>
+#                 # </body>
+#                 # </html>
+
+#                 # from_email = "CRAW SECURITY BOOK <training@craw.in>"
+#                 # try:
+#                 #     email = EmailMessage(subject, html_message, from_email, [student.email])
+#                 #     email.content_subtype = "html"  # Enable HTML content
+#                 #     email.send()
+#                 # except Exception as e:
+#                 #     return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+#             else:
+#                 # Removal action
+#                 removed_books = result.get("removed_books", []) if isinstance(result, dict) else []
+#                 if removed_books:
+#                     action_description = f"Removed books: {', '.join(removed_books)}"
+#                 else:
+#                     action_description = "No books found to remove."
+
+#             # Final log message
+#             full_changes_text = f"{action_description}. {' '.join(changes_text)}"
+
+#             # Log entry
+#             LogEntry.objects.create(
+#                 content_type=ContentType.objects.get_for_model(StudentCourse),
+#                 cid=str(uuid.uuid4()),
+#                 object_pk=student_course.id,
+#                 object_id=student_course.id,
+#                 object_repr=f"Student ID: {student.enrollment_no} | Student: {student.name}",
+#                 action=LogEntry.Action.UPDATE,
+#                 changes=json.dumps(changes, default=str),
+#                 serialized_data=json.dumps(new_data, default=str),
+#                 changes_text=full_changes_text,
+#                 additional_data="Student Book Allotment",
+#                 actor=request.user,
+#                 timestamp=now()
+#             )
+
+#             return Response({'message': action_description}, status=status.HTTP_200_OK)
+
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+}
+
+
+# This Help in when old Book Allotment...
+class StudentOldBookAllotmentAPIView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, id):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        student_course = get_object_or_404(StudentCourse, id=id)
+        old_book_status = request.data.get('old_status')
+
+        if old_book_status is None:
+            return Response({'error': 'Missing "old_status" in request'}, status=status.HTTP_400_BAD_REQUEST)
+
+        student_course.student_old_book_allotment = bool(old_book_status)
+        student_course.save()
+
+        return Response({
+            'message': "Old Book Allotment status updated",
+            'status': student_course.student_old_book_allotment
+        }, status=status.HTTP_200_OK)
+
+
 
 class StudentBookAllotmentAPIView(APIView):
     authentication_classes = [JWTAuthentication]
@@ -1002,16 +1173,18 @@ class StudentBookAllotmentAPIView(APIView):
 
     def patch(self, request, id):
         if request.user.role not in ['admin', 'coordinator']:
-            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
 
         student_course = get_object_or_404(StudentCourse, id=id)
         old_data = model_to_dict(student_course)
 
         serializer = StudentBookAllotmentSerializer(
-            instance=student_course,
             data=request.data,
-            partial=True,
-            context={'student_course': student_course, 'request': request}
+            context={
+                'request': request,
+                'student_course': student_course,
+                'old_book_status': student_course.student_old_book_allotment  # ✅ move this here
+            }
         )
 
         if serializer.is_valid():
@@ -1033,102 +1206,77 @@ class StudentBookAllotmentAPIView(APIView):
                 book_names = [book.name for book in result.book.all()] if hasattr(result, "book") else []
                 action_description = f"Allotted books: {', '.join(book_names)}"
 
-                # Send Email to Student
-                today = date.today().strftime('%B %d, %Y')
-                student = student_course.student
-                subject = f"🎉 Congratulations, {student.name}! You've been allotted books for {student_course.course.name}"
-                html_message = f"""
-                <!DOCTYPE html>
-                <html>
-                <head>
-                <meta charset="UTF-8">
-                <title>Books Issued</title>
-                </head>
-                <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0;">
-                <div style="max-width: 600px; margin: 40px auto; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); overflow: hidden; color: #000;">
+                # ✅ Only send email if it's NOT an old allotment
+                if student_course.student_old_book_allotment is False:
+                    subject = f"🎉 Congratulations, {student.name}! You've been allotted books for {student_course.course.name}"
+                    html_message = f"""
+                    <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <meta charset="UTF-8">
+                            <title>Book Issued Email</title>
+                        </head>
+                        <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0;">
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #dddddd;">
+                                <tr>
+                                    <td style="padding: 30px; text-align: center;">
+                                        <!-- Optional logo -->
+                                        <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 80px; margin-bottom: 20px;" />
+                                        <h2 style="color: #007bff;">Thank you for visiting Admin Desk</h2>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0 30px 30px 30px;">
+                                        <p>Hello {student.name},</p>
+                                        <p>
+                                            <strong>Books Issued Till Today:</strong>
+                                            {''.join([f"<li>{name}</li>" for name in book_names])}
+                                        </p>
+                                        <p>
+                                            Join Our WhatsApp Channel for Updates:
+                                            <a href="https://www.whatsapp.com/channel/0029VaE4JsD29757yPAY9z32" target="_blank">
+                                                https://www.whatsapp.com/channel/0029VaE4JsD29757yPAY9z32
+                                            </a>
+                                        </p>
+                                        <p style="margin-top: 40px;">Best regards,<br>
+                                        <strong>Craw Cyber Security Pvt Ltd</strong></p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 20px; text-align: center; background-color: #f1f1f1; font-size: 12px; color: #888888;">
+                                        Copyright © 2024 Craw Security. All Rights Reserved.
+                                    </td>
+                                </tr>
+                            </table>
+                        </body>
+                        </html>
+                    """
+
                     
-                    <!-- Header with Logo -->
-                    <div style="text-align: center; padding: 20px; border-bottom: 1px solid #ddd;">
-                    <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 60px;">
-                    </div>
+                    # <!DOCTYPE html>
+                    # <html>
+                    # <body style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px;">
+                    #     <div style="background-color: #ffffff; padding: 20px; border-radius: 8px;">
+                    #         <h2 style="color: #2c3e50;">Book Allotment Notification</h2>
+                    #         <p>Dear <strong>{student.name}</strong>,</p>
+                    #         <p>You have been successfully allotted the following book(s):</p>
+                    #         <ul>
+                    #             {''.join([f"<li>{name}</li>" for name in book_names])}
+                    #         </ul>
+                    #         <p>Please collect them at your earliest convenience.</p>
+                    #         <br>
+                    #         <p>Best regards,<br><strong>CRAW Security Library Team</strong></p>
+                    #     </div>
+                    # </body>
+                    # </html>
 
-                    <!-- Body -->
-                    <div style="padding: 30px;">
-                    <h2 style="color: #000; text-align: center;">📚 Books Issued Confirmation</h2>
-
-                    <p>Dear <strong>{student.name}</strong>,</p>
-
-                    <p>
-                        We hope you're enjoying your learning journey! Below are the books that have been issued to you till date: {today}.
-                    </p>
-
-                    <div style="background-color: #f1f1f1; padding: 15px; border-radius: 6px; margin: 20px 0; color: #000;">
-                        <ul style="margin: 0; padding-left: 20px;">
-                        {''.join([f"<li>{name}</li>" for name in book_names])}
-                        </ul>
-                    </div>
-
-                    <p>
-                        📢 Stay updated by joining our official WhatsApp channel:<br>
-                        <a href="https://www.whatsapp.com/channel/0029VaE4JsD29757yPAY9z32" target="_blank" style="color: #000;">
-                        https://www.whatsapp.com/channel/0029VaE4JsD29757yPAY9z32
-                        </a>
-                    </p>
-
-                    <p style="margin-top: 30px;">
-                        If you have any questions or need further support, feel free to contact us.
-                    </p>
-
-                    <p>
-                        📍 <strong>Our Address:</strong><br>
-                        1st Floor, Plot no. 4, Lane no. 2, Kehar Singh Estate, Westend Marg,<br>
-                        Behind Saket Metro Station, New Delhi 110030
-                    </p>
-                    <p>
-                        📞 <strong>Phone:</strong> 011-40394315 | +91-9650202445, +91-9650677445<br>
-                        📧 <strong>Email:</strong> training@craw.in<br>
-                        🌐 <strong>Website:</strong> <a href="https://www.craw.in" style="color: #000;">www.craw.in</a>
-                    </p>
-
-                    <p>Warm regards,<br>
-                    <strong>Craw Cyber Security Pvt Ltd</strong> 🛡️</p>
-                    </div>
-
-                    <!-- Footer -->
-                    <div style="background-color: #f0f0f0; padding: 20px; text-align: center; font-size: 12px; color: #000;">
-                    © 2024 Craw Security. All Rights Reserved.
-                    </div>
-                </div>
-                </body>
-                </html>
-                """
-
-
-                
-                # <!DOCTYPE html>
-                # <html>
-                # <body style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px;">
-                #     <div style="background-color: #ffffff; padding: 20px; border-radius: 8px;">
-                #         <h2 style="color: #2c3e50;">Book Allotment Notification</h2>
-                #         <p>Dear <strong>{student.name}</strong>,</p>
-                #         <p>You have been successfully allotted the following book(s):</p>
-                #         <ul>
-                #             {''.join([f"<li>{name}</li>" for name in book_names])}
-                #         </ul>
-                #         <p>Please collect them at your earliest convenience.</p>
-                #         <br>
-                #         <p>Best regards,<br><strong>CRAW Security Library Team</strong></p>
-                #     </div>
-                # </body>
-                # </html>
-
-                from_email = "CRAW SECURITY BOOK <training@craw.in>"
-                try:
-                    email = EmailMessage(subject, html_message, from_email, [student.email])
-                    email.content_subtype = "html"  # Enable HTML content
-                    email.send()
-                except Exception as e:
-                    return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    from_email = "CRAW SECURITY BOOK <training@craw.in>"
+                    try:
+                        email = EmailMessage(subject, html_message, from_email, [student.email])
+                        email.content_subtype = "html"
+                        email.send()
+                    except Exception as e:
+                        return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             else:
                 removed_books = result.get("removed_books", []) if isinstance(result, dict) else []
                 action_description = f"Removed books: {', '.join(removed_books)}" if removed_books else "No books found to remove."
@@ -1151,7 +1299,6 @@ class StudentBookAllotmentAPIView(APIView):
             return Response({'message': action_description}, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 
 

@@ -44,15 +44,16 @@ class TicketAPIView(APIView):
         if request.user.role not in ['admin', 'coordinator']:
             return Response({'error': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
 
-        tickets = Ticket.objects.all().order_by('-created_at').values(
+        tickets = Ticket.objects.all().values(
             'id',
+            'ticket_id',
             'student__enrollment_no',
-            'student__full_name',  # change to actual name field if different
+            'student__name',  # change to actual name field if different
             'issue_type',
             'title',
             'status',
             'created_at'
-        )
+        ).order_by('-created_at')
 
         return Response({'tickets': tickets}, status=status.HTTP_200_OK)
     
@@ -77,23 +78,71 @@ class TicketStatusUpdate(APIView):
         return Response({'error': 'Ticket status not provided'}, status=status.HTTP_400_BAD_REQUEST)
 
 
+
+
 class TicketChatAPIView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, id):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        try:
+            ticket = Ticket.objects.get(id=id)
+
+        except Ticket.DoesNotExist:
+            return Response({'error': 'Ticket not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        chats = TicketChat.objects.filter(ticket=ticket)
+        ticket_info = Ticket.objects.filter(id=id).values('student', 'title', 'ticket_id', 'issue_type', 'status', 'priority', 'assigned_to', 'is_active', 'created_at', 'updated_at')
+
+        for chat in chats:
+            if chat.sender == 'student':
+                chat.message_status = 'Open'
+                chat.save()
+
+        return Response({
+            'all_message': chats.values('ticket', 'sender', 'message', 'message_status', 'gen_time', 'open_by'),
+            'ticket_info': ticket_info
+        }, status=status.HTTP_200_OK)
+    
+
+
+
+class TicketChatMessageAPIView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def post(self, request, id):
         if request.user.role not in ['admin', 'coordinator']:
             return Response({'error': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
-        
+
         message = request.data.get('message')
-        user_role = request.user.role
+        if not message:
+            return Response({'error': 'Message is required'}, status=status.HTTP_400_BAD_REQUEST)
+
         ticket = Ticket.objects.filter(id=id).first()
+        # Update ticket status based on current state
+        if ticket.status in ['Open', 'Customer-Reply']:
+            ticket.status = 'Answered'
+            ticket.save()
+        elif ticket.status == 'Closed':
+            ticket.status = 'Open'
+            ticket.save()
+        
+        if not ticket:
+            return Response({'error': 'Ticket not found'}, status=status.HTTP_404_NOT_FOUND)
+
 
         TicketChat.objects.create(
             ticket=ticket,
-            sender=user_role,
+            sender=request.user.role,
             message=message
         )
+
+        # Optional: Add log entry if you want audit trail
+        # LogEntry.objects.create(...)
 
         return Response({
             'success': True,

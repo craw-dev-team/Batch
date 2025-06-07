@@ -1,3 +1,5 @@
+import uuid
+import json
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -9,16 +11,15 @@ from auditlog.models import LogEntry
 from django.contrib.contenttypes.models import ContentType
 from django.utils.timezone import now
 from django.shortcuts import get_object_or_404
-from Student.models import StudentCourse, Student
+from Student.models import StudentCourse, Student,BookAllotment
 from Student.serializer import StudentSerializer
 from nexus.serializer import BatchCreateSerializer
 from nexus.models import Batch
 from django.db.models import Prefetch
-import uuid
-import json
 from rest_framework_simplejwt.authentication import JWTAuthentication
-
-
+from collections import defaultdict
+from django.utils.timezone import make_aware, datetime
+from datetime import timedelta
 
 class CourseListAPIView(APIView):
     authentication_classes = [JWTAuthentication]
@@ -419,3 +420,298 @@ class BookDeleteAPIView(APIView):
         book.delete()
         return Response({'detail': 'Book deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
 
+
+{
+# class BookTakeByCountAPIView(APIView):
+#     authentication_classes = [JWTAuthentication]
+#     permission_classes = [IsAuthenticated]
+
+#     def get(self, request):
+#         if request.user.role not in ['admin', 'coordinator']:
+#             return Response({'error': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+#         # Get the start and end of the current month
+#         today = now()
+#         start_of_month = today.replace(day=1)
+        
+#         # Get all BookAllotment entries this month
+#         allotments_this_month = BookAllotment.objects.filter(
+#             allotment_datetime__date__gte=start_of_month
+#         ).prefetch_related('book')
+
+#         # Flat list of book IDs for this month
+#         book_counts = {}
+
+#         for allotment in allotments_this_month:
+#             for book in allotment.book.all():
+#                 if book.name in book_counts:
+#                     book_counts[book.name] += 1
+#                 else:
+#                     book_counts[book.name] = 1
+
+#         return Response(book_counts)
+    
+
+
+
+# class BookTakeByStudentListAPIView(APIView):
+#     authentication_classes = [JWTAuthentication]
+#     permission_classes = [IsAuthenticated]
+
+#     def get(self, request):
+#         if request.user.role not in ['admin', 'coordinator']:
+#             return Response({'error': 'Forbidden'}, status=403)
+
+#         # Get Current Month
+#         today = now()
+#         start_of_month = today.replace(day=1)
+
+#         # Get all BookAllotments for current month
+#         allotments_this_month = BookAllotment.objects.filter(
+#             allotment_datetime__date__gte=start_of_month
+#         ).prefetch_related('student', 'book__course')
+
+#         # Build response data
+#         data = []
+#         for allotment in allotments_this_month:
+#             for student in allotment.student.all():
+#                 for book in allotment.book.all():
+#                     data.append({
+#                         'student_name': student.name,
+#                         'enrollment_no': student.enrollment_no,
+#                         'book_name': book.name,
+#                         'course_name': book.course.name,
+#                     })
+
+#         return Response({"data": data})
+}
+
+
+# This is for geting all info about book issue...
+class BookTakeByAllDataAPIView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
+        today = now()
+        start_of_month = today.replace(day=1)
+
+        # Fetch BookAllotments with related data
+        allotments = BookAllotment.objects.filter(
+            allotment_datetime__date__gte=start_of_month
+        ).select_related('allot_by').prefetch_related(
+            Prefetch('student'),
+            Prefetch('book')
+        )
+
+        # Structure data
+        book_data = defaultdict(lambda: {'count': 0, 'students_map': {}})
+
+        for allotment in allotments:
+            allot_by_name = getattr(allotment.allot_by, 'first_name', 'Unknown')
+            issue_date = allotment.allotment_datetime.strftime('%Y-%m-%d')
+
+            for book in allotment.book.all():
+                book_key = book.name.replace(" ", "_")
+
+                for student in allotment.student.all():
+                    key = student.enrollment_no
+
+                    # Add count (total allotments)
+                    book_data[book_key]['count'] += 1
+
+                    # Add student info if not already added
+                    if key not in book_data[book_key]['students_map']:
+                        book_data[book_key]['students_map'][key] = {
+                            'name': student.name,
+                            'enrollment_no': student.enrollment_no,
+                            'email': student.email,
+                            'date_of_joining': student.date_of_joining.strftime('%Y-%m-%d'),
+                            'book_issue_date': issue_date,
+                            'book_issue_by': allot_by_name
+                        }
+
+        # Final formatted response
+        response = {'all_book_tasks': {}}
+        for book_key, info in book_data.items():
+            response['all_book_tasks'][f"{book_key}_count"] = info['count']
+            response['all_book_tasks'][f"{book_key}_book_take_by"] = list(info['students_map'].values())
+
+        return Response(response)
+    
+
+
+
+# This is for apply filter on issue books...
+class BookIssueFilterAPIView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        filter_type = request.query_params.get('filter_type')
+        today = now().date()
+
+        if filter_type == "today":
+            start_date_str = end_date_str = today.strftime("%Y-%m-%d")
+
+        elif filter_type == "yesterday":
+            yesterday = today - timedelta(days=1)
+            start_date_str = end_date_str = yesterday.strftime("%Y-%m-%d")
+
+        elif filter_type == "past_week":
+            start_date = today - timedelta(days=7)
+            end_date = today
+            start_date_str = start_date.strftime("%Y-%m-%d")
+            end_date_str = end_date.strftime("%Y-%m-%d")
+
+        elif filter_type == "last_month":
+            first_day_this_month = today.replace(day=1)
+            last_month_end = first_day_this_month - timedelta(days=1)
+            last_month_start = last_month_end.replace(day=1)
+            start_date_str = last_month_start.strftime("%Y-%m-%d")
+            end_date_str = last_month_end.strftime("%Y-%m-%d")
+
+        elif filter_type == "custom":
+            start_date_str = request.query_params.get('start_date')
+            end_date_str = request.query_params.get('end_date')
+
+        else:
+            return Response({'error': 'Invalid filter_type'}, status=400)
+
+        if not start_date_str or not end_date_str:
+            return Response({'error': 'start_date and end_date are required in YYYY-MM-DD format'}, status=400)
+
+        try:
+            start_date = make_aware(datetime.strptime(start_date_str, "%Y-%m-%d"))
+            end_date = make_aware(datetime.strptime(end_date_str, "%Y-%m-%d")) + timedelta(days=1)
+        except ValueError:
+            return Response({'error': 'Invalid date format. Use YYYY-MM-DD'}, status=400)
+
+        # Query allotments
+        allotments = BookAllotment.objects.filter(
+            allotment_datetime__range=(start_date, end_date)
+        ).select_related('allot_by').prefetch_related(
+            Prefetch('student'),
+            Prefetch('book')
+        )
+
+        book_data = defaultdict(lambda: {'count': 0, 'students_map': {}})
+
+        for allotment in allotments:
+            allot_by_name = getattr(allotment.allot_by, 'first_name', 'Unknown')
+            issue_date = allotment.allotment_datetime.strftime('%Y-%m-%d')
+
+            for book in allotment.book.all():
+                book_key = book.name.replace(" ", "_")
+                for student in allotment.student.all():
+                    student_key = student.enrollment_no
+                    book_data[book_key]['count'] += 1
+
+                    if student_key not in book_data[book_key]['students_map']:
+                        book_data[book_key]['students_map'][student_key] = {
+                            'name': student.name,
+                            'enrollment_no': student.enrollment_no,
+                            'email': student.email,
+                            'date_of_joining': student.date_of_joining.strftime('%Y-%m-%d'),
+                            'book_issue_date': issue_date,
+                            'book_issue_by': allot_by_name
+                        }
+
+        response = {'all_book_tasks': {}}
+        for book_key, info in book_data.items():
+            response['all_book_tasks'][f"{book_key}_count"] = info['count']
+            response['all_book_tasks'][f"{book_key}_book_take_by"] = list(info['students_map'].values())
+
+        return Response(response)
+    
+
+
+
+# This if for Book Info also send issued or not issued students..
+class BookInfoAPIView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, id):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'User is Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        book = Book.objects.select_related('course').filter(id=id).first()
+        if not book:
+            return Response({'error': 'Book not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        book_info = {
+            'id': book.id,
+            'book_id': book.book_id,
+            'name': book.name,
+            'version': book.version,
+            'course': book.course.name if book.course else None,
+            'stock': book.stock,
+            'status': book.status,
+            'last_update_user': str(book.last_update_user) if book.last_update_user else None
+        }
+
+        active_student_ids = Student.objects.filter(status='Active').values_list('id', flat=True)
+
+        students_not_issued = StudentCourse.objects.filter(
+            course=book.course,
+            student_book_allotment=False,
+            student__in=active_student_ids
+        ).select_related('student', 'course')
+
+        students_issued = StudentCourse.objects.filter(
+            course=book.course,
+            student_book_allotment=True,
+            student__in=active_student_ids
+        ).select_related('student', 'course')
+
+        # Fetch all allotments related to this book
+        issued_allotments = BookAllotment.objects.filter(
+            book=book
+        ).prefetch_related('student', 'book', 'allot_by')
+
+        # Build map: student.id => issue details
+        allotment_map = {}
+
+        for allot in issued_allotments:
+            for student in allot.student.all():
+                allotment_map[student.id] = {
+                    'issue_by': str(allot.allot_by) if allot.allot_by else None,
+                    'allotment_datetime': allot.allotment_datetime
+                }
+
+        not_issued_students = [
+            {
+                'student_id':sc.student.id,
+                'name': sc.student.name,
+                'enrollment_no': sc.student.enrollment_no,
+                'course': sc.course.name,
+                'issue_by': None,
+                'allotment_datetime': None
+            }
+            for sc in students_not_issued
+        ]
+
+        issued_students = [
+            {
+                'student_id':sc.student.id,
+                'name': sc.student.name,
+                'enrollment_no': sc.student.enrollment_no,
+                'course': sc.course.name,
+                'issue_by': allotment_map.get(sc.student.id, {}).get('issue_by'),
+                'allotment_datetime': allotment_map.get(sc.student.id, {}).get('allotment_datetime')
+            }
+            for sc in students_issued
+        ]
+
+        return Response({
+            'book_info': book_info,
+            'not_issued_students': not_issued_students,
+            'issued_students': issued_students
+        }, status=status.HTTP_200_OK)

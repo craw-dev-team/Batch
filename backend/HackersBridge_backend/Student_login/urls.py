@@ -15,7 +15,13 @@ urlpatterns = [
     path('student_certificate_download/<int:course_id>/', DownloadStudentCertificate.as_view(), name='student_certificate_download'),
     path('student_ticket_create/', StudentTicketCreateAPIView.as_view(), name='student_ticket_create'),
     path('student_ticket/', StudentTicketAPIView.as_view(), name='student_ticket'),
+    path('student_ticket/chats/<int:id>/', StudentTicketChatAPIView.as_view(), name='student_ticket-chat'),
+    path('student_ticket/chats/message/<int:id>/', StudentTicketChatMessageAPIView.as_view(), name='student_ticket-chat'),
+    path('student_ticket/status/<int:id>/', StudentTicketstatus.as_view(), name='student_ticket-status'),
     path('student_announcement/', StudentAnnouncementAPIView.as_view(), name='student_all_announcement'),
+    path('student/all/batch/chats/', StudentALLBatchChatsAPIViews.as_view(), name='student_all_batch_code'),
+    path('student/batch/chats/<int:id>/', StudentBatchChatsMessage.as_view(), name='student_batch_chats'),
+    path('student/batch/chats/message/<int:id>/', StudentBatchChatsMessageSender.as_view(), name='student_message_sender'),
     
     ]
 

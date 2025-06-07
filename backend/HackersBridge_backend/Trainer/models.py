@@ -52,6 +52,7 @@ class Trainer(models.Model):
     coordinator = models.ForeignKey("Coordinator.Coordinator", null=True, blank=True , on_delete=models.SET_NULL)
     leave_status = models.CharField(max_length=100, null=True, blank=True)
     leave_end_date = models.DateField(null=True, blank=True)
+    leave_start_date = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=10, null=True, blank=True, choices=STATUS, default='Active')
     status_change_date = models.DateField(null=True, blank=True)
     profile_picture = models.ImageField(upload_to='trainer/profile_pics/', null=True, blank=True)  # Stores image path
