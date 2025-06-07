@@ -37,7 +37,7 @@ const SpecificCoordinatorPage = () => {
                 fetchSpecificCoordinatorStudents(originalCoordinatorId);
                 fetchSpecificCoordinatorTrainers(originalCoordinatorId);
             } catch (error) {
-                // console.error("Error decoding Coordinator ID", error);
+                console.error("Error decoding Coordinator ID", error);
             }
         }
     },[coordinatorId]);
@@ -239,7 +239,7 @@ return (
                             
                                                 ) : (specificCoordinatorStudents ?? []).length > 0 ? (
                                                     specificCoordinatorStudents.map((item, index) => (
-                                                    <tr key={item.id} className="bg-white border-b border-gray-200 hover:bg-gray-50 scroll-smooth">
+                                                    <tr key={item.id} className="bg-white font-normal border-b border-gray-200 hover:bg-gray-50 scroll-smooth">
                                                         <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900 ">
                                                             {index + 1}
                                                         </td>
@@ -297,7 +297,7 @@ return (
                                                             </Tag>
                                                         </td>
                                                         <td className="px-3 py-2 md:px-1">
-                                                            {item.location == '1' ? <Tag color="blue">Saket</Tag> : <Tag color="magenta">Laxmi Nagar</Tag>}
+                                                            {item.location == '1' ? <Tag bordered={false} color="blue">Saket</Tag> : <Tag bordered={false} color="magenta">Laxmi Nagar</Tag>}
                                                         </td>
                                                         <td className="px-3 py-2 md:px-1">
                                                             {item.course_counsellor_name}
@@ -482,7 +482,7 @@ return (
                                                     {item.coordinator_name}
                                                 </td>
                                                 <td className="px-3 py-2 md:px-1">
-                                                    {item.location == '1' ? <Tag color="blue">Saket</Tag> : <Tag color="magenta">Laxmi Nagar</Tag>}
+                                                    {item.location == '1' ? <Tag bordered={false} color="blue">Saket</Tag> : <Tag bordered={false} color="magenta">Laxmi Nagar</Tag>}
                                                 </td>
                                                 <td className="px-3 py-2 md:px-1">
                                                     {item.weekoff}

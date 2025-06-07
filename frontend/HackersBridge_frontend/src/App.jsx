@@ -27,7 +27,6 @@ import ProtectedRoute, { PublicRoute, StudentRoute } from "./Pages/ProtectedRout
 import { AuthProvider } from "./Components/dashboard/AuthContext/AuthContext";
 import { SpecificBatchProvider } from "./Components/dashboard/Contexts/SpecificBatch";
 import SpecificBatchPage from "./Components/dashboard/SpecificPage/SpecificBatchPage";
-import StudentsList from "./Components/dashboard/SpecificPage/StudentCardList";
 import { SpecificCoordinatorProvider } from "./Components/dashboard/Contexts/SpecificCoordinators";
 import SpecificCoordinatorPage from "./Components/dashboard/SpecificPage/SpecificCoordinatorPage";
 import AllLogs from "./Components/dashboard/AllLogs/AllLogs";
@@ -58,18 +57,23 @@ import StudentCertificate from "./Components/StudentDashboard/Dashboard/StudentI
 import CreateAnnouncementForm from "./Components/dashboard/Announcement/AnnouncementFormPage";
 import AnnouncementPage from "./Components/dashboard/Announcement/AnnouncementPage";
 import { AnnouncementProvider } from "./Components/dashboard/Announcement/AnnouncementContext";
+import TicketsOperation from "./Components/dashboard/Tickets/TicketsOperation";
+import { TicketsProvider } from "./Components/dashboard/Tickets/TicketContext";
+import StudentsList from "./Components/dashboard/SpecificPage/Cards/StudentCardList";
+import PageNotFound from "./Pages/PageNotFound";
+import SpecificBookPage from "./Components/dashboard/SpecificPage/SpecificBookPage";
+import { SpecificBookProvider } from "./Components/dashboard/Contexts/SpecificBook";
 
 
 
 const { Content, Header } = Layout;
 
 function App() {  
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   return (
     <AppProviders>
       <AuthProvider>
-        {/* <StudentBatchProvider> */}
           <Router>
             <Routes>
 
@@ -101,6 +105,7 @@ function App() {
                   <Route path="all-tickets" element={<AllTickets />} />
                   {/* <Route path="student-announcement-page" element={<StudentAnnouncementPage />} /> */}
                 </Route>
+                <Route path="*" element={<PageNotFound />} />
               </Route>
 
               {/* ADMIN/COORDINATOR PROTECTED ROUTES */}
@@ -122,14 +127,15 @@ function App() {
                   <Route path="/studentsdata/:type" element={<StudentsList />} />
                   <Route path={route.ALL_LOGS_PATH} element={<AllLogs />} />
                   <Route path={route.BOOKS_PATH} element={<BooksHome />} />
+                  <Route path="/books/:bookId" element={<SpecificBookPage/>} />
                   <Route path="announcement-form-page" element={<CreateAnnouncementForm />} />
-                  <Route path={route.ANNOUNCEMENT_PATH} element={<AnnouncementPage />} />
-                  {/* <Route path="tickets-page" element={<TicketsOpera />} /> */}
+                  <Route path={route.ANNOUNCEMENTS_PATH} element={<AnnouncementPage />} />
+                  <Route path={route.TICKETS_PATH} element={<TicketsOperation />} />
+                {/* <Route path="*" element={<PageNotFound />} /> */}
                 </Route>
               </Route>
             </Routes>
           </Router>
-          {/* </StudentBatchProvider> */}
       </AuthProvider>
     </AppProviders>
   );
@@ -159,7 +165,11 @@ const AppProviders = ({ children }) => {
                                                 <StudentCertificateProvider>
                                                   <AllTicketsProvider>
                                                     <AnnouncementProvider>
-                                                      {children}
+                                                      <TicketsProvider>
+                                                        <SpecificBookProvider>
+                                                          {children}
+                                                        </SpecificBookProvider>
+                                                      </TicketsProvider>
                                                     </AnnouncementProvider>
                                                   </AllTicketsProvider>
                                                 </StudentCertificateProvider>
