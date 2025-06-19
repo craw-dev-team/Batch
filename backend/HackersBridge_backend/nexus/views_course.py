@@ -2,7 +2,8 @@ import uuid
 import json
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import status, filters
 from .models import Course, Book
 from .serializer import CourseSerializer, BookSerializer
 from rest_framework.permissions import IsAuthenticated
@@ -20,12 +21,17 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from collections import defaultdict
 from django.utils.timezone import make_aware, datetime
 from datetime import timedelta
+from django.utils.timezone import localtime
+from rest_framework.pagination import PageNumberPagination
 
 class CourseListAPIView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
         courses = Course.objects.all()
         serializer = CourseSerializer(courses, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -36,6 +42,9 @@ class CourseCreateAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+        
         serializer = CourseSerializer(data=request.data)
         if serializer.is_valid():
             course = serializer.save()  # Save the course and store it
@@ -64,6 +73,9 @@ class CourseEditAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def put(self, request, id):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
         try:
             course = Course.objects.get(id=id)
         except Course.DoesNotExist:
@@ -98,6 +110,9 @@ class CourseDeleteAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, id):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
         try:
             course = Course.objects.get(id=id)
         except Course.DoesNotExist:
@@ -130,6 +145,9 @@ class CourseinfoAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, id):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
         # Step 1: Get the course
         course = get_object_or_404(Course, id=id)
 
@@ -188,6 +206,9 @@ class CourseTakebyEdit(APIView):
     permission_classes = [IsAuthenticated]
 
     def put(self, request, course_id):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
         new_course_id = request.data.get("course")
         if not new_course_id:
             return Response({"error": "New course ID not provided."}, status=status.HTTP_400_BAD_REQUEST)
@@ -226,6 +247,9 @@ class StudentCourseUpdate(APIView):
     permission_classes = [IsAuthenticated]
 
     def put(self, request, course_id):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+    
         new_course_id = request.data.get("course")
         student_list = request.data.get("student", [])
 
@@ -266,6 +290,9 @@ class BatchCourseUpdate(APIView):
     permission_classes = [IsAuthenticated]
 
     def put(self, request, course_id):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
         new_course_id = request.data.get("course")
 
         if not new_course_id:
@@ -308,6 +335,9 @@ class BookListAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
         books = Book.objects.all()
 
         for book in books:
@@ -328,6 +358,9 @@ class BookCreateAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
         serializer = BookSerializer(data=request.data)
         if serializer.is_valid():
             book = serializer.save(last_update_user=request.user)  # Save and get instance
@@ -358,6 +391,9 @@ class BookUpdateAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def put(self, request, id):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
         try:
             book = Book.objects.get(id=id)
         except Book.DoesNotExist:
@@ -395,6 +431,9 @@ class BookDeleteAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, id):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
         try:
             book = Book.objects.get(id=id)
         except Book.DoesNotExist:
@@ -512,7 +551,7 @@ class BookTakeByAllDataAPIView(APIView):
 
         for allotment in allotments:
             allot_by_name = getattr(allotment.allot_by, 'first_name', 'Unknown')
-            issue_date = allotment.allotment_datetime.strftime('%Y-%m-%d')
+            issue_date = allotment.allotment_datetime
 
             for book in allotment.book.all():
                 book_key = book.name.replace(" ", "_")
@@ -528,10 +567,9 @@ class BookTakeByAllDataAPIView(APIView):
                         book_data[book_key]['students_map'][key] = {
                             'name': student.name,
                             'enrollment_no': student.enrollment_no,
-                            'email': student.email,
-                            'date_of_joining': student.date_of_joining.strftime('%Y-%m-%d'),
                             'book_issue_date': issue_date,
-                            'book_issue_by': allot_by_name
+                            'book_issue_by': allot_by_name,
+                            'course':book.name,
                         }
 
         # Final formatted response
@@ -622,7 +660,7 @@ class BookIssueFilterAPIView(APIView):
 
         for allotment in allotments:
             allot_by_name = getattr(allotment.allot_by, 'first_name', 'Unknown')
-            issue_date = allotment.allotment_datetime.strftime('%Y-%m-%d')
+            issue_date = allotment.allotment_datetime
 
             for book in allotment.book.all():
                 book_key = book.name.replace(" ", "_")
@@ -634,10 +672,9 @@ class BookIssueFilterAPIView(APIView):
                         book_data[book_key]['students_map'][student_key] = {
                             'name': student.name,
                             'enrollment_no': student.enrollment_no,
-                            'email': student.email,
-                            'date_of_joining': student.date_of_joining.strftime('%Y-%m-%d'),
                             'book_issue_date': issue_date,
-                            'book_issue_by': allot_by_name
+                            'book_issue_by': allot_by_name,
+                            'course':book.name,
                         }
 
         response = {'all_book_tasks': {}}
@@ -646,7 +683,6 @@ class BookIssueFilterAPIView(APIView):
             response['all_book_tasks'][f"{book_key}_book_take_by"] = list(info['students_map'].values())
 
         return Response(response, status=200)
-    
 
 
 
@@ -659,10 +695,25 @@ class BookInfoAPIView(APIView):
         if request.user.role not in ['admin', 'coordinator']:
             return Response({'error': 'User is Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
 
+        # Fetch the book with course
         book = Book.objects.select_related('course').filter(id=id).first()
         if not book:
             return Response({'error': 'Book not found'}, status=status.HTTP_404_NOT_FOUND)
 
+        # Extract optional date filter params
+        start_date_str = request.query_params.get('allotment_datetime__date__gte')
+        end_date_str = request.query_params.get('allotment_datetime__date__lte')
+        start_date = None
+        end_date = None
+
+        if start_date_str and end_date_str:
+            try:
+                start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
+                end_date = datetime.strptime(end_date_str, "%Y-%m-%d") + timedelta(days=1)
+            except ValueError:
+                return Response({'error': 'Invalid date format. Use YYYY-MM-DD'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Build book info
         book_info = {
             'id': book.id,
             'book_id': book.book_id,
@@ -674,33 +725,35 @@ class BookInfoAPIView(APIView):
             'last_update_user': str(book.last_update_user) if book.last_update_user else None
         }
 
-        active_student_ids = Student.objects.filter(status='Active').values_list('id', flat=True)
-
-        students_not_issued = StudentCourse.objects.filter(
+        # Get active students for the book's course
+        students_not_issued = StudentCourse.objects.select_related('student', 'course').filter(
             course=book.course,
             student_book_allotment=False,
-            student__in=active_student_ids
-        ).select_related('student', 'course')
+            student__status='Active'
+        )
 
-        students_issued = StudentCourse.objects.filter(
+        students_issued = StudentCourse.objects.select_related('student', 'course').filter(
             course=book.course,
             student_book_allotment=True,
-            student__in=active_student_ids
-        ).select_related('student', 'course')
+            student__status='Active'
+        )
 
-        # Fetch all allotments related to this book
-        issued_allotments = BookAllotment.objects.filter(
-            book=book
-        ).prefetch_related('student', 'book', 'allot_by')
+        # Get all allotments related to this book
+        issued_allotments = BookAllotment.objects.filter(book=book)
+        if start_date and end_date:
+            issued_allotments = issued_allotments.filter(
+                allotment_datetime__range=(start_date, end_date)
+            )
 
-        # Build map: student.id => issue details
+        issued_allotments = issued_allotments.prefetch_related('student', 'allot_by')
+
+        # Map student.id → allotment info
         allotment_map = {}
-
         for allot in issued_allotments:
             for student in allot.student.all():
                 allotment_map[student.id] = {
                     'issue_by': str(allot.allot_by.first_name) if allot.allot_by.first_name else None,
-                    'allotment_datetime': allot.allotment_datetime
+                    'allotment_datetime': localtime(allot.allotment_datetime).strftime('%Y-%m-%d %H:%M')
                 }
 
         # Not Issued List (no date to sort by, so keep as-is)
@@ -723,6 +776,7 @@ class BookInfoAPIView(APIView):
                 'name': sc.student.name,
                 'enrollment_no': sc.student.enrollment_no,
                 'course': sc.course.name,
+                'book_status': 'Old' if sc.student_old_book_allotment else 'New',
                 'issue_by': allotment_map.get(sc.student.id, {}).get('issue_by'),
                 'allotment_datetime': allotment_map.get(sc.student.id, {}).get('allotment_datetime')
             }
@@ -735,3 +789,134 @@ class BookInfoAPIView(APIView):
             'not_issued_students': not_issued_students,
             'issued_students': issued_students
         }, status=status.HTTP_200_OK)
+
+
+
+
+# Custom paginator
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 30
+    page_size_query_param = 'page_size'
+    max_page_size = 50
+
+
+
+# Giving all book student issued data...
+class AllBookIssuedDataAPIView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'User is Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        books = Book.objects.select_related('course').all()
+        if not books.exists():
+            return Response({'error': 'No books found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        filter_type = request.query_params.get('filter_type')
+        today = now().date()
+        start_dt = end_dt = None
+
+        try:
+            if filter_type:
+                match filter_type:
+                    case "today":
+                        start_date = end_date = today
+                    case "yesterday":
+                        start_date = end_date = today - timedelta(days=1)
+                    case "this_week":
+                        start_date = today - timedelta(days=today.weekday())
+                        end_date = today
+                    case "last_week":
+                        end_date = today - timedelta(days=today.weekday() + 1)
+                        start_date = end_date - timedelta(days=6)
+                    case "this_month":
+                        start_date = today.replace(day=1)
+                        end_date = today
+                    case "last_month":
+                        first_day_this_month = today.replace(day=1)
+                        last_month_end = first_day_this_month - timedelta(days=1)
+                        start_date = last_month_end.replace(day=1)
+                        end_date = last_month_end
+                    case "this_year":
+                        start_date = today.replace(month=1, day=1)
+                        end_date = today
+                    case "last_year":
+                        start_date = today.replace(year=today.year - 1, month=1, day=1)
+                        end_date = today.replace(year=today.year - 1, month=12, day=31)
+                    case "custom":
+                        start_date_str = request.query_params.get('start_date')
+                        end_date_str = request.query_params.get('end_date')
+                        if not start_date_str or not end_date_str:
+                            return Response({'error': 'Start and end dates are required for custom filter'}, status=400)
+                        start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+                        end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+                    case _:
+                        return Response({'error': 'Invalid filter_type'}, status=400)
+
+                start_dt = datetime.combine(start_date, datetime.min.time())
+                end_dt = datetime.combine(end_date + timedelta(days=1), datetime.min.time())
+        except Exception as e:
+            return Response({'error': 'Invalid date processing', 'details': str(e)}, status=400)
+
+        issued_students = []
+
+        for book in books:
+            student_issued = StudentCourse.objects.select_related('student', 'course').filter(
+                course=book.course,
+                student_book_allotment=True,
+                student__status='Active'
+            )
+
+            allotment_qs = BookAllotment.objects.filter(book=book)
+            if start_dt and end_dt:
+                allotment_qs = allotment_qs.filter(allotment_datetime__range=(start_dt, end_dt))
+
+            issued_allotments = allotment_qs.prefetch_related('student', 'allot_by')
+
+            allotment_map = {}
+            for allot in issued_allotments:
+                for student in allot.student.all():
+                    allotment_map[student.id] = {
+                        'issue_by': allot.allot_by.first_name if allot.allot_by else None,
+                        'allotment_datetime': allot.allotment_datetime
+                    }
+
+            for sc in student_issued:
+                if sc.student.id in allotment_map:
+                    book_status = 'Old' if getattr(sc, 'student_old_book_allotment', False) else 'New'
+                    issued_students.append({
+                        'student_id': sc.student.id,
+                        'name': sc.student.name,
+                        'enrollment_no': sc.student.enrollment_no,
+                        'course': sc.course.name,
+                        'book_status': book_status,
+                        'issue_by': allotment_map[sc.student.id]['issue_by'],
+                        'allotment_datetime': localtime(allotment_map[sc.student.id]['allotment_datetime']).strftime('%Y-%m-%d %H:%M')
+                    })
+
+        # Search filter
+        search_query = request.query_params.get('search', '').lower().strip()
+        if search_query:
+            issued_students = [
+                s for s in issued_students
+                if search_query in s['name'].lower()
+                or search_query in s['enrollment_no'].lower()
+                or search_query in s['course'].lower()
+                or search_query == s['book_status'].lower()
+                or search_query == s['issue_by'].lower()
+            ]
+
+        # Sort
+        issued_students = sorted(
+            issued_students,
+            key=lambda x: datetime.strptime(x['allotment_datetime'], '%Y-%m-%d %H:%M'),
+            reverse=True
+        )
+
+        # Apply pagination manually
+        paginator = StandardResultsSetPagination()
+        page = paginator.paginate_queryset(issued_students, request)
+
+        return paginator.get_paginated_response(page)

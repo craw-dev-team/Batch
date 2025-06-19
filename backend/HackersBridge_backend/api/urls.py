@@ -6,6 +6,7 @@ from nexus.views_logs import *
 from nexus.views_batch import *
 from nexus.views_announcement import *
 from nexus.views_ticket import *
+from nexus.views_chat import *
 from Student.views import *
 from Coordinator.views import *
 from Counsellor.views import *
@@ -36,12 +37,12 @@ urlpatterns = [
     path('coordinators/<int:id>/trainer/', TrainerUnderCoordinatorView.as_view(), name='coordinator-list'),
     path('coordinators/info/<int:id>/', CoordinatorInfoAPIView.as_view(), name='coordinator-info'),
     
-    path('counsellors/', CounsellorListView.as_view(), name='counsellor-list'),
+    path('counsellors/', CounsellorAPIView.as_view(), name='counsellor-list'),
     path('counsellors/add/', CounsellorCreateAPIView.as_view(), name='counsellor-create'),
     path('counsellors-logs/', CounsellorLogListView.as_view(), name='coordinators-logs'),
     path('counsellors/edit/<int:id>/', CounsellorEditAPIView.as_view(), name='counsellor-edit'),
     path('counsellors/delete/<int:id>/', CounsellorDeleteAPIView.as_view(), name='counsellor-delete'),
-    path('counsellors/<int:id>/students/', StudentsUnderCounsellorView.as_view(), name='coordinator-list'),
+    path('counsellors/<int:id>/students/', StudentsUnderCounsellorAPIView.as_view(), name='coordinator-list'),
     path('counsellors/info/<int:id>/', CousellorInfoAPIView.as_view(), name='counsellor-info'),
     
     path('students/', StudentListView.as_view(), name='student-list'),
@@ -65,6 +66,7 @@ urlpatterns = [
     # path('students/free/', FreeStudentListView.as_view(), name='trainer-availability'),
     
     path('trainers/', TrainerListAPIviews.as_view(), name='trainer-list'),
+    path('trainers/card/', TrainerCardsAPIView.as_view(), name='trainer-card'),
     path('trainers/add/', AddTrainerAPIView.as_view(), name='add_trainer_api'),
     path('trainers-logs/', TrainerLogListView.as_view(), name='trainers-logs'),
     path('trainers/info/<int:id>/', TrainerInfoAPIView.as_view(), name='info_trainer_api'),
@@ -77,15 +79,17 @@ urlpatterns = [
     path('batches/', BatchAPIView.as_view(), name='batch-list'),
     path('batches-logs/', BatchLogListView.as_view(), name='batches-logs'),
     path('batches/add/', BatchCreateAPIView.as_view(), name='add_batch_api'),
+    path('batch-link/<int:id>/', BatchOnlinelink.as_view(), name='add_batch_link'),
     path('batches/info/<int:id>/', BatchInfoAPIView.as_view(), name='info_batch_api'),
     path('batches/edit/<int:id>/', BatchEditAPIView.as_view(), name='edit_batch_api'),
     path('batches/delete/<int:id>/', BatchDeleteAPIView.as_view(), name='delete_batch_api'),
     path('batch-attendance/<int:id>/', BatchAttendanceView.as_view(), name='batch-attendance'),
     path('batches/<int:batch_id>/add-students/', BatchAddStudentAPIView.as_view(), name='batch_add_student_api'),
+    path('batches/<int:batch_id>/reject-request/', BatchRequestRejectedAPIView.as_view(), name='batch_add_student_api'),
     path('batches/<int:batch_id>/available-students/', AvailableStudentsAPIView.as_view(), name='get_available_students'),
     path('batches/<int:batch_id>/available-trainers/', AvailableTrainersAPIView.as_view(), name='get_available_trainers'),
     path('batch/remove-student/<int:batch_id>/', BatchRemoveStudentAPIView.as_view(), name='remove_student_from_batch'),
-    path('batch-link/<int:id>/', BatchOnlinelink.as_view(), name='add_batch_link'),
+    path('batches/student-status/<int:id>/', BatchStudentStatusChangerAPIView.as_view(), name='student-batch-status'),
     path('batch-generate-certificate/<int:id>/', GenerateBatchCertificateAPIView.as_view(), name='generate-certificate'),
     path('batch-student-assignment/update/<int:assignment_id>/', BatchStudentAssignmentUpdateAPIView.as_view(), name='update_batch_student_assignment'),
 
@@ -102,6 +106,7 @@ urlpatterns = [
     path('books/add/', BookCreateAPIView.as_view(), name='book-add'),
     path('books/edit/<int:id>/', BookUpdateAPIView.as_view(), name='book-edit'),
     path('books/delete/<int:id>/', BookDeleteAPIView.as_view(), name='book-delete'),
+    path('books/issued/', AllBookIssuedDataAPIView.as_view(), name='book-issued'),
     # path('books/count/', BookTakeByCountAPIView.as_view(), name='book-delete'),
     # path('books/student/', BookTakeByStudentListAPIView.as_view(), name='book-delete'),
     path('books/students/', BookTakeByAllDataAPIView.as_view(), name='book-student'),
@@ -121,6 +126,9 @@ urlpatterns = [
     path('announcement/delete/<int:id>/', AnnouncementDeleteAPIView.as_view(), name='announcement-edit'),
 
     path('emailsender/', EmailSenderAPIView.as_view(), name='email-sender'),
+    path('all_chats/', AllChatsAPIView.as_view(), name='all-chats-batch-id'),
+    # path('batch_chats/<int:id>/', BatchChatAPIView.as_view(), name='all-chats-of-batch'),
+    # path('batch_chats/message/<int:id>/', BatchChatMessageAPIView.as_view(), name='all-chats-of-batch'),
 
     # path('allbatchchats/', BatchChatsTesting.as_view(), name='email-sender'),
     # path('batch/chats/<int:id>/', BatchChatMessageAPIView.as_view(), name='batch-chat-message')

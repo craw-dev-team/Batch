@@ -391,6 +391,9 @@ class StudentBatchInfoView(APIView):
                         'trainer__name',
                         'trainer__weekoff',
                         'trainer__status',
+                        'trainer__leave_status',
+                        'trainer__leave_end_date',
+                        'trainer__leave_start_date',
                         'batch_link',
                     ]
 
@@ -1287,33 +1290,8 @@ class StudentTicketstatus(APIView):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 class StudentALLBatchChatsAPIViews(APIView):
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -1349,12 +1327,6 @@ class StudentALLBatchChatsAPIViews(APIView):
 
 
 
-
-# from rest_framework.views import APIView
-# from rest_framework.response import Response
-# from rest_framework.permissions import IsAuthenticated
-# from rest_framework import status
-# from django.db.models import Q
 
 class StudentBatchChatsMessage(APIView):
     authentication_classes = [JWTAuthentication]
@@ -1417,7 +1389,7 @@ class StudentBatchChatsMessage(APIView):
 class StudentBatchChatsMessageSender(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
-
+    
     def post(self, request, id):
         if request.user.role != 'student':
             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
@@ -1456,4 +1428,9 @@ class StudentBatchChatsMessageSender(APIView):
 
         
         
+
+# ...WebSocket for student Batch chats... #
+
+
+
 

@@ -120,11 +120,14 @@ class UserLoginAPIView(APIView):
             role = user.role
             username = user.username
             useremail = user.email
+            first_name = user.first_name
 
             if role == 'student':
                 student_id = Student.objects.filter(Q(enrollment_no = username) | Q(email = useremail)).values('id', 'enrollment_no', 'name')
                 user_info = {'role': role,
-                            'token':access_token}
+                            'token':access_token,
+                            'user_name':username,
+                            'first_name':first_name}
 
                 response = Response({'message': 'Login successful',
                                     'student_id': student_id,
@@ -149,7 +152,9 @@ class UserLoginAPIView(APIView):
                 return response
             else:
                 user_info = {'role':role,
-                             'token':access_token}
+                             'token':access_token,
+                             'user_name':username,
+                             'first_name':first_name}
                 response = Response({'message':'Login successful',
                                      'user_info':user_info}, status=status.HTTP_200_OK)
                 

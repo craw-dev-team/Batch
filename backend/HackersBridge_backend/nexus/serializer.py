@@ -246,6 +246,7 @@ class BatchSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
+        rep['user_first_name'] = instance.last_update_user.first_name if instance.last_update_user else None
         rep['course_name'] = instance.course.name if instance.course else None
         rep['trainer_name'] = instance.trainer.name if instance.trainer else None
         rep['batch_location'] = instance.location.locality if instance.location else None
@@ -589,6 +590,9 @@ class BatchCreateSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         """Update batch details, regenerate batch_id if course changes, and update student statuses."""
 
+        request = self.context.get('request')
+        user = request.user if request else None
+
         # Track original attendance-related fields
         old_start_date = instance.start_date
         old_end_date = instance.end_date
@@ -599,10 +603,9 @@ class BatchCreateSerializer(serializers.ModelSerializer):
         new_start_date = validated_data.get('start_date', instance.start_date)
         new_end_date = validated_data.get('end_date', instance.end_date)
         new_preferred_week = validated_data.get('preferred_week', instance.preferred_week)
-        status = validated_data.get('status', instance.status)  # Default to current status if not updated
+        status = validated_data.get('status', instance.status)
 
-
-        # Regenerate batch_id if the course has changed
+        # Regenerate batch_id if course has changed
         if new_course != instance.course:
             instance.batch_id = self.generate_batch_id(new_course, new_start_date)
             instance.course = new_course
@@ -610,50 +613,48 @@ class BatchCreateSerializer(serializers.ModelSerializer):
             instance.end_date = new_end_date
             instance.save(update_fields=['batch_id', 'course', 'start_date', 'end_date'])
 
-        # Handle student additions/removals and update course status
+        # Safely initialize sets
+        added_students = set()
+        removed_students = set()
+
         students = validated_data.pop('student', None)
-
         if students is not None:
-            existing_students = set(instance.student.all())  # Current students in batch
-            new_students = set(students)  # Updated student list
+            existing_students = set(instance.student.all())
+            new_students = set(students)
 
-            removed_students = existing_students - new_students  # Students removed from batch
-            added_students = new_students - existing_students  # New students added to batch
+            removed_students = existing_students - new_students
+            added_students = new_students - existing_students
 
-            # Bulk update course status for removed students
             if removed_students:
                 if status == 'Running':
                     StudentCourse.objects.filter(student__in=removed_students, course=instance.course).update(status='Denied')
                 elif status == 'Upcoming':
                     StudentCourse.objects.filter(student__in=removed_students, course=instance.course).update(status='Not Started')
 
-            # Bulk update course status for added students
             if added_students:
-                student_status_mapping = {
-                    'Running': 'Ongoing',
-                    'Upcoming': 'Upcoming',
-                    'Completed': 'Completed'
-                }
+                status_map = {'Running': 'Ongoing', 'Upcoming': 'Upcoming', 'Completed': 'Completed'}
                 StudentCourse.objects.filter(student__in=added_students, course=instance.course).update(
-                    status=student_status_mapping.get(status, 'Not Started')
+                    status=status_map.get(status, 'Not Started')
                 )
-
-                # Activate added students if currently inactive
                 for student in added_students:
                     student_obj = Student.objects.filter(id=student.id).first()
                     if student_obj and student_obj.status == 'Inactive':
                         student_obj.status = 'Active'
                         student_obj.save(update_fields=['status'])
 
-            # ✅ Corrected indentation: this should be outside the loop
             instance.student.set(students)
 
-        # Update remaining fields
+        # Update all remaining fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
+
+        if user:
+            instance.last_update_user = user
+
+        instance.last_update_datetime = timezone.now()
         instance.save()
 
-        # ⚡️ If date or week schedule changed, reset attendance
+        # Recalculate attendance if date or week changed
         if (
             old_start_date != new_start_date or
             old_end_date != new_end_date or
@@ -668,7 +669,7 @@ class BatchCreateSerializer(serializers.ModelSerializer):
                 preferred_week=new_preferred_week
             )
 
-        # ✅ Always create attendance for new students (even if dates didn't change)
+        # Always generate attendance for added students
         if added_students:
             self.create_daily_attendance_records(
                 batch=instance,
@@ -677,7 +678,6 @@ class BatchCreateSerializer(serializers.ModelSerializer):
                 end_date=new_end_date,
                 preferred_week=new_preferred_week
             )
-
 
         if removed_students:
             if status == 'Running':
@@ -782,80 +782,59 @@ class BookSerializer(serializers.ModelSerializer):
 #         read_only_fields = ['gen_time', 'created_by', 'announcement_type']
 
 
-
-class AnnouncementCreateSerializer(serializers.ModelSerializer):
-    Send_to = serializers.ListField(write_only=True, required=False)
+class ChatMessageSimpleSerializer(serializers.ModelSerializer):
+    send_by_name = serializers.SerializerMethodField()
 
     class Meta:
-        model = Announcement
-        fields = ['id', 'subject', 'text', 'file', 'Send_to', 'gen_time']
+        model = ChatMessage
+        fields = ['message', 'gen_time', 'send_by_name']
 
-    def _resolve_recipients(self, identifiers):
-        students, trainers, batches = [], [], []
-
-        for identifier in identifiers:
-            if identifier == 'Students':
-                students.extend(Student.objects.all())
-            elif identifier == 'Trainers':
-                trainers.extend(Trainer.objects.all())
-            # elif identifier == 'batches':
-            #     batches.extend(Batch.objects.all())
-            else:
-                stu = Student.objects.filter(enrollment_no=identifier).first()
-                if stu:
-                    students.append(stu)
-                    continue
-
-                tra = Trainer.objects.filter(trainer_id=identifier).first()
-                if tra:
-                    trainers.append(tra)
-                    continue
-
-                bat = Batch.objects.filter(batch_id=identifier).first()
-                if bat:
-                    batches.append(bat)
-
-        return students, trainers, batches
-
-    
-    def create(self, validated_data):
-        request = self.context['request']
-        send_to = validated_data.pop('Send_to', [])
-        # print(send_to)
-        students, trainers, batches = self._resolve_recipients(send_to)
-
-        announcement = Announcement.objects.create(
-            **validated_data,
-            created_by=request.user,
-            announcement_type='Specific' if send_to else 'Overall'
-        )
-
-        # Set M2M fields after creation
-        if students:
-            announcement.student.set(students)
-        if trainers:
-            announcement.trainer.set(trainers)
-        if batches:
-            announcement.batch.set(batches)
-
-        return announcement
-    
-    def update(self, instance, validated_data):
-        send_to = validated_data.pop('Send_to', None)
-
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-
-        if send_to is not None:
-            students, trainers, batches = self._resolve_recipients(send_to)
-            instance.student.set(students)
-            instance.trainer.set(trainers)
-            instance.batch.set(batches)
-            instance.announcement_type = 'Specific' if send_to else 'Overall'
-            instance.save()
-
-        return instance
+    def get_send_by_name(self, obj):
+        return obj.send_by.first_name if obj.send_by else None
 
 
- 
+class AllChatsSerializer(serializers.ModelSerializer):
+    batch_id = serializers.SerializerMethodField()
+    batch_code = serializers.SerializerMethodField()
+    batch_name = serializers.SerializerMethodField()
+    batch_status = serializers.SerializerMethodField()
+    last_message = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Chats
+        fields = ['id', 'batch_id', 'batch_code', 'batch_name', 'batch_status', 'last_message']
+
+    def get_batch_id(self, obj):
+        return obj.batch.id if obj.batch else None
+
+    def get_batch_code(self, obj):
+        return obj.batch.batch_id if obj.batch else None
+
+    def get_batch_status(self, obj):
+        status = (obj.batch.status or '').strip().capitalize()
+        if status in ['Hold', 'Cancelled', 'Completed']:
+            return 'Red'
+        elif status == 'Upcoming':
+            return 'Yellow'
+        return 'Green'
+
+    def get_batch_name(self, obj):
+        try:
+            batch = obj.batch
+            start = batch.batch_time.start_time.strftime('%I:%M %p') if batch.batch_time else 'N/A'
+            end = batch.batch_time.end_time.strftime('%I:%M %p') if batch.batch_time else 'N/A'
+            trainer = batch.trainer.name if batch.trainer else 'Unknown'
+            course = batch.course.name if batch.course else 'Unknown'
+            return f"{trainer} - {course} - {start} - {end}"
+        except:
+            return "N/A"
+
+    def get_last_message(self, obj):
+        message = obj.messages.order_by('-gen_time').first()
+        if not message:
+            return None
+        return {
+            "message": message.message,
+            "send_by": message.send_by.first_name if message.send_by else None,
+            "time": message.gen_time.strftime('%I:%M %p')
+        }
