@@ -192,14 +192,14 @@ const StudentBatches = () => {
                             {/* <img className="w-8 h-8 mt-1" src={crawlogo} alt="" /> */}
                             {(batch.mode === "Hybrid" || batch.mode === "Online") ? (
                               <button type='button' className='bg-green-500 px-2 py-1 text-white rounded-md border-green-600 hover:bg-green-400'
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (batch?.batch_link) {
-                                  window.open(batch?.batch_link, "_blank");
-                                } else {
-                                  message.info("Class link not available");
-                                }
-                              }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (batch?.batch_link) {
+                                    window.open(batch?.batch_link, "_blank");
+                                  } else {
+                                    message.info("Class link not available");
+                                  }
+                                }}
                               >
                                 Join
                               </button>

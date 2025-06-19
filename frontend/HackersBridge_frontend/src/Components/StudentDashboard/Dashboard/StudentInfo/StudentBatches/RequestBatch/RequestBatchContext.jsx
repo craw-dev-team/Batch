@@ -3,6 +3,7 @@ import { createContext, useContext, useState } from "react";
 import BASE_URL from "../../../../../../ip/Ip";
 import { useStudentBatch } from "../StudentBatchContext";
 import { message } from "antd";
+import { resolvePath } from "react-router-dom";
 
 
 
@@ -14,7 +15,7 @@ const RequestBatchContext = createContext();
 const RequestBatchProvider = ({ children }) => {
     // store batch code 
     const [batchCode, setBatchCode] = useState("");
-    const [requestBatchData, setRequestBatchData] = useState();
+    // const [requestBatchData, setRequestBatchData] = useState();
     const [loading, setLoading] = useState(false);
     const { fetchStudentRecommendedBatches } = useStudentBatch();
 
@@ -36,12 +37,18 @@ const RequestBatchProvider = ({ children }) => {
                 withCredentials: true,
             },
         );
-        setRequestBatchData(response.data)
-        console.log(response);
+
+        if (response.status >= 200 && response.status <= 209) {
+          message.success(response?.data?.message)
+        } else {
+          message.error(response?.data?.message)
+        }
+          // setRequestBatchData(response.data)
+          console.log(response);
         
         } catch (error) {
           message.error(error?.response?.data?.message)
-        console.log("Error sending code to server", error);
+          console.log("Error sending code to server", error);
         }
     }; 
 
@@ -71,9 +78,9 @@ const RequestBatchProvider = ({ children }) => {
 
             fetchStudentRecommendedBatches();
           } else {
-            message.error(response.data.message)
+            message.error(response.data.error)
 
-            console.error("Error in batch request:", response);
+            console.error("Error in batch request:", response?.data);
           }
 
           // console.log("Batch ID request success:", response);
@@ -87,7 +94,7 @@ const RequestBatchProvider = ({ children }) => {
 
   
     return (
-      <RequestBatchContext.Provider value={{  batchCode, setBatchCode, loading, setLoading, handleRequestBatch, requestBatchData, handleRequestBatchById }}>
+      <RequestBatchContext.Provider value={{  batchCode, setBatchCode, loading, setLoading, handleRequestBatch, handleRequestBatchById }}>
         {children}
       </RequestBatchContext.Provider>
     );

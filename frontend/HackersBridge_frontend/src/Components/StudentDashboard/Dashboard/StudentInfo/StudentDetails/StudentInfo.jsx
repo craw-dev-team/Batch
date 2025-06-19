@@ -1,60 +1,17 @@
-import { Dropdown, Tag, DatePicker, Button, Checkbox  } from 'antd';
-import {  DownOutlined, CheckCircleOutlined, EditOutlined } from '@ant-design/icons';
-import { useParams } from "react-router-dom";
+import { Tag  } from 'antd';
+import { CheckCircleOutlined } from '@ant-design/icons';
 import dayjs from "dayjs";
-import React, { useState, useCallback, useEffect } from "react";
-import axios from 'axios';
-import BASE_URL from '../../../../../ip/Ip';
 import InfoPageLoading from '../../../../../Pages/SkeletonLoading.jsx/StudentInfoLoading';
+import { useStudentInfo } from './StudentInfoContext';
 
 const StudentInfo = () => {
-    const [studentDetails, setStudentDetails] = useState();
-    const [loading, setLoading] = useState(false);
+    const { studentDetails } = useStudentInfo();
 
-    const fetchStudentDetails = useCallback (async () => {
-        if (loading) return;
-    
-        const token = localStorage.getItem('token');
-        if (!token) {
-            console.error("No token found, user might be logged out.");
-            return;
-        };
-
-        setLoading(true);
-        try {
-            const response = await axios.get(`${BASE_URL}/Student_login/student_info/`,
-            { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
-            withCredentials: true,
-            }  
-            );
-            const data = response.data;
-            // console.log(data);
-            
-            setStudentDetails(prevData => {
-            if(JSON.stringify(prevData) !== JSON.stringify(data)){
-                return data;
-            }
-            return prevData;
-            });
-
-            // console.log('Batches Data ', data)
-        } catch (error) {
-        console.error('Error fetching Student Data', error);
-        } finally {
-        setLoading(false);
-        }
-    }, [loading]);
-
-
-    useEffect(() => {
-        fetchStudentDetails()
-        
-    },[]);
 
 
     return (
         <>
-            <div className="w-full h-full pt-0 px-0 ">
+            <div className="w-full h-full pt-0 px-0">
                 {/* <div className="relative z-10">
                     <button
                         onClick={() => handleTopTabClick("Info")}
@@ -165,7 +122,7 @@ const StudentInfo = () => {
                             
                                 </div>
                                 
-                                <div className="px-1 py-4 col-span-6 mt-6 h-auto shadow-md sm:rounded-lg border border-gray-100 darkmode">
+                                <div className="px-1 py-4 col-span-6 mt-1 h-auto shadow-md sm:rounded-lg border border-gray-100 darkmode">
                                     <div className="w-full font-semibold">
                                         
                                         <div className="col-span-1 text-lg px-1 py-4">
@@ -176,7 +133,7 @@ const StudentInfo = () => {
                                             <table className="w-full text-xs text-left text-gray-500 dark:text-gray-400 ">
                                                 <thead className="text-xs text-gray-700 uppercase bg-green-200 sticky top-0 z-10">
                                                     <tr>
-                                                        <th scope="col" className="px-3 py-3 md:px-3">
+                                                        <th scope="col" className="px-1 py-2 md:px-1">
                                                             S.No
                                                         </th>
                                                         <th scope="col" className="px-1 py-2 md:px-1">
@@ -188,7 +145,7 @@ const StudentInfo = () => {
                                                         <th scope="col" className="px-1 py-2 md:px-1">
                                                             Batch Taken
                                                         </th>
-                                                        <th scope="col" className="px-3 py-2 md:px-3">
+                                                        <th scope="col" className="px-1 py-2 md:px-1">
                                                             Books
                                                         </th>
                                                         {/* <th scope="col" className="px-1 py-2 md:px-1 md:w-40">
@@ -224,9 +181,12 @@ const StudentInfo = () => {
                                                             <td className={`px-1 py-2 md:px-1 text-md`}>
                                                                 { item.course_taken }
                                                             </td>
-                                                            <td className="px-3 py-2 md:px-3 text-md">
+                                                            <td className="px-1 py-2 md:px-1 text-md">
                                                                 {item.student_book_allotment ? (
-                                                                <CheckCircleOutlined className="text-green-500 text-lg " />
+                                                                   <span className="flex items-center gap-1 text-green-600">
+                                                                        <CheckCircleOutlined className="text-green-500 text-md lg:text-lg md:text-lg 2xl:text-lg" />
+                                                                        {dayjs(item.student_book_date).format("DD/MM/YYYY | hh:mm A")}
+                                                                    </span>
                                                                 ) : (
                                                                 "-"
                                                                 )}
