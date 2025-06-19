@@ -64,6 +64,7 @@ CORS_ALLOW_HEADERS = [
 # Application definition
 
 INSTALLED_APPS = [
+    'channels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -115,7 +116,8 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'HackersBridge.wsgi.application'
+# WSGI_APPLICATION = 'HackersBridge.wsgi.application'
+ASGI_APPLICATION = 'HackersBridge.asgi.application'
 
 
 # Database
@@ -196,7 +198,7 @@ DEFAULT_FROM_EMAIL = 'CRAW SECURITY CERTIFICATE <training@craw.in>'
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Kolkata'
 
 USE_I18N = True
 
@@ -230,3 +232,10 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = "nexus.CustomUser"                            
+
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",  # For development
+    }
+}

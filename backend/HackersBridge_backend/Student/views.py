@@ -8,9 +8,9 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
-from .models import Student, Installment, FeesRecords, StudentCourse, StudentNotes
+from .models import Student, Installment, FeesRecords, StudentCourse, StudentNotes, BookAllotment
 from .serializer import StudentSerializer, StudentNoteSerializer, StudentCourseSerializer, StudentBookAllotmentSerializer, SimpleStudentSerializer
-from nexus.models import Batch, Timeslot, Course, Attendance
+from nexus.models import Batch, Timeslot, Course, Attendance, Book
 from django.db.models import Count, Q, Exists, OuterRef
 from rest_framework.authtoken.models import Token
 from nexus.serializer import BatchStudentAssignment, LogEntrySerializer
@@ -63,19 +63,30 @@ class ALLStudentListView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+from django_filters.rest_framework import DjangoFilterBackend, DateFromToRangeFilter, FilterSet
+# ✅ Custom Filter for range filtering on date_of_joining
+class StudentFilter(FilterSet):
+    date_of_joining = DateFromToRangeFilter()
 
-# This for student data by paginations
+    class Meta:
+        model = Student
+        fields = ['mode', 'preferred_week', 'language', 'location', 'status', 'date_of_joining']
+
+
+# ✅ Student List API with pagination + filters
 class StudentListView(ListAPIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = StudentSerializer
     pagination_class = StandardResultsSetPagination
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
-    search_fields = ['name', 'phone', 'alternate_phone', 
-                     'guardian_no', 'email', 'enrollment_no', 
-                     'mode', 'preferred_week', 'language', 
-                     'support_coordinator__name', 'course_counsellor__name', 'date_of_joining']
-    filterset_fields = ['mode', 'preferred_week', 'language', 'location', 'status']  # ✅ Add this line {, 'date_of_joining'}
+    search_fields = [
+        'name', 'phone', 'alternate_phone', 
+        'guardian_no', 'email', 'enrollment_no', 
+        'mode', 'preferred_week', 'language', 
+        'support_coordinator__name', 'course_counsellor__name', 'date_of_joining'
+    ]
+    filterset_class = StudentFilter  # ✅ Corrected this line
 
     def get_queryset(self):
         if self.request.user.role not in ['admin', 'coordinator']:
@@ -94,15 +105,13 @@ class StudentListView(ListAPIView):
 
         student_data = Student.objects.select_related(
             'course_counsellor', 'support_coordinator', 'location'
-                ).prefetch_related(
-                    'courses',
-                    completed_courses_prefetch,
-                    notes_prefetch
-                ).order_by('-last_update_datetime')
-        # print(student_data)
+        ).prefetch_related(
+            'courses',
+            completed_courses_prefetch,
+            notes_prefetch
+        ).order_by('date_of_joining')
+        
         return student_data
-
-
 
 {
 
@@ -496,97 +505,93 @@ class StudentInfoAPIView(APIView):
 
         student = get_object_or_404(Student, id=id)
 
-        # Fetch student-course relationships
+        # Fetch related student courses with course data
         student_courses = StudentCourse.objects.filter(student=student).select_related('course')
+        student_course_ids = list(student_courses.values_list('id', flat=True))
 
         student_course_list = []
-        student_course_ids = []
+        for sc in student_courses:
+            # Get book issue dates
+            book_issues = BookAllotment.objects.filter(
+                book__course=sc.course,
+                student=student
+            ).values('allotment_datetime')
 
-        for course in student_courses:
             student_course_list.append({
-                'id': course.id,
-                'course_name': course.course.name,
-                'course_taken': Batch.objects.filter(student=student, course=course.course).count(),
-                'course_status': course.status,
-                'course_certificate_date': course.certificate_date,
-                'certificate_issued_at': course.certificate_issued_at,
-                'student_book_allotment': course.student_book_allotment,
-                'student_old_book_allotment': course.student_old_book_allotment,
+                'id': sc.id,
+                'course_name': sc.course.name,
+                'course_taken': Batch.objects.filter(student=student, course=sc.course).count(),
+                'course_status': sc.status,
+                'course_certificate_date': sc.certificate_date,
+                'certificate_issued_at': sc.certificate_issued_at,
+                'student_book_allotment': sc.student_book_allotment,
+                'student_old_book_allotment': sc.student_old_book_allotment,
+                'student_book_issue_date': list(book_issues),
+                'studnet_marks': sc.marks,
+                'student_exam_date': sc.marks_update_date,
             })
-            student_course_ids.append(course.id)
 
-        # Batch status categorization
+        # Get batches grouped by status
         batch_statuses = ['Upcoming', 'Completed', 'Running', 'Hold']
         student_batches = {
             status: Batch.objects.filter(student=student, status=status).select_related('course', 'trainer', 'batch_time')
             for status in batch_statuses
         }
 
-        # Filter upcoming batches for enrolled courses not yet completed
-        all_upcoming_batches = Batch.objects.filter(course__in=student_courses.values('course_id'), status='Upcoming')
-        completed_or_ongoing_course_ids = student_courses.filter(status__in=['Completed', 'Ongoing']).values_list('course_id', flat=True)
+        # Identify upcoming batches not already in student's completed/ongoing courses
+        completed_or_ongoing_course_ids = student_courses.filter(
+            status__in=['Completed', 'Ongoing']
+        ).values_list('course_id', flat=True)
+
+        all_upcoming_batches = Batch.objects.filter(
+            course__in=student_courses.values_list('course_id', flat=True),
+            status='Upcoming'
+        )
 
         filtered_upcoming_batches = all_upcoming_batches.exclude(
             course_id__in=completed_or_ongoing_course_ids
-        ).exclude(id__in=student_batches['Upcoming'].values_list('id', flat=True))
+        ).exclude(
+            id__in=student_batches['Upcoming'].values_list('id', flat=True)
+        )
 
-        # Update student course status
+        # Update status to 'Upcoming' for related StudentCourse entries
         StudentCourse.objects.filter(
             student=student,
             course__in=student_batches['Upcoming'].values_list('course_id', flat=True)
         ).update(status='Upcoming')
 
-        # Fetch logs related to Student, StudentCourse, StudentNotes
-        student_ct = ContentType.objects.get_for_model(Student)
-        course_ct = ContentType.objects.get_for_model(StudentCourse)
-        notes_ct = ContentType.objects.get_for_model(StudentNotes)
-
+        # Fetch logs
+        content_types = ContentType.objects.get_for_models(Student, StudentCourse, StudentNotes)
         student_logs = LogEntry.objects.filter(
-            content_type__in=[student_ct, course_ct, notes_ct]
+            content_type__in=content_types.values()
         ).filter(
             Q(object_id=student.id) | Q(object_id__in=student_course_ids)
         ).order_by('-timestamp')
 
         serialized_logs = LogEntrySerializer(student_logs, many=True).data
 
+        # Notes
         note_fields = [
-                        'id', 
-                        'note', 
-                        'create_at', 
-                        'last_update_datetime', 
-                        'create_by__username', 
-                        'create_by__role'
-                        ]
+            'id', 'note', 'create_at', 'last_update_datetime',
+            'create_by__first_name', 'create_by__role'
+        ]
+        student_notes = StudentNotes.objects.filter(student=student).values(*note_fields).order_by('-create_at')
 
-        student_notes = StudentNotes.objects.filter(student=id).values(*note_fields).order_by('-create_at')
+        # Prepare batch fields
+        batch_fields = [field.name for field in Batch._meta.fields]
+        batch_extra_fields = ['course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time']
 
-        # Build response
         response_data = {
             "All_in_One": {
                 'student_count': Student.objects.count(),
                 'student': StudentSerializer(student).data,
                 'student_courses': student_course_list,
                 'student_notes': student_notes,
-                'student_batch_upcoming': list(student_batches['Upcoming'].values(
-                    *[field.name for field in Batch._meta.fields],
-                    'course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time'
-                )),
-                'student_batch_hold': list(student_batches['Hold'].values(
-                    *[field.name for field in Batch._meta.fields],
-                    'course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time'
-                )),
-                'student_batch_ongoing': list(student_batches['Running'].values(
-                    *[field.name for field in Batch._meta.fields],
-                    'course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time'
-                )),
-                'student_batch_completed': list(student_batches['Completed'].values(
-                    *[field.name for field in Batch._meta.fields],
-                    'course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time'
-                )),
-                'all_upcoming_batch': list(filtered_upcoming_batches.values(
-                    *[field.name for field in Batch._meta.fields],
-                    'course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time'
-                )),
+                'student_batch_upcoming': list(student_batches['Upcoming'].values(*batch_fields, *batch_extra_fields)),
+                'student_batch_hold': list(student_batches['Hold'].values(*batch_fields, *batch_extra_fields)),
+                'student_batch_ongoing': list(student_batches['Running'].values(*batch_fields, *batch_extra_fields)),
+                'student_batch_completed': list(student_batches['Completed'].values(*batch_fields, *batch_extra_fields)),
+                'all_upcoming_batch': list(filtered_upcoming_batches.values(*batch_fields, *batch_extra_fields)),
                 'student_logs': serialized_logs,
             }
         }
@@ -1268,7 +1273,7 @@ class StudentBookAllotmentAPIView(APIView):
                     #         <p>Best regards,<br><strong>CRAW Security Library Team</strong></p>
                     #     </div>
                     # </body>
-                    # </html>
+                    # </html> 
 
                     from_email = "CRAW SECURITY BOOK <training@craw.in>"
                     try:
@@ -1472,7 +1477,7 @@ class StudentAttendanceEdit(APIView):
 
 
 # Student Marks Update with Sending Email...
-class StudentMarksUpdateAPIView(APIView):
+class StudentMarksUpdateAPIView (APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 

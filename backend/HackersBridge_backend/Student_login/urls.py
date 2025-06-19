@@ -29,5 +29,5 @@ urlpatterns = [
     # path('only_student_login/', StudentLoginView.as_view(), name='student-login'),
     # path('batch_attendance/', create_attendance_for_all_batches_view, name='batch-attendance'),
     # path('batch_attendance_present/', batch_attendance_present, name='batch-attendance'),
-
 }
+
