@@ -21,6 +21,7 @@ const StudentBatchInfo = () => {
         }
       }
     }, []);
+console.log(studentBatchInfo);
 
 
   return (
@@ -108,6 +109,42 @@ const StudentBatchInfo = () => {
                                                       {item.trainer__status}
                                                     </Tag>
                                                 </p>
+                                            </div>
+
+                                            <div className="col-span-1 px-1 py-1 mt-0">
+                                                <h1 className='font-serif text-gray-700'>Trainer leave status</h1>
+                                                <p className="font-semibold text-[14px] leading-6 2xl:text-[15px] text-gray-950">
+                                                    <Tag color={item?.trainer__leave_status ? "red" : "green"}>
+                                                      {item?.trainer__leave_status === "custom" ? (
+                                                        `From: ${item?.trainer__leave_start_date ? dayjs(item.trainer__leave_start_date).format("DD/MM/YYYY") : "N/A"} - To: ${item?.trainer__leave_end_date ? dayjs(item.trainer__leave_end_date).format("DD/MM/YYYY") : "N/A"}`
+                                                      ) : item?.trainer__leave_status ? (
+                                                        item.trainer__leave_status
+                                                      ) : (
+                                                        "On Duty"
+                                                      )}
+                                                    </Tag>
+
+                                                </p>
+                                            </div>
+
+                                            <div className="col-span-1 px-1 py-1 mt-0">
+                                                {item?.batch_link ? 
+                                                <>
+                                                  {/* <h1 className='font-serif text-gray-700'>Join Class</h1> */}
+                                                <button type='button' className='bg-green-500 px-4 py-2 text-white rounded-md border-green-600 hover:bg-green-400'
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (item?.batch_link) {
+                                                      window.open(item?.batch_link, "_blank");
+                                                    } else {
+                                                      message.info("Class link not available");
+                                                    }
+                                                  }}
+                                                >
+                                                  Join Class
+                                                </button>
+                                                </>
+                                                : ''}
                                             </div>
 
                                         </div>
