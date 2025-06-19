@@ -2,14 +2,17 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import CreateStudentForm from "./CreateStudentForm";
 import axios from "axios";
-import { Button, message, Popconfirm,  Avatar, Tag, Tooltip, Input, Spin, Empty, Pagination, Dropdown  } from 'antd';
+import { Button, message, Popconfirm,  Avatar, Tag, Tooltip, Input, Spin, Empty, Pagination, Dropdown, Popover, DatePicker  } from 'antd';
 import { EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined, FilterOutlined , DownOutlined } from '@ant-design/icons';
 import BASE_URL from "../../../ip/Ip";
 import { useAuth } from "../AuthContext/AuthContext";
 import { useStudentForm } from "../Studentcontext/StudentFormContext";
 import StudentCards from "../SpecificPage/Cards/StudentCard";
+import dayjs from "dayjs";
+import { handleStudentClick } from "../Navigations/Navigations";
 
 const { Search } = Input;
+const { RangePicker } = DatePicker;
 
 
 const Students = () => {
@@ -36,6 +39,10 @@ const Students = () => {
     const [sortByLanguage, setSortByLanguage] = useState(null);
     const [sortByPreferredWeek, setSortByPreferredWeek] = useState(null);
     const [sortByLocation, setSortByLocation] = useState(null);
+    // filter data between start date and end date on date of joining
+    const [openDatePopover, setOpenDatePopover] = useState(false);
+    const [startDate, setStartDate] = useState(null);
+    const [endDate, setEndDate] = useState(null);
 
 
     const handleTabClick = (tab) => {
@@ -46,14 +53,15 @@ const Students = () => {
 
     // FETCH STUDENTDATA OM MOUNT
     useEffect(() => {
-        fetchStudents({  page: currentPage, pageSize, search: searchTerm, mode: sortByMode, language: sortByLanguage, preferred_week: sortByPreferredWeek, location: sortByLocation, status: activeTab })        
-    },[!isModalOpen, searchTerm, currentPage, sortByMode, sortByLanguage, sortByPreferredWeek, sortByLocation, activeTab]);
+        fetchStudents({  page: currentPage, pageSize, search: searchTerm, mode: sortByMode, language: sortByLanguage, preferred_week: sortByPreferredWeek, location: sortByLocation, status: activeTab, date_of_joining_after: startDate, date_of_joining_before: endDate })        
+    },[!isModalOpen, searchTerm, currentPage, sortByMode, sortByLanguage, sortByPreferredWeek, sortByLocation, activeTab, startDate, endDate]);
 
     
     // HANDLE SEARCH INPUT AND DEBOUNCE 
     useEffect(() => {        
         const handler = setTimeout(() => {
-          setSearchTerm(inputValue.trimStart());
+            setSearchTerm(inputValue.trimStart());
+            setCurrentPage(1);
         }, 500); // debounce delay in ms
         
         return () => {
@@ -176,38 +184,6 @@ const Students = () => {
         }
     };
 
-
-    const handleStudentClick =  async (studentId) => {
-        if (!studentId) return;        
-        const encodedStudentId = btoa(studentId);        
-        navigate(`/students/${encodedStudentId}`);
-    };
-
-        
-        // HANDLE SORTING OF THE DATA BASED ON MODE, LANGUAGE, PREFERRED WEEK, LOCATION
-        // const sortedBatches = useMemo(() => {
-        //     let sorted = [...studentData?.results];
-        
-        
-        //     // Apply Filters (Mode, Language, Preferred Week, Location, Course)
-        //     if (sortByMode) {
-        //         sorted = sorted.filter(student => student.mode === sortByMode);
-        //     }
-        
-        //     if (sortByLanguage) {
-        //         sorted = sorted.filter(student => student.language === sortByLanguage);
-        //     }
-        
-        //     if (sortByPreferredWeek) {
-        //         sorted = sorted.filter(student => student.preferred_week === sortByPreferredWeek);
-        //     }
-        
-        //     if (sortByLocation) {
-        //         sorted = sorted.filter(student => student.location === sortByLocation);
-        //     }
-        
-        //     return sorted;
-        // }, [studentData?.results, sortByMode, sortByLanguage, sortByPreferredWeek, sortByLocation]);
         
 
 
@@ -238,13 +214,7 @@ const Students = () => {
                 { type: "divider" },
                 { key: "clear", label:  <span style={{ color: "red", fontWeight: "bold" }}>Clear Filter</span> },
             ],
-            onClick: ({ key }) => {
-                if (key === "clear") {
-                  setSortByMode(""); // clear filter
-                } else {
-                  setSortByMode(key); // apply mode filter
-                }
-              },
+           onClick: ({ key }) => handleSort(key, "mode"),
         };
 
 
@@ -263,8 +233,8 @@ const Students = () => {
             items: [
                 { key: "Weekdays", label: <span style={{ color: "gray" }}>Weekdays</span> },
                 { key: "Weekends", label: <span style={{ color: "gray" }}>Weekends</span> },
-                { key: "both", label: <span style={{ color: "gray" }}>Both</span> },
-                { type: "divider" },
+                { key: "Both", label: <span style={{ color: "gray" }}>Both</span> },
+                   { type: "divider" },
                 { key: "clear", label:  <span style={{ color: "red", fontWeight: "bold" }}>Clear Filter</span> },
             ],
             onClick: ({ key }) => handleSort(key, "preferred_week"),
@@ -281,6 +251,16 @@ const Students = () => {
             onClick: ({ key }) => handleSort(Number(key), "location"),
         };
 
+
+        const statusDescription = {
+            "Active": "Student is currently attending classes regularly and participating as expected.",
+
+            "Inactive": "Student has completed the course or is no longer attending classes without any disciplinary issues.",
+
+            "Temp Block": "Student is temporarily blocked due to issues such as pending fees, poor attendance, or inability to attend classes for a valid reason.",
+
+            "Restricted": "Student has been permanently or strictly restricted due to serious misconduct, such as using abusive language towards the coordinator or trainer, violating institute rules, or repeated disruptive behavior."
+            }
 
 
     return (
@@ -341,16 +321,12 @@ const Students = () => {
                     <div className="flex justify-center">
                         <label htmlFor="table-search" className="sr-only">Search</label>
                         <div className="relative">
-                            <input value={searchTerm} type="text" id="table-search" placeholder="Search for student"
-                                onChange={(e) => {
-                                    const value = e.target.value.trimStart();
-                                    setSearchTerm(value);
-                                    setCurrentPage(1);
-                                }}
-                                className="2xl:w-96 lg:w-96 md:w-72 h-8 block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500" 
+                            <input value={inputValue} type="text" id="table-search" placeholder="Search for student"
+                                onChange={(e) => setInputValue(e.target.value)}
+                                className="2xl:w-96 lg:w-96 md:w-72 h-8 block p-2 pr-10 text-xs text-gray-600 font-normal border border-gray-300 rounded-lg bg-gray-50 focus:ring-0 focus:border-blue-500" 
                             />
                             <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                            <button onClick={() => setSearchTerm("")}>
+                            <button onClick={() => {setInputValue(""); setSearchTerm("");}}>
                             {searchTerm ? (
                                     <svg className="w-4 h-4 text-gray-500" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M6.293 6.293a1 1 0 011.414 0L10 8.586l2.293-2.293a1 1 0 111.414 1.414L11.414 10l2.293 2.293a1 1 0 01-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 01-1.414-1.414L8.586 10 6.293 7.707a1 1 0 010-1.414z" clipRule="evenodd"></path>
@@ -402,6 +378,41 @@ const Students = () => {
                                 </th>
                                 <th scope="col" className="px-3 py-3 md:px-1">
                                     Date of Joining
+                                    <Tooltip title="Sort by Joining Date" placement="top">
+                                    <span>
+                                       <Popover
+                                            content={
+                                                <RangePicker
+                                                format="YYYY-MM-DD"
+                                                value={[
+                                                    startDate ? dayjs(startDate) : null,
+                                                    endDate ? dayjs(endDate) : null,
+                                                ]}
+                                                onChange={(dates) => {
+                                                    if (dates && dates[0] && dates[1]) {
+                                                        setStartDate(dates[0].format("YYYY-MM-DD"));
+                                                        setEndDate(dates[1].format("YYYY-MM-DD"));
+                                                    } else {
+                                                        setStartDate(null);
+                                                        setEndDate(null);
+                                                    }
+                                                    setOpenDatePopover(false); // auto close on selection
+                                                }}
+                                                />
+                                            }
+                                            placement="bottom"
+                                            trigger="click"
+                                            open={openDatePopover}
+                                            onOpenChange={(visible) => setOpenDatePopover(visible)}
+                                            >
+                                            <Button type="text"
+                                                icon={ <FilterOutlined style={{ color: startDate && endDate ? "blue" : "black" }} className="w-3"/>}
+                                                onClick={() => setOpenDatePopover(!openDatePopover)} 
+                                            />
+                                        </Popover>
+
+                                    </span>
+                                    </Tooltip>
                                 </th>
                                 <th scope="col" className="px-3 py-3 md:px-1">
                                     Courses
@@ -486,10 +497,10 @@ const Students = () => {
                                 {/* <td className="px-3 py-2 md:px-1">
                                     {item.id}
                                 </td> */}
-                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.id)}>
+                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(navigate,item.id)}>
                                     {item.enrollment_no}
                                 </td>
-                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.id)}>
+                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(navigate,item.id)}>
                                     {item.name}
                                 </td>
                                 <td className="px-3 py-2 md:px-1">
@@ -499,11 +510,7 @@ const Students = () => {
                                     {item.email}
                                 </td>
                                 <td className="px-3 py-2 md:px-1">
-                                    {new Date(item.date_of_joining).toLocaleDateString("en-GB", {
-                                        day: "2-digit",
-                                        month: "2-digit",
-                                        year: "2-digit"
-                                    })}
+                                    {dayjs(item.date_of_joining).format("DD/MM/YYYY")}
                                 </td>
                                 <td className="px-3 py-2 md:px-1">
                                 <Avatar.Group
@@ -574,7 +581,11 @@ const Students = () => {
                                             items: ["Active", "Inactive", "Temp Block", "Restricted"]
                                                 .map((status) => ({
                                                     key: status,
-                                                    label: status,
+                                                    label:(
+                                                        <Tooltip title={statusDescription[status]} placement="left">
+                                                        <span>{status}</span>
+                                                        </Tooltip>
+                                                    ),
                                                 })),
                                             onClick: ({ key }) => handleStudentStatusChange(item.id, key),
                                         }}
@@ -638,11 +649,12 @@ const Students = () => {
                     </div>
 
                 {/* <div className="w-full h-14 bg-slate-200"> */}
-                <div className="flex justify-center items-center mt-0 py-3 bg-zinc-100">
+                <div className="flex justify-center items-center mt-0 py-2 bg-blue-50">
                     <Pagination
+                    size="small"
                         current={currentPage}
                         total={studentData?.count || 0}
-                        pageSize={pageSize} // example: 10
+                        pageSize={pageSize} // example: 30
                         onChange={(page) => setCurrentPage(page)}
                         showSizeChanger={false}    // hide page size select
                         showQuickJumper={false}    // hide quick jump input

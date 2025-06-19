@@ -365,6 +365,7 @@ const EmailPopup = ({ open, onClose, selectedStudents }) => {
 
     const [emailSubject, setEmailSubject] = useState("");
 
+console.log(specificBatch);
 
 
     useEffect(() => {
@@ -476,7 +477,6 @@ const EmailPopup = ({ open, onClose, selectedStudents }) => {
             email_subject: emailSubject,
             email_type: selectedTemplate
           }
-          console.log(payload);
           
         try {
             const response = await axios.post(`${BASE_URL}/api/emailsender/`,

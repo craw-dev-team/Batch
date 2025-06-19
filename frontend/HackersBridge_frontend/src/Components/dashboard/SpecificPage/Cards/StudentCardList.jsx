@@ -95,7 +95,7 @@ const StudentsList = () => {
                         <label htmlFor="table-search" className="sr-only">Search</label>
                         <div className="relative h-auto">
                             <input onChange={(e) => setSearchTerm(e.target.value.replace(/^\s+/, ''))} value={searchTerm} type="text" id="table-search" placeholder="Search for items"
-                                className="2xl:w-96 lg:w-96 md:w-72 h-8 block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500" 
+                                className="2xl:w-96 lg:w-96 md:w-72 h-8 block p-2 pr-10 text-xs text-gray-600 font-normal border border-gray-300 rounded-lg bg-gray-50 focus:ring-0 focus:border-blue-500" 
                                 />
                             <div className="absolute inset-y-0 right-0 h-auto flex items-center pr-3">
                             <button onClick={() => setSearchTerm("")}>

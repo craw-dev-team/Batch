@@ -7,6 +7,7 @@ import CreateTrainerForm from "../Trainers/CreateTrainerForm";
 import dayjs from "dayjs";
 import axios from "axios";
 import BASE_URL from "../../../ip/Ip";
+import handleBatchClick from "../Navigations/Navigations";
 
 
 
@@ -92,12 +93,12 @@ const SpecificTrainerPage = () => {
         };
 
         // TO NAVIGATE TO BATCH SPECIFIC PAGE 
-        const handleBatchClick = async (batchId) => {
-            if (!batchId) return;            
-            const encodedBatchId = btoa(batchId);
+        // const handleBatchClick = async (batchId) => {
+        //     if (!batchId) return;            
+        //     const encodedBatchId = btoa(batchId);
             
-            navigate(`/batches/${encodedBatchId}`)
-        };
+        //     navigate(`/batches/${encodedBatchId}`)
+        // };
 
          
         // handle status change to date select in dropdown
@@ -245,20 +246,20 @@ const SpecificTrainerPage = () => {
                               
                                     <div className="flex gap-2 mt-2">
                                         <button
-                                        onClick={() => handleTrainerStatusChange(trainerDetails?.id)}
-                                        disabled={loading}
-                                        className="text-xs px-3 py-1 bg-blue-500 text-white rounded"
-                                        >
-                                        {loading ? (
-                                            <>
-                                            <SyncOutlined spin className="mr-2" />
-                                            Processing...
-                                            </>
-                                        ) : "Save" }
-                                        </button>
-                                        <button
-                                        onClick={resetTrainerEditForm}
-                                        className="text-xs px-3 py-1 bg-gray-300 dark:bg-gray-700 text-black dark:text-white rounded"
+                                            onClick={() => handleTrainerStatusChange(trainerDetails?.id)}
+                                            disabled={loading}
+                                            className="text-xs px-3 py-1 bg-blue-500 text-white rounded"
+                                            >
+                                            {loading ? (
+                                                <>
+                                                <SyncOutlined spin className="mr-2" />
+                                                Processing...
+                                                </>
+                                            ) : "Save" }
+                                            </button>
+                                            <button
+                                            onClick={resetTrainerEditForm}
+                                            className="text-xs px-3 py-1 bg-gray-300 dark:bg-gray-700 text-black dark:text-white rounded"
                                         >
                                         Cancel
                                         </button>
@@ -359,7 +360,7 @@ const SpecificTrainerPage = () => {
                                         setSearchTerm(value);
                                         setCurrentPage(1);
                                     }}
-                                    className="2xl:w-80 lg:w-80 md:w-40 h-8 block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500" 
+                                    className="2xl:w-80 lg:w-80 md:w-40 h-8 block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-0 focus:border-blue-500" 
                                     />
                                 <div className="absolute inset-y-0 right-0 h-8 flex items-center pr-3">
                                 <button onClick={() => setSearchTerm("")}>
@@ -428,36 +429,19 @@ const SpecificTrainerPage = () => {
                                                 <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
                                                     {index + 1}
                                                 </td>
-                                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleBatchClick(item.batch_id)}>
+                                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleBatchClick(navigate,item.batch_id)}>
                                                     {item.batch_name}
                                                 </td>
                                                 <td className="px-3 py-2 md:px-1">
-                                                    {new Date(`1970-01-01T${item.batch_time_start}`).toLocaleString("en-US", {
-                                                    hour: "numeric",
-                                                    minute: "numeric",
-                                                    hour12: true,
-                                                    })} 
+                                                    {dayjs(`1970-01-01T${item.batch_time_start}`).format("hh:mm A")} 
                                                     <span> - </span>
-                                                    {new Date(`1970-01-01T${item.batch_time_end}`).toLocaleString("en-US", {
-                                                    hour: "numeric",
-                                                    minute: "numeric",
-                                                    hour12: true,
-                                                    })}
-                                                    {item.batch_time_id}
+                                                    {dayjs(`1970-01-01T${item.batch_time_end}`).format("hh:mm A")}
                                                 </td>
                                                 <td className="px-3 py-2 md:px-1">
-                                                    {new Date(item.batch_start_date).toLocaleDateString("en-GB", {
-                                                    day: "2-digit",
-                                                    month: "2-digit",
-                                                    year: "numeric",
-                                                    })}
+                                                    {dayjs(item.batch_start_date).format("DD/MM/YYYY")}
                                                 </td>
                                                 <td className="px-3 py-2 md:px-1">
-                                                    {new Date(item.batch_end_date).toLocaleDateString("en-GB", {
-                                                        day: "2-digit",
-                                                        month: "2-digit",
-                                                        year: "numeric",
-                                                    })}
+                                                    {dayjs(item.batch_end_date).format("DD/MM/YYYY")}
                                                 </td>
                                                 <td className="px-3 py-2 md:px-1">
                                                     <Avatar.Group

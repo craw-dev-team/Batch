@@ -49,14 +49,13 @@ export const groupNotesByMonth = (notes) => {
         type: "note",
         content: note.note,
         label: note.create_by__role || "System Note",
-        username: note.create_by__username || "Unknown",
+        username: note.create_by__first_name || "Unknown",
       });
     });
   
     return grouped;
   };
 
-  
 
 // Main Component
 const SpecificStudentNotes = () => {
@@ -89,39 +88,51 @@ const SpecificStudentNotes = () => {
                 <h1>Notes</h1>
             </div>
             
-            {Object.entries(groupedNotes).map(([monthLabel, notes]) => (
+            {loading ? (
+              <div className="text-center py-8">
+                <Spin size="large" tip="Loading notes..." />
+              </div>
+            ) : groupedNotes?.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Empty description="No notes found." />
+              </div>
+            ) : (
+              Object.entries(groupedNotes).map(([monthLabel, notes]) => (
                 <div key={monthLabel} className="mb-8">
-                  <h3 className="px-4 mt-4 text-lg font-semibold text-gray-700 mb-4">{monthLabel}</h3>
-                    <Timeline
-                      mode="alternate"
-                      className="pl-2"
-                      items={notes.map((note, idx) => ({
-                        key: idx,
-                        dot: getIcon(note.type),
-                        label: (
-                          <div className="text-xs text-gray-500">
-                            {dayjs(note.date).format("ddd, DD")} <br />
-                            {dayjs(note.date).format("hh:mm A")}
+                  <h3 className="px-4 mt-4 text-lg font-semibold text-gray-700 mb-4">
+                    {monthLabel}
+                  </h3>
+                  <Timeline
+                    mode="alternate"
+                    className="pl-2"
+                    items={notes.map((note, idx) => ({
+                      key: idx,
+                      dot: getIcon(note.type),
+                      label: (
+                        <div className="text-xs text-gray-500">
+                          {dayjs(note.date).format("ddd, DD")} <br />
+                          {dayjs(note.date).format("hh:mm A")}
+                        </div>
+                      ),
+                      children: (
+                        <Card size="small" bordered className="bg-white shadow-sm mr-5">
+                          <div className="mb-1 flex items-center gap-2">
+                            {note.label && <Tag color="blue">{note.label}</Tag>}
+                            {note.username && (
+                              <span className="text-xs text-gray-500 italic">
+                                by {note.username}
+                              </span>
+                            )}
                           </div>
-                        ),
-                        children: (
-                          <Card size="small" bordered className="bg-white shadow-sm mr-5">
-                            <div className="mb-1 flex items-center gap-2">
-                              {note.label && <Tag color="blue">{note.label}</Tag>}
-                              {note.username && (
-                                <span className="text-xs text-gray-500 italic">
-                                  by {note.username}
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-sm text-gray-800">{note.content}</p>
-                          </Card>
-                        ),
-                      }))}
-                    >
-                    </Timeline>
+                          <p className="text-sm text-gray-800">{note.content}</p>
+                        </Card>
+                      ),
+                    }))}
+                  />
                 </div>
-            ))}
+              ))
+            )}
+
         </div>
     </div>
   );

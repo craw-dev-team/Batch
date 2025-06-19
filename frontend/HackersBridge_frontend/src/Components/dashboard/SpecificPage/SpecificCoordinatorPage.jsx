@@ -7,6 +7,8 @@ import { EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined } from '@ant
 import SpecificCoordinatorLogs from "../AllLogs/Coordinator/SpecificCoordinatorLogs";
 import AddCoordinatorForm from "../AddDetails/Coordinator/AddCoordinatorForm";
 import SpecificCoordinatorActivityLogs from "../AllLogs/Coordinator/SpecificCoordinatorActivityLogs";
+import { handleStudentClick, handleTrainerClick } from "../Navigations/Navigations";
+import dayjs from "dayjs";
 
 
 
@@ -52,19 +54,6 @@ const SpecificCoordinatorPage = () => {
         };
 
 
-        //NAVIGATE TO SPECIFIC STUDENT PAGE 
-        const handleStudentClick = async (studentId) => {
-            if (!studentId) return;
-            const encodedStudentId = btoa(studentId)
-            navigate(`/students/${encodedStudentId}`)
-        }; 
-
-        // NAVIGATE TO SPECIFIC TRAINER PAGE 
-        const handleTrainerClick = async (trainerId) => {
-            if (!trainerId) return;
-            const encodedTrainerId = btoa(trainerId);
-            navigate(`/trainers/${encodedTrainerId}`);
-        };
 
 return (
     <>
@@ -243,10 +232,10 @@ return (
                                                         <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900 ">
                                                             {index + 1}
                                                         </td>
-                                                        <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.id)}>
+                                                        <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(navigate,item.id)}>
                                                             {item.enrollment_no}
                                                         </td>
-                                                        <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.id)}>
+                                                        <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(navigate,item.id)}>
                                                             {item.name}
                                                         </td>
                                                         <td className="px-3 py-2 md:px-1">
@@ -256,11 +245,7 @@ return (
                                                             {item.email}
                                                         </td>
                                                         <td className="px-3 py-2 md:px-1">
-                                                            {new Date(item.date_of_joining).toLocaleDateString("en-GB", {
-                                                                day: "2-digit",
-                                                                month: "2-digit",
-                                                                year: "2-digit"
-                                                            })}
+                                                            {dayjs(item.date_of_joining).format("DD/MM/YYYY")}
                                                         </td>
                                                         <td className="px-3 py-2 md:px-1">
                                                         <Avatar.Group
@@ -428,18 +413,14 @@ return (
                                                 {/* <td className="px-3 py-2 md:px-1">
                                                     {item.id}
                                                 </td> */}
-                                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.id)}>
+                                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(navigate,item.id)}>
                                                     {item.trainer_id}
                                                 </td>
-                                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.id)}>
+                                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(navigate,item.id)}>
                                                     {item.name}
                                                 </td>
                                                 <td className="px-3 py-2 md:px-1">
-                                                    {new Date(item.date_of_joining).toLocaleDateString("en-GB", {
-                                                        day: "2-digit",
-                                                        month: "2-digit",
-                                                        year: "2-digit"
-                                                    })}
+                                                    {dayjs(item.date_of_joining).format("DD//MM/YYYY")}
                                                 </td>
                                                 <td className="px-3 py-2 md:px-1">
                                                     {item.phone}
@@ -566,7 +547,8 @@ return (
                       <SpecificCoordinatorActivityLogs />
                     </>
                 )}
-                            <AddCoordinatorForm isOpen={isModalOpen} coordinatorData={selectedCoordinator|| {}} onClose={() => setIsModalOpen(false)} />
+
+                <AddCoordinatorForm isOpen={isModalOpen} coordinatorData={selectedCoordinator|| {}} onClose={() => setIsModalOpen(false)} />
         </div>
     </>
 )

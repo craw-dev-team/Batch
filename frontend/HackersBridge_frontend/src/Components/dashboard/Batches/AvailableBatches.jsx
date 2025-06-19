@@ -8,6 +8,7 @@ import dayjs from "dayjs";
 import BASE_URL from "../../../ip/Ip";
 import { useAuth } from "../AuthContext/AuthContext";
 import { useNavigate } from "react-router-dom";
+import handleBatchClick, { handleTrainerClick } from "../Navigations/Navigations";
 
 
 
@@ -17,7 +18,7 @@ dayjs.extend(customParseFormat);
 
 const AvailableBatches = () => {
     const [isModalOpen, setIsModalOpen] = useState(false); 
-    const [activeTab, setActiveTab] = useState("tab1");
+    const [activeTab, setActiveTab] = useState("available_batches");
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedBatch, setSelectedBatch] = useState(null);
     const [sortByName, setSortByName] = useState(false);
@@ -49,7 +50,7 @@ const AvailableBatches = () => {
     const futureAvailableTrainers = availableTrainers?.future_availability_trainers ?? [];
 
 
-    const filteredTrainers = activeTab === "tab1" ? freeTrainers : futureAvailableTrainers;
+    const filteredTrainers = activeTab === "available_batches" ? freeTrainers : futureAvailableTrainers;
 
     // filter batches based on trainer name and location 
     const searchFilteredBatches = useMemo(() => {
@@ -101,19 +102,12 @@ const AvailableBatches = () => {
     
   
     // HANDLE NAVIGATE TO TRAINER INFO
-    const handleTrainerClick =  async (trainerId) => {    
-        if (!trainerId) return;
-        const encodedTrainerId = btoa(trainerId); 
-        navigate(`/trainers/${encodedTrainerId}`);
-    };
+    // const handleTrainerClick =  async (trainerId) => {    
+    //     if (!trainerId) return;
+    //     const encodedTrainerId = btoa(trainerId); 
+    //     navigate(`/trainers/${encodedTrainerId}`);
+    // };
 
-    
-    // HANDLE NAVIGATE TO BATCH INFO
-    const handleBatchClick =  async (batchId) => {            
-        if (!batchId) return;
-        const encodedBatchId = btoa(batchId); 
-        navigate(`/batches/${encodedBatchId}`);
-    };
 
 
     return (
@@ -134,17 +128,17 @@ const AvailableBatches = () => {
                     <div className="relative ">
                                 {/* <Badge count={countBatchesByType.availableBatches} size="small"> */}
                             <button
-                                onClick={() => handleTabClick("tab1")}
+                                onClick={() => handleTabClick("available_batches")}
                                 className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200  
-                                    ${activeTab === "tab1" ? 'bg-blue-300 text-black dark:text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                    ${activeTab === "available_batches" ? 'bg-blue-300 text-black dark:text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                                     >
                                 Available Batches
                             </button>
                                 {/* </Badge> */}
                             <button
-                                onClick={() => handleTabClick("tab2")}
+                                onClick={() => handleTabClick("future_available_batches")}
                                 className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                                    ${activeTab === "tab2" ? 'bg-blue-300 dark:bg-[#3D5A80] text-black dark:text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                    ${activeTab === "future_available_batches" ? 'bg-blue-300 dark:bg-[#3D5A80] text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                                 >
                                 Future Available Batches
                             </button>
@@ -157,16 +151,16 @@ const AvailableBatches = () => {
                             <label htmlFor="table-search" className="sr-only">Search</label>
                             <div className="relative h-auto">
                                 <input onChange={(e) => setSearchTerm(e.target.value.replace(/^\s+/, ''))} value={searchTerm} type="text" id="table-search" placeholder="Search for items"
-                                    className="block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg w-40 h-7 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" 
+                                    className="2xl:w-96 lg:w-96 md:w-40 h-8 block p-2 pr-10 text-xs text-gray-600 font-normal border border-gray-300 rounded-lg bg-gray-50 focus:ring-0 focus:border-blue-500" 
                                     />
                                 <div className="absolute inset-y-0 right-0 h-auto flex items-center pr-3">
                                 <button onClick={() => setSearchTerm("")}>
                                 {searchTerm ? (
-                                    <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                    <svg className="w-4 h-4 text-gray-500" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
                                             <path fillRule="evenodd" d="M6.293 6.293a1 1 0 011.414 0L10 8.586l2.293-2.293a1 1 0 111.414 1.414L11.414 10l2.293 2.293a1 1 0 01-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 01-1.414-1.414L8.586 10 6.293 7.707a1 1 0 010-1.414z" clipRule="evenodd"></path>
                                         </svg>
                                     ) : (
-                                        <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                        <svg className="w-4 h-4 text-gray-500" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
                                             <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"></path>
                                         </svg>
                                     )}
@@ -181,13 +175,13 @@ const AvailableBatches = () => {
             
 
             </div>
-            {activeTab === 'tab1' && (
+            {activeTab === 'available_batches' && (
             <div className={`overflow-hidden pb-2 relative`}>
             {/* Scrollable Table Container */}
-            <div className="w-full h-[38rem] overflow-y-auto overflow-x-auto dark:border-gray-700 rounded-lg pb-2">
-                <table className="w-full text-xs text-left text-gray-500 dark:text-gray-400 table-auto">
+            <div className="w-full h-[38rem] overflow-y-auto overflow-x-auto rounded-lg pb-2">
+                <table className="w-full text-xs text-left text-gray-500 table-auto">
                 {/* Fixed Header */}
-                <thead className="text-xs text-gray-700 uppercase bg-blue-50 dark:bg-gray-700 dark:text-gray-400 sticky top-0 z-10 shadow-md">
+                <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10 shadow-md">
                     <tr>
                         <th scope="col" className="px-3 py-3 md:px-2">
                             S.No
@@ -245,29 +239,21 @@ const AvailableBatches = () => {
                                 </tr>
                             ) : Array.isArray(sortedFreeTrainers) && sortedFreeTrainers.length > 0 ? (
                             sortedFreeTrainers.map((item, index) => (
-                            <tr key={index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 scroll-smooth">
+                            <tr key={index} className="bg-white border-b border-gray-200 hover:bg-gray-50 scroll-smooth">
                                 <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
                                     {index + 1}
                                 </td>
-                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.tr_id)}>
+                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(navigate,item.tr_id)}>
                                     {item.trainer_id}
                                 </td>
-                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.tr_id)}>
+                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(navigate,item.tr_id)}>
                                     {item.name} 
                                 </td>
                                 <td className="px-3 py-2 md:px-1">
-                                    {new Date(`1970-01-01T${item.start_time}`).toLocaleString("en-US", {
-                                    hour: "numeric",
-                                    minute: "numeric",
-                                    hour12: true,
-                                    })} 
+                                    {dayjs(`1970-01-01T${item.start_time}`).format("hh:mm A")} 
                                 </td>
                                 <td className="px-3 py-2 md:px-1">
-                                    {new Date(`1970-01-01T${item.end_time}`).toLocaleString("en-US", {
-                                    hour: "numeric",
-                                    minute: "numeric",
-                                    hour12: true,
-                                    })} 
+                                    {dayjs(`1970-01-01T${item.end_time}`).format("hh:mm A")} 
                                 </td>
                                 <td className="px-3 py-2 md:px-1 font-semibold">
                                     <Avatar.Group
@@ -337,13 +323,13 @@ const AvailableBatches = () => {
             )}
 
 
-            {activeTab === 'tab2' && (
+            {activeTab === 'future_available_batches' && (
             <div className={`overflow-hidden pb-2 relative`}>
             {/* Scrollable Table Container */}
-            <div className="w-full h-[38rem] overflow-y-auto overflow-x-auto dark:border-gray-700 rounded-lg pb-2">
+            <div className="w-full h-[38rem] overflow-y-auto overflow-x-auto rounded-lg pb-2">
             <table className="w-full text-xs text-left text-gray-500 dark:text-gray-400 table-auto">
                 {/* Fixed Header */}
-                <thead className="text-xs text-gray-700 uppercase bg-blue-50 dark:bg-gray-700 dark:text-gray-400 sticky top-0 z-10 shadow-md">
+                <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10 shadow-md">
                     <tr>
                     <th className="px-3 py-3 md:px-2">S.No</th>
                     <th className="px-3 py-3 md:px-1">Trainer ID</th>
@@ -378,36 +364,20 @@ const AvailableBatches = () => {
                                 </tr>
                     ) : Array.isArray(sortedFutureAvailableTrainers) && sortedFutureAvailableTrainers.length > 0 ? (
                         sortedFutureAvailableTrainers.map((item, index) => (
-                    <tr key={index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                    <tr key={index} className="bg-white border-b hover:bg-gray-50">
                         <td className="px-3 py-2 md:px-2 font-medium text-gray-900 dark:text-white">{index + 1}</td>
-                        <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.tr_id)}>{item.trainer_id}</td>
+                        <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(navigate,item.tr_id)}>{item.trainer_id}</td>
                         <td className="px-3 py-2 md:px-1 ">{item.name}</td>
                         <td className="px-3 py-2 md:px-1">
-                        {new Date(`1970-01-01T${item.start_time}`).toLocaleString("en-US", {
-                        hour: "numeric",
-                        minute: "numeric",
-                        hour12: true,
-                        })} 
+                        {dayjs(`1970-01-01T${item.start_time}`).format("hh:mm A")} 
                         </td>
                         <td className="px-3 py-2 md:px-1">
-                        {new Date(`1970-01-01T${item.end_time}`).toLocaleString("en-US", {
-                        hour: "numeric",
-                        minute: "numeric",
-                        hour12: true,
-                        })} 
+                        {dayjs(`1970-01-01T${item.end_time}`).format("hh:mm A")} 
                         </td>
-                        <td className="px-3 py-2 md:px-1">{new Date(item.start_date).toLocaleDateString("en-GB", {
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric",
-                        })}</td>
-                        <td className="px-3 py-2 md:px-1">{new Date(item.end_date).toLocaleDateString("en-GB", {
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric",
-                    })}</td>
+                        <td className="px-3 py-2 md:px-1">{dayjs(item.start_date).format("DD/MM/YYYY")}</td>
+                        <td className="px-3 py-2 md:px-1">{dayjs(item.end_date).format("DD/MM/YYYY")}</td>
                         <td className="px-3 py-2 md:px-1 font-semibold">{item.batch_course}</td>
-                        <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleBatchClick(item.batch__id)}>{item.batch_id}</td>
+                        <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleBatchClick(navigate,item.batch__id)}>{item.batch_id}</td>
                         <td className="px-3 py-2 md:px-1">
                             <Tag bordered={false} color={item.batch_week === "Weekdays" ? "cyan" : item.batch_week === "Weekends" ? "gold" : "geekblue" }>
                                 {item.batch_week}
@@ -422,7 +392,7 @@ const AvailableBatches = () => {
                         <button 
                             onClick={() => handleCreateClick(item)} 
                             type="button" 
-                            className="focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800"
+                            className="focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5"
                         >
                             Create +
                         </button>
@@ -563,9 +533,7 @@ const CreateAvailableBatchForm = ({ isOpen, onClose, selectedBatch }) => {
             // Update existing batch (PUT)
             response = await axios.put(`${BASE_URL}/api/batches/edit/${selectedBatch.id}/`, 
                 payload, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                withCredentials: true
-            }
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
             );
             successMessage = "Batch updated successfully!";
         } else {
@@ -677,7 +645,6 @@ const convertTo12HourFormat = (time) => {
                    { value: '13', label: <div style={{ backgroundColor: '#c3f3fa' }}>08:00 - 09:00 - Weekdays</div> },
                    { value: '14', label: <div style={{ backgroundColor: '#c3f3fa' }}>03:00 - 07:00 - Weekdays</div> },
                    { value: '15', label: <div style={{ backgroundColor: '#c3f3fa' }}>07:00 - 08:30 - Weekdays</div> },
-                   { value: '18', label: <div style={{ backgroundColor: '#c3f3fa' }}>03:30 - 09:00</div> },
                  ]}
                     filterOption={(input, option) => {
                         const labelText = typeof option.label === 'string'

@@ -14,6 +14,7 @@ import { useBatchForm } from "../Batchcontext/BatchFormContext";
 import { useSpecificStudent } from "../Contexts/SpecificStudent";
 import EmailPopup from "../../Emails/EmailPopup";
 import BatchInfoLoading from "../../../Pages/SkeletonLoading.jsx/BatchINfoLoading";
+import { handleStudentClick } from "../Navigations/Navigations";
 
 
 // const SpecificBatchPage = () => {
@@ -211,7 +212,6 @@ const SpecificBatchPage = () => {
     const handleTabClick = (tab) => {
         setActiveTab(tab);
     };
-
     
         // HANDLE FETCH PREFFERED AVAILABLE STUDNETS FOR THAT SPECIFIC BATCH
         const fetchAvailableStudents = useCallback(async (batchId) => {              
@@ -279,7 +279,6 @@ const SpecificBatchPage = () => {
                 );
         
                 if (response.status >= 200 && response.status < 300) {
-                    message.success("Students added successfully!");
                      setTimeout( () => {
                         setLoading(false);
                         setBatchFormData((prev) => ({ ...prev, [batch_id]: [] })); // Reset selected students
@@ -299,6 +298,13 @@ const SpecificBatchPage = () => {
                 setLoading(false);
             };
         };
+
+        // handle add student in batch confirm 
+        const StudentAddConfirm = async (studentId) => {
+            await handleAddStudentToBatch(studentId);
+            message.success('Student Added Successfully');
+        };
+
 
 
     useEffect(() => {        
@@ -333,15 +339,6 @@ const SpecificBatchPage = () => {
     const handleBatchEditClick = (batch) => {
         setSelectedBatch(batch);
         setIsBatchModalOpen(true);
-    };
-
-
-    // TO NAVIGATE TO STUDENT SPECIFIC PAGE 
-    const handleStudentClick = async (studentId) => {
-        if (!studentId) return;
-        const encodedStudentId = btoa(studentId);
-        
-        navigate(`/students/${encodedStudentId}`)
     };
 
 
@@ -383,17 +380,12 @@ const SpecificBatchPage = () => {
             const decodedBatchId = atob(batchId); // Decode batchId before using it
             const updatePayload = JSON.stringify({ [field]: updatedValues[field] }); // Convert to JSON string
     
-            // console.log("Decoded Batch ID:", decodedBatchId);
-            // console.log("Payload:", updatePayload);
-    
             await axios.put(`${BASE_URL}/api/batches/edit/${decodedBatchId}`, 
                 updatePayload, 
                 { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
                 withCredentials : true
             }
             );
-    
-            console.log(`${field} updated successfully`);
         } catch (error) {
             // console.error(`Error updating ${field}:`, error);
         }
@@ -431,19 +423,6 @@ const SpecificBatchPage = () => {
         }       
     };
 
-
-        // Confirm and Cancel Handler for delete button 
-        // const confirm = async (studentId) => {
-        //     try {
-        //         await handleRemoveStudent(studentId); 
-        //         message.success("Batch Deleted Successfully");
-        //         // console.log(specificBatch);
-                
-        //     } catch (error) {
-        //         message.error("Failed to delete batch");
-        //         console.error("Error deleting batch:", error);
-        //     }
-        // };
         
         const confirm = (studentId, studentName) => {            
             handleRemoveStudent(studentId);
@@ -459,8 +438,6 @@ const SpecificBatchPage = () => {
         const handleEditClick = (student) => {
             setSelectedStudent(student); // Set the selected course data
             setIsModalOpen(true); // Open the modal            
-            console.log(student)
-
         };
 
 
@@ -563,20 +540,46 @@ const SpecificBatchPage = () => {
         };
 
 
-        // POP CONFIRM FOR BATCH REQUESTS 
-        const RequestConfirm = (requestId) => {
-            handleAddStudentToBatch(requestId);
+
+        const handleRejectRequestToBatch = async (studentId) => {
+            const batch_id = atob(batchId)
+                    
+            if (!studentId) {
+                message.warning("No student selected!");
+                return;
+            }
+        
+            try {
+                const response = await axios.patch(`${BASE_URL}/api/batches/${batch_id}/reject-request/`, 
+                    { students: [studentId] },
+                    { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                    withCredentials : true
+                }
+                );
+            } catch (error) {
+                console.error("Error sending Add student request:", error);
+                
+                const errorMessage = error.response?.data?.error || "Failed to add students.";
+                message.error(errorMessage);
+            }  finally {
+                setLoading(false);
+            };
         };
+        
     
-        const RequestCancel = (requestId) => {
+        const RequestTOBatchCancel = async (studentId) => {
+            await handleRejectRequestToBatch(studentId)
+            message.error('Batch Request Cancelled');
+        };
+
+        const RequestCancel = () => {
             message.error('Request Deletion Cancelled');
         };
     
 
-
     return (
         <>
-            <div className="w-auto h-full pt-16 px-2 mt-0">
+            <div className="w-auto h-full pt-14 px-2 mt-0">
                 <div className="grid grid-cols-6 gap-x-6">
                     {loading ? (
                         <>
@@ -615,8 +618,8 @@ const SpecificBatchPage = () => {
                                 { label: "End Date", key: "end_date" },
                                 { label: "Status", key: "status" },
                                 { label: "Created on", key: "batch_create_datetime" },
-                                { label: "Last Updated on", key: "gen_time" },
-                                { label: "Updated by", key: "last_update_user" },
+                                { label: "Last Updated on", key: "last_update_datetime" },
+                                { label: "Updated by", key: "user_first_name" },
                             ].map(({ label, key }) => {
                                 const value = getNestedValue(updatedValues, key);
 
@@ -628,8 +631,8 @@ const SpecificBatchPage = () => {
                                     ["batch_time_data.start_time", "batch_time_data.end_time"].includes(key)
                                 ) {
                                     displayValue = dayjs(value, "HH:mm:ss").format("hh:mm A");
-                                } else if (key === "gen_time" || key === "batch_create_datetime") {
-                                    displayValue = dayjs(value).format("DD/MM/YYYY hh:mm A");
+                                } else if (key === "last_update_datetime" || key === "batch_create_datetime") {
+                                    displayValue = dayjs(value).format("DD/MM/YYYY | hh:mm A");
                                 } else {
                                     displayValue = value;
                                 }
@@ -702,29 +705,38 @@ const SpecificBatchPage = () => {
                                         >
                                             Recommended Students
                                         </button>
-
-                                        <Badge count={specificBatch?.batch_requests.length ?? 0} overflowCount={999} size="small">
-                                            <button
-                                                onClick={() => handleTabClick("batch_request")}
-                                                className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200  
-                                                    ${activeTab === "batch_request" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
-                                            >
-                                                Requests
-                                            </button>
-                                        </Badge>
+                                        
+                                        {(specificBatch?.batch_requests || []).some(
+                                            item => item.batch_requests !== "Approved" && item.batch_requests !== "Rejected"
+                                        ) && (
+                                            <Badge overflowCount={999} size="small"
+                                                count={
+                                                        specificBatch?.batch_requests?.filter(
+                                                            item => item.request_status !== "Approved" && item.request_status !== "Rejected"
+                                                        ).length ?? 0
+                                                    } >
+                                                <button
+                                                    onClick={() => handleTabClick("batch_request")}
+                                                    className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200  
+                                                        ${activeTab === "batch_request" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                                        >
+                                                    Requests
+                                                </button>
+                                            </Badge>
+                                        )}
                                     </div>
                                 </div>
 
                                 <div className="2xl:w-96 lg:w-96 mx-3 mt-0.5">
                                     <label htmlFor="table-search" className="sr-only">Search</label>
                                     <div className="relative">
-                                        <input onChange={(e) => setSearchTerm(e.target.value.replace(/^\s+/, ''))} value={searchTerm} type="text" id="table-search" placeholder="Search for items"
-                                            className="block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg w-full h-7 bg-gray-50 focus:ring-blue-500 focus:border-blue-500" 
+                                        <input onChange={(e) => setSearchTerm(e.target.value.replace(/^\s+/, ''))} value={searchTerm} type="text" id="table-search" placeholder="Search for student"
+                                            className="block p-2 pr-10 text-xs text-gray-600 font-normal border border-gray-300 rounded-lg w-full h-7 bg-gray-50 focus:ring-0 focus:border-blue-500" 
                                         />
                                         <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                                         <button onClick={() => setSearchTerm("")}>
                                         {searchTerm ? (
-                                            <svg className="w-4 h-4 text-gray-500" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                                <svg className="w-4 h-4 text-gray-500" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
                                                     <path fillRule="evenodd" d="M6.293 6.293a1 1 0 011.414 0L10 8.586l2.293-2.293a1 1 0 111.414 1.414L11.414 10l2.293 2.293a1 1 0 01-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 01-1.414-1.414L8.586 10 6.293 7.707a1 1 0 010-1.414z" clipRule="evenodd"></path>
                                                 </svg>
                                             ) : (
@@ -944,11 +956,11 @@ const SpecificBatchPage = () => {
                                                         </td> */}
                                                         {/* <td> {isCertificateIssued ? <CheckCircleOutlined className="text-green-500 text-md"/> : ''} </td> */}
                                                         
-                                                        <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.student.id)}>
+                                                        <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(navigate,item.student.id)}>
                                                             {item.student.enrollment_no}
                                                         </td>
 
-                                                        <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.student.id)}>
+                                                        <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(navigate,item.student.id)}>
                                                             {item.student.name}
                                                         </td>
                                                         <td className="px-3 py-2 md:px-1">
@@ -1072,7 +1084,7 @@ const SpecificBatchPage = () => {
                                                                 {index + 1}
                                                             </td> 
 
-                                                            <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.id)}>
+                                                            <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(navigate,item.id)}>
                                                                 <Tooltip 
                                                                     color="white"
                                                                     title={
@@ -1093,7 +1105,7 @@ const SpecificBatchPage = () => {
 
                                                             </td>
                 
-                                                            <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.id)}> 
+                                                            <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(navigate,item.id)}> 
                                                                 <Tooltip 
                                                                     color="white"
                                                                     title={
@@ -1173,17 +1185,22 @@ const SpecificBatchPage = () => {
                                                                 {item.support_coordinator_name}
                                                             </td>
                                                             <td > 
-                                                                <Button 
-                                                                    color="primary" 
-                                                                    variant="filled" 
-                                                                    className="rounded-lg w-auto pl-3 pr-3 py-0 my-1 mr-1"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation(); // Prevent the click from bubbling to the <td> click handler
-                                                                        handleAddStudentToBatch(item.id);  // Open the form with selected course data
-                                                                    }}
+                                                                <Popconfirm
+                                                                    title={`Add ${item.name} in this Batch`}
+                                                                    description="Are you sure you want to Add this Student?"
+                                                                    onConfirm={() => StudentAddConfirm(item.id)}
+                                                                    okText="Yes"
+                                                                    cancelText="No"
                                                                 >
+                                                                    <Button 
+                                                                        color="primary" 
+                                                                        variant="filled" 
+                                                                        className="rounded-lg w-auto pl-3 pr-3 py-0 my-1 mr-1"
+                                                                        onClick={(e) => e.stopPropagation() }
+                                                                    >
                                                                     +
-                                                                </Button>
+                                                                    </Button>
+                                                                </Popconfirm>
                                                             </td>
                                                         </tr>
                                                     ))
@@ -1220,11 +1237,11 @@ const SpecificBatchPage = () => {
                                                             {index + 1}
                                                         </td>
                                                         
-                                                        <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.id)}>
+                                                        <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(navigate,item.id)}>
                                                             {item.enrollment_no}
                                                         </td>
 
-                                                        <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.id)}>
+                                                        <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(navigate,item.id)}>
                                                             {item.name}
                                                         </td>
                                                         <td className="px-3 py-2 md:px-1">
@@ -1284,8 +1301,8 @@ const SpecificBatchPage = () => {
                                                             {item.support_coordinator_name}
                                                         </td>
 
-                                                        <td className="flex gap-x-1 items-center"> 
-                                                            {   item.request_status === "Approved" || item.request_status === "Rejected" ?
+                                                        <td className="flex gap-x-1 items-center my-auto"> 
+                                                            {   item?.request_status === "Approved" || item?.request_status === "Rejected" || item?.request_status === "Removed" ?
                                                                     <Tag color={item.request_status === "Approved" ? "green" : "red" }>{item.request_status}</Tag> : (
                                                                 <>
                                                                 <Button 
@@ -1294,7 +1311,7 @@ const SpecificBatchPage = () => {
                                                                     className="rounded-lg w-auto px-2 text-xs"
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
-                                                                        RequestCancel(item.id) 
+                                                                        RequestTOBatchCancel(item.id) 
                                                                     }}
                                                                 >
                                                                     Reject
@@ -1303,7 +1320,7 @@ const SpecificBatchPage = () => {
                                                                 <Popconfirm
                                                                     title="Accept Batch Request"
                                                                     description="Are you sure you want to accept this request?"
-                                                                    onConfirm={() => RequestConfirm(item.id)}
+                                                                    onConfirm={() => StudentAddConfirm(item.id)}
                                                                     onCancel={RequestCancel}
                                                                     okText="Yes"
                                                                     cancelText="No"

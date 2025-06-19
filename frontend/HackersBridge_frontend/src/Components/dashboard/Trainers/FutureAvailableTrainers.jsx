@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Tooltip, Tag, Empty } from 'antd';
 import { useTrainerForm } from "../Trainercontext/TrainerFormContext";
 import { useNavigate } from "react-router-dom";
+import handleBatchClick, { handleTrainerClick } from "../Navigations/Navigations";
+import dayjs from "dayjs";
 
 const FutureAvailableTrainers = () => {
     const [sortByName, setSortByName] = useState(false);
@@ -35,19 +37,6 @@ const FutureAvailableTrainers = () => {
     }, [futureAvailableTrainers, sortByName, sortByStartTime]);
 
     
-      // HANDLE NAVIGATE TO TRAINER INFO
-    const handleTrainerClick =  async (trainerId) => {    
-        if (!trainerId) return;
-        const encodedTrainerId = btoa(trainerId); 
-        navigate(`/trainers/${encodedTrainerId}`);
-    };
-
-    // HANDLE NAVIGATE TO BATCH INFO
-    const handleBatchClick =  async (batchId) => {            
-        if (!batchId) return;
-        const encodedBatchId = btoa(batchId); 
-        navigate(`/batches/${encodedBatchId}`);
-    };
 
 
   return (
@@ -106,39 +95,23 @@ const FutureAvailableTrainers = () => {
                             <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
                                 {index + 1}
                             </td>
-                            <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.tr_id)}>
+                            <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(navigate,item.tr_id)}>
                                 {item.trainer_id}
                             </td>
                             <td className="px-3 py-2 md:px-1">
                                 {item.name} 
                             </td>
                             <td className="px-3 py-2 md:px-1">
-                                {new Date(`1970-01-01T${item.start_time}`).toLocaleString("en-US", {
-                                    hour: "numeric",
-                                    minute: "numeric",
-                                    hour12: true,
-                                })}
+                                {dayjs(`1970-01-01T${item.start_time}`).format("hh:mm A")}
                             </td>
                             <td className="px-3 py-2 md:px-1">
-                                {new Date(`1970-01-01T${item.end_time}`).toLocaleString("en-US", {
-                                    hour: "numeric",
-                                    minute: "numeric",
-                                    hour12: true
-                                })}
+                                {dayjs(`1970-01-01T${item.end_time}`).format("hh:mm A")}
                             </td>
                             <td className="px-3 py-2 md:px-1">
-                            {new Date(item.start_date).toLocaleDateString("en-GB", {
-                                    day: "2-digit",
-                                    month: "2-digit",
-                                    year: "2-digit"
-                                })}
+                            {dayjs(item.start_date).format("DD/MM/YYYY")}
                             </td>
                             <td className="px-3 py-2 md:px-1">
-                            {new Date(item.end_date).toLocaleDateString("en-GB", {
-                                    day: "2-digit",
-                                    month: "2-digit",
-                                    year: "2-digit"
-                                })}
+                            {dayjs(item.end_date).format("DD/MM/YYYY")}
                             </td>
                             <td className="px-3 py-2 md:px-1 font-semibold">
                                 {item.batch_course}
@@ -146,7 +119,7 @@ const FutureAvailableTrainers = () => {
                             {/* <td className="px-3 py-2 md:px-1">
                                 {item.mode}
                             </td> */}
-                            <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleBatchClick(item.batch__id)}>
+                            <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleBatchClick(navigate,item.batch__id)}>
                                 {item.batch_id}
                             </td>
                           

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom"
 import { useSpecificStudent } from "../Contexts/SpecificStudent";
-import { Dropdown, message, Tag, DatePicker, Button, Checkbox, Input  } from 'antd';
+import { Dropdown, message, Tag, DatePicker, Button, Checkbox, Input, Popconfirm, Popover  } from 'antd';
 import {  DownOutlined, CheckCircleOutlined, EditOutlined } from '@ant-design/icons';
 import BASE_URL from "../../../ip/Ip";
 import axios from "axios";
@@ -11,6 +11,7 @@ import { useAuth } from "../AuthContext/AuthContext";
 import SpecificStudentLogs from "../AllLogs/Student/SpecificStudentLogs";
 import SpecificStudentNotes from "./SpecificNotesPage";
 import StudentInfoLoading from "../../../Pages/SkeletonLoading.jsx/StudentInfoLoading";
+import handleBatchClick, { handleTrainerClick } from "../Navigations/Navigations";
 
 const { TextArea } = Input;
 
@@ -28,6 +29,9 @@ const SpecificStudentPage = () => {
     // store student not typed in input field 
     const [studentNote, setStudentNote] = useState("");
 
+    // store issuing popover states issued book confirmation 
+    const [confirmingId, setConfirmingId] = useState(null);
+    const [pendingCourse, setPendingCourse] = useState(null);
 
     const navigate = useNavigate();
     
@@ -77,25 +81,6 @@ const SpecificStudentPage = () => {
     ? specificStudent?.All_in_One?.all_upcoming_batch
     : []
     :[];    
-    
-    
-
-    // HANDLE NAVIGATE TO BATCH INFO PAGE
-    const handleBatchClick =  async (batchId) => {
-        if (!batchId) return;        
-            const encodedBatchId = btoa(batchId);
- 
-            navigate(`/batches/${encodedBatchId}`);
-    };
-
-
-    // HANDLE NAVIGATE TO BATCH INFO PAGE
-    const handleTrainerClick =  async (trainerId) => {
-        if (!trainerId) return;        
-            const encodedTrainerId = btoa(trainerId);
- 
-            navigate(`/trainers/${encodedTrainerId}`);
-    };
 
 
 
@@ -226,11 +211,8 @@ const SpecificStudentPage = () => {
     
         // console.log("Server response:", response.data);
         } catch (error) {
-            message.error('No available books for this course')
-            console.error("Error issuing book:", error);
-        
+            message.error('No available books for this course')        
        }
-        
     };
     
     // Handle Old Book Issue To Students For Temporary Use Only, Will be Removed Later 
@@ -272,6 +254,41 @@ const SpecificStudentPage = () => {
         
     };
 
+    // handle checkbox click
+    const handleCheckboxClick = (e, item) => {
+        e.preventDefault();
+
+        // If already checked (i.e., unissuing), handle immediately
+        if (item.student_book_allotment) {
+            handleIssueBook(item.id, false, item.course_name);
+        } else {
+            // If not checked (i.e., issuing), show confirmation
+            setConfirmingId(item.id);
+            setPendingCourse(item);
+        }
+    };
+
+    // handle confirm issue book on Popover
+    const handleConfirm = async () => {
+        if (!pendingCourse) return;
+
+        await handleIssueBook(
+            pendingCourse.id,
+            true, // issue the book
+            pendingCourse.course_name
+        );
+
+        setConfirmingId(null);
+        setPendingCourse(null);
+    };
+    // handle cancel popover 
+    const handleCancel = () => {
+        setConfirmingId(null);
+        setPendingCourse(null);
+    };
+
+
+
     // HANDLE CREATE NOTE FOR STUDENT
     const handleCreateNote = async (studentId) => {
         
@@ -306,7 +323,7 @@ const SpecificStudentPage = () => {
                             ${topTab === "Info" ? 'border-b-2 border-blue-500 text-black bg-white' : ' text-gray-700 hover:border-b-2 hover:border-blue-400'}`}
                     >
                     Info
-                    </button>
+                    </button> 
 
                     <button
                         onClick={() => handleTopTabClick("Logs")}
@@ -358,11 +375,7 @@ const SpecificStudentPage = () => {
                                     <div className="col-span-1 px-1 py-1">
                                         <h1>Date of Joining</h1>
                                         <p className="font-semibold">
-                                        {new Date(studentDetails.date_of_joining).toLocaleDateString("en-GB", {
-                                            day: "2-digit",
-                                            month: "2-digit",
-                                            year: "numeric",
-                                        })}
+                                        {dayjs(studentDetails.date_of_joining).format("DD/MM/YYYY")}
                                         </p>
                                     </div>
 
@@ -540,7 +553,20 @@ const SpecificStudentPage = () => {
                                                             </td>
 
                                                             <td>
-                                                                <Checkbox onChange={(e) => handleIssueBook(item.id, e.target.checked, item.course_name)} checked={item.student_book_allotment || false}></Checkbox>
+                                                                <Popconfirm
+                                                                    title="Issue Book"
+                                                                    description={`Are you sure you want to issue the book for "${pendingCourse?.course_name}"?`}
+                                                                    onConfirm={handleConfirm}
+                                                                    onCancel={handleCancel}
+                                                                    okText="Yes"
+                                                                    cancelText="No"
+                                                                    open={confirmingId === item.id}
+                                                                >
+                                                                    <Checkbox
+                                                                    checked={item.student_book_allotment || false}
+                                                                    onClick={(e) => handleCheckboxClick(e, item)}
+                                                                    />
+                                                                </Popconfirm>
                                                             </td>
 
                                                             <td className="px-3 py-2 md:px-1 flex">
@@ -704,38 +730,22 @@ const SpecificStudentPage = () => {
                                                             <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
                                                                 {index + 1}
                                                             </td>
-                                                            <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleBatchClick(item.id)}>
+                                                            <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleBatchClick(navigate,item.id)}>
                                                                 {item.batch_id}
                                                             </td>
                                                             <td className="px-3 py-2 md:px-1">
-                                                                {new Date(`1970-01-01T${item.batch_time__start_time}`).toLocaleString("en-US", {
-                                                                hour: "numeric",
-                                                                minute: "numeric",
-                                                                hour12: true,
-                                                                })} 
+                                                                {dayjs(`1970-01-01T${item.batch_time__start_time}`).format("hh:mm A")} 
                                                                 <span> - </span>
-                                                                {new Date(`1970-01-01T${item.batch_time__end_time}`).toLocaleString("en-US", {
-                                                                hour: "numeric",
-                                                                minute: "numeric",
-                                                                hour12: true,
-                                                                })}
+                                                                {dayjs(`1970-01-01T${item.batch_time__end_time}`).format("hh:mm A")}
                                                             </td>
                                                             <td className="px-3 py-2 md:px-1">
-                                                                {new Date(item.start_date).toLocaleDateString("en-GB", {
-                                                                day: "2-digit",
-                                                                month: "2-digit",
-                                                                year: "numeric",
-                                                                })}
+                                                                {dayjs(item.start_date).format("DD/MM/YYYY")}
                                                             </td>
                                                             <td className="px-3 py-2 md:px-1">
-                                                                {new Date(item.end_date).toLocaleDateString("en-GB", {
-                                                                    day: "2-digit",
-                                                                    month: "2-digit",
-                                                                    year: "numeric",
-                                                                })}
+                                                                {dayjs(item.end_date).format("dd/MM/YYYY")}
                                                             </td>
 
-                                                            <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.trainer)}>
+                                                            <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(navigate,item.trainer)}>
                                                                 {item.trainer__name}
                                                             </td>
                                                             

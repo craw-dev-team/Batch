@@ -38,12 +38,13 @@ const StudentFormProvider = ({ children }) => {
     const [studentsCounts, setStudentsCounts] = useState();
     const [allStudentData, setAllStudentData] = useState([]);
     
+
     // Function to reset form
     const resetStudentForm = () => {
         setStudentFormData(initialFormData);
     };
 
-    const fetchStudents = async ({ page = 1, pageSize = 30, search = '', mode = '', language = '', preferred_week = '', location = '' } = {}) => {
+    const fetchStudents = async ({ page = 1, pageSize = 30, search = '', mode = '', language = '', preferred_week = '', location = '', status = '', date_of_joining_after = '', date_of_joining_before = '' } = {}) => {
         if (loading) return;  // Prevent multiple fetches at the same time
 
         const token = localStorage.getItem('token');
@@ -56,19 +57,24 @@ const StudentFormProvider = ({ children }) => {
         try {
             const response = await axios.get(`${BASE_URL}/api/students/`, 
                 { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-             params: {
-                page,
-                page_size: pageSize,
-                search,
-                mode ,
-                language,
-                preferred_week,
-                location,
-            },
+                withCredentials : true,
+                params: {
+                    page,
+                    page_size: pageSize,
+                    search,
+                    mode ,
+                    language,
+                    preferred_week,
+                    location,
+                    status,
+                    date_of_joining_after,
+                    date_of_joining_before,
+                },
             }
             );
             const data = response?.data;
-            // console.log(data);          
+            // console.log(data);  
+
             // Update state only if data has changed
             setStudentData(prevData => {
                 if (JSON.stringify(prevData) !== JSON.stringify(data)) {

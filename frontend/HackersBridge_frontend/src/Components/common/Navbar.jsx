@@ -11,7 +11,10 @@ import { useAuth } from "../dashboard/AuthContext/AuthContext";
 
 
 const Navbar = ({ collapsed, setCollapsed }) => {
-    const { user } = useAuth();
+
+    const username = localStorage.getItem('name')
+
+
 
     return (
         <>
@@ -33,10 +36,10 @@ const Navbar = ({ collapsed, setCollapsed }) => {
 
             <div className="col-span-1 flex justify-end items-center gap-x-4 h-14 mr-5">
                 {/* <ThemeSwitcher/> */}
-                <div className={'bg-lightBlue3 dark:bg-darkBlue3 rounded-xl px-4  flex justify-between items-center gap-x-[9px] cursor-pointer'}>
+                <div className={'bg-lightBlue3 rounded-xl px-4  flex justify-between items-center gap-x-[9px] cursor-pointer'}>
                     {/* <img alt=""/> */}
                     <div className="">
-                        <p className={'text-blackColor dark:text-grayColor text-xs font-semibold leading-9'}>{user?.username}</p>
+                        <p className={'text-blackColor dark:text-grayColor text-xs font-semibold leading-9'}>{username}</p>
                         {/* <p className={'text-ashColor2 dark:text-grayColor text-[9px] font-semibold leading-8'}>useremail@mail.com</p> */}
                         {/* <p className={'text-ashColor2 text-[11px] font-medium'}>useremail@mail.com</p> */}
                     </div>

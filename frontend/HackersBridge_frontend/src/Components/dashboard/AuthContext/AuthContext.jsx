@@ -9,7 +9,7 @@ export const AuthProvider = ({ children }) => {
   const [role, setRole] = useState(localStorage.getItem('role' || ''));
   const [token, setToken] = useState(localStorage.getItem('token' || ''));
   const [loading, setLoading] = useState(true);
-
+  const [username, setUsername] = useState('')
 
   // useEffect(() => {
   //   const storedUser = localStorage.getItem("role");
@@ -70,22 +70,24 @@ export const AuthProvider = ({ children }) => {
   const universalLogin = async (username, password) => {
     if(!username && !password) return;
 
-
     try {
       const response = await axios.post(
         `${BASE_URL}/api/login/`,
         { username, password },
         { withCredentials: true }
       );
-      // console.log(response); // Check the response format
-  
+      console.log(response); // Check the response format
+      
       const role = response?.data?.user_info?.role;
       const token = response?.data?.user_info?.token;
-  
+      const user_name = response?.data?.user_info?.first_name ?? response?.data?.user_info?.user_name;
+      
+      setUsername(user_name)
       setRole(role);
       setToken(token);
       localStorage.setItem('role', role)
       localStorage.setItem('token', token)
+      localStorage.setItem('name', user_name)
   
       if (!role) throw new Error("Role not found in response");
   
@@ -111,25 +113,24 @@ export const AuthProvider = ({ children }) => {
 
 
 
-const logout = (redirect = true) => {
+  const logout = (redirect = true) => {
 
+    setRole("");
+    setToken("");
 
-  setRole("");
-  setToken("");
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    delete axios.defaults.headers.common["Authorization"];
 
-  localStorage.removeItem("token");
-  localStorage.removeItem("role");
-  delete axios.defaults.headers.common["Authorization"];
-
-  if (redirect) {
-      window.location.href = "/"; // Redirect only when necessary
-  }
-};
+    if (redirect) {
+        window.location.href = ""; // Redirect only when necessary
+    }
+  };
 
 
 
   return (
-    <AuthContext.Provider value={{ role, token, universalLogin, logout, register }}>
+    <AuthContext.Provider value={{ role, token, username, universalLogin, logout, register }}>
       {children}
     </AuthContext.Provider>
   );

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Spin, Empty } from 'antd';
 import dayjs from "dayjs";
 import { useSpecificCoordinator } from "../../Contexts/SpecificCoordinators";
+import { handleCoordinatorClick } from "../../Navigations/Navigations";
 
 
 
@@ -28,14 +29,6 @@ const SpecificCoordinatorLogs = () => {
         }
     },[]);
 
-
-    // HANDLE NAVIGATE TO TRAINER INFO
-    const handleCoordinatorClick =  async (coordinatorId) => {
-        if (!coordinatorId) return;
-        const encodedcoordinatorId = btoa(coordinatorId); 
-        navigate(`/add-details/coordinators/${encodedcoordinatorId}`);
-    };
-    
     
     
     return (
@@ -85,11 +78,11 @@ const SpecificCoordinatorLogs = () => {
                
             ) : Array.isArray(coordinator_logs) && coordinator_logs.length > 0 ? (
                 coordinator_logs.map((item, index) => (
-                <tr key={item.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 scroll-smooth">
-                    <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
+                <tr key={item.id} className="bg-white border-b border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 scroll-smooth">
+                    <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900">
                         { index + 1}
                     </td>
-                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleCoordinatorClick(item.action)}>
+                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleCoordinatorClick(navigate,item.action)}>
                         {item.actor}
                     </td>
 
@@ -118,7 +111,7 @@ const SpecificCoordinatorLogs = () => {
                     </td>
 
                     <td className="px-3 py-2 md:px-1">
-                        {dayjs(item.timestamp).format("DD-MM-YYYY hh:mm A")}
+                        {dayjs(item.timestamp).format("DD/MM/YYYY | hh:mm A")}
                     </td>
                     {/* <td className="px-3 py-2 md:px-1">
 

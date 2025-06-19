@@ -7,6 +7,7 @@ import AddCoordinatorForm from "./AddCoordinatorForm";
 import { useCoordinatorForm } from "./CoordinatorContext";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../AuthContext/AuthContext";
+import { handleCoordinatorClick } from "../../Navigations/Navigations";
 
 
 
@@ -135,11 +136,11 @@ const Coordinators = () => {
     };
 
 
-    const handleCoordinatorClick = async (coordinatorId) => {
-        if (!coordinatorId) return;
-            const encodedCoordinatorId = btoa(coordinatorId);
-            navigate(`/add-details/coordinators/${encodedCoordinatorId}`);
-    };
+    // const handleCoordinatorClick = async (coordinatorId) => {
+    //     if (!coordinatorId) return;
+    //         const encodedCoordinatorId = btoa(coordinatorId);
+    //         navigate(`/add-details/coordinators/${encodedCoordinatorId}`);
+    // };
 
 
     return (
@@ -292,10 +293,10 @@ const Coordinators = () => {
                                 <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
                                     {index + 1}
                                 </td>
-                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleCoordinatorClick(item.id)}>
+                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleCoordinatorClick(navigate,item.id)}>
                                     {item.coordinator_id}
                                 </td>
-                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleCoordinatorClick(item.id)}>
+                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleCoordinatorClick(navigate,item.id)}>
                                     {item.name}
                                 </td>
                                 <td className="px-3 py-2 md:px-1">
