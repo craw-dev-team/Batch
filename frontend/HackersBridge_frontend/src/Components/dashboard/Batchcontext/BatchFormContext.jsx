@@ -33,7 +33,8 @@ const BatchFormProvider = ({ children }) => {
       setBatchFormData(initialFormData);
     }, []);
 
-    const fetchBatches = useCallback (async () => {
+
+    const fetchBatches = async ({ page = 1, pageSize = 30, search = '', mode = '', language = '', preferred_week = '', location = '', status = ''  }) => {
         if (loading) return;
        
         const token = localStorage.getItem('token');
@@ -46,7 +47,17 @@ const BatchFormProvider = ({ children }) => {
         try {
             const response = await axios.get(`${BASE_URL}/api/batches/`,
               { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-              withCredentials : true
+              withCredentials : true,
+              params: {
+                page,
+                page_size: pageSize,
+                search,
+                mode,
+                language,
+                preferred_week,
+                location,
+                status
+              }
             }
             );
             const data = response.data;
@@ -65,24 +76,13 @@ const BatchFormProvider = ({ children }) => {
         } finally {
           setLoading(false);
         }
-    }, [loading]);
+    };
 
-      // COUNT BATCHES BASED ON THEIR STATUS TO DISPLAY IN BADGES
-      const countBatchesByType = useMemo(() => ({ 
-        all: batchData?.All_Type_Batch?.batches?.length || 0,
-        running: batchData?.All_Type_Batch?.running_batch?.length || 0,
-        scheduled: batchData?.All_Type_Batch?.scheduled_batch?.length || 0,
-        endingsoon: batchData?.All_Type_Batch?.batches_ending_soon?.length || 0,
-        hold: batchData?.All_Type_Batch?.hold_batch?.length || 0,
-        completed: batchData?.All_Type_Batch?.completed_batch?.length || 0,
-        cancelled: batchData?.All_Type_Batch?.cancelled_batch?.length || 0,
-    }), [batchData]);
-    
 
 
 
   return (
-    <BatchFormContext.Provider value={{ batchFormData, loading, setBatchFormData, errors, setErrors,  resetBatchForm, batchData, setBatchData, fetchBatches, countBatchesByType }}>
+    <BatchFormContext.Provider value={{ batchFormData, loading, setBatchFormData, errors, setErrors,  resetBatchForm, batchData, setBatchData, fetchBatches }}>
       {children}
     </BatchFormContext.Provider>
   );

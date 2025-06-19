@@ -6,7 +6,7 @@ export const COURSES_PATH = "/courses";
 export const ADD_DETAILS_COORDINATORS_PATH = "/add-details/coordinators/";
 export const ADD_DETAILS_COUNSELLORS_PATH = "/add-details/counsellors/";
 export const ALL_LOGS_PATH = "/all-logs/";
-export const BOOKS_PATH = "/all-books/";
+export const BOOKS_PATH = "/books/";
 export const ANNOUNCEMENTS_PATH = "/announcements"
 export const TICKETS_PATH = "/tickets"
 

@@ -7,6 +7,7 @@ import { useCourseForm } from "../Coursecontext/CourseFormContext";
 import BASE_URL from "../../../ip/Ip";
 import { useAuth } from "../AuthContext/AuthContext";
 import { Navigate, useNavigate } from "react-router-dom";
+import { handleCourseClick } from "../Navigations/Navigations";
 
 
 const Courses = () => {
@@ -74,18 +75,13 @@ const Courses = () => {
     };
    
 
-    // HANDLE NAVIGATE TO SPECIFIC PAGE 
-    const handleCourseClick = (courseId) => {
-        if (!courseId) return;
-        const encodedCourseId = btoa(courseId);
-        navigate(`/course/${encodedCourseId}`)
-    };
+   
 
     return (
         <>
-       <div className="w-auto pt-4 px-2 mt-16 darkmode">
-    <div className="relative w-full h-full shadow-md sm:rounded-lg darkmode border border-gray-50 dark:border dark:border-gray-600">
-    <div className="w-full px-4 py-3 text flex justify-between font-semibold ">
+       <div className="w-auto pt-4 px-2 mt-10">
+    <div className="relative w-full h-full shadow-md sm:rounded-lg border border-gray-50 dark:border dark:border-gray-600">
+    <div className="w-full px-4 py-3 text flex items-center justify-between font-semibold ">
         <h1>All Courses</h1>
             <div>
                 <button onClick={() => { setIsModalOpen(true); setSelectedCourse(null); }} type="button" className="focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Add Course +</button>
@@ -217,7 +213,7 @@ const Courses = () => {
                     <td className="p-3 px-3 py-2 md:px-1 font-medium text-gray-900">
                         {index + 1}
                     </td>
-                    <th scope="row" className="px-3 py-2 md:px-1 font-medium text-gray-900 cursor-pointer" onClick={() => handleCourseClick(item.id)}>
+                    <th scope="row" className="px-3 py-2 md:px-1 font-medium text-gray-900 cursor-pointer" onClick={() => handleCourseClick(navigate,item.id)}>
                        {item.name}
                     </th>
                     <td className="px-3 py-2 md:px-1">

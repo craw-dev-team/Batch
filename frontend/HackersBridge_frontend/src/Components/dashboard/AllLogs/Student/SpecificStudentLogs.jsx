@@ -109,7 +109,7 @@ const SpecificStudentLogs = () => {
                                     </td>
 
                                     <td className="px-3 py-2 md:px-1">
-                                        {dayjs(item.timestamp).format("DD-MM-YYYY hh:mm A")}
+                                        {dayjs(item.timestamp).format("DD/MM/YYYY | hh:mm A")}
                                     </td>
                                 </tr>
                             ))

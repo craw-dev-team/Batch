@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   UserSwitchOutlined, UsergroupAddOutlined, UserOutlined, ProductOutlined, ProfileOutlined, UnorderedListOutlined, LoginOutlined, AuditOutlined, BookOutlined, 
-  NotificationOutlined, TagsOutlined} from '@ant-design/icons';
+  NotificationOutlined, TagsOutlined, WechatWorkOutlined} from '@ant-design/icons';
 import { Button, Layout, Menu, Spin } from 'antd';
 import useThemeMode from '../../Hooks/useThemeMode';
 const { Header, Sider, Content } = Layout;
@@ -63,6 +63,13 @@ const Sidebarnew = ({ collapsed }) => {
           key: route.TRAINERS_PATH,
           icon: <UserOutlined />,
           label: "Trainers",
+          className: "rounded-md hover:bg-gray-300 dark:hover:bg-[#344c6b] dark:text-gray-300",
+        },
+        
+        {
+          key: "trainer-student-chat",
+          icon: <WechatWorkOutlined />,
+          label: "Batch Chats",
           className: "rounded-md hover:bg-gray-300 dark:hover:bg-[#344c6b] dark:text-gray-300",
         },
 

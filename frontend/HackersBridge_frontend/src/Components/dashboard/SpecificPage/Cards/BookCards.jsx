@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams   } from 'react-router-dom';
 import { Card, Col, Row, DatePicker, Select, Popover, Empty } from 'antd';
 import { useBookForm } from '../../BooksContext/BookFormContext';
 import dayjs from 'dayjs';
@@ -10,10 +11,57 @@ const BookCards = () => {
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
     const { booksCountData, selectedOption, setSelectedOption, startDate, setStartDate, endDate, setEndDate, handleBookFilter  } = useBookForm();
-    
+
+    const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
+
+
+    // TO FETCH DATA ON INITIAL MOUNT 
+    // useEffect(() => {
+    //     handleBookFilter();
+    // },[])
+
+
+    // TO FETCH SAME DATA WHEN COME FROM STUDENT CARD LIST , URL (/books/card/course_name)
+    // On mount, read filters from URL params and set state
     useEffect(() => {
+        const filter = searchParams.get('filter') || 'this month';
+        const start = searchParams.get('start');
+        const end = searchParams.get('end');
+
+        setSelectedOption(filter);
+
+        if (filter === 'custom' && start && end) {
+        setStartDate(start);
+        setEndDate(end);
+        handleBookFilter('custom', start, end);
+        } else if (filter === 'this month') {
+        handleBookFilter(); // default no-filter
+        } else {
+        const status = filter.toLowerCase().replace(/\s/g, '_');
+        handleBookFilter(status);
+        }
+    }, []); // Run once on mount
+
+
+    // When selectedOption or dates change, update URL params and refetch data
+    useEffect(() => {
+        if (selectedOption === 'custom') {
+        if (startDate && endDate) {
+            setSearchParams({ filter: 'custom', start: startDate, end: endDate });
+            handleBookFilter('custom', startDate, endDate);
+        }
+        } else if (selectedOption === 'this month') {
+        setSearchParams({ filter: 'this month' });
         handleBookFilter();
-    },[])
+        } else {
+        const status = selectedOption.toLowerCase().replace(/\s/g, '_');
+        setSearchParams({ filter: selectedOption });
+        handleBookFilter(status);
+        }
+    }, [selectedOption, startDate, endDate]);
+
+
     
     const { all_book_tasks } = booksCountData || {};
 
@@ -30,25 +78,36 @@ const BookCards = () => {
 
     const allCountsZero = cards.every((card) => card.count === 0);
 
-
-
-
      // handle status change to date select in dropdown
         const handleRangeChange = (value) => {
             if (value && value.length === 2) {
-              const start = value[0].format("YYYY-MM-DD");
-              const end = value[1].format("YYYY-MM-DD");
-          
-              setStartDate(start);
-              setEndDate(end);
+                const start = value[0].format("YYYY-MM-DD");
+                const end = value[1].format("YYYY-MM-DD");
+            
+                setStartDate(start);
+                setEndDate(end);
 
-              handleBookFilter("custom", start, end);
-              setIsPopoverOpen(false)
+                handleBookFilter("custom", start, end);
+                setIsPopoverOpen(false)
+
             } else {
               setStartDate(null);
               setEndDate(null);
             }
           };
+
+
+        // HANDLE NAVIGATE TO /book/card/ 
+        const handleCardClick = (label) => {
+            const formattedKey = label.replace(/ /g, "_"); 
+            const taskKey = `${formattedKey}_book_take_by`;
+            const selectedData = booksCountData?.all_book_tasks?.[taskKey] || [];
+
+            navigate(`/book/card/${formattedKey}?filter=${selectedOption}&start=${startDate}&end=${endDate}`, {
+            state: { data: selectedData },
+            });
+        };
+
 
 
     return (
@@ -77,32 +136,32 @@ const BookCards = () => {
 
                     {/* Select Field */}
                     <Select
-                    placeholder="Filter By Date"
-                    className="w-44 text-sm rounded border"
-                    value={selectedOption}
-                    onChange={(value) => {
-                        setSelectedOption(value);
-                        if (value === "custom") {
-                            setIsPopoverOpen(true);
-                        } else if (value === "this month") {
-                            handleBookFilter(); // no filter
-                        } else {
-                            const status = value.toLowerCase().replace(/\s/g, "_");
-                            handleBookFilter(status);
-                        }
-                        }}
-                  
-                    options={[
-                        { value: "today", label: "Today" },
-                        { value: "yesterday", label: "Yesterday" },
-                        { value: "this week", label: "This Week" },
-                        { value: "last week", label: "Last Week" },
-                        { value: "this month", label: "This Month" },
-                        { value: "last month", label: "Last Month" },
-                        { value: "this year", label: "This Year" },
-                        { value: "last year", label: "Last Year" },
-                        { value: "custom", label: "Custom Dates" },
-                    ]}
+                        placeholder="Filter By Date"
+                        size='small'
+                        className="w-44 text-sm rounded border"
+                        value={selectedOption}
+                        onChange={(value) => {
+                            setSelectedOption(value);
+                            if (value === 'custom') {
+                                setIsPopoverOpen(true);
+                            } else {
+                                setIsPopoverOpen(false);
+                                setStartDate(null);
+                                setEndDate(null);
+                            }
+                            }}
+                    
+                        options={[
+                            { value: "today", label: "Today" },
+                            { value: "yesterday", label: "Yesterday" },
+                            { value: "this week", label: "This Week" },
+                            { value: "last week", label: "Last Week" },
+                            { value: "this month", label: "This Month" },
+                            { value: "last month", label: "Last Month" },
+                            { value: "this year", label: "This Year" },
+                            { value: "last year", label: "Last Year" },
+                            { value: "custom", label: "Custom Dates" },
+                        ]}
                     />
                 </div>
 
@@ -165,7 +224,7 @@ const BookCards = () => {
                         overflow: 'hidden',
                     }
                     }}
-                    {...(key !== "all" && { onClick: () => handleTabClick(key) })}
+                    {...(key !== "all" && { onClick: () => handleCardClick(label)})}
                 >
                     <div className="truncate">{label}</div>
                 </Card>

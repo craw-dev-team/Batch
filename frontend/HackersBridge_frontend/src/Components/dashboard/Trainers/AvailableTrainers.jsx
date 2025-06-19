@@ -3,6 +3,8 @@ import { useTrainerForm } from "../Trainercontext/TrainerFormContext";
 import { Avatar, Tooltip, Tag } from 'antd';
 import { CreateAvailableBatchForm } from "../Batches/AvailableBatches";
 import { useNavigate } from "react-router-dom";
+import { handleTrainerClick } from "../Navigations/Navigations";
+import dayjs from "dayjs";
 
 const AvailableTrainers = () => {
   const [sortByName, setSortByName] = useState(false);
@@ -48,13 +50,6 @@ const AvailableTrainers = () => {
       setIsModalOpen(true);
   };
   
-  
-  // HANDLE NAVIGATE TO TRAINER INFO
-  const handleTrainerClick =  async (trainerId) => {    
-    if (!trainerId) return;
-    const encodedTrainerId = btoa(trainerId); 
-    navigate(`/trainers/${encodedTrainerId}`);
-  };
 
 
   return (
@@ -112,25 +107,17 @@ const AvailableTrainers = () => {
                     <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
                         {index + 1}
                     </td>
-                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.tr_id)}>
+                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(navigate,item.tr_id)}>
                         {item.trainer_id}
                     </td>
-                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.tr_id)}>
+                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(navigate,item.tr_id)}>
                         {item.name} 
                     </td>
                     <td className="px-3 py-2 md:px-1">
-                      {new Date(`1970-01-01T${item.start_time}`).toLocaleString("en-US", {
-                      hour: "numeric",
-                      minute: "numeric",
-                      hour12: true,
-                      })} 
+                      {dayjs(`1970-01-01T${item.start_time}`).format("hh:mm A")} 
                     </td>
                     <td className="px-3 py-2 md:px-1">
-                      {new Date(`1970-01-01T${item.end_time}`).toLocaleString("en-US", {
-                      hour: "numeric",
-                      minute: "numeric",
-                      hour12: true,
-                      })} 
+                      {dayjs(`1970-01-01T${item.end_time}`).format("hh:mm A")} 
                     </td>
                     <td className="px-3 py-2 md:px-1 font-semibold">
                         <Avatar.Group

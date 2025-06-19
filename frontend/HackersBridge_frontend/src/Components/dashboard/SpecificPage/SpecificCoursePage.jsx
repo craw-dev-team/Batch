@@ -5,6 +5,8 @@ import { EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined } from '@ant
 import { useSpecificCourse } from "../Contexts/SpecificCourse";
 import CreateCourseForm from "../Courses/CreateCourseForm";
 import { useCourseForm } from "../Coursecontext/CourseFormContext";
+import handleBatchClick, { handleStudentClick } from "../Navigations/Navigations";
+import dayjs from "dayjs";
 
 
 
@@ -50,22 +52,8 @@ const SpecificCoursePage = () => {
             setIsModalOpen(true); // Open the modal
         };
 
-        
-        // HANDLE NAVIGATE TO STUDENT INFO
-        const handleStudentClick =  async (studentId) => {
-            if (!studentId) return;
-            const encodedStudentId = btoa(studentId);
-            navigate(`/students/${encodedStudentId}`);
-        };
 
-        // HANDLE NAVIGATE TO BATCH INFO
-        const handleBatchClick =  async (batchId) => {
-            if (!batchId) return;
-            const encodedBatchId = btoa(batchId);
-            navigate(`/batches/${encodedBatchId}`);
-        };
-    
-
+console.log(specificCourse);
 
     return (
         <>
@@ -217,11 +205,11 @@ const SpecificCoursePage = () => {
                                                     <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
                                                         {index + 1}
                                                     </td>
-                                                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.id)}>
+                                                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(navigate,item.id)}>
                                                         {item.enrollment_no}
                                                     </td>
                                                     <td className="px-3 py-2 md:px-1">
-                                                    {item.name}
+                                                        {item.name}
                                                     </td>
                                                     <td className="px-3 py-2 md:px-1">
                                                         {item.phone}
@@ -365,7 +353,7 @@ const SpecificCoursePage = () => {
                                                     <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
                                                         {index + 1}
                                                     </td>
-                                                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleBatchClick(item.id)}>
+                                                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleBatchClick(navigate,item.id)}>
                                                         {item.batch_id}
                                                     </td>
                                                     <td className="px-3 py-2 md:px-1">
@@ -376,29 +364,17 @@ const SpecificCoursePage = () => {
                                                             const [start, end] = raw.split(" - ");
 
                                                             const formatTime = (timeStr) =>
-                                                            new Date(`1970-01-01T${timeStr}`).toLocaleTimeString("en-US", {
-                                                                hour: "numeric",
-                                                                minute: "numeric",
-                                                                hour12: true,
-                                                            });
+                                                            dayjs(`1970-01-01T${timeStr}`).format("hh:mm A");
 
                                                             return `${formatTime(start)} - ${formatTime(end)}`;
                                                         })()}
                                                     </td>
 
                                                     <td className="px-3 py-2 md:px-1">
-                                                        {new Date(item.start_date).toLocaleDateString("en-GB", {
-                                                            day: "2-digit",
-                                                            month: "2-digit",
-                                                            year: "numeric",
-                                                        })}
+                                                        {dayjs(item.start_date).format("DD/MM/YYYY")}
                                                     </td>
                                                     <td className="px-3 py-2 md:px-1">
-                                                        {new Date(item.end_date).toLocaleDateString("en-GB", {
-                                                            day: "2-digit",
-                                                            month: "2-digit",
-                                                            year: "numeric",
-                                                        })}
+                                                        {dayjs(item.end_date).format("DD//MM/YYYY")}
                                                     </td>
                                                     <td className="px-3 py-2 md:px-1">
                                                         {item.trainer}

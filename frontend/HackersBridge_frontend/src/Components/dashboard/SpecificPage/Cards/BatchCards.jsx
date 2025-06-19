@@ -6,16 +6,17 @@ import { useBatchForm } from '../../Batchcontext/BatchFormContext';
 
 const BatchCards = ({ handleTabClick, activeTab }) => {
 
-    const { countBatchesByType } = useBatchForm();
+    const { batchData } = useBatchForm();
+    
     return (
         <Row gutter={[14, 14]}>
           {[
-            { key: "all", label: "Total Batches", count: countBatchesByType.all || '0' },
-            { key: "running", label: "Running Batches", count: countBatchesByType.running || '0' },
-            { key: "scheduled", label: "Scheduled Batches", count: countBatchesByType.scheduled || '0' },
-            { key: "hold", label: "Hold Batches", count: countBatchesByType.hold || '0' },
-            { key: "completed", label: "Completed Batches", count: countBatchesByType.completed || '0' },
-            { key: "cancelled", label: "Cancelled Batches", count: countBatchesByType.cancelled || '0' },
+            { key: "all", label: "Total Batches", count: batchData?.results?.all_batch_count || '0' },
+            { key: "Running", label: "Running Batches", count: batchData?.results?.running_batch_count || '0' },
+            { key: "Scheduled", label: "Scheduled Batches", count: batchData?.results?.upcoming_batch_count || '0' },
+            { key: "Hold", label: "Hold Batches", count: batchData?.results?.hold_batch_count || '0' },
+            { key: "Completed", label: "Completed Batches", count: batchData?.results?.completed_batch_count || '0' },
+            { key: "Cancelled", label: "Cancelled Batches", count: batchData?.results?.cancelled_batch_count || '0' },
           ].map(({ key, label, count }) => (
             <Col span={4} key={key}>
               <Card

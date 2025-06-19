@@ -35,7 +35,7 @@ const SpecificTrainerProvider = ({ children }) => {
                 { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
             );
             const data = response?.data
-            console.log(data);
+            // console.log(data);
             
             setSpecificTrainer(prevData => {
                 if (JSON.stringify(prevData) !== JSON.stringify(data)) {

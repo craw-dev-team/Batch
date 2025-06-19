@@ -11,7 +11,7 @@ const SpecificCourseContext = createContext();
 const SpecificCourseProvider = ({ children }) => {
     const [specificCourse, setSpecificCourse] = useState();
     const [loading, setLoading] = useState(false);
-    const [specificCourseStudents, setSpecificCourseStudents] = useState()
+    // const [specificCourseStudents, setSpecificCourseStudents] = useState()
 
 
     const fetchSpecificCourse = async (courseId) => {
@@ -45,40 +45,40 @@ const SpecificCourseProvider = ({ children }) => {
 
 
     // FETCH SPECIFIC COORDINATOR STUDENTS 
-    const fetchSpecificCoordinatorStudents = async (coordinatorId) => {
-        if (loading) return;
+    // const fetchSpecificCoordinatorStudents = async (coordinatorId) => {
+    //     if (loading) return;
 
-        const token = localStorage.getItem('token');
-        if (!token) {
-            console.error("No token found, user might be logged out.");
-            return;
-        };
+    //     const token = localStorage.getItem('token');
+    //     if (!token) {
+    //         console.error("No token found, user might be logged out.");
+    //         return;
+    //     };
 
-        setLoading(true)
+    //     setLoading(true)
 
-        try {
-            const response = await axios.get(`${BASE_URL}/api/coordinators/${coordinatorId}/students/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
-                withCredentials : true
-            }
-            )
-            const data = response?.data
-            // console.log(data);
+    //     try {
+    //         const response = await axios.get(`${BASE_URL}/api/coordinators/${coordinatorId}/students/`, 
+    //             { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+    //             withCredentials : true
+    //         }
+    //         )
+    //         const data = response?.data
+    //         // console.log(data);
             
 
-            setSpecificCourseStudents(prevData => {
-                if (JSON.stringify(prevData) !== JSON.stringify(data)) {
-                    return data;
-                }
-                return prevData;
-            })
+    //         setSpecificCourseStudents(prevData => {
+    //             if (JSON.stringify(prevData) !== JSON.stringify(data)) {
+    //                 return data;
+    //             }
+    //             return prevData;
+    //         })
 
-        } catch (error) {
-            console.error('Error fetching SpecificCoordinatorStudents Data', error)
-        } finally {
-            setLoading(false)
-        }
-    };
+    //     } catch (error) {
+    //         console.error('Error fetching SpecificCoordinatorStudents Data', error)
+    //     } finally {
+    //         setLoading(false)
+    //     }
+    // };
 
 
     return (

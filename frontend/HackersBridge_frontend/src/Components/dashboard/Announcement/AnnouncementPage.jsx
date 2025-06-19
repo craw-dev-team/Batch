@@ -17,9 +17,9 @@ const AnnouncementPage = () => {
   
 
   useEffect(() => {
-    fetchAnnouncement();
-    
     setIsDeleted(false);
+
+    fetchAnnouncement();
   }, [isDeleted]);
 
 

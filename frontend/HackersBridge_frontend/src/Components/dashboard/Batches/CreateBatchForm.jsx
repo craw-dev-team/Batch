@@ -304,7 +304,6 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
                                     { value: '13', label: <div style={{ backgroundColor: '#c3f3fa' }}>08:00 - 09:00 - Weekdays</div> },
                                     { value: '14', label: <div style={{ backgroundColor: '#c3f3fa' }}>03:00 - 07:00 - Weekdays</div> },
                                     { value: '15', label: <div style={{ backgroundColor: '#c3f3fa' }}>06:00 - 07:30 - Weekdays</div> },
-                                    { value: '18', label: <div style={{ backgroundColor: '#c3f3fa' }}>03:30 - 09:00</div> },
                                 ]}
                                  filterOption={(input, option) => {
                                     const labelText = typeof option.label === 'string'

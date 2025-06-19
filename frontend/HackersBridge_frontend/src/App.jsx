@@ -63,6 +63,11 @@ import StudentsList from "./Components/dashboard/SpecificPage/Cards/StudentCardL
 import PageNotFound from "./Pages/PageNotFound";
 import SpecificBookPage from "./Components/dashboard/SpecificPage/SpecificBookPage";
 import { SpecificBookProvider } from "./Components/dashboard/Contexts/SpecificBook";
+import { StudentInfoProvider } from "./Components/StudentDashboard/Dashboard/StudentInfo/StudentDetails/StudentInfoContext";
+import BookCardList from "./Components/dashboard/SpecificPage/Cards/BookCardList";
+import { BatchChatsProvider } from "./Components/dashboard/Chat/BatchChatsContext";
+import TrainerStudentChat from "./Components/dashboard/Chat/BatchChats";
+import BatchChats from "./Components/dashboard/Chat/BatchChats";
 
 
 
@@ -80,7 +85,7 @@ function App() {
               {/* ADMIN/COORDINATOR PUBLIC ROUTES */}
               <Route element={<PublicRoute />}>
                 <Route path="/" element={<Login />} />
-                <Route path="/register" element={<Register />} />
+                {/* <Route path="/register" element={<Register />} /> */}
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/verify-otp" element={<VerifyOTP />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
@@ -127,10 +132,12 @@ function App() {
                   <Route path="/studentsdata/:type" element={<StudentsList />} />
                   <Route path={route.ALL_LOGS_PATH} element={<AllLogs />} />
                   <Route path={route.BOOKS_PATH} element={<BooksHome />} />
-                  <Route path="/books/:bookId" element={<SpecificBookPage/>} />
+                  <Route path="/book/:bookId" element={<SpecificBookPage />} />
+                  <Route path="/book/card/:course_name" element={<BookCardList />} />
                   <Route path="announcement-form-page" element={<CreateAnnouncementForm />} />
                   <Route path={route.ANNOUNCEMENTS_PATH} element={<AnnouncementPage />} />
                   <Route path={route.TICKETS_PATH} element={<TicketsOperation />} />
+                  <Route path="trainer-student-chat" element={<BatchChats/>} />
                 {/* <Route path="*" element={<PageNotFound />} /> */}
                 </Route>
               </Route>
@@ -144,6 +151,7 @@ function App() {
 export default App;
 
 
+ 
 const AppProviders = ({ children }) => {
   return (
       <CourseFormProvider>
@@ -167,7 +175,13 @@ const AppProviders = ({ children }) => {
                                                     <AnnouncementProvider>
                                                       <TicketsProvider>
                                                         <SpecificBookProvider>
-                                                          {children}
+                                                          <StudentInfoProvider>
+                                                            {/* <BatchChatProvider> */}
+                                                              <BatchChatsProvider>
+                                                                {children}
+                                                              </BatchChatsProvider>
+                                                            {/* </BatchChatProvider> */}
+                                                          </StudentInfoProvider>
                                                         </SpecificBookProvider>
                                                       </TicketsProvider>
                                                     </AnnouncementProvider>

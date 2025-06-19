@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button, message, Popconfirm, Avatar, Tooltip, Select, Tag, Dropdown, Badge, Spin, Empty } from 'antd';
+import { Button, message, Popconfirm, Avatar, Tooltip, Select, Tag, Dropdown, Badge, Spin, Empty, Pagination } from 'antd';
 import { EditOutlined, DeleteOutlined, DownOutlined, CopyOutlined, RightOutlined, FilterOutlined, LinkOutlined } from '@ant-design/icons';
 import  { useBatchForm }  from "../Batchcontext/BatchFormContext";
 import CreateBatchForm from "./CreateBatchForm";
@@ -10,18 +10,19 @@ import AvailableBatches from "./AvailableBatches";
 import { useCourseForm } from "../Coursecontext/CourseFormContext";
 import { useAuth } from "../AuthContext/AuthContext";
 import BatchCards from "../SpecificPage/Cards/BatchCards";
+import handleBatchClick, { handleTrainerClick } from "../Navigations/Navigations";
+import dayjs from "dayjs";
 
 
 
 const Batches = () => {
     const [isModalOpen, setIsModalOpen] = useState(false); 
-    const [activeTab, setActiveTab] = useState("running");
+    const [activeTab, setActiveTab] = useState("Running");
     const [selectedBatch, setSelectedBatch] = useState();
     const [isDeleted, setIsDeleted] = useState(false)
     const [students, setStudents] = useState({}); // Stores selected students per batch
     const [selectedStudent, setSelectedStudent] = useState({}); // Stores selected students per batch
     const [addStudentDropdown, setAddStudentDropdown] = useState({});
-    const [searchTerm, setSearchTerm] = useState("");
     const [sortByTime, setSortByTime] = useState(false); // Default ascending
     const [sortByStartDate, setSortByStartDate] = useState(false);
     const [sortByEndDate, setSortByEndDate] = useState(false);
@@ -29,60 +30,55 @@ const Batches = () => {
     const [sortByLanguage, setSortByLanguage] = useState(null);
     const [sortByPreferredWeek, setSortByPreferredWeek] = useState(null);
     const [sortByLocation, setSortByLocation] = useState(null);
-    const [sortByCourse, setSortByCourse] = useState(null);
+    // const [sortByCourse, setSortByCourse] = useState(null);
     
     const { batchData, loading, setLoading, setBatchData, fetchBatches, countBatchesByType } = useBatchForm();
-    const { coursesData, setCoursesData, fetchCourses } = useCourseForm();
     const { token } = useAuth();
 
-    const [originalCourses, setOriginalCourses] = useState([]); // Store the original data
 
     const navigate = useNavigate();
 
     // for Pagination 
-    // const [searchTerm, setSearchTerm] = useState('');
-    // const [inputValue, setInputValue] = useState('');
-    // const [currentPage, setCurrentPage] = useState(1);
-    // const pageSize = 30;
+    const [searchTerm, setSearchTerm] = useState('');
+    const [inputValue, setInputValue] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 30;
 
     const handleTabClick = (tab) => {
         setActiveTab(tab);
+        setCurrentPage(1)
     };
 
-     
+
+   const currentFilters = useMemo(() => ({
+    page: currentPage,
+    pageSize,
+    search: searchTerm,
+    mode: sortByMode,
+    language: sortByLanguage,
+    preferred_week: sortByPreferredWeek,
+    location: sortByLocation,
+    status: activeTab
+}), [currentPage, pageSize, searchTerm, sortByMode, sortByLanguage, sortByPreferredWeek, sortByLocation, activeTab]);
+
+      
     useEffect(() => {
-        if (!isModalOpen || !batchData || isDeleted) {
-          fetchBatches();
-          if (isDeleted) setIsDeleted(false); // reset flag after fetch
-        }
-      }, [isModalOpen, isDeleted]);
-      
-      
-    //   useEffect(() => {
-    //     fetchBatches({  page: currentPage, pageSize, search: searchTerm, mode: sortByMode, language: sortByLanguage, preferred_week: sortByPreferredWeek, location: sortByLocation })        
-    // },[!isModalOpen, searchTerm, currentPage, sortByMode, sortByLanguage, sortByPreferredWeek, sortByLocation]);
+        fetchBatches( currentFilters )        
+    },[isModalOpen, currentFilters]);
 
 
     // HANDLE SEARCH INPUT AND DEBOUNCE 
-    // useEffect(() => {        
-    //     const handler = setTimeout(() => {
-    //       setSearchTerm(inputValue.trimStart());
-    //     }, 500); // debounce delay in ms
+    useEffect(() => {        
+        const handler = setTimeout(() => {
+          setSearchTerm(inputValue.trimStart());
+          setCurrentPage(1);
+        }, 500); // debounce delay in ms
       
-    //     return () => {
-    //       clearTimeout(handler); // clear previous timeout on re-typing
-    //     };
-    // }, [inputValue]);
+        return () => {
+          clearTimeout(handler); // clear previous timeout on re-typing
+        };
+    }, [inputValue]);
 
-
-   // Store the original course list when data is first loaded
-//    useEffect(() => {
-//     fetchCourses();
-    
-//     if (coursesData.length > 0 && originalCourses.length === 0) {
-//         setOriginalCourses([...coursesData]); // Store unmodified data
-//     }
-//     }, [coursesData]);
     
 
     // Function to handle Edit button click 
@@ -109,19 +105,19 @@ const Batches = () => {
             if (response.status >= 200 && response.status < 300) {
                 // Only update the batch data if it's correctly structured
                 if (
-                    batchData?.All_Type_Batch &&
-                    Array.isArray(batchData.All_Type_Batch.batches)
+                    batchData?.results &&
+                    Array.isArray(batchData.results.batches)
                 ) {
                     setBatchData(prevBatch => {
-                        const updatedBatches = prevBatch.All_Type_Batch.batches.filter(
+                        const updatedBatches = prevBatch.results.batches.filter(
                             batch => String(batch.id) !== String(batchId)
                         );
     
                         // Update the batches in the corresponding status category
                         return {
                             ...prevBatch,
-                            All_Type_Batch: {
-                                ...prevBatch.All_Type_Batch,
+                            results: {
+                                ...prevBatch.results,
                                 batches: updatedBatches, // Update the batches array
                             },
                         };
@@ -256,23 +252,6 @@ const Batches = () => {
     };
 
 
-    // Filter batch data based on the selected tab
-    const filteredBatchesByStatus = batchData?.All_Type_Batch 
-        ? activeTab === "running"
-        ? batchData.All_Type_Batch.running_batch
-        : activeTab === "scheduled"
-        ? batchData.All_Type_Batch.scheduled_batch
-        : activeTab === "completed"
-        ? batchData.All_Type_Batch.completed_batch
-        : activeTab === "endingsoon"
-        ? batchData.All_Type_Batch.batches_ending_soon
-        : activeTab === "hold"
-        ? batchData.All_Type_Batch.hold_batch
-        : batchData.All_Type_Batch.cancelled_batch
-        
-    : [];
-
-
     // HANDLE STATUS CHANGE OF BATCH 
     const handlestatusChange = async (batchId, status) => {
         if (!batchId || !status) return;
@@ -293,6 +272,7 @@ const Batches = () => {
                 withCredentials : true
             }
             );
+            
             if (response.status >= 200 && response.status < 300) {
                 message.success(`Batch status updated successfully to ${status} !`);
                 // console.log(updatedData);
@@ -301,43 +281,11 @@ const Batches = () => {
                 message.error("Batch status not updated.");
             };
             
-           await fetchBatches()
+           await fetchBatches(currentFilters)
     
         } catch (error) {
             console.error("Error sending status data to server", error);
         }
-    };
-    
-    // FILTER BATCH FROM ALL BATCHES BASED ON THE SEARCH INPUT (BATCHID, COURSENAME, TRAINERNAME)
-    const searchFilteredBatches = useMemo(() => {
-        const term = searchTerm.toLowerCase();
-      
-        if (!searchTerm) return filteredBatchesByStatus;
-      
-        return filteredBatchesByStatus.filter(batch => {
-          return (
-            (batch.batch_id?.toLowerCase() || "").includes(term) ||
-            (batch.course_name?.toLowerCase() || "").includes(term) ||
-            (batch.trainer_name?.toLowerCase() || "").includes(term)
-          );
-        });
-      }, [filteredBatchesByStatus, searchTerm, batchData]);
-      
-  
-
-    // HANDLE NAVIGATE TO BATCH INFO
-    const handleBatchClick =  async (batchId) => {
-        if (!batchId) return;
-        const encodedBatchId = btoa(batchId);
-        navigate(`/batches/${encodedBatchId}`);
-    };
-
-
-    // HANDLE NAVIGATE TO TRAINER INFO
-    const handleTrainerClick =  async (trainerId) => {
-        if (!trainerId) return;
-        const encodedTrainerId = btoa(trainerId); 
-        navigate(`/trainers/${encodedTrainerId}`);
     };
     
 
@@ -361,45 +309,24 @@ const Batches = () => {
         
         
         
-        const sortedBatches = useMemo(() => {
-            let sorted = [...searchFilteredBatches];
+        // const sortedBatches = useMemo(() => {
+        //     let sorted = [...searchFilteredBatches];
         
-            // Apply Sorting (Start with time, then dates)
-            if (sortByTime) {
-                sorted.sort((a, b) => a.batch_time_data.start_time.localeCompare(b.batch_time_data.start_time));
-            }
+            
+        //     if (sortByTime) {
+        //         sorted.sort((a, b) => a.batch_time_data.start_time.localeCompare(b.batch_time_data.start_time));
+        //     }
         
-            if (sortByStartDate) {
-                sorted.sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
-            }
+        //     if (sortByStartDate) {
+        //         sorted.sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
+        //     }
         
-            if (sortByEndDate) {
-                sorted.sort((a, b) => new Date(a.end_date) - new Date(b.end_date));
-            }
+        //     if (sortByEndDate) {
+        //         sorted.sort((a, b) => new Date(a.end_date) - new Date(b.end_date));
+        //     }
         
-            // Apply Filters (Mode, Language, Preferred Week, Location, Course)
-            if (sortByMode) {
-                sorted = sorted.filter(batch => batch.mode === sortByMode);
-            }
-        
-            if (sortByLanguage) {
-                sorted = sorted.filter(batch => batch.language === sortByLanguage);
-            }
-        
-            if (sortByPreferredWeek) {
-                sorted = sorted.filter(batch => batch.preferred_week === sortByPreferredWeek);
-            }
-        
-            if (sortByLocation) {
-                sorted = sorted.filter(batch => batch.batch_location === sortByLocation);
-            }
-        
-            if (sortByCourse) {
-                sorted = sorted.filter(batch => batch.course_id === sortByCourse);
-            }
-        
-            return sorted;
-        }, [searchFilteredBatches, sortByTime, sortByStartDate, sortByEndDate, sortByMode, sortByLanguage, sortByPreferredWeek, sortByLocation, sortByCourse]);
+        //     return sorted;
+        // }, [batchData, sortByTime, sortByStartDate, sortByEndDate]);
         
 
 
@@ -409,13 +336,8 @@ const Batches = () => {
                 if (filterType === "language") setSortByLanguage(null);
                 if (filterType === "preferred_week") setSortByPreferredWeek(null);
                 if (filterType === "location") setSortByLocation(null);
-                if (key === "clear") {
-                    if (filterType === "course") {
-                        setSortByCourse(null);
-                        setCoursesData([...originalCourses]); // Reset to original data
-                    }
-                    return;
-                }
+               
+                return;
             }
         
             if (filterType === "mode") setSortByMode(key);
@@ -423,19 +345,6 @@ const Batches = () => {
             if (filterType === "preferred_week") setSortByPreferredWeek(key);
             if (filterType === "location") setSortByLocation(key);
         
-            if (filterType === "course") {
-                setSortByCourse(Number(key)); // Ensure key is a number
-        
-                setCoursesData(() => {
-                    const selectedCourse = originalCourses.find(course => course.id === Number(key));
-                    if (!selectedCourse) return [...originalCourses]; // Reset if not found
-        
-                    return [
-                        selectedCourse, 
-                        ...originalCourses.filter(course => course.id !== Number(key))
-                    ];
-                });
-            }
         };
         
 
@@ -481,67 +390,7 @@ const Batches = () => {
                 onClick: ({ key }) => handleSort(key, "location"),
             };
 
-            // const courseMenu = {
-            //     items: [
-            //         ...(coursesData && coursesData.length > 0
-            //             ? coursesData.map(course => ({
-            //                 key: String(course.id), // Ensure ID is a string for Dropdown compatibility
-            //                 label: (
-            //                     <span style={{ fontWeight: Number(course.id) === Number(sortByCourse) ? "bold" : "normal" }}>
-            //                         {course.name}
-            //                     </span>
-            //                 ),
-            //             }))
-            //             : [
-            //                 { key: "no-data", label: <span style={{ color: "gray" }}>No courses available</span>, disabled: true }
-            //             ]
-            //         ),
-            //         { type: "divider" },
-            //         { key: "clear", label: <span style={{ color: "red", fontWeight: "bold" }}>Clear Filter</span> },
-            //     ],
-            //     onClick: ({ key }) => handleSort(Number(key), "course"),
-            // };
-            
-                        
 
-
-    // handle Trainer Dropdown for assigning trainer to batch 
-    // const handleTrainerDropdown = (batchId, index) => {
-        
-    //     if (addTrainerDropdown === index) {
-    //         setAddTrainerDropdown(null); // Close dropdown
-    //     } else {
-    //         setAddTrainerDropdown(index);
-    //         if (!selectedTrainer[index]) fetchAvailableTrainers(batchId, index); // Fetch only if not already loaded
-    //     }
-    // };
-
-
-       // to add trainers in a batch fetch available trainers data for select field
-    //    const fetchAvailableTrainers = async (batchId) => {
-    //     try {
-    //         const response = await axios.get(`${BASE_URL}/api/batches/${batchId}/available-trainers/`);
-    //         const data = response.data;
-    //         console.log(data);
-            
-    //         if (!data.available_trainers) {
-    //             throw new Error("Invalid response format");
-    //         }
-    
-    //         // Format data for the Select component
-    //         const formattedOptions = data.available_trainers.map(trainer => ({
-    //             label: trainer.name,
-    //             value: trainer.id
-    //         }));
-    
-    //         // Update state with students for the specific batchId
-    //         setAvailabletrainers(prev => ({ ...prev, [batchId]: formattedOptions }));
-    //     } catch (error) {
-    //         console.error("Error fetching trainers:", error);
-    //     }
-    // };
-
-    
     // THIS WILL REDIRECT TO STUDENT IONFO PAGE IN NEW TAB FROM FILTERED STUDENT SELECT FIELD
     const handleStudentClickOnSelect = (event, studentId) => {
         event.preventDefault();
@@ -609,29 +458,29 @@ const Batches = () => {
                                 </select>
                             </div>
 
-                            <div className="relative hidden lg:flex">
-                                    <Badge count={countBatchesByType?.running ?? 0} overflowCount={999} size="small">
+                            {/* <div className="relative hidden lg:flex">
+                                    <Badge count={batchData?.count ?? 0} overflowCount={999} size="small">
                                 <button
-                                    onClick={() => handleTabClick("running")}
+                                    onClick={() => handleTabClick("Running")}
                                     className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200
-                                        ${activeTab === "running" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                        ${activeTab === "Running" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                                         >
                                     Active
                                 </button>
                                     </Badge>
                                 
                                 <button
-                                    onClick={() => handleTabClick("scheduled")}
+                                    onClick={() => handleTabClick("Upcoming")}
                                     className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200
-                                        ${activeTab === "scheduled" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                        ${activeTab === "Upcoming" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                                     >
                                     Scheduled
                                 </button>
                                 
                                 <button
-                                    onClick={() => handleTabClick("hold")}
+                                    onClick={() => handleTabClick("Hold")}
                                     className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200
-                                        ${activeTab === "hold" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                        ${activeTab === "Hold" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                                     >
                                     Hold
                                 </button>
@@ -645,38 +494,63 @@ const Batches = () => {
                                 </button>
                                 
                                 <button
-                                    onClick={() => handleTabClick("completed")}
+                                    onClick={() => handleTabClick("Completed")}
                                     className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200
-                                        ${activeTab === "completed" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                        ${activeTab === "Completed" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                                     >
                                     Completed 
                                 </button>
                                 
                                 <button
-                                    onClick={() => handleTabClick("cancelled")}
+                                    onClick={() => handleTabClick("Cancelled")}
                                     className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                                        ${activeTab === "cancelled" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                        ${activeTab === "Cancelled" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                                     >
                                     Cancelled
                                 </button>
                                 
-                            </div>
+                            </div> */}
+
+                           <div className="relative hidden lg:flex ">
+                                {["Running", "Scheduled", "Hold", "endingsoon", "Completed", "Cancelled"].map((tab) => {
+                                    const isActive = activeTab === tab;
+                                    const showCount = isActive ? batchData?.count : 0;
+
+                                    return (
+                                    <div key={tab} className="relative">
+                                        <Badge
+                                        count={showCount}
+                                        overflowCount={999}
+                                        size="small"
+                                        offset={[2, -6]} // Adjust position of the badge
+                                        >
+                                        <button
+                                            onClick={() => handleTabClick(tab)}
+                                            className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200
+                                            ${isActive ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                        >
+                                            {tab === "endingsoon" ? "Ending Soon" : tab}
+                                        </button>
+                                        </Badge>
+                                    </div>
+                                    );
+                                })}
+                                </div>
+
+
+
 
 
                             <div className="grid col-span-1 justify-items-end">
                                 <div className="flex gap-x-6">
                                     <label htmlFor="table-search" className="sr-only">Search</label>
                                     <div className="relative h-auto">
-                                        <input value={searchTerm} type="text" id="table-search" placeholder="Search for batch"
-                                            onChange={(e) => {
-                                                const value = e.target.value.trimStart();
-                                                setSearchTerm(value);
-                                                // setCurrentPage(1);
-                                            }}
-                                            className="2xl:w-96 lg:w-96 md:w-72 h-8 block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500" 
+                                        <input value={inputValue} type="text" id="table-search" placeholder="Search for Batch"
+                                            onChange={(e) => setInputValue(e.target.value)}
+                                            className="2xl:w-96 lg:w-96 md:w-72 h-8 block p-2 pr-10 text-xs text-gray-600 font-normal border border-gray-300 rounded-lg bg-gray-50 focus:ring-0 focus:border-blue-500" 
                                             />
-                                        <div className="absolute inset-y-0 right-0 h-auto flex items-center pr-3">
-                                        <button onClick={() => setSearchTerm("")}>
+                                        <div className="absolute inset-y-0 right-0 h-8 flex items-center pr-3">
+                                        <button onClick={() => {setInputValue(""); setSearchTerm("");}}>
                                         {searchTerm ? (
                                             <svg className="w-4 h-4 text-gray-500" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
                                                     <path fillRule="evenodd" d="M6.293 6.293a1 1 0 011.414 0L10 8.586l2.293-2.293a1 1 0 111.414 1.414L11.414 10l2.293 2.293a1 1 0 01-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 01-1.414-1.414L8.586 10 6.293 7.707a1 1 0 010-1.414z" clipRule="evenodd"></path>
@@ -813,8 +687,8 @@ const Batches = () => {
                                             <Spin size="large" />
                                         </td>
                                     </tr>
-                                ) : sortedBatches.length > 0 ? (
-                                    sortedBatches.map((item, index) => (
+                                ) : batchData?.results?.batches.length > 0 ? (
+                                    batchData?.results?.batches.map((item, index) => (
                                         <tr key={index} className="bg-white border-b border-gray-200 hover:bg-gray-50 scroll-smooth">
                                             <td scope="col" className="p-2">
                                                 <div className="flex items-center">
@@ -825,7 +699,7 @@ const Batches = () => {
                                             <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900 dark:text-white">
                                                 {index + 1}
                                             </td>
-                                            <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleBatchClick(item.id)}>
+                                            <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleBatchClick(navigate,item.id)}>
                                                 {item.batch_id} {item.batch_link && ( 
                                                     <Tooltip title={
                                                         <span overlayStyle={{ whiteSpace: "nowrap", maxWidth: 'none' }}>
@@ -840,35 +714,19 @@ const Batches = () => {
 )}
                                             </td>
                                             <td className="px-3 py-2 md:px-1">
-                                                {new Date(`1970-01-01T${item.batch_time_data?.start_time}`).toLocaleString("en-US", {
-                                                hour: "numeric",
-                                                minute: "numeric",
-                                                hour12: true,
-                                                })}
+                                                {dayjs(`1970-01-01T${item.batch_time_data?.start_time}`).format("hh:mm A")}
                                                 <span> - </span>
-                                                {new Date(`1970-01-01T${item.batch_time_data?.end_time}`).toLocaleString("en-US", {
-                                                hour: "numeric",
-                                                minute: "numeric",
-                                                hour12: true,
-                                                })}
+                                                {dayjs(`1970-01-01T${item.batch_time_data?.end_time}`).format("hh:mm A")}
                                             </td>
                                             <td className="px-3 py-2 md:px-1"> 
-                                                {new Date(item.start_date).toLocaleDateString("en-GB", {
-                                                    day: "2-digit",
-                                                    month: "2-digit",
-                                                    year: "numeric",
-                                                })}
+                                                {dayjs(item.start_date).format("DD/MM/YYYY")}
                                             </td>
                                             <td className="px-3 py-2 md:px-1"> 
-                                                {new Date(item.end_date).toLocaleDateString("en-GB", {
-                                                    day: "2-digit",
-                                                    month: "2-digit",
-                                                    year: "numeric",
-                                                })}
+                                                {dayjs(item.end_date).format("DD/MM/YYYY")}
                                             </td>
                                             <td className="px-3 py-2 md:px-1">{item.course_name}</td>
 
-                                            <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.trainer)}>{item.trainer_name}</td>
+                                            <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(navigate,item.trainer)}>{item.trainer_name}</td>
                                             
                                             <td className="px-3 py-2 md:px-1 relative">
                                                 {/* <Avatar.Group
@@ -1088,6 +946,18 @@ const Batches = () => {
                             </tbody>
 
                         </table>
+                    </div>
+
+                    <div className="flex justify-center items-center mt-0 py-2 bg-blue-50">
+                    <Pagination
+                        size="small"
+                            current={currentPage}
+                            total={batchData?.count || 0}
+                            pageSize={pageSize} // example: 30
+                            onChange={(page) => setCurrentPage(page)}
+                            showSizeChanger={false}    // hide page size select
+                            showQuickJumper={false}    // hide quick jump input
+                        />
                     </div>
 
                 {/* {activeTab === "available_batches" && (

@@ -444,7 +444,6 @@ const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
                                     { value: '13', label: '08:00 - 09:00 - Weekdays' },
                                     { value: '14', label: '03:00 - 07:00 - Weekdays' },
                                     { value: '15', label: '06:00 - 07:30 - Weekdays' },
-                                    { value: '18', label: '03:30 - 09:00' },
                                 ]}
                             />
                             {errors.trainerTimeSlot && <p className="text-red-500 text-sm">{errors.trainerTimeSlot}</p>}
