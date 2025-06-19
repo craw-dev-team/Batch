@@ -557,45 +557,62 @@ class BookIssueFilterAPIView(APIView):
         filter_type = request.query_params.get('filter_type')
         today = now().date()
 
-        if filter_type == "today":
-            start_date_str = end_date_str = today.strftime("%Y-%m-%d")
+        try:
+            match filter_type:
+                case "today":
+                    start_date = end_date = today
 
-        elif filter_type == "yesterday":
-            yesterday = today - timedelta(days=1)
-            start_date_str = end_date_str = yesterday.strftime("%Y-%m-%d")
+                case "yesterday":
+                    start_date = end_date = today - timedelta(days=1)
 
-        elif filter_type == "past_week":
-            start_date = today - timedelta(days=7)
-            end_date = today
-            start_date_str = start_date.strftime("%Y-%m-%d")
-            end_date_str = end_date.strftime("%Y-%m-%d")
+                case "this_week":
+                    start_date = today - timedelta(days=today.weekday())
+                    end_date = today
 
-        elif filter_type == "last_month":
-            first_day_this_month = today.replace(day=1)
-            last_month_end = first_day_this_month - timedelta(days=1)
-            last_month_start = last_month_end.replace(day=1)
-            start_date_str = last_month_start.strftime("%Y-%m-%d")
-            end_date_str = last_month_end.strftime("%Y-%m-%d")
+                case "last_week":
+                    end_date = today - timedelta(days=today.weekday() + 1)
+                    start_date = end_date - timedelta(days=6)
 
-        elif filter_type == "custom":
-            start_date_str = request.query_params.get('start_date')
-            end_date_str = request.query_params.get('end_date')
+                case "this_month":
+                    start_date = today.replace(day=1)
+                    end_date = today
 
-        else:
-            return Response({'error': 'Invalid filter_type'}, status=400)
+                case "last_month":
+                    first_day_this_month = today.replace(day=1)
+                    last_month_end = first_day_this_month - timedelta(days=1)
+                    start_date = last_month_end.replace(day=1)
+                    end_date = last_month_end
 
-        if not start_date_str or not end_date_str:
-            return Response({'error': 'start_date and end_date are required in YYYY-MM-DD format'}, status=400)
+                case "this_year":
+                    start_date = today.replace(month=1, day=1)
+                    end_date = today
+
+                case "last_year":
+                    start_date = today.replace(year=today.year - 1, month=1, day=1)
+                    end_date = today.replace(year=today.year - 1, month=12, day=31)
+
+                case "custom":
+                    start_date_str = request.query_params.get('start_date')
+                    end_date_str = request.query_params.get('end_date')
+                    if not start_date_str or not end_date_str:
+                        return Response({'error': 'Start and end dates are required for custom filter'}, status=400)
+                    start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+                    end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+
+                case _:
+                    return Response({'error': 'Invalid filter_type'}, status=400)
+
+        except Exception as e:
+            return Response({'error': 'Invalid date processing', 'details': str(e)}, status=400)
 
         try:
-            start_date = make_aware(datetime.strptime(start_date_str, "%Y-%m-%d"))
-            end_date = make_aware(datetime.strptime(end_date_str, "%Y-%m-%d")) + timedelta(days=1)
-        except ValueError:
-            return Response({'error': 'Invalid date format. Use YYYY-MM-DD'}, status=400)
+            start_date_aware = make_aware(datetime.combine(start_date, datetime.min.time()))
+            end_date_aware = make_aware(datetime.combine(end_date + timedelta(days=1), datetime.min.time()))
+        except Exception as e:
+            return Response({'error': 'Date conversion failed', 'details': str(e)}, status=400)
 
-        # Query allotments
         allotments = BookAllotment.objects.filter(
-            allotment_datetime__range=(start_date, end_date)
+            allotment_datetime__range=(start_date_aware, end_date_aware)
         ).select_related('allot_by').prefetch_related(
             Prefetch('student'),
             Prefetch('book')
@@ -628,7 +645,7 @@ class BookIssueFilterAPIView(APIView):
             response['all_book_tasks'][f"{book_key}_count"] = info['count']
             response['all_book_tasks'][f"{book_key}_book_take_by"] = list(info['students_map'].values())
 
-        return Response(response)
+        return Response(response, status=200)
     
 
 
@@ -682,13 +699,14 @@ class BookInfoAPIView(APIView):
         for allot in issued_allotments:
             for student in allot.student.all():
                 allotment_map[student.id] = {
-                    'issue_by': str(allot.allot_by) if allot.allot_by else None,
+                    'issue_by': str(allot.allot_by.first_name) if allot.allot_by.first_name else None,
                     'allotment_datetime': allot.allotment_datetime
                 }
 
-        not_issued_students = [
+        # Not Issued List (no date to sort by, so keep as-is)
+        not_issued_students = sorted([
             {
-                'student_id':sc.student.id,
+                'student_id': sc.student.id,
                 'name': sc.student.name,
                 'enrollment_no': sc.student.enrollment_no,
                 'course': sc.course.name,
@@ -696,11 +714,12 @@ class BookInfoAPIView(APIView):
                 'allotment_datetime': None
             }
             for sc in students_not_issued
-        ]
+        ], key=lambda x: x['name'])  # Optional: sort alphabetically
 
-        issued_students = [
+        # Issued List (include only those with matching allotments, then sort by datetime)
+        issued_students = sorted([
             {
-                'student_id':sc.student.id,
+                'student_id': sc.student.id,
                 'name': sc.student.name,
                 'enrollment_no': sc.student.enrollment_no,
                 'course': sc.course.name,
@@ -708,7 +727,8 @@ class BookInfoAPIView(APIView):
                 'allotment_datetime': allotment_map.get(sc.student.id, {}).get('allotment_datetime')
             }
             for sc in students_issued
-        ]
+            if sc.student.id in allotment_map
+        ], key=lambda x: x['allotment_datetime'], reverse=True )  # ✅ Sort by allotment_datetime
 
         return Response({
             'book_info': book_info,

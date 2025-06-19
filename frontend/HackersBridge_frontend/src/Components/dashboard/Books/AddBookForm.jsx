@@ -11,10 +11,10 @@ import { useCourseForm } from '../Coursecontext/CourseFormContext';
 
 
 
-const AddBookForm = ({ isOpen, onClose, bookData }) => {
+const AddBookForm = ({ isOpen, onClose, selectedBookData }) => {
     if(!isOpen) return null;
     
-    const isEditing = Boolean(bookData?.id); 
+    const isEditing = Boolean(selectedBookData?.id); 
 
     const { bookFormData, setBookFormData, errors, setErrors, resetBookForm } = useBookForm();
     const { coursesData, fetchCourses } = useCourseForm();
@@ -26,13 +26,13 @@ const AddBookForm = ({ isOpen, onClose, bookData }) => {
     useEffect(() => {
         fetchCourses();
 
-        if (bookData) {
+        if (selectedBookData) {
             setBookFormData({
-                bookCode: bookData.book_id || "",
-                bookName: bookData.name || "",
-                bookVersion: bookData.version || "",
-                course: bookData.course || "",
-                bookStock: bookData.stock || "",
+                bookCode: selectedBookData.book_id || "",
+                bookName: selectedBookData.name || "",
+                bookVersion: selectedBookData.version || "",
+                course: selectedBookData.course || "",
+                bookStock: selectedBookData.stock || "",
             });
         } else {
             resetBookForm();
@@ -64,9 +64,9 @@ const AddBookForm = ({ isOpen, onClose, bookData }) => {
 
                 let response;
                 let successMessage = "";
-                if (bookData && bookData.id) {
+                if (selectedBookData && selectedBookData.id) {
                 // Update existing course (PUT)
-                response = await axios.put(`${BASE_URL}/api/books/edit/${bookData.id}/`, 
+                response = await axios.put(`${BASE_URL}/api/books/edit/${selectedBookData.id}/`, 
                     payload, 
                     { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
                     withCredentials : true

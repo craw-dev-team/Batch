@@ -2,22 +2,22 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import CreateStudentForm from "./CreateStudentForm";
 import axios from "axios";
-import { Button, message, Popconfirm,  Avatar, Tag, Tooltip, Switch, Input, Spin, Empty, Pagination, Dropdown  } from 'antd';
-import { EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined, FilterOutlined , RightOutlined } from '@ant-design/icons';
+import { Button, message, Popconfirm,  Avatar, Tag, Tooltip, Input, Spin, Empty, Pagination, Dropdown  } from 'antd';
+import { EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined, FilterOutlined , DownOutlined } from '@ant-design/icons';
 import BASE_URL from "../../../ip/Ip";
-import StudentCards from "../SpecificPage/StudentCard";
 import { useAuth } from "../AuthContext/AuthContext";
 import { useStudentForm } from "../Studentcontext/StudentFormContext";
+import StudentCards from "../SpecificPage/Cards/StudentCard";
 
 const { Search } = Input;
 
 
 const Students = () => {
     const [isModalOpen, setIsModalOpen] = useState(false) 
-    const [activeTab, setActiveTab] = useState('tab1');
+    const [activeTab, setActiveTab] = useState('');
     const [selectedStudent, setSelectedStudent] = useState()
     const [isDeleted, setIsDeleted] = useState(false)
-    const [studentStatuses, setStudentStatuses] = useState({}); // Store status per trainer
+    const [studentStatuses, setStudentStatuses] = useState({}); // Store status per student
     
     const { studentData, loading, setLoading, setStudentData, fetchStudents } = useStudentForm();
     const { token } = useAuth();
@@ -40,13 +40,14 @@ const Students = () => {
 
     const handleTabClick = (tab) => {
         setActiveTab(tab);
+        setCurrentPage(1)
     };
 
 
     // FETCH STUDENTDATA OM MOUNT
     useEffect(() => {
-        fetchStudents({  page: currentPage, pageSize, search: searchTerm, mode: sortByMode, language: sortByLanguage, preferred_week: sortByPreferredWeek, location: sortByLocation })        
-    },[!isModalOpen, searchTerm, currentPage, sortByMode, sortByLanguage, sortByPreferredWeek, sortByLocation]);
+        fetchStudents({  page: currentPage, pageSize, search: searchTerm, mode: sortByMode, language: sortByLanguage, preferred_week: sortByPreferredWeek, location: sortByLocation, status: activeTab })        
+    },[!isModalOpen, searchTerm, currentPage, sortByMode, sortByLanguage, sortByPreferredWeek, sortByLocation, activeTab]);
 
     
     // HANDLE SEARCH INPUT AND DEBOUNCE 
@@ -54,13 +55,12 @@ const Students = () => {
         const handler = setTimeout(() => {
           setSearchTerm(inputValue.trimStart());
         }, 500); // debounce delay in ms
-      
+        
         return () => {
-          clearTimeout(handler); // clear previous timeout on re-typing
+            clearTimeout(handler); // clear previous timeout on re-typing
         };
-      }, [inputValue]);
-
-      
+    }, [inputValue]);
+          
 
        // Fetch students after deletion or modal interaction
           useEffect(() => {
@@ -68,7 +68,7 @@ const Students = () => {
    
             
             if (studentData) {
-                // Ensure trainerData.all_data.trainers exists and is an array
+                
                 const studentsArray = Array.isArray(studentData?.results)
                     ? studentData?.results
                     : [];
@@ -77,7 +77,7 @@ const Students = () => {
                 const timer = setTimeout(() => {
                     const initialStatuses = {};
                     studentsArray.forEach((student) => {
-                        initialStatuses[student.id] = student.status === "Active"; 
+                        initialStatuses[student.id] = student.status; 
                     });
     
                     setStudentStatuses(initialStatuses); 
@@ -146,7 +146,7 @@ const Students = () => {
 
     // Confirm and Cancel Handlers for delete button
     const confirm = (studentId) => {
-        handleDelete(studentId); // Call delete function with course ID
+        handleDelete(studentId); 
         message.success('Student Deleted Successfully');
     };
 
@@ -155,12 +155,11 @@ const Students = () => {
     };
 
 
-    // Handle Toggle of trainer active and inactive 
-     const handleToggle = async (checked, studentId) => {
-        const newStatus = checked ? "Active" : "Inactive";
-        
+    // Handle Toggle of trainer active, inactive, temporary block and restricted 
+    const handleStudentStatusChange = async (studentId, newStatus) => {
+        const previousStatus = studentStatuses[studentId]; // store current before update
         //  Optimistically update UI before API call
-        setStudentStatuses((prev) => ({ ...prev, [studentId]: checked }));
+        setStudentStatuses((prev) => ({ ...prev, [studentId]: newStatus }));
 
         try {
             await axios.put(`${BASE_URL}/api/students/edit/${studentId}/`, 
@@ -173,7 +172,7 @@ const Students = () => {
         } catch (error) {
             message.error("Failed to update status");
             //  Revert UI if API fails
-            setStudentStatuses((prev) => ({ ...prev, [studentId]: !checked }));
+             setStudentStatuses((prev) => ({ ...prev, [studentId]: previousStatus }));
         }
     };
 
@@ -286,344 +285,378 @@ const Students = () => {
 
     return (
         <>
-<div className="w-auto pt-4 px-2 mt-10">
-    <StudentCards />
-    <div className="relative w-full h-full shadow-md sm:rounded-lg border border-gray-50 dark:border">
-    {/* <div className="w-full px-4 py-3 text flex justify-between font-semibold "> */}
-        {/* <h1>All Students</h1> */}
-            {/* <div>
-                <button onClick={() => { setIsModalOpen(true); setSelectedStudent(null); }} type="button" className="focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Add Student +</button>
-            </div> */}
-        {/* </div> */}
+        <div className="w-auto pt-4 px-2 mt-10">
+            <StudentCards />
+            <div className="relative mt-3 w-full h-full shadow-md sm:rounded-lg border border-gray-50">
+            {/* <div className="w-full px-4 py-3 text flex justify-between font-semibold "> */}
+                {/* <h1>All Students</h1> */}
+                    {/* <div>
+                        <button onClick={() => { setIsModalOpen(true); setSelectedStudent(null); }} type="button" className="focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Add Student +</button>
+                    </div> */}
+                {/* </div> */}
 
-        <div className="w-full grid grid-cols-3 grid-flow-row space-y-4 sm:space-y-0 items-center justify-between gap-x-8 px-4 py-4">
-            <div className="grid col-span-1">
-                <div className="flex gap-x-4 h-10">
-                    
-                <div className="tabs">
-            <button
-                onClick={() => handleTabClick('tab1')}
-                className={` px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                    ${activeTab === 'tab1' ? 'bg-blue-300  text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
-                >
-                Students
-            </button>
-        </div>
+                <div className="w-full grid grid-cols-3 grid-flow-row space-y-4 sm:space-y-0 items-center justify-between gap-x-8 px-4 py-4">
+                    <div className="grid col-span-1">
+                        <div className="flex gap-x-4 h-10 items-center">
+                            
+                            <div className="lg:hidden mb-2">
+                                <select
+                                    value={activeTab}
+                                    onChange={(e) => handleTabClick(e.target.value)}
+                                    className="block w-auto px-4 py-1 text-sm border rounded-md bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                >
+                                <option value="">All Students</option>
+                                <option value="Temp Block">Temporary Block</option>
+                                <option value="Restricted">Restricted</option>
+                                </select>
+                            </div>
 
-                </div>
-            </div>
+                            <div className="hidden lg:flex">
+                                <button
+                                    onClick={() => handleTabClick('')}
+                                    className={` px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
+                                        ${activeTab === '' ? 'bg-blue-300  text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                    >
+                                    All Students
+                                </button>
+                                <button
+                                    onClick={() => handleTabClick('Temp Block')}
+                                    className={` px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
+                                        ${activeTab === 'Temp Block' ? 'bg-blue-300  text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                    >
+                                    Temporary Block
+                                </button>
+                                <button
+                                    onClick={() => handleTabClick('Restricted')}
+                                    className={` px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
+                                        ${activeTab === 'Restricted' ? 'bg-blue-300  text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                    >
+                                    Restricted
+                                </button>
+                            </div>
 
-            <div className="flex justify-center">
-                <label htmlFor="table-search" className="sr-only">Search</label>
-                <div className="relative">
-                    <input value={searchTerm} type="text" id="table-search" placeholder="Search for items"
-                         onChange={(e) => {
-                            const value = e.target.value.trimStart();
-                            setSearchTerm(value);
-                            setCurrentPage(1);
-                          }}
-                        className="block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg w-96 h-7 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" 
-                    />
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                       <button onClick={() => setSearchTerm("")}>
-                       {searchTerm ? (
-                            <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M6.293 6.293a1 1 0 011.414 0L10 8.586l2.293-2.293a1 1 0 111.414 1.414L11.414 10l2.293 2.293a1 1 0 01-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 01-1.414-1.414L8.586 10 6.293 7.707a1 1 0 010-1.414z" clipRule="evenodd"></path>
-                            </svg>
-                        ) : (
-                            <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"></path>
-                            </svg>
-                        )}
-                       </button>
+                        </div>
                     </div>
+
+                    <div className="flex justify-center">
+                        <label htmlFor="table-search" className="sr-only">Search</label>
+                        <div className="relative">
+                            <input value={searchTerm} type="text" id="table-search" placeholder="Search for student"
+                                onChange={(e) => {
+                                    const value = e.target.value.trimStart();
+                                    setSearchTerm(value);
+                                    setCurrentPage(1);
+                                }}
+                                className="2xl:w-96 lg:w-96 md:w-72 h-8 block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500" 
+                            />
+                            <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                            <button onClick={() => setSearchTerm("")}>
+                            {searchTerm ? (
+                                    <svg className="w-4 h-4 text-gray-500" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M6.293 6.293a1 1 0 011.414 0L10 8.586l2.293-2.293a1 1 0 111.414 1.414L11.414 10l2.293 2.293a1 1 0 01-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 01-1.414-1.414L8.586 10 6.293 7.707a1 1 0 010-1.414z" clipRule="evenodd"></path>
+                                    </svg>
+                                ) : (
+                                    <svg className="w-4 h-4 text-gray-500" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"></path>
+                                    </svg>
+                                )}
+                            </button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div className="flex justify-end">
+                        <button onClick={() => { setIsModalOpen(true); setSelectedStudent(null); }} type="button" className="h-8 focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5">Add Student +</button>
+                    </div>
+
                 </div>
 
-            </div>
 
-            <div className="flex justify-end">
-                <button onClick={() => { setIsModalOpen(true); setSelectedStudent(null); }} type="button" className="focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Add Student +</button>
-            </div>
-
-        </div>
-
-
-        {activeTab === 'tab1' && (
-        <div className={`overflow-hidden pb-2 relative `}>
-            <div className="w-full h-[38rem] overflow-y-auto rounded-lg pb-2">
-            <table className="w-full text-xs text-left text-gray-500">
-            <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10">
-                <tr>
-                    <td scope="col" className="p-2">
-                        <div className="flex items-center">
-                            <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
-                            <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
-                        </div>
-                    </td>
-                    <th scope="col" className="px-3 py-3 md:px-2">
-                        s.No
-                    </th>
-                    <th scope="col" className="px-3 py-3 md:px-1">
-                        Enrollment No
-                    </th>
-                    <th scope="col" className="px-3 py-3 md:px-1">
-                        Name
-                    </th>
-                    <th scope="col" className="px-3 py-3 md:px-1">
-                        Phone No
-                    </th>
-                    <th scope="col" className="px-3 py-3 md:px-1">
-                        Email
-                    </th>
-                    <th scope="col" className="px-3 py-3 md:px-1">
-                        Date of Joining
-                    </th>
-                    <th scope="col" className="px-3 py-3 md:px-1">
-                        Courses
-                    </th>
-                    <th scope="col" className="px-3 py-3 md:px-1">
-                        Mode
-                        <Tooltip title="Sort by Mode" placement="top">
-                        <span>
-                            <Dropdown menu={modeMenu} >
-                                <Button type="text" icon={<FilterOutlined  style={{ color: sortByMode ? "blue" : "black" }} className="w-3"/>} />
-                            </Dropdown>
-                        </span>
-                        </Tooltip>
-                    </th>
-                    <th scope="col" className="px-3 py-3 md:px-1">
-                        Language
-                        <Tooltip title="Sort by Language" placement="top">
-                        <span>
-                            <Dropdown menu={languageMenu} >
-                                <Button type="text" icon={<FilterOutlined  style={{ color: sortByLanguage ? "blue" : "black" }} className="w-3"/>} />
-                            </Dropdown>
-                        </span>
-                        </Tooltip>
-                    </th>
-                    <th scope="col" className="px-3 py-3 md:px-1">
-                        Preferred Week
-                        <Tooltip title="Sort by Preferred Week" placement="top">
-                        <span>
-                            <Dropdown menu={preferredWeekMenu} >
-                                <Button type="text" icon={<FilterOutlined style={{ color: sortByPreferredWeek ? "blue" : "black" }} className="w-3"/>} />
-                            </Dropdown>
-                        </span>
-                        </Tooltip>
-                    </th>
-                    <th scope="col" className="px-3 py-3 md:px-1">
-                        Location
-                        <Tooltip title="Sort by Location" placement="top">
-                        <span>
-                            <Dropdown menu={locationMenu} >
-                                <Button type="text" icon={<FilterOutlined style={{ color: sortByLocation ? "blue" : "black" }} className="w-3"/>} />
-                            </Dropdown>
-                        </span>
-                        </Tooltip>
-                    </th>
-                    <th scope="col" className="px-3 py-3 md:px-1">
-                        course Counsellor
-                    </th>
-                    <th scope="col" className="px-3 py-3 md:px-1">
-                        support Coordinator
-                    </th>
-                    <th scope="col" className="px-3 py-3 md:px-1">
-                        Status
-                    </th>
-                    <th scope="col" className="px-3 py-3 md:px-1">
-                        Action
-                    </th>
-                    
-                </tr>
-            </thead>
-            <tbody>
-            {loading ? (
-                    <tr>
-                        <td colSpan="100%" className="text-center py-4">
-                            <Spin size="large" />
-                        </td>
-                    </tr>
-               
-            ) : studentData?.results?.length > 0 ? (
-                studentData.results.map((item, index) => (
-                <tr key={item.id} className="bg-white border-b border-gray-200 hover:bg-gray-50 scroll-smooth">
-                    <td scope="col" className="p-2">
-                        <div className="flex items-center">
-                            <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
-                            <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
-                        </div>
-                    </td>
-                    <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
-                        {(currentPage - 1) * pageSize + index + 1}
-                    </td>
-                    {/* <td className="px-3 py-2 md:px-1">
-                        {item.id}
-                    </td> */}
-                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.id)}>
-                        {item.enrollment_no}
-                    </td>
-                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.id)}>
-                        {item.name}
-                    </td>
-                    <td className="px-3 py-2 md:px-1">
-                        {item.phone}
-                    </td>
-                    <td className="px-3 py-2 md:px-1">
-                        {item.email}
-                    </td>
-                    <td className="px-3 py-2 md:px-1">
-                        {new Date(item.date_of_joining).toLocaleDateString("en-GB", {
-                            day: "2-digit",
-                            month: "2-digit",
-                            year: "2-digit"
-                        })}
-                    </td>
-                    <td className="px-3 py-2 md:px-1">
-                    <Avatar.Group
-                               max={{
-                                    count: 2,
-                                    style: {
-                                        color: "#f56a00",
-                                        backgroundColor: "#fde3cf",
-                                        height: "24px", // Match avatar size
-                                        width: "24px", // Match avatar size
-                                }
-                            }}
-                            >
-                                {item.courses_names?.map((name, index) => (
-                                    <Tooltip key={index} title={name} placement="top">
-                                        <Avatar
-                                            size={24}
-                                            style={{ backgroundColor: "#87d068" }}
-                                        >
-                                            {name[0]}
-                                        </Avatar>
+                
+                <div className={`overflow-hidden pb-2 relative `}>
+                    <div className="w-full h-[38rem] overflow-y-auto rounded-lg pb-2">
+                        <table className="w-full text-xs text-left text-gray-500">
+                        <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10">
+                            <tr>
+                                <td scope="col" className="p-2">
+                                    <div className="flex items-center">
+                                        <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 focus:ring-2"></input>
+                                        <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
+                                    </div>
+                                </td>
+                                <th scope="col" className="px-3 py-3 md:px-2">
+                                    s.No
+                                </th>
+                                <th scope="col" className="px-3 py-3 md:px-1">
+                                    Enrollment No
+                                </th>
+                                <th scope="col" className="px-3 py-3 md:px-1">
+                                    Name
+                                </th>
+                                <th scope="col" className="px-3 py-3 md:px-1">
+                                    Phone No
+                                </th>
+                                <th scope="col" className="px-3 py-3 md:px-1">
+                                    Email
+                                </th>
+                                <th scope="col" className="px-3 py-3 md:px-1">
+                                    Date of Joining
+                                </th>
+                                <th scope="col" className="px-3 py-3 md:px-1">
+                                    Courses
+                                </th>
+                                <th scope="col" className="px-3 py-3 md:px-1">
+                                    Mode
+                                    <Tooltip title="Sort by Mode" placement="top">
+                                    <span>
+                                        <Dropdown menu={modeMenu} >
+                                            <Button type="text" icon={<FilterOutlined  style={{ color: sortByMode ? "blue" : "black" }} className="w-3"/>} />
+                                        </Dropdown>
+                                    </span>
                                     </Tooltip>
-                                ))}
-                            </Avatar.Group>
-                    </td>
+                                </th>
+                                <th scope="col" className="px-3 py-3 md:px-1">
+                                    Language
+                                    <Tooltip title="Sort by Language" placement="top">
+                                    <span>
+                                        <Dropdown menu={languageMenu} >
+                                            <Button type="text" icon={<FilterOutlined  style={{ color: sortByLanguage ? "blue" : "black" }} className="w-3"/>} />
+                                        </Dropdown>
+                                    </span>
+                                    </Tooltip>
+                                </th>
+                                <th scope="col" className="px-3 py-3 md:px-1">
+                                    Preferred Week
+                                    <Tooltip title="Sort by Preferred Week" placement="top">
+                                    <span>
+                                        <Dropdown menu={preferredWeekMenu} >
+                                            <Button type="text" icon={<FilterOutlined style={{ color: sortByPreferredWeek ? "blue" : "black" }} className="w-3"/>} />
+                                        </Dropdown>
+                                    </span>
+                                    </Tooltip>
+                                </th>
+                                <th scope="col" className="px-3 py-3 md:px-1">
+                                    Location
+                                    <Tooltip title="Sort by Location" placement="top">
+                                    <span>
+                                        <Dropdown menu={locationMenu} >
+                                            <Button type="text" icon={<FilterOutlined style={{ color: sortByLocation ? "blue" : "black" }} className="w-3"/>} />
+                                        </Dropdown>
+                                    </span>
+                                    </Tooltip>
+                                </th>
+                                <th scope="col" className="px-3 py-3 md:px-1">
+                                    course Counsellor
+                                </th>
+                                <th scope="col" className="px-3 py-3 md:px-1">
+                                    support Coordinator
+                                </th>
+                                <th scope="col" className="px-3 py-3 md:px-1">
+                                    Status
+                                </th>
+                                <th scope="col" className="px-3 py-3 md:px-1">
+                                    Action
+                                </th>
+                                
+                            </tr>
+                        </thead>
+                        {/* TO show all students data  */}
+                        {(activeTab === '' || activeTab === "Temp Block" || activeTab === "Restricted") && (
+                        <tbody>
+                        {loading ? (
+                                <tr>
+                                    <td colSpan="100%" className="text-center py-4">
+                                        <Spin size="large" />
+                                    </td>
+                                </tr>
+                        
+                        ) : studentData?.results?.length > 0 ? (
+                            studentData.results.map((item, index) => (
+                            <tr key={item.id} className="bg-white border-b border-gray-200 hover:bg-gray-50 scroll-smooth">
+                                <td scope="col" className="p-2">
+                                    <div className="flex items-center">
+                                        <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
+                                        <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
+                                    </div>
+                                </td>
+                                <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
+                                    {(currentPage - 1) * pageSize + index + 1}
+                                </td>
+                                {/* <td className="px-3 py-2 md:px-1">
+                                    {item.id}
+                                </td> */}
+                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.id)}>
+                                    {item.enrollment_no}
+                                </td>
+                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.id)}>
+                                    {item.name}
+                                </td>
+                                <td className="px-3 py-2 md:px-1">
+                                    {item.phone}
+                                </td>
+                                <td className="px-3 py-2 md:px-1">
+                                    {item.email}
+                                </td>
+                                <td className="px-3 py-2 md:px-1">
+                                    {new Date(item.date_of_joining).toLocaleDateString("en-GB", {
+                                        day: "2-digit",
+                                        month: "2-digit",
+                                        year: "2-digit"
+                                    })}
+                                </td>
+                                <td className="px-3 py-2 md:px-1">
+                                <Avatar.Group
+                                        max={{
+                                                count: 2,
+                                                style: {
+                                                    color: "#f56a00",
+                                                    backgroundColor: "#fde3cf",
+                                                    height: "24px", // Match avatar size
+                                                    width: "24px", // Match avatar size
+                                            }
+                                        }}
+                                        >
+                                            {item.courses_names?.map((name, index) => (
+                                                <Tooltip key={index} title={name} placement="top">
+                                                    <Avatar
+                                                        size={24}
+                                                        style={{ backgroundColor: "#87d068" }}
+                                                    >
+                                                        {name[0]}
+                                                    </Avatar>
+                                                </Tooltip>
+                                            ))}
+                                        </Avatar.Group>
+                                </td>
 
 
-                    <td className="px-3 py-2 md:px-1">
-                    <Tag bordered={false} color={item.mode == 'Offline'? 'green' : item.mode == 'Online'? 'volcano' : 'geekblue'}>{item.mode}</Tag>
-                    </td>
+                                <td className="px-3 py-2 md:px-1">
+                                <Tag bordered={false} color={item.mode == 'Offline'? 'green' : item.mode == 'Online'? 'volcano' : 'geekblue'}>{item.mode}</Tag>
+                                </td>
 
-                    <td className="px-3 py-2 md:px-1">
-                    <Tag bordered={false} color={item.language == 'Hindi'? 'green' : item.language == 'English'? 'volcano' : 'blue'}>{item.language}</Tag>
-                    </td>
+                                <td className="px-3 py-2 md:px-1">
+                                <Tag bordered={false} color={item.language == 'Hindi'? 'green' : item.language == 'English'? 'volcano' : 'blue'}>{item.language}</Tag>
+                                </td>
 
-                    <td className="px-3 py-2 md:px-1">
-                        <Tag bordered={false} color={item.preferred_week === "Weekdays" ? "cyan" : item.preferred_week === "Weekends" ? "gold" : "geekblue" }>
-                            {item.preferred_week}
-                        </Tag>
-                    </td>
+                                <td className="px-3 py-2 md:px-1">
+                                    <Tag bordered={false} color={item.preferred_week === "Weekdays" ? "cyan" : item.preferred_week === "Weekends" ? "gold" : "geekblue" }>
+                                        {item.preferred_week}
+                                    </Tag>
+                                </td>
 
-                    <td className="px-3 py-2 md:px-1">
-                        {item.location == "1" ? <Tag color="blue">Saket</Tag> : item.location == "2" ? <Tag color="magenta">Laxmi Nagar</Tag> : <Tag color="geekblue">Both</Tag> }
-                    </td>
+                                <td className="px-3 py-2 md:px-1">
+                                    {item.location == "1" ? <Tag bordered={false} color="blue">Saket</Tag> : item.location == "2" ? <Tag bordered={false} color="magenta">Laxmi Nagar</Tag> : <Tag bordered={false} color="geekblue">Both</Tag> }
+                                </td>
 
-                    <td className="px-3 py-2 md:px-1">
-                        {item.course_counsellor_name}
-                    </td>
+                                <td className="px-3 py-2 md:px-1">
+                                    {item.course_counsellor_name}
+                                </td>
 
-                    <td className="px-3 py-2 md:px-1">
-                        {item.support_coordinator_name}
-                    </td>
-                    
-                    <td className="px-3 py-2 md:px-1">
-                        <Switch
-                            size="small"
-                            checkedChildren={<CheckOutlined />}
-                            unCheckedChildren={<CloseOutlined />}
-                            checked={studentStatuses[item.id] || false} // Get correct status per student
-                            onChange={(checked) => handleToggle(checked, item.id)}
-                            style={{
-                                backgroundColor: studentStatuses[item.id] ? "#38b000" : "gray", // Change color when checked
-                              }}
-                        />
-                    </td>
+                                <td className="px-3 py-2 md:px-1">
+                                    {item.support_coordinator_name}
+                                </td>
+                                
+                                <td className="px-3 py-2 md:px-1">
+                                    {/* <Switch
+                                        size="small"
+                                        checkedChildren={<CheckOutlined />}
+                                        unCheckedChildren={<CloseOutlined />}
+                                        checked={studentStatuses[item.id] || false} // Get correct status per student
+                                        onChange={(checked) => handleStudentStatusChange(checked, item.id)}
+                                        style={{
+                                            backgroundColor: studentStatuses[item.id] ? "#38b000" : "gray", // Change color when checked 38b000
+                                        }}
+                                    /> */}
 
-                    <td > <Button 
-                            color="primary" 
-                            variant="filled" 
-                            className="rounded-lg w-auto pl-3 pr-3 py-0 my-1 mr-1"
-                            onClick={(e) => {
-                                e.stopPropagation(); // Prevent the click from bubbling to the <td> click handler
-                                handleEditClick(item);  // Open the form with selected course data
-                                setIsModalOpen(true);   // Open the modal
-                            }}
-                        >
-                            <EditOutlined />
-                        </Button>
-                        <Popconfirm
-                            title="Delete the Student"
-                            description="Are you sure you want to delete this Student?"
-                            onConfirm={() => confirm(item.id)}
-                            onCancel={cancel}
-                            okText="Yes"
-                            cancelText="No"
-                        >
-                            <Button 
-                                color="danger" 
-                                variant="filled" 
-                                className="rounded-lg w-auto px-3"
-                                onClick={(e) => e.stopPropagation()} // Prevent the click from triggering the Edit button
-                            >
-                                <DeleteOutlined />
-                            </Button>
-                    </Popconfirm>
-                    </td>
-                </tr>
-            ))
-        ) : (
-            <tr>
-                <td colSpan="100%" className="text-center py-4 text-gray-500">
-                    <Empty description="No Students found" />
-                </td>
-            </tr>
-        )}
-            </tbody>
-            </table>
-        </div>
+                                    <Dropdown
+                                        menu={{
+                                            items: ["Active", "Inactive", "Temp Block", "Restricted"]
+                                                .map((status) => ({
+                                                    key: status,
+                                                    label: status,
+                                                })),
+                                            onClick: ({ key }) => handleStudentStatusChange(item.id, key),
+                                        }}
+                                        >
+                                            <a onClick={(e) => e.preventDefault()}>
+                                            <Tag color={
+                                                (studentStatuses[item.id] || item.status) === "Active" ? "#28a745" :
+                                                (studentStatuses[item.id] || item.status) === "Inactive" ? "#6c757d" :
+                                                (studentStatuses[item.id] || item.status) === "Temp Block" ? "#ff9100" :
+                                                "#ef233c"
+                                            }>
+                                                {studentStatuses[item.id || item.status]} <span><DownOutlined /></span>
+                                            </Tag>
+                                        </a>
+                                    </Dropdown>
+                                </td>
 
-        {/* <div className="w-full h-14 bg-slate-200"> */}
-        <div className="flex justify-center items-center mt-0 py-3 bg-slate-200">
-            {/* <button 
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} 
-                disabled={currentPage === 1}
-                className="px-4 py-1 mx-3 bg-blue-500 text-white rounded disabled:opacity-50"
-            >
-                Previous
-            </button>
+                                <td > <Button 
+                                        color="primary" 
+                                        variant="filled" 
+                                        className="rounded-lg w-auto pl-3 pr-3 py-0 my-1 mr-1"
+                                        onClick={(e) => {
+                                            e.stopPropagation(); // Prevent the click from bubbling to the <td> click handler
+                                            handleEditClick(item);  // Open the form with selected course data
+                                            setIsModalOpen(true);   // Open the modal
+                                        }}
+                                    >
+                                        <EditOutlined />
+                                    </Button>
+                                    <Popconfirm
+                                        title="Delete the Student"
+                                        description="Are you sure you want to delete this Student?"
+                                        onConfirm={() => confirm(item.id)}
+                                        onCancel={cancel}
+                                        okText="Yes"
+                                        cancelText="No"
+                                    >
+                                        <Button 
+                                            color="danger" 
+                                            variant="filled" 
+                                            className="rounded-lg w-auto px-3"
+                                            onClick={(e) => e.stopPropagation()} // Prevent the click from triggering the Edit button
+                                        >
+                                            <DeleteOutlined />
+                                        </Button>
+                                </Popconfirm>
+                                </td>
+                            </tr>
+                        ))
+                    ) : (
+                        <tr>
+                            <td colSpan="100%" className="text-center py-4 text-gray-500">
+                                <Empty description="No Students found" />
+                            </td>
+                        </tr>
+                    )}
+                        </tbody>
+                        )}
 
-            <span className="text-gray-700">Page {currentPage} of {Math.ceil((studentData?.count || 0) / pageSize)}</span>
+                        </table>
+                    </div>
 
-            <button 
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil((studentData?.count || 0) / pageSize)))}
-                disabled={currentPage >= Math.ceil((studentData?.count || 0) / pageSize)}
-                className="px-4 py-1 mx-3 bg-blue-500 text-white rounded disabled:opacity-50"
-            >
-                Next
-            </button> */}
+                {/* <div className="w-full h-14 bg-slate-200"> */}
+                <div className="flex justify-center items-center mt-0 py-3 bg-zinc-100">
+                    <Pagination
+                        current={currentPage}
+                        total={studentData?.count || 0}
+                        pageSize={pageSize} // example: 10
+                        onChange={(page) => setCurrentPage(page)}
+                        showSizeChanger={false}    // hide page size select
+                        showQuickJumper={false}    // hide quick jump input
+                    />
+                    </div>
+                {/* </div> */}
 
-                <Pagination
-                    current={currentPage}
-                    total={studentData?.count || 0}
-                    pageSize={pageSize} // example: 10
-                    onChange={(page) => setCurrentPage(page)}
-                    showSizeChanger={false}    // hide page size select
-                    showQuickJumper={false}    // hide quick jump input
-                />
                 </div>
-        {/* </div> */}
+                
+            </div>
+            
+        <CreateStudentForm isOpen={isModalOpen} selectedStudentData={selectedStudent || {}} onClose={() => setIsModalOpen(false)} />
 
-        </div>
-        )}
-    </div>
-    
-<CreateStudentForm isOpen={isModalOpen} selectedStudentData={selectedStudent || {}} onClose={() => setIsModalOpen(false)} />
-
-</div>  
+        </div>  
 
 
    </>

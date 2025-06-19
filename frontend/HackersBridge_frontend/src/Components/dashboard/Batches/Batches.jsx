@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button, message, Popconfirm, Avatar, Tooltip, Select, Tag, Dropdown, Badge, Spin, Empty, Menu } from 'antd';
-import { EditOutlined, DeleteOutlined, DownOutlined, CopyOutlined, RightOutlined, FilterOutlined } from '@ant-design/icons';
+import { Button, message, Popconfirm, Avatar, Tooltip, Select, Tag, Dropdown, Badge, Spin, Empty } from 'antd';
+import { EditOutlined, DeleteOutlined, DownOutlined, CopyOutlined, RightOutlined, FilterOutlined, LinkOutlined } from '@ant-design/icons';
 import  { useBatchForm }  from "../Batchcontext/BatchFormContext";
 import CreateBatchForm from "./CreateBatchForm";
 import axios from "axios";
 import BASE_URL from "../../../ip/Ip";
-import BatchCards from "../SpecificPage/BatchCards";
 import AvailableBatches from "./AvailableBatches";
 import { useCourseForm } from "../Coursecontext/CourseFormContext";
 import { useAuth } from "../AuthContext/AuthContext";
+import BatchCards from "../SpecificPage/Cards/BatchCards";
 
 
 
@@ -230,7 +230,7 @@ const Batches = () => {
                 message.error("Student not added.");
             }
         } catch (error) {
-            console.error("Error sending Add student request:", error);
+            // console.error("Error sending Add student request:", error);
             message.error("Failed to add student.");
         }
     };
@@ -554,7 +554,7 @@ const Batches = () => {
         // Open in a new tab without switching focus immediately
         setTimeout(() => {
             window.open(`/students/${encodedStudentId}`, "_blank", "noopener,noreferrer");
-        }, 2000); // Small delay prevents immediate redirection
+        }, 1000); // Small delay prevents immediate redirection
         
     };
 
@@ -579,498 +579,534 @@ const Batches = () => {
 
     return (
         <>
-<div className="w-auto pt-4 px-2 mt-14 darkmode">
-    <BatchCards handleTabClick={handleTabClick} activeTab={activeTab}/>
-    <div className="relative w-full h-full shadow-md sm:rounded-lg border border-gray-50r">
-            <div className="w-full px-4 py-3 text flex justify-between font-semibold ">
-                <h1>All Batches</h1>
-                <div>
-                    <button onClick={() =>  { setIsModalOpen(true); setSelectedBatch(null); }} type="button" className="focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5">Create Batch +</button>
-                </div>
-            </div>
+        <div className="w-auto pt-4 px-2 mt-14 darkmode">
+            <BatchCards handleTabClick={handleTabClick} activeTab={activeTab}/>
 
-        <div className="w-full grid grid-cols-5 grid-flow-row space-y-4 sm:space-y-0 items-center justify-between gap-x-8 px-4 pb-4">
-            <div className="grid col-span-5">
-                <div className="flex gap-x-4 h-auto flex-wrap justify-between">
-                    
-                    <div className="relative ">
-                            <Badge count={countBatchesByType?.running ?? 0} overflowCount={999} size="small">
-                        <button
-                            onClick={() => handleTabClick("running")}
-                            className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200
-                                ${activeTab === "running" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
-                                >
-                            Active
-                        </button>
-                            </Badge>
-                           
-                        <button
-                            onClick={() => handleTabClick("scheduled")}
-                            className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200
-                                ${activeTab === "scheduled" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
-                            >
-                            Scheduled
-                        </button>
-                           
-                        <button
-                            onClick={() => handleTabClick("hold")}
-                            className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200
-                                ${activeTab === "hold" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
-                            >
-                            Hold
-                        </button>
-                           
-                        <button
-                            onClick={() => handleTabClick("endingsoon")}
-                            className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200
-                                ${activeTab === "endingsoon" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
-                            >
-                            Ending Soon
-                        </button>
-                          
-                        <button
-                            onClick={() => handleTabClick("completed")}
-                            className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200
-                                ${activeTab === "completed" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
-                            >
-                            Completed 
-                        </button>
-                           
-                        <button
-                            onClick={() => handleTabClick("cancelled")}
-                            className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                                ${activeTab === "cancelled" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
-                            >
-                            Cancelled
-                        </button>
-                          
+            <div className="relative w-full h-full mt-2 shadow-md sm:rounded-lg border border-gray-100">
+                <div className="w-full px-4 py-3 text flex justify-between font-semibold ">
+                    <h1>All Batches</h1>
+                    <div>
+                        <button onClick={() =>  { setIsModalOpen(true); setSelectedBatch(null); }} type="button" className="focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5">Create Batch +</button>
                     </div>
+                </div>
 
+                <div className="w-full grid grid-cols-5 grid-flow-row space-y-4 sm:space-y-0 items-center justify-between gap-x-8 px-4 pb-4">
+                    <div className="grid col-span-5">
+                        <div className="flex gap-x-4 h-auto flex-wrap justify-between">
+                            
+                             <div className="lg:hidden mb-2">
+                                <select
+                                    value={activeTab}
+                                    onChange={(e) => handleTabClick(e.target.value)}
+                                    className="block w-auto px-4 py-1 text-sm border rounded-md bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                >
+                                <option value="running">Active</option>
+                                <option value="scheduled">Scheduled</option>
+                                <option value="hold">Hold</option>
+                                <option value="endingsoon">Ending Soon</option>
+                                <option value="completed">Completed</option>
+                                <option value="cancelled">Cancelled</option>
+                                </select>
+                            </div>
 
-                    <div className="grid col-span-1 justify-items-end">
-                        <div className="flex gap-x-6">
-                            <label htmlFor="table-search" className="sr-only">Search</label>
-                            <div className="relative h-auto">
-                                <input value={searchTerm} type="text" id="table-search" placeholder="Search for items"
-                                    onChange={(e) => {
-                                        const value = e.target.value.trimStart();
-                                        setSearchTerm(value);
-                                        // setCurrentPage(1);
-                                    }}
-                                    className="block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg w-40 h-7 bg-gray-50 focus:ring-blue-500 focus:border-blue-500" 
-                                    />
-                                <div className="absolute inset-y-0 right-0 h-auto flex items-center pr-3">
-                                <button onClick={() => setSearchTerm("")}>
-                                {searchTerm ? (
-                                    <svg className="w-4 h-4 text-gray-500" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M6.293 6.293a1 1 0 011.414 0L10 8.586l2.293-2.293a1 1 0 111.414 1.414L11.414 10l2.293 2.293a1 1 0 01-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 01-1.414-1.414L8.586 10 6.293 7.707a1 1 0 010-1.414z" clipRule="evenodd"></path>
-                                        </svg>
-                                    ) : (
-                                        <svg className="w-4 h-4 text-gray-500" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"></path>
-                                        </svg>
-                                    )}
+                            <div className="relative hidden lg:flex">
+                                    <Badge count={countBatchesByType?.running ?? 0} overflowCount={999} size="small">
+                                <button
+                                    onClick={() => handleTabClick("running")}
+                                    className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200
+                                        ${activeTab === "running" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                        >
+                                    Active
                                 </button>
+                                    </Badge>
+                                
+                                <button
+                                    onClick={() => handleTabClick("scheduled")}
+                                    className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200
+                                        ${activeTab === "scheduled" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                    >
+                                    Scheduled
+                                </button>
+                                
+                                <button
+                                    onClick={() => handleTabClick("hold")}
+                                    className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200
+                                        ${activeTab === "hold" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                    >
+                                    Hold
+                                </button>
+                                
+                                <button
+                                    onClick={() => handleTabClick("endingsoon")}
+                                    className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200
+                                        ${activeTab === "endingsoon" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                    >
+                                    Ending Soon
+                                </button>
+                                
+                                <button
+                                    onClick={() => handleTabClick("completed")}
+                                    className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200
+                                        ${activeTab === "completed" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                    >
+                                    Completed 
+                                </button>
+                                
+                                <button
+                                    onClick={() => handleTabClick("cancelled")}
+                                    className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
+                                        ${activeTab === "cancelled" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                    >
+                                    Cancelled
+                                </button>
+                                
+                            </div>
+
+
+                            <div className="grid col-span-1 justify-items-end">
+                                <div className="flex gap-x-6">
+                                    <label htmlFor="table-search" className="sr-only">Search</label>
+                                    <div className="relative h-auto">
+                                        <input value={searchTerm} type="text" id="table-search" placeholder="Search for batch"
+                                            onChange={(e) => {
+                                                const value = e.target.value.trimStart();
+                                                setSearchTerm(value);
+                                                // setCurrentPage(1);
+                                            }}
+                                            className="2xl:w-96 lg:w-96 md:w-72 h-8 block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500" 
+                                            />
+                                        <div className="absolute inset-y-0 right-0 h-auto flex items-center pr-3">
+                                        <button onClick={() => setSearchTerm("")}>
+                                        {searchTerm ? (
+                                            <svg className="w-4 h-4 text-gray-500" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M6.293 6.293a1 1 0 011.414 0L10 8.586l2.293-2.293a1 1 0 111.414 1.414L11.414 10l2.293 2.293a1 1 0 01-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 01-1.414-1.414L8.586 10 6.293 7.707a1 1 0 010-1.414z" clipRule="evenodd"></path>
+                                                </svg>
+                                            ) : (
+                                                <svg className="w-4 h-4 text-gray-500" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"></path>
+                                                </svg>
+                                            )}
+                                        </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+
                         </div>
                     </div>
+                </div>
+                
+                {/* {activeTab === 'tab1' && ( */}
+                <div className={`overflow-hidden pb-2 relative ${loading ? "backdrop-blur-md opacity-50 pointer-events-none" : ""}`}>
+                    <div className="w-full h-[38rem] overflow-y-auto rounded-lg pb-2">
+                        <table className="w-full text-xs text-left text-gray-500">
+                            <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10">
+                                <tr>
+                                    <th scope="col" className="p-2">
+                                        <div className="flex items-center">
+                                            <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-2"></input>
+                                            <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
+                                        </div>
+                                    </th>
+                                    <th scope="col" className="px-3 py-3 md:px-2">
+                                        S.No
+                                    </th>
+                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                        Batch Id
+                                    </th>
+                                    <th scope="col" className="px-3 py-3 md:px-1 cursor-pointer" onClick={toggleSortByStartTime}>
+                                        Start Time 
+                                    <span className="ml-1">
+                                            <Tooltip title="Sort by Start Time" placement="top"> 
+                                                {sortByTime ? "▲" : "▼"}
+                                            </Tooltip>
+                                    </span>
+                                    </th>
+                                    <th scope="col" className="px-3 py-3 md:px-1 cursor-pointer" onClick={toggleSortByStartDate}>
+                                        Start Date
+                                    <span className="ml-1">
+                                            <Tooltip title="Sort by start Date" placement="top">
+                                                {sortByStartDate ? "▲" : "▼"}
+                                            </Tooltip>
+                                    </span>
+                                    </th>
+                                    <th scope="col" className="px-3 py-3 md:px-1 cursor-pointer" onClick={toggleSortByEndDate}>
+                                        End Date
+                                        <span className="ml-1">
+                                            <Tooltip title="Sort by End Date" placement="top">
+                                                {sortByEndDate ? "▲" : "▼"}
+                                            </Tooltip>
+                                    </span>
+                                    </th>
+                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                        Course
+                                        {/* <Tooltip title="Sort by Course" placement="top">
+                                        <Dropdown menu={courseMenu} trigger={["click"]} >
+                                            <Button type="text" icon={<FilterOutlined  />} />
+                                        </Dropdown>
+                                        </Tooltip> */}
+                                    </th>
+                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                        Trainer
+                                        {/* <Tooltip title="Sort by Trainer" placement="top">
+                                        <Dropdown  trigger={["click"]}>
+                                            <Button type="text" icon={<FilterOutlined  style={{ color: sortByLanguage ? "blue" : "black" }} />} />
+                                        </Dropdown>
+                                        </Tooltip> */}
+                                    </th>
+                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                        Students
+                                    </th>
+                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                        Mode 
+                                        <Tooltip title="Sort by Mode" placement="top">
+                                        <span>
+                                            <Dropdown menu={modeMenu} >
+                                                <Button type="text" icon={<FilterOutlined  style={{ color: sortByMode ? "blue" : "black" }} className="w-3"/>} />
+                                            </Dropdown>
+                                        </span>
+                                        </Tooltip>
+                                    </th>
+                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                        Language 
+                                        <Tooltip title="Sort by Language" placement="top">
+                                        <span>
+                                            <Dropdown menu={languageMenu} >
+                                                <Button type="text" icon={<FilterOutlined  style={{ color: sortByLanguage ? "blue" : "black" }} className="w-3"/>} />
+                                            </Dropdown>
+                                        </span>
+                                        </Tooltip>
+                                    </th>
+                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                        Preferred Week
+                                        <Tooltip title="Sort by Preferred Week" placement="top">
+                                        <span>
+                                            <Dropdown menu={preferredWeekMenu} >
+                                                <Button type="text" icon={<FilterOutlined style={{ color: sortByPreferredWeek ? "blue" : "black" }} className="w-3"/>} />
+                                            </Dropdown>
+                                        </span>
+                                        </Tooltip>
+                                    </th>
+                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                        Location
+                                        <Tooltip title="Sort by Location" placement="top">
+                                        <span>
+                                            <Dropdown menu={locationMenu} >
+                                                <Button type="text" icon={<FilterOutlined style={{ color: sortByLocation ? "blue" : "black" }} className="w-3"/>} />
+                                            </Dropdown>
+                                        </span>
+                                        </Tooltip>
+                                    </th>
+                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                        Status
+                                    </th>
+                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                        Action
+                                    </th>
+                                    
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan="100%" className="text-center py-4">
+                                            <Spin size="large" />
+                                        </td>
+                                    </tr>
+                                ) : sortedBatches.length > 0 ? (
+                                    sortedBatches.map((item, index) => (
+                                        <tr key={index} className="bg-white border-b border-gray-200 hover:bg-gray-50 scroll-smooth">
+                                            <td scope="col" className="p-2">
+                                                <div className="flex items-center">
+                                                    <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 focus:ring-2"></input>
+                                                    <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
+                                                </div>
+                                            </td>
+                                            <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900 dark:text-white">
+                                                {index + 1}
+                                            </td>
+                                            <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleBatchClick(item.id)}>
+                                                {item.batch_id} {item.batch_link && ( 
+                                                    <Tooltip title={
+                                                        <span overlayStyle={{ whiteSpace: "nowrap", maxWidth: 'none' }}>
+                                                            Class Link - {item.batch_link}
+                                                        </span>
+                                                        }
+                                                        >
+                                                        <span>
+                                                        <LinkOutlined style={{ color: "blue" }} />
+                                                        </span>
+                                                    </Tooltip>
+)}
+                                            </td>
+                                            <td className="px-3 py-2 md:px-1">
+                                                {new Date(`1970-01-01T${item.batch_time_data?.start_time}`).toLocaleString("en-US", {
+                                                hour: "numeric",
+                                                minute: "numeric",
+                                                hour12: true,
+                                                })}
+                                                <span> - </span>
+                                                {new Date(`1970-01-01T${item.batch_time_data?.end_time}`).toLocaleString("en-US", {
+                                                hour: "numeric",
+                                                minute: "numeric",
+                                                hour12: true,
+                                                })}
+                                            </td>
+                                            <td className="px-3 py-2 md:px-1"> 
+                                                {new Date(item.start_date).toLocaleDateString("en-GB", {
+                                                    day: "2-digit",
+                                                    month: "2-digit",
+                                                    year: "numeric",
+                                                })}
+                                            </td>
+                                            <td className="px-3 py-2 md:px-1"> 
+                                                {new Date(item.end_date).toLocaleDateString("en-GB", {
+                                                    day: "2-digit",
+                                                    month: "2-digit",
+                                                    year: "numeric",
+                                                })}
+                                            </td>
+                                            <td className="px-3 py-2 md:px-1">{item.course_name}</td>
+
+                                            <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.trainer)}>{item.trainer_name}</td>
+                                            
+                                            <td className="px-3 py-2 md:px-1 relative">
+                                                {/* <Avatar.Group
+                                                    max={{
+                                                        count: 2,
+                                                        style: {
+                                                        color: "#f56a00",
+                                                        backgroundColor: "#fde3cf",
+                                                        height: "24px",
+                                                        width: "24px",
+                                                        },
+                                                    }}
+                                                    >
+                                                    {item.student_name?.slice(0, 0).map((name, index) => (
+                                                        <Avatar size={24} style={{ backgroundColor: "#87d068" }}>
+                                                            {name[0]}
+                                                        </Avatar>
+                                                    ))}
+                                                    {item.student_name?.map((name, index) => (
+                                                        <Avatar key={index} size={24} style={{ display: "none" }}>
+                                                        {name[0]}
+                                                        </Avatar>
+                                                    ))}
+                                                </Avatar.Group> */}
+
+
+                                                <Avatar.Group
+                                                    max={{
+                                                        count: 2,
+                                                        style: {
+                                                            color: "#f56a00",
+                                                            backgroundColor: "#fde3cf",
+                                                            height: "24px", // Match avatar size
+                                                            width: "24px", // Match avatar size
+                                                        }
+                                                    }}
+                                                    >
+                                                    {item.student_name?.map((name, index) => (
+                                                        <Tooltip key={index} title={name} placement="top">
+                                                            <Avatar
+                                                                size={24}
+                                                                style={{ backgroundColor: "#87d068" }}
+                                                            >
+                                                                {name[0]} 
+                                                            </Avatar>
+                                                        </Tooltip>
+                                                    ))}
+                                                </Avatar.Group>
+
+                                                <div className="relative inline-block">
+                                                    <Button
+                                                        disabled={item.status === "Cancelled" || item.status === "Completed"}
+                                                        color="primary"
+                                                        variant="filled"
+                                                        className="ml-1 rounded-full"
+                                                        size="small"
+                                                        onClick={() => {
+                                                            handleStudentDropdown(item.id, index);
+                                                            fetchAvailableStudents(item.id);
+                                                        }}
+                                                        >
+                                                        {addStudentDropdown === index ? "-" : "+"}
+                                                    </Button>
+
+                                                    {addStudentDropdown === index && (
+                                                        <div className="absolute left-full top-0 ml-2 bg-white border rounded shadow-lg p-2 z-50 flex">
+                                                            <Select
+                                                                showSearch
+                                                                mode="multiple"
+                                                                size="small"
+                                                                style={{ width: 250, whiteSpace: "normal" }}
+                                                                onChange={(values) => handleSelectChange(item.id, values)}
+                                                                placeholder="Select a student"
+                                                                options={students[item.id] ? students[item.id].map(student => ({
+                                                                    label: (
+                                                                        <div style={{ whiteSpace: "normal", wordWrap: "break-word", overflowWrap: "break-word" }}>
+                                                                            {student.name} - {student.phone}
+                                                                        </div>
+                                                                    ),
+                                                                    title: `${student.name} - ${student.phone}`,
+                                                                    value: student.studentid,
+                                                                    phone:  student.phone,
+                                                                    dataName: student.name.toLowerCase(), 
+                                                                    dataPhone: student.phone.toLowerCase(),
+                                                                })) : []}
+                                                                filterOption={(input, option) =>
+                                                                    option.dataName.includes(input.toLowerCase()) ||
+                                                                    option.dataPhone.includes(input.toLowerCase())
+                                                                }
+                                                                optionRender={(option) => (
+                                                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                                                                        {/* Left-aligned student name & phone */}
+                                                                        <span style={{ flex: 1 }}>{option.data.label}</span>
+                                                                
+                                                                        {/* Right-aligned icons */}
+                                                                        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                                                                        <Tooltip title="Copy Phone Number">
+                                                                            <span>
+                                                                                <CopyOutlined
+                                                                                    style={{ cursor: "pointer", color: "#1890ff" }}
+                                                                                    onClick={(e) => {
+                                                                                        e.stopPropagation();
+                                                                                        copyToClipboard(option.data.phone);
+                                                                                    }}
+                                                                                />
+                                                                            </span>
+                                                                        </Tooltip>
+
+                                                                        <Tooltip title="Open Student Info">
+                                                                            <span>
+                                                                                <RightOutlined
+                                                                                    style={{ cursor: "pointer", color: "blue" }}
+                                                                                    onClick={(e) => {
+                                                                                        handleStudentClickOnSelect(e, option.data.value);
+                                                                                    }}
+                                                                                />
+                                                                            </span>
+                                                                        </Tooltip>
+
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            />
+
+                                                            <Button variant="solid" color="green" className="ml-1" size="small" onClick={() => { addStudents(item.id); setAddStudentDropdown(false); }}>
+                                                                Add
+                                                            </Button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="px-3 py-2 md:px-1">
+                                                <Tag bordered={false} color={item.mode === "Offline" ? "green" : item.mode === "Online" ? "red" : "geekblue"}>
+                                                    {item.mode}
+                                                </Tag>
+                                            </td>
+
+                                            <td className="px-3 py-2 md:px-1">
+                                                <Tag bordered={false} color={item.language === "Hindi" ? "green" : item.language === "English" ? "volcano" : "blue"}>
+                                                    {item.language}
+                                                </Tag>
+                                            </td>
+
+                                            <td className="px-3 py-2 md:px-1">
+                                                <Tag bordered={false} color={item.preferred_week === "Weekdays" ? "cyan" : item.preferred_week === "Weekends" ? "gold" : "geekblue" }>
+                                                    {item.preferred_week}
+                                                </Tag>
+                                            </td>
+
+                                            <td className="px-3 py-2 md:px-1">
+                                                <Tag bordered={false} color={item.batch_location === "saket" ? "blue" : item.batch_location === "Laxmi Nagar" ? "magenta" : "geekblue"}>
+                                                    {item.batch_location}
+                                                </Tag>
+                                            </td>
+
+                                            <td className="px-3 py-2 md:px-1">
+                                                <Dropdown
+                                                    menu={{
+                                                        items: ["Running", "Completed", "Hold", "Cancelled"]
+                                                            .filter((status) => !(item.status === "Running" && status === "Running" || item.status === "Hold" && status === "Hold"))
+                                                            .map((status) => ({
+                                                                key: status,
+                                                                label: status,
+                                                            })),
+                                                        onClick: ({ key }) => handlestatusChange(item.id, key),
+                                                    }}
+                                                    >
+                                                    <a onClick={(e) => e.preventDefault()}>
+                                                        <Tag color={item.status === "Running" ? "green" : item.status === "Upcoming" ? "lime" : item.status === "Completed" ? "geekblue" : item.status === "Hold" ? "volcano" : "red"}>
+                                                            {item.status} <span><DownOutlined /></span>
+                                                        </Tag>
+                                                    </a>
+                                                </Dropdown>
+                                            </td>
+
+                                            <td>
+                                                <Button
+                                                    color="primary"
+                                                    variant="filled"
+                                                    className="rounded-lg w-auto pl-3 pr-3 py-0 my-1 mr-1"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleEditClick(item);
+                                                        setIsModalOpen(true);
+                                                    }}
+                                                    >
+                                                    <EditOutlined />
+                                                </Button>
+
+                                                <Popconfirm
+                                                    title="Delete the Batch"
+                                                    description="Are you sure you want to delete this Batch?"
+                                                    onConfirm={() => confirm(item.id)}
+                                                    onCancel={cancel}
+                                                    okText="Yes"
+                                                    cancelText="No"
+                                                    >
+                                                    <Button
+                                                        color="danger"
+                                                        variant="filled"
+                                                        className="rounded-lg w-auto px-3"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        >
+                                                        <DeleteOutlined />
+                                                    </Button>
+                                                </Popconfirm>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="100%" className="text-center py-4 text-gray-500">
+                                            <Empty description="No Batches found" />
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+
+                        </table>
+                    </div>
+
+                {/* {activeTab === "available_batches" && (
+                    <AvailableBatches/>
+                )} */}
 
                 </div>
+                {/* )} */}
             </div>
-        </div>
-        
-        {/* {activeTab === 'tab1' && ( */}
-        <div className={`overflow-hidden pb-2 relative ${loading ? "backdrop-blur-md opacity-50 pointer-events-none" : ""}`}>
-            <div className="w-full h-[38rem] overflow-y-auto rounded-lg pb-2">
-        <table className="w-full text-xs text-left text-gray-500">
-            <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10">
-                <tr>
-                    <th scope="col" className="p-2">
-                        <div className="flex items-center">
-                            <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
-                            <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
-                        </div>
-                    </th>
-                    <th scope="col" className="px-3 py-3 md:px-2">
-                        S.No
-                    </th>
-                    <th scope="col" className="px-3 py-3 md:px-1">
-                        Batch Id
-                    </th>
-                    <th scope="col" className="px-3 py-3 md:px-1 cursor-pointer" onClick={toggleSortByStartTime}>
-                        Start Time 
-                       <span className="ml-1">
-                            <Tooltip title="Sort by Start Time" placement="top"> 
-                                {sortByTime ? "▲" : "▼"}
-                            </Tooltip>
-                       </span>
-                    </th>
-                    <th scope="col" className="px-3 py-3 md:px-1 cursor-pointer" onClick={toggleSortByStartDate}>
-                        Start Date
-                       <span className="ml-1">
-                            <Tooltip title="Sort by start Date" placement="top">
-                                {sortByStartDate ? "▲" : "▼"}
-                            </Tooltip>
-                       </span>
-                    </th>
-                    <th scope="col" className="px-3 py-3 md:px-1 cursor-pointer" onClick={toggleSortByEndDate}>
-                        End Date
-                        <span className="ml-1">
-                            <Tooltip title="Sort by End Date" placement="top">
-                                {sortByEndDate ? "▲" : "▼"}
-                            </Tooltip>
-                       </span>
-                    </th>
-                    <th scope="col" className="px-3 py-3 md:px-1">
-                        Course
-                        {/* <Tooltip title="Sort by Course" placement="top">
-                        <Dropdown menu={courseMenu} trigger={["click"]} >
-                            <Button type="text" icon={<FilterOutlined  />} />
-                        </Dropdown>
-                        </Tooltip> */}
-                    </th>
-                    <th scope="col" className="px-3 py-3 md:px-1">
-                        Trainer
-                        {/* <Tooltip title="Sort by Trainer" placement="top">
-                        <Dropdown  trigger={["click"]}>
-                            <Button type="text" icon={<FilterOutlined  style={{ color: sortByLanguage ? "blue" : "black" }} />} />
-                        </Dropdown>
-                        </Tooltip> */}
-                    </th>
-                    <th scope="col" className="px-3 py-3 md:px-1">
-                        Students
-                    </th>
-                    <th scope="col" className="px-3 py-3 md:px-1">
-                        Mode 
-                        <Tooltip title="Sort by Mode" placement="top">
-                        <span>
-                            <Dropdown menu={modeMenu} >
-                                <Button type="text" icon={<FilterOutlined  style={{ color: sortByMode ? "blue" : "black" }} className="w-3"/>} />
-                            </Dropdown>
-                        </span>
-                        </Tooltip>
-                    </th>
-                    <th scope="col" className="px-3 py-3 md:px-1">
-                        Language 
-                        <Tooltip title="Sort by Language" placement="top">
-                        <span>
-                            <Dropdown menu={languageMenu} >
-                                <Button type="text" icon={<FilterOutlined  style={{ color: sortByLanguage ? "blue" : "black" }} className="w-3"/>} />
-                            </Dropdown>
-                        </span>
-                        </Tooltip>
-                    </th>
-                    <th scope="col" className="px-3 py-3 md:px-1">
-                        Preferred Week
-                        <Tooltip title="Sort by Preferred Week" placement="top">
-                        <span>
-                            <Dropdown menu={preferredWeekMenu} >
-                                <Button type="text" icon={<FilterOutlined style={{ color: sortByPreferredWeek ? "blue" : "black" }} className="w-3"/>} />
-                            </Dropdown>
-                        </span>
-                        </Tooltip>
-                    </th>
-                    <th scope="col" className="px-3 py-3 md:px-1">
-                        Location
-                        <Tooltip title="Sort by Location" placement="top">
-                        <span>
-                            <Dropdown menu={locationMenu} >
-                                <Button type="text" icon={<FilterOutlined style={{ color: sortByLocation ? "blue" : "black" }} className="w-3"/>} />
-                            </Dropdown>
-                        </span>
-                        </Tooltip>
-                    </th>
-                    <th scope="col" className="px-3 py-3 md:px-1">
-                        Status
-                    </th>
-                    <th scope="col" className="px-3 py-3 md:px-1">
-                        Action
-                    </th>
-                    
-                </tr>
-            </thead>
-            <tbody>
-    {loading ? (
-        <tr>
-            <td colSpan="100%" className="text-center py-4">
-                <Spin size="large" />
-            </td>
-        </tr>
-    ) : sortedBatches.length > 0 ? (
-        sortedBatches.map((item, index) => (
-            <tr key={index} className="bg-white border-b border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 scroll-smooth">
-                <td scope="col" className="p-2">
-                    <div className="flex items-center">
-                        <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 focus:ring-2"></input>
-                        <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
-                    </div>
-                </td>
-                <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900 dark:text-white">
-                    {index + 1}
-                </td>
-                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleBatchClick(item.id)}>
-                    {item.batch_id}
-                </td>
-                <td className="px-3 py-2 md:px-1">
-                    {new Date(`1970-01-01T${item.batch_time_data?.start_time}`).toLocaleString("en-US", {
-                    hour: "numeric",
-                    minute: "numeric",
-                    hour12: true,
-                    })}
-                    <span> - </span>
-                    {new Date(`1970-01-01T${item.batch_time_data?.end_time}`).toLocaleString("en-US", {
-                    hour: "numeric",
-                    minute: "numeric",
-                    hour12: true,
-                    })}
-                </td>
-                <td className="px-3 py-2 md:px-1"> 
-                    {new Date(item.start_date).toLocaleDateString("en-GB", {
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric",
-                    })}
-                </td>
-                <td className="px-3 py-2 md:px-1"> 
-                    {new Date(item.end_date).toLocaleDateString("en-GB", {
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric",
-                    })}
-                </td>
-                <td className="px-3 py-2 md:px-1">{item.course_name}</td>
 
-                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(item.trainer)}>{item.trainer_name}</td>
-                
-                <td className="px-3 py-2 md:px-1 relative">
-                {/* <Avatar.Group
-                    max={{
-                        count: 2,
-                        style: {
-                        color: "#f56a00",
-                        backgroundColor: "#fde3cf",
-                        height: "24px",
-                        width: "24px",
-                        },
-                    }}
-                    >
-                    {item.student_name?.slice(0, 0).map((name, index) => (
-                        <Avatar size={24} style={{ backgroundColor: "#87d068" }}>
-                            {name[0]}
-                        </Avatar>
-                    ))}
-                    {item.student_name?.map((name, index) => (
-                        <Avatar key={index} size={24} style={{ display: "none" }}>
-                        {name[0]}
-                        </Avatar>
-                    ))}
-                </Avatar.Group> */}
-
-
-                    <Avatar.Group
-                       max={{
-                            count: 2,
-                            style: {
-                                color: "#f56a00",
-                                backgroundColor: "#fde3cf",
-                                height: "24px", // Match avatar size
-                                width: "24px", // Match avatar size
-                        }
-                    }}
-                    >
-                        {item.student_name?.map((name, index) => (
-                            <Tooltip key={index} title={name} placement="top">
-                                <Avatar
-                                    size={24}
-                                    style={{ backgroundColor: "#87d068" }}
-                                >
-                                    {name[0]} 
-                                </Avatar>
-                            </Tooltip>
-                        ))}
-                    </Avatar.Group>
-
-                    <div className="relative inline-block">
-                        <Button
-                            disabled={item.status === "Cancelled" || item.status === "Completed"}
-                            color="primary"
-                            variant="filled"
-                            className="ml-1 rounded-full"
-                            size="small"
-                            onClick={() => {
-                                handleStudentDropdown(item.id, index);
-                                fetchAvailableStudents(item.id);
-                            }}
-                        >
-                            {addStudentDropdown === index ? "-" : "+"}
-                        </Button>
-
-                        {addStudentDropdown === index && (
-                            <div className="absolute left-full top-0 ml-2 bg-white border rounded shadow-lg p-2 z-50 flex">
-                                <Select
-                                    showSearch
-                                    mode="multiple"
-                                    size="small"
-                                    style={{ width: 250, whiteSpace: "normal" }}
-                                    onChange={(values) => handleSelectChange(item.id, values)}
-                                    placeholder="Select a student"
-                                    options={students[item.id] ? students[item.id].map(student => ({
-                                        label: (
-                                            <div style={{ whiteSpace: "normal", wordWrap: "break-word", overflowWrap: "break-word" }}>
-                                                {student.name} - {student.phone}
-                                            </div>
-                                        ),
-                                        title: `${student.name} - ${student.phone}`,
-                                        value: student.studentid,
-                                        phone:  student.phone,
-                                        dataName: student.name.toLowerCase(), 
-                                        dataPhone: student.phone.toLowerCase(),
-                                    })) : []}
-                                    filterOption={(input, option) =>
-                                        option.dataName.includes(input.toLowerCase()) ||
-                                        option.dataPhone.includes(input.toLowerCase())
-                                    }
-                                    optionRender={(option) => (
-                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
-                                            {/* Left-aligned student name & phone */}
-                                            <span style={{ flex: 1 }}>{option.data.label}</span>
-                                    
-                                            {/* Right-aligned icons */}
-                                            <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                                            <Tooltip title="Copy Phone Number">
-                                                <span>
-                                                    <CopyOutlined
-                                                        style={{ cursor: "pointer", color: "#1890ff" }}
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            copyToClipboard(option.data.phone);
-                                                        }}
-                                                    />
-                                                </span>
-                                            </Tooltip>
-
-                                            <Tooltip title="Open Student Info">
-                                                <span>
-                                                    <RightOutlined
-                                                        style={{ cursor: "pointer", color: "blue" }}
-                                                        onClick={(e) => {
-                                                            handleStudentClickOnSelect(e, option.data.value);
-                                                        }}
-                                                    />
-                                                </span>
-                                            </Tooltip>
-
-                                            </div>
-                                        </div>
-                                    )}
-                                />
-                                <Button variant="solid" color="green" className="ml-1" size="small" onClick={() => { addStudents(item.id); setAddStudentDropdown(false); }}>
-                                    Add
-                                </Button>
-                            </div>
-                        )}
-                    </div>
-                </td>
-                <td className="px-3 py-2 md:px-1">
-                    <Tag bordered={false} color={item.mode === "Offline" ? "green" : item.mode === "Online" ? "red" : "geekblue"}>
-                        {item.mode}
-                    </Tag>
-                </td>
-                <td className="px-3 py-2 md:px-1">
-                    <Tag bordered={false} color={item.language === "Hindi" ? "green" : item.language === "English" ? "volcano" : "blue"}>
-                        {item.language}
-                    </Tag>
-                </td>
-                <td className="px-3 py-2 md:px-1">
-                    <Tag bordered={false} color={item.preferred_week === "Weekdays" ? "cyan" : item.preferred_week === "Weekends" ? "gold" : "geekblue" }>
-                        {item.preferred_week}
-                    </Tag>
-                </td>
-                <td className="px-3 py-2 md:px-1">
-                    <Tag bordered={false} color={item.batch_location === "saket" ? "blue" : item.batch_location === "Laxmi Nagar" ? "magenta" : "geekblue"}>
-                        {item.batch_location}
-                    </Tag>
-                </td>
-                <td className="px-3 py-2 md:px-1">
-                    <Dropdown
-                        menu={{
-                            items: ["Running", "Completed", "Hold", "Cancelled"]
-                                .filter((status) => !(item.status === "Running" && status === "Running" || item.status === "Hold" && status === "Hold"))
-                                .map((status) => ({
-                                    key: status,
-                                    label: status,
-                                })),
-                            onClick: ({ key }) => handlestatusChange(item.id, key),
-                        }}
-                    >
-                        <a onClick={(e) => e.preventDefault()}>
-                            <Tag color={item.status === "Running" ? "green" : item.status === "Upcoming" ? "lime" : item.status === "Completed" ? "geekblue" : item.status === "Hold" ? "volcano" : "red"}>
-                                {item.status} <span><DownOutlined /></span>
-                            </Tag>
-                        </a>
-                    </Dropdown>
-                </td>
-                <td>
-                    <Button
-                        color="primary"
-                        variant="filled"
-                        className="rounded-lg w-auto pl-3 pr-3 py-0 my-1 mr-1"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditClick(item);
-                            setIsModalOpen(true);
-                        }}
-                    >
-                        <EditOutlined />
-                    </Button>
-                    <Popconfirm
-                        title="Delete the Batch"
-                        description="Are you sure you want to delete this Batch?"
-                        onConfirm={() => confirm(item.id)}
-                        onCancel={cancel}
-                        okText="Yes"
-                        cancelText="No"
-                    >
-                        <Button
-                            color="danger"
-                            variant="filled"
-                            className="rounded-lg w-auto px-3"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <DeleteOutlined />
-                        </Button>
-                    </Popconfirm>
-                </td>
-            </tr>
-        ))
-    ) : (
-        <tr>
-            <td colSpan="100%" className="text-center py-4 text-gray-500">
-                <Empty description="No Batches found" />
-            </td>
-        </tr>
-    )}
-</tbody>
-
-        </table>
-        </div>
-    {activeTab === "available_batches" && (
-        <AvailableBatches/>
-    )}
-        </div>
-        {/* )} */}
-    </div>
-
-<CreateBatchForm isOpen={isModalOpen} selectedBatchData={selectedBatch|| {}}  onClose={() => setIsModalOpen(false)} />
-
-
-
+            <CreateBatchForm isOpen={isModalOpen} selectedBatchData={selectedBatch|| {}}  onClose={() => setIsModalOpen(false)} />
 
         </div>
-<div>
-    <AvailableBatches/>
-</div>
+
+
+        {/* Table for available trainers  */}
+        <div>
+            <AvailableBatches/>
+        </div>
 
    </>
     )

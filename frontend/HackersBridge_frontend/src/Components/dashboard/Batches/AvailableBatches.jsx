@@ -563,14 +563,16 @@ const CreateAvailableBatchForm = ({ isOpen, onClose, selectedBatch }) => {
             // Update existing batch (PUT)
             response = await axios.put(`${BASE_URL}/api/batches/edit/${selectedBatch.id}/`, 
                 payload, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                withCredentials: true
+            }
             );
             successMessage = "Batch updated successfully!";
         } else {
             // Add new batch (POST)
             response = await axios.post(`${BASE_URL}/api/batches/add/`, 
                 payload, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
             );
             successMessage = "Batch added successfully!";            
         }
