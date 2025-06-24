@@ -97,3 +97,13 @@ class Trainer(models.Model):
 # Register Trainer model for audit logging
 # auditlog.register(Trainer)
     
+class TrainerBatchEndEmail(models.Model):
+    trainers = models.ManyToManyField(Trainer, blank=True)
+    batch = models.ManyToManyField("nexus.Batch", blank=True)
+    email_opened = models.BooleanField(default=False)
+    email_send_date = models.DateTimeField(auto_now_add=True)
+    email_subject = models.CharField(max_length=150, blank=True, null=True)
+    gen_time = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"{self.email_subject or 'No Subject'} - Sent by {self.send_by or 'System'}"

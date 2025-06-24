@@ -6,6 +6,7 @@ from django.utils.timezone import now
 import datetime
 import random
 import string
+from django.core.validators import FileExtensionValidator
 
 
 class CustomUser(AbstractUser):
@@ -70,7 +71,7 @@ class Course(models.Model):
     name = models.CharField(max_length=100, null=True, blank=True)
     certification_body = models.CharField(max_length=25, null=True, blank=True)
     duration = models.IntegerField(null=True, blank=True)
-    code = code = models.CharField(max_length=255, null=True, blank=True, unique=True)
+    code = models.CharField(max_length=255, null=True, blank=True, unique=True)
     gen_time = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
@@ -160,7 +161,7 @@ class Batch(models.Model):
     batch_created_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='batch_create')
     batch_link = models.CharField(max_length=200, null=True, blank=True)
     batch_create_datetime = models.DateTimeField(default=timezone.now)
-    last_update_datetime = models.DateTimeField(auto_now_add=True)
+    last_update_datetime = models.DateTimeField(auto_now=True)
     gen_time = models.DateTimeField(default=timezone.now)
 
     @property
@@ -175,15 +176,15 @@ class Batch(models.Model):
 class BatchStudentAssignment(models.Model):
 
     student_batch_status = [
-        ('In', 'In'),
-        ('Out', 'Out'),
+        ('Active','Active'),
+        ('Inactive','Inactive'),
     ]
     # ✅ Fix Student ForeignKey Reference
     batch = models.ForeignKey(Batch, on_delete=models.CASCADE)
     student = models.ForeignKey("Student.Student", on_delete=models.CASCADE)
     coordinator = models.ForeignKey("Coordinator.Coordinator", on_delete=models.SET_NULL, null=True, blank=True)
     added_on = models.DateTimeField(auto_now_add=True)
-    student_batch_status = models.CharField(max_length=10, null=True, blank=True, choices=student_batch_status, default='In')
+    student_batch_status = models.CharField(max_length=10, null=True, blank=True, choices=student_batch_status, default='Active')
     last_update_datetime = models.DateTimeField(default=timezone.now)
     add_in_batch_email_sent = models.BooleanField(default=False)
     add_in_batch_email_sent_at = models.DateTimeField(null=True, blank=True)
@@ -239,6 +240,7 @@ class StudentBatchRequest(models.Model):
         ('Pending', 'Pending'),
         ('Approved', 'Approved'),
         ('Rejected', 'Rejected'),
+        ('Removed', 'Removed'),
     ]
 
     student = models.ForeignKey('Student.Student', on_delete=models.CASCADE)
@@ -559,7 +561,13 @@ class ChatMessage(models.Model):
     chat = models.ForeignKey(Chats, on_delete=models.CASCADE, related_name='messages')
     sender = models.CharField(max_length=20, choices=SENDER_CHOICES)
     send_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='sent_messages')
-    message = models.TextField()
+    message = models.TextField(blank=True)
+    file = models.FileField(
+        upload_to='chat_files/',
+        null=True,
+        blank=True,
+        validators=[FileExtensionValidator(allowed_extensions=['png', 'jpg', 'jpeg', 'pdf'])]
+    )
     gen_time = models.DateTimeField(default=timezone.now)
     
     def __str__(self):

@@ -82,6 +82,31 @@ class TrainerListAPIviews(APIView):
 
 
 
+
+class TrainerCardsAPIView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # Only allow admin and coordinator roles
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
+        trainer = Trainer.objects.all()
+
+        all_in_one = {
+            'total_count_trainer': trainer.count(),
+            'leave_count_trainer': trainer.exclude(leave_status__in=['Onduty']).exclude(leave_status__isnull=True).count(),
+            'active_count_trainer': trainer.filter(status='Active').count(),
+            'inactive_count_trainer': trainer.filter(status='Inactive').count(),
+            'Saket_count_trainer': trainer.filter(location__locality='Saket').count(),
+            'Laxmi_Nagar_count_trainer': trainer.filter(location__locality='Laxmi Nagar').count()
+        }
+
+        return Response({'all_in_one': all_in_one}, status=status.HTTP_200_OK)
+
+
+
 # For Trainer-Availability-In-CurrentlyFreeTrainers-Or-FutureAvailabilityOfTrainers
 class TrainerAvailabilityAPIView(APIView):
     authentication_classes = [JWTAuthentication]  # Ensures user must provide a valid token
@@ -197,7 +222,6 @@ class TrainerAvailabilityAPIView(APIView):
 
 
 
-
 class AddTrainerAPIView(APIView):
     """API View to add a new trainer (without creating a user)"""
     authentication_classes = [JWTAuthentication]  # Ensures user must provide a valid token
@@ -243,7 +267,6 @@ class AddTrainerAPIView(APIView):
             }, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 
 
@@ -333,7 +356,6 @@ class EditTrainerAPIView(APIView):
 
 
 
-
 class DeleteTrainerAPIView(APIView):
     """API View to delete a trainer"""
     authentication_classes = [JWTAuthentication]  # Ensures user must provide a valid token
@@ -386,7 +408,7 @@ class DeleteTrainerAPIView(APIView):
         )
         
         return Response({'message': 'Trainer, user account, and authentication token deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
-    
+
 
 
 
@@ -549,6 +571,8 @@ class TrainerLogListView(APIView):
         logs = LogEntry.objects.filter(content_type=trainer_ct).order_by('-timestamp')
         serializer = LogEntrySerializer(logs, many=True)
         return Response(serializer.data)
+
+
 
 {
 # class EditTrainerAPIView(APIView):
@@ -829,6 +853,8 @@ class TrainerLogListView(APIView):
 }
 
 
+
+
 class TrainerLeaveMail(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -839,6 +865,7 @@ class TrainerLeaveMail(APIView):
 
         leave_status = request.data.get('leave_status')
         cutoff_time = time(hour=14, minute=30)
+        batch_list = request.data.get('batch_list', [])
 
         try:
             trainer = Trainer.objects.select_related('coordinator').get(id=id)
@@ -860,16 +887,15 @@ class TrainerLeaveMail(APIView):
         trainer.leave_end_date = date.today()
         trainer.save(update_fields=["leave_status", "leave_end_date"])
 
-        today = date.today()
-        iso = today.isocalendar()
-        day_type = "Weekdays" if 1 <= iso.weekday <= 5 else "Weekends"
+        print(batch_list)
+
 
         related_batches = Batch.objects.filter(
-            trainer=trainer,
-            batch_time__in=timeslots,
-            status="Running",
-            preferred_week=day_type
+            id__in = batch_list,
+            trainer = trainer,
+            status = "Running"
         ).select_related("course", "batch_time")
+        print(related_batches)
 
         if not related_batches.exists():
             return Response({'message': f'No batches found for this trainer in {leave_status.lower()}.'}, status=status.HTTP_200_OK)
@@ -987,6 +1013,7 @@ class TrainerLeaveMail(APIView):
                 email.content_subtype = "html"
                 email.send(fail_silently=False)
                 sleep(0.1)
+                print("Hello")
 
                 LogEntry.objects.create(
                     content_type=ContentType.objects.get_for_model(Trainer),
@@ -1004,6 +1031,7 @@ class TrainerLeaveMail(APIView):
                 )
 
             except Exception as e:
+                print("NHI HUA")
                 return Response({
                     'error': f"Failed to send email for batch {batch.id}: {str(e)}"
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -1016,13 +1044,11 @@ class TrainerLeaveMail(APIView):
 
 
 
-
-
-
 # This is for sending email when trainer on long leave
 class TrainerLongLeaveMail(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
+
 
     def post(self, request, id):
         if request.user.role not in ['admin', 'coordinator']:
@@ -1033,14 +1059,16 @@ class TrainerLongLeaveMail(APIView):
         leave_status = request.data.get('leave_status')
         start_date = parse_date(request.data.get('start_date'))
         end_date = parse_date(request.data.get('end_date'))
+        batch_list = request.data.get('batch_list', [])
 
         if not (leave_status == "custom" and start_date and end_date):
             return Response({'error': 'Missing or invalid leave_status/start_date/end_date.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        
         related_batches = Batch.objects.filter(
-            trainer=trainer,
-            start_date__lte=start_date,
-            end_date__gte=end_date
+            id__in = batch_list,
+            trainer = trainer,
+            status = 'Running'
         ).select_related('course', 'batch_time')
 
         trainer.leave_status = leave_status

@@ -137,6 +137,7 @@ class StudentCourse(models.Model):  # ✅ Through Model
     student_certificate_allotment = models.BooleanField(null=True, blank=True, default=False)
     student_book_allotment = models.BooleanField(null=True, blank=True, default=False)
     student_old_book_allotment = models.BooleanField(null=True, blank=True, default=False)
+    student_exam_date = models.DateField(null=True, blank=True)
     # create_by = models.CharField(max_length=100, null=True, blank=True) 
  
     class Meta:
@@ -171,3 +172,4 @@ class BookAllotment(models.Model):
     
 
 # class StudentEmails(models.Model):
+

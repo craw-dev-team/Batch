@@ -4,7 +4,7 @@ import uuid
 import logging
 from pathlib import Path
 from django.utils import timezone
-from Trainer.models import Trainer
+from Trainer.models import Trainer, TrainerBatchEndEmail
 from collections import defaultdict
 from datetime import timedelta, date
 from auditlog.models import LogEntry
@@ -39,7 +39,7 @@ from .models import (CustomUser ,Batch, BatchStudentAssignment, Attendance,
 from .serializer import (BatchSerializer, BatchCreateSerializer, BatchStudentAssignmentSerializer, 
                          LogEntrySerializer, AttendanceSerializer)
 from django.db.models import Q, F, Value, When, Case, CharField
-
+from time import sleep
 
 # from rest_framework_simplejwt.authentication import JWTAuthentication
 cid = str(uuid.uuid4())
@@ -55,7 +55,7 @@ class StandardResultsSetPagination(PageNumberPagination):
 
 
 
-# # API view to retrieve and update batch status information
+{# # API view to retrieve and update batch status information
 # class BatchAPIView(APIView):
 #     # Use JWT for authentication
 #     authentication_classes = [JWTAuthentication]
@@ -153,7 +153,7 @@ class StandardResultsSetPagination(PageNumberPagination):
 #                 'batches': all_batches,
 #             }
 #         }, status=status.HTTP_200_OK)
-
+}
 
 # 🔹 Paginated BatchAPIView
 class BatchAPIView(APIView):
@@ -241,7 +241,7 @@ class BatchAPIView(APIView):
 
         filters = Q()
 
-        # 🔸 Handle special status: 'ending soon'
+        # 🔸 Hand le special status: 'ending soon'
         if status_filter == 'endingsoon':
             filters &= Q(status='Running', end_date__range=(today, ten_days_later))
         elif status_filter:
@@ -284,6 +284,8 @@ class BatchAPIView(APIView):
         paginator = StandardResultsSetPagination()
         paginated_queryset = paginator.paginate_queryset(batches, request)
         serializer = BatchSerializer(paginated_queryset, many=True)
+        print(timezone.now())
+        print('hello')
 
         return paginator.get_paginated_response({'batches': serializer.data,
                                                  'all_batch_count':all_batch_count,
@@ -938,54 +940,54 @@ class BatchRemoveStudentAPIView(APIView):
 
 
             # ✅ Send email notification
-            # for student in removed_students:
-        #         subject = f"You have been removed from {batch.course} ({batch.batch_id})"
-        #         html_message = f"""<html>
-        # <head>
-        # <meta charset="UTF-8">
-        # <title>Removed from Batch</title>
-        # </head>
-        # <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0;">
-        # <div style="max-width: 600px; margin: 40px auto; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); overflow: hidden; color: #000;">
-        #     <div style="text-align: center; padding: 20px; border-bottom: 1px solid #ddd;">
-        #         <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 60px;">
-        #     </div>
-        #     <div style="padding: 30px; font-size: 16px; color: #000;">
-        #         <h2 style="text-align: center; font-size: 22px; color: #000;">📢 Batch Update Notice</h2>
-        #         <p style="color: #000;">Dear <strong>{ student.name }</strong>,</p>
-        #         <p style="color: #000;">We would like to inform you that you have been removed from the <strong>{ batch.course }</strong> course batch <strong>{ batch.batch_id }</strong>.</p>
-        #         <p style="color: #000;">If this was unexpected or if you believe this was a mistake, please contact your batch coordinator or Craw Security support immediately.</p>
-        #         <p style="margin-top: 30px; color: #000;">
-        #             📍 <strong>Our Address:</strong><br>
-        #             1st Floor, Plot no. 4, Lane no. 2, Kehar Singh Estate, Westend Marg,<br>
-        #             Behind Saket Metro Station, New Delhi 110030
-        #         </p>
-        #         <p style="color: #000;">
-        #             📞 <strong>Phone:</strong> 011-40394315 | +91-9650202445, +91-9650677445<br>
-        #             📧 <strong>Email:</strong> training@craw.in<br>
-        #             🌐 <strong>Website:</strong> 
-        #             <a href="https://www.craw.in" style="text-decoration: underline;">www.craw.in</a>
-        #         </p>
-        #         <p style="color: #000;">
-        #             Warm regards,<br>
-        #             <strong>Craw Cyber Security Pvt Ltd</strong> 🛡️
-        #         </p>
-        #     </div>
-        #     <!-- Footer -->
-        #     <div style="background-color: #f0f0f0; padding: 18px 20px; text-align: center; font-size: 14px; color: #000; border-top: 1px solid #ddd;">
-        #         <p style="margin: 0;">© 2025 <strong>Craw Cyber Security Pvt Ltd</strong>. All Rights Reserved.</p>
-        #         <p style="margin: 5px 0 0;">This is an automated message. Please do not reply.</p>
-        #     </div>
-        # </div>
-        # </body>
-        # </html>"""
-        #         from_email = "CRAW SECURITY BATCH <training@craw.in>"
-        #         try:
-        #             email = EmailMessage(subject, html_message, from_email, [student.email])
-        #             email.content_subtype = "html"
-        #             email.send()
-        #         except Exception as e:
-        #             print(f"Failed to send removal email to {student.email}: {str(e)}")
+            for student in removed_students:
+                subject = f"You have been removed from {batch.course} ({batch.batch_id})"
+                html_message = f"""<html>
+        <head>
+        <meta charset="UTF-8">
+        <title>Removed from Batch</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0;">
+        <div style="max-width: 600px; margin: 40px auto; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); overflow: hidden; color: #000;">
+            <div style="text-align: center; padding: 20px; border-bottom: 1px solid #ddd;">
+                <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 60px;">
+            </div>
+            <div style="padding: 30px; font-size: 16px; color: #000;">
+                <h2 style="text-align: center; font-size: 22px; color: #000;">📢 Batch Update Notice</h2>
+                <p style="color: #000;">Dear <strong>{ student.name }</strong>,</p>
+                <p style="color: #000;">We would like to inform you that you have been removed from the <strong>{ batch.course }</strong> course batch <strong>{ batch.batch_id }</strong>.</p>
+                <p style="color: #000;">If this was unexpected or if you believe this was a mistake, please contact your batch coordinator or Craw Security support immediately.</p>
+                <p style="margin-top: 30px; color: #000;">
+                    📍 <strong>Our Address:</strong><br>
+                    1st Floor, Plot no. 4, Lane no. 2, Kehar Singh Estate, Westend Marg,<br>
+                    Behind Saket Metro Station, New Delhi 110030
+                </p>
+                <p style="color: #000;">
+                    📞 <strong>Phone:</strong> 011-40394315 | +91-9650202445, +91-9650677445<br>
+                    📧 <strong>Email:</strong> training@craw.in<br>
+                    🌐 <strong>Website:</strong> 
+                    <a href="https://www.craw.in" style="text-decoration: underline;">www.craw.in</a>
+                </p>
+                <p style="color: #000;">
+                    Warm regards,<br>
+                    <strong>Craw Cyber Security Pvt Ltd</strong> 🛡️
+                </p>
+            </div>
+            <!-- Footer -->
+            <div style="background-color: #f0f0f0; padding: 18px 20px; text-align: center; font-size: 14px; color: #000; border-top: 1px solid #ddd;">
+                <p style="margin: 0;">© 2025 <strong>Craw Cyber Security Pvt Ltd</strong>. All Rights Reserved.</p>
+                <p style="margin: 5px 0 0;">This is an automated message. Please do not reply.</p>
+            </div>
+        </div>
+        </body>
+        </html>"""
+                from_email = "CRAW SECURITY BATCH <training@craw.in>"
+                try:
+                    email = EmailMessage(subject, html_message, from_email, [student.email])
+                    email.content_subtype = "html"
+                    email.send()
+                except Exception as e:
+                    print(f"Failed to send removal email to {student.email}: {str(e)}")
 
         return Response({
             "message": "Students removed successfully, and course status updated.",
@@ -1089,7 +1091,7 @@ class BatchStudentStatusChangerAPIView(APIView):
 
         return Response({'message': f'Student batch status updated to "{status_value}".'}, status=status.HTTP_200_OK)
 
-        
+
         
 
 # Generate and assign certificates to students in a batch...
@@ -1147,181 +1149,181 @@ class GenerateBatchCertificateAPIView(APIView):
                 student_course.certificate_date = issue_date
                 updated_student_courses.append(student_course)
 
-        #         # Send Email
-        #         try:
-        #             subject = f"🎉 Congratulations, {student.name}! Your {course} Certificate is Here!"
+                # Send Email
+                try:
+                    subject = f"🎉 Congratulations, {student.name}! Your {course} Certificate is Here!"
 
-        #             # html_message = f"""
-        #             # <!DOCTYPE html>
-        #             # <html>
-        #             # <head>
-        #             #     <meta charset="UTF-8">
-        #             #     <title>Certificate Issued</title>
-        #             # </head>
-        #             # <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-        #             #     <p>Dear <strong>{student.name}</strong>,</p>
+                    # html_message = f"""
+                    # <!DOCTYPE html>
+                    # <html>
+                    # <head>
+                    #     <meta charset="UTF-8">
+                    #     <title>Certificate Issued</title>
+                    # </head>
+                    # <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                    #     <p>Dear <strong>{student.name}</strong>,</p>
 
-        #             #     <p>We’re thrilled to congratulate you on successfully completing the <strong>{course}</strong> course at <strong>Craw Cyber Security</strong>!</p>
+                    #     <p>We’re thrilled to congratulate you on successfully completing the <strong>{course}</strong> course at <strong>Craw Cyber Security</strong>!</p>
 
-        #             #     <p>Your dedication and hard work have paid off, and we are delighted to issue your official certificate.</p>
+                    #     <p>Your dedication and hard work have paid off, and we are delighted to issue your official certificate.</p>
 
-        #             #     <p>
-        #             #         <strong>🏷️ Student Enrollment Number:</strong> {student.enrollment_no}<br>
-        #             #         <strong>📅 Date of Issue:</strong> {issue_date}
-        #             #     </p>
+                    #     <p>
+                    #         <strong>🏷️ Student Enrollment Number:</strong> {student.enrollment_no}<br>
+                    #         <strong>📅 Date of Issue:</strong> {issue_date}
+                    #     </p>
 
-        #             #     <p>Your certificate is attached to this email—feel free to showcase it in your portfolio, LinkedIn profile, or anywhere that highlights your achievements.</p>
+                    #     <p>Your certificate is attached to this email—feel free to showcase it in your portfolio, LinkedIn profile, or anywhere that highlights your achievements.</p>
 
-        #             #     <p>This milestone is just the beginning of your journey in cybersecurity, and we’re excited to see where your skills take you next!</p>
+                    #     <p>This milestone is just the beginning of your journey in cybersecurity, and we’re excited to see where your skills take you next!</p>
 
-        #             #     <p>If you have any questions or need further assistance, don’t hesitate to reach out.</p>
+                    #     <p>If you have any questions or need further assistance, don’t hesitate to reach out.</p>
 
-        #             #     <p>🚀 Keep learning, keep growing, and keep securing the digital world!</p>
+                    #     <p>🚀 Keep learning, keep growing, and keep securing the digital world!</p>
 
-        #             #     <p>Best regards,<br>
-        #             #     🚀 Craw Cyber Security Team<br>
-        #             #     📧 <a href="mailto:training@craw.in">training@craw.in</a><br>
-        #             #     📞 +91 9513805401<br>
-        #             #     🌐 <a href="https://www.craw.in/">https://www.craw.in/</a>
-        #             #     </p>
-        #             # </body>
-        #             # </html>
-        #             # """
+                    #     <p>Best regards,<br>
+                    #     🚀 Craw Cyber Security Team<br>
+                    #     📧 <a href="mailto:training@craw.in">training@craw.in</a><br>
+                    #     📞 +91 9513805401<br>
+                    #     🌐 <a href="https://www.craw.in/">https://www.craw.in/</a>
+                    #     </p>
+                    # </body>
+                    # </html>
+                    # """
 
-        #             html_message = f"""
-        # <!DOCTYPE html>
-        # <html>
-        # <head>
-        # <meta charset="UTF-8">
-        # <title>Certificate Issued</title>
-        # </head>
-        # <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0; color: #000;">
-        # <div style="max-width: 600px; margin: 40px auto; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); overflow: hidden;">
+                    html_message = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <meta charset="UTF-8">
+        <title>Certificate Issued</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0; color: #000;">
+        <div style="max-width: 600px; margin: 40px auto; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); overflow: hidden;">
             
-        #     <!-- Header with Logo -->
-        #     <div style="text-align: center; padding: 20px; border-bottom: 1px solid #ddd;">
-        #     <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 60px;">
-        #     </div>
+            <!-- Header with Logo -->
+            <div style="text-align: center; padding: 20px; border-bottom: 1px solid #ddd;">
+            <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 60px;">
+            </div>
 
-        #     <!-- Body -->
-        #     <div style="padding: 30px; color: #000;">
-        #     <h2 style="text-align: center; font-size: 24px; margin-bottom: 20px;">🎓 Certificate of Achievement</h2>
+            <!-- Body -->
+            <div style="padding: 30px; color: #000;">
+            <h2 style="text-align: center; font-size: 24px; margin-bottom: 20px;">🎓 Certificate of Achievement</h2>
 
-        #     <p style="font-size: 16px; line-height: 1.6;">
-        #         Dear <strong style="font-weight: bold;">{student.name}</strong>,
-        #     </p>
+            <p style="font-size: 16px; line-height: 1.6;">
+                Dear <strong style="font-weight: bold;">{student.name}</strong>,
+            </p>
 
-        #     <p style="font-size: 16px; line-height: 1.6;">
-        #         Congratulations on successfully completing the <strong style="font-weight: bold;">{course}</strong> course at <strong>Craw Cyber Security</strong>! 🎉
-        #     </p>
+            <p style="font-size: 16px; line-height: 1.6;">
+                Congratulations on successfully completing the <strong style="font-weight: bold;">{course}</strong> course at <strong>Craw Cyber Security</strong>! 🎉
+            </p>
 
-        #     <p style="font-size: 16px; line-height: 1.6;">
-        #         Your hard work and commitment have paid off, and we are excited to issue your official certificate.
-        #     </p>
+            <p style="font-size: 16px; line-height: 1.6;">
+                Your hard work and commitment have paid off, and we are excited to issue your official certificate.
+            </p>
 
-                # <p style="font-size: 16px; line-height: 1.6;">
-                #     Share your achievement on LinkedIn and tag <strong>@Craw Cyber Security</strong> to inspire others! Don’t forget to use <strong>#crawsec</strong> and <strong>#lifeatcraw</strong> 🚀
-                # </p>
+                <p style="font-size: 16px; line-height: 1.6;">
+                    Share your achievement on LinkedIn and tag <strong>@Craw Cyber Security</strong> to inspire others! Don’t forget to use <strong>#crawsec</strong> and <strong>#lifeatcraw</strong> 🚀
+                </p>
 
-        #     <div style="background-color: #f1f1f1; padding: 15px; border-radius: 6px; margin: 20px 0;">
-        #         <p style="font-size: 15px; margin: 6px 0;"><strong>🏷️ Enrollment Number:</strong> {student.enrollment_no}</p>
-        #         <p style="font-size: 15px; margin: 6px 0;"><strong>📅 Date of Issue:</strong> {issue_date}</p>
-        #         <p style="font-size: 15px; margin: 6px 0;"><strong>📎 Certificate:</strong> Attached as PDF</p>
-        #         <ifream src = "file_path" />
-        #     </div>
+            <div style="background-color: #f1f1f1; padding: 15px; border-radius: 6px; margin: 20px 0;">
+                <p style="font-size: 15px; margin: 6px 0;"><strong>🏷️ Enrollment Number:</strong> {student.enrollment_no}</p>
+                <p style="font-size: 15px; margin: 6px 0;"><strong>📅 Date of Issue:</strong> {issue_date}</p>
+                <p style="font-size: 15px; margin: 6px 0;"><strong>📎 Certificate:</strong> Attached as PDF</p>
+                <ifream src = "file_path" />
+            </div>
 
-        #     <p style="font-size: 16px; line-height: 1.6;">
-        #         Your certificate is attached to this email. Feel free to showcase it in your portfolio, LinkedIn profile, or wherever you wish to highlight your accomplishments.
-        #     </p>
+            <p style="font-size: 16px; line-height: 1.6;">
+                Your certificate is attached to this email. Feel free to showcase it in your portfolio, LinkedIn profile, or wherever you wish to highlight your accomplishments.
+            </p>
 
-        #     <p style="font-size: 16px; line-height: 1.6;">
-        #         This is a great milestone in your cybersecurity journey, and we’re confident you’ll achieve even more in the future!
-        #     </p>
+            <p style="font-size: 16px; line-height: 1.6;">
+                This is a great milestone in your cybersecurity journey, and we’re confident you’ll achieve even more in the future!
+            </p>
 
-        #     <p style="font-size: 16px; line-height: 1.6;">
-        #         🔐 Stay passionate, stay curious, and keep securing the digital world!
-        #     </p>
+            <p style="font-size: 16px; line-height: 1.6;">
+                🔐 Stay passionate, stay curious, and keep securing the digital world!
+            </p>
 
-        #     <p style="font-size: 16px; line-height: 1.6;">
-        #         Warm regards,<br>
-        #         <strong style="font-weight: bold;">Craw Cyber Security Team</strong> 🚀<br>
-        #         📧 <a href="mailto:training@craw.in" style="text-decoration: underline;">training@craw.in</a><br>
-        #         📞 +91 9513805401<br>
-        #         🌐 <a href="https://www.craw.in/" style="text-decoration: underline;">www.craw.in</a>
-        #     </p>
-        #     </div>
+            <p style="font-size: 16px; line-height: 1.6;">
+                Warm regards,<br>
+                <strong style="font-weight: bold;">Craw Cyber Security Team</strong> 🚀<br>
+                📧 <a href="mailto:training@craw.in" style="text-decoration: underline;">training@craw.in</a><br>
+                📞 +91 9513805401<br>
+                🌐 <a href="https://www.craw.in/" style="text-decoration: underline;">www.craw.in</a>
+            </p>
+            </div>
 
-        #     <!-- Footer -->
-        #     <div style="background-color: #f0f0f0; padding: 18px 20px; text-align: center; font-size: 14px; color: #000; border-top: 1px solid #ddd;">
-        #     <p style="margin: 0;">© 2025 <strong>Craw Cyber Security Pvt Ltd</strong>. All Rights Reserved.</p>
-        #     <p style="margin: 5px 0 0;">This is an automated message. Please do not reply.</p>
-        #     </div>
-        # </div>
-        # </body>
-        # </html>
-        # """
+            <!-- Footer -->
+            <div style="background-color: #f0f0f0; padding: 18px 20px; text-align: center; font-size: 14px; color: #000; border-top: 1px solid #ddd;">
+            <p style="margin: 0;">© 2025 <strong>Craw Cyber Security Pvt Ltd</strong>. All Rights Reserved.</p>
+            <p style="margin: 5px 0 0;">This is an automated message. Please do not reply.</p>
+            </div>
+        </div>
+        </body>
+        </html>
+        """
 
-        #             from_email = "CRAW SECURITY CERTIFICATE <training@craw.in>"
-        #             email_obj = EmailMessage(subject, html_message, from_email, [student.email])
-        #             email_obj.content_subtype = "html"
-        #             email_obj.attach_file(file_path)
-        #             email_obj.send()
+                    from_email = "CRAW SECURITY CERTIFICATE <training@craw.in>"
+                    email_obj = EmailMessage(subject, html_message, from_email, [student.email])
+                    email_obj.content_subtype = "html"
+                    email_obj.attach_file(file_path)
+                    email_obj.send()
 
-        #         except Exception as e:
-        #             errors.append({
-        #                 "student_id": student.id,
-        #                 "student_email":student.email,
-        #                 "error": f"Email failed: {str(e)}"
-        #             })
+                except Exception as e:
+                    errors.append({
+                        "student_id": student.id,
+                        "student_email":student.email,
+                        "error": f"Email failed: {str(e)}"
+                    })
 
 
-        #         certificate_paths.append({
-        #             "student_id": student.id,
-        #             "certificate_path": file_path
-        #         })
-        #     else:
-        #         errors.append({
-        #             "student_id": student.id,
-        #             "error": "Certificate generation failed"
-        #         })
+                certificate_paths.append({
+                    "student_id": student.id,
+                    "certificate_path": file_path
+                })
+            else:
+                errors.append({
+                    "student_id": student.id,
+                    "error": "Certificate generation failed"
+                })
 
-        # if updated_student_courses:
-        #     StudentCourse.objects.bulk_update(
-        #         updated_student_courses, ["certificate_date", "student_certificate_allotment"]
-        #     )
+        if updated_student_courses:
+            StudentCourse.objects.bulk_update(
+                updated_student_courses, ["certificate_date", "student_certificate_allotment"]
+            )
 
-        # # Log entry
-        # success_students = [sc.student.enrollment_no for sc in updated_student_courses]
-        # failed_students = [e["student_id"] for e in errors]
+        # Log entry
+        success_students = [sc.student.enrollment_no for sc in updated_student_courses]
+        failed_students = [e["student_id"] for e in errors]
 
-        # log_data = {
-        #     "batch_id": batch.batch_id,
-        #     "generated": success_students,
-        #     "failed": failed_students,
-        #     "by": request.user.username
-        # }
+        log_data = {
+            "batch_id": batch.batch_id,
+            "generated": success_students,
+            "failed": failed_students,
+            "by": request.user.username
+        }
 
-        # LogEntry.objects.create(
-        #     content_type=ContentType.objects.get_for_model(StudentCourse),
-        #     cid=str(uuid.uuid4()),
-        #     object_pk=batch.id,
-        #     object_id=batch.id,
-        #     object_repr=f"Batch: {batch.batch_id}",
-        #     action=LogEntry.Action.UPDATE,
-        #     changes=f"Certificates generated for {len(success_students)} students in batch {batch.batch_id}.",
-        #     serialized_data=json.dumps(log_data, default=str),
-        #     changes_text=f"Certificates generated for {len(success_students)} students in batch '{batch.batch_id}' by {request.user.username}.",
-        #     additional_data="Batch",
-        #     actor=request.user,
-        #     timestamp=now()
-        # )
+        LogEntry.objects.create(
+            content_type=ContentType.objects.get_for_model(StudentCourse),
+            cid=str(uuid.uuid4()),
+            object_pk=batch.id,
+            object_id=batch.id,
+            object_repr=f"Batch: {batch.batch_id}",
+            action=LogEntry.Action.UPDATE,
+            changes=f"Certificates generated for {len(success_students)} students in batch {batch.batch_id}.",
+            serialized_data=json.dumps(log_data, default=str),
+            changes_text=f"Certificates generated for {len(success_students)} students in batch '{batch.batch_id}' by {request.user.username}.",
+            additional_data="Batch",
+            actor=request.user,
+            timestamp=now()
+        )
 
-        # response_data = {"certificates": certificate_paths}
-        # if errors:
-        #    response_data["errors"] = errors
-        #    print(response_data)
+        response_data = {"certificates": certificate_paths}
+        if errors:
+           response_data["errors"] = errors
+           print(response_data)
 
-        # return Response(response_data, status=status.HTTP_200_OK)
+        return Response(response_data, status=status.HTTP_200_OK)
 
 
 # THIS IS FOR GETTING BATCH LOGS...
@@ -1341,6 +1343,10 @@ class BatchLogListView(APIView):
 
 # THIS IS FOR BATCH ATTENDANCE...
 class BatchAttendanceView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+
     def post(self, request, id):
         attendance_date = request.data.get('Attendance_date')
 
@@ -1541,3 +1547,139 @@ class EmailSenderAPIView(APIView):
 
 #         return Response("Chats and welcome messages created successfully.")
 }
+
+
+def BatchEndingEmail(request=None):
+    today = now().date()
+    five_days_later = today + timedelta(days=5)
+
+    print("Today:", today)
+    print("Five days later:", five_days_later)
+
+    batches = Batch.objects.filter(status='Running', end_date__range=(today, five_days_later))
+    coordinators = list(Coordinator.objects.values_list('email', flat=True))
+
+    for batch in batches:
+        trainer = batch.trainer
+        if not trainer or not trainer.email:
+            continue
+
+        # Check if email was already sent today for this trainer
+        trainer_email_logs = TrainerBatchEndEmail.objects.filter(trainers=trainer, batch=batch)
+
+        already_sent_today = any(
+            log.email_send_date.date() == today for log in trainer_email_logs
+        )
+
+        if already_sent_today:
+            print(f"Email already sent to {trainer.name} today. Skipping.")
+            continue
+
+        # Extract fields
+        subject = f"📅 Batch Ending Reminder ({batch.batch_time.start_time.strftime('%I:%M %p')} - {batch.batch_time.end_time.strftime('%I:%M %p')})"
+        batch_id = batch.batch_id
+        batch_course = batch.course.name
+        batch_start_date = batch.start_date
+        batch_end_date = batch.end_date
+        batch_start_time = batch.batch_time.start_time
+        batch_end_time = batch.batch_time.end_time
+
+        html_message = f"""
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>{subject}</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0;">
+        <div style="max-width: 600px; margin: 40px auto; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); overflow: hidden; color: #000;">
+            <div style="text-align: center; padding: 20px; border-bottom: 1px solid #ddd;">
+                <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 60px;">
+            </div>
+            <div style="padding: 30px; font-size: 16px; color: #000;">
+                <h2 style="text-align: center; font-size: 22px; color: #000;">📅 Batch Ending Notification</h2>
+                <p>Dear <strong>{batch.trainer.name}</strong>,</p>
+                <p>This is a kind reminder that your batch <strong>{batch_id}</strong> for the course <strong>{batch_course}</strong> is scheduled to end on <strong>{batch_end_date}</strong>.</p>
+                
+                <div style="background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                    <h3 style="margin-top: 0; color: #333;">📘 Batch Details</h3>
+                    <p><strong>Batch ID:</strong> {batch_id}</p>
+                    <p><strong>Course Name:</strong> {batch_course}</p>
+                    <p><strong>Start Date:</strong> {batch_start_date}</p>
+                    <p><strong>End Date:</strong> {batch_end_date}</p>
+                    <p><strong>Timings:</strong> {batch_start_time.strftime('%I:%M %p')} to {batch_end_time.strftime('%I:%M %p')}</p>
+                </div>
+
+                <p>Please review the progress of your batch and let us know if you need more time to complete the course. If everything is on track, we truly appreciate your effort and would be grateful if you could complete the batch on time.</p>
+                <p>Feel free to get in touch in case of any issues or clarifications.</p>
+
+                <p style="margin-top: 30px;">
+                    📍 <strong>Our Address:</strong><br>
+                    1st Floor, Plot no. 4, Lane no. 2, Kehar Singh Estate, Westend Marg,<br>
+                    Behind Saket Metro Station, New Delhi 110030
+                </p>
+                <p>
+                    📞 <strong>Phone:</strong> 011-40394315 | +91-9650202445, +91-9650677445<br>
+                    📧 <strong>Email:</strong> training@craw.in<br>
+                    🌐 <strong>Website:</strong> 
+                    <a href="https://www.craw.in" style="text-decoration: underline;">www.craw.in</a>
+                </p>
+                <p>
+                    Best regards,<br>
+                    <strong>Craw Cyber Security Pvt Ltd</strong> 🛡️
+                </p>
+            </div>
+            <div style="background-color: #f0f0f0; padding: 18px 20px; text-align: center; font-size: 14px; color: #000; border-top: 1px solid #ddd;">
+                <p style="margin: 0;">© 2025 <strong>Craw Cyber Security Pvt Ltd</strong>. All Rights Reserved.</p>
+                <p style="margin: 5px 0 0;">This is an automated message. Please do not reply.</p>
+            </div>
+        </div>
+        </body>
+        </html>
+        """
+
+        try:
+            # Log email send
+            email_log = TrainerBatchEndEmail.objects.create(
+                email_subject=f"Batch Ending Reminder ({batch.batch_time.start_time.strftime('%I:%M %p')} - {batch.batch_time.end_time.strftime('%I:%M %p')})"
+            )
+            email_log.trainers.add(trainer)
+            email_log.batch.add(batch)
+
+            # Prepare CCs
+            cc_email = coordinators + ['mohit@craw.in']
+            if hasattr(trainer, 'teamleader') and trainer.teamleader and trainer.teamleader.email:
+                cc_email.append(trainer.teamleader.email)
+
+            # Send email
+            email = EmailMessage(
+                subject=subject,
+                body=html_message,
+                from_email="CRAW SECURITY BATCH <training@craw.in>",
+                to=[trainer.email],
+                cc=cc_email,
+            )
+            email.content_subtype = "html"
+            email.send(fail_silently=False)
+            sleep(0.1)
+
+            print(f"Email sent to {trainer.email} for batch {batch_id}")
+
+        except Exception as e:
+            error_msg = f"Failed to send email for batch {batch_id}: {str(e)}"
+            if request:
+                return Response({'error': error_msg}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            else:
+                print(error_msg)
+
+    if request:
+        return Response({'message': "Batch ending soon emails processed."}, status=status.HTTP_200_OK)
+    
+
+
+
+class TestAPIFake(APIView):
+    def get(self, request):
+        result = BatchEndingEmail(request=request)
+        return result if isinstance(result, Response) else Response({'message': 'Batch email processing done.'}, status=status.HTTP_200_OK)
+    
+
