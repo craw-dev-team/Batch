@@ -2,15 +2,12 @@ import uuid
 import json
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import status, filters
+from rest_framework import status
 from .models import Course, Book
 from .serializer import CourseSerializer, BookSerializer
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.authentication import TokenAuthentication
 from auditlog.models import LogEntry
 from django.contrib.contenttypes.models import ContentType
-from django.utils.timezone import now
 from django.shortcuts import get_object_or_404
 from Student.models import StudentCourse, Student,BookAllotment
 from Student.serializer import StudentSerializer
@@ -19,9 +16,8 @@ from nexus.models import Batch
 from django.db.models import Prefetch
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from collections import defaultdict
-from django.utils.timezone import make_aware, datetime
+from django.utils.timezone import datetime, now
 from datetime import timedelta
-from django.utils.timezone import localtime
 from rest_framework.pagination import PageNumberPagination
 
 class CourseListAPIView(APIView):
@@ -535,53 +531,75 @@ class BookTakeByAllDataAPIView(APIView):
         if request.user.role not in ['admin', 'coordinator']:
             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
 
-        today = now()
-        start_of_month = today.replace(day=1)
+        start_date = now() - timedelta(days=30)
 
-        # Fetch BookAllotments with related data
+        # 🧠 Prefetch only required fields
+        books_qs = Book.objects.only('id', 'name', 'course_id')
+        students_qs = Student.objects.only('id', 'name', 'enrollment_no')
+
+        # ⚡ Prefetch efficiently
         allotments = BookAllotment.objects.filter(
-            allotment_datetime__date__gte=start_of_month
+            allotment_datetime__gte=start_date
         ).select_related('allot_by').prefetch_related(
-            Prefetch('student'),
-            Prefetch('book')
+            Prefetch('book', queryset=books_qs),
+            Prefetch('student', queryset=students_qs)
         )
 
-        # Structure data
-        book_data = defaultdict(lambda: {'count': 0, 'students_map': {}})
+        # 🔄 Preload all student-course relationships (flat & quick access)
+        student_courses = StudentCourse.objects.values_list(
+            'student_id', 'course_id', 'student_old_book_allotment'
+        )
+        student_course_map = {
+            (sid, cid): bool(old)
+            for sid, cid, old in student_courses
+        }
 
+        book_data = {}
+
+        # 🔁 Process each allotment efficiently
         for allotment in allotments:
-            allot_by_name = getattr(allotment.allot_by, 'first_name', 'Unknown')
             issue_date = allotment.allotment_datetime
+            issued_by = getattr(allotment.allot_by, 'first_name', 'Unknown')
+            books = list(allotment.book.all())
+            students = list(allotment.student.all())
 
-            for book in allotment.book.all():
+            for book in books:
                 book_key = book.name.replace(" ", "_")
+                course_id = book.course_id
+                if book_key not in book_data:
+                    book_data[book_key] = {
+                        'count': 0,
+                        'students_map': {}
+                    }
 
-                for student in allotment.student.all():
-                    key = student.enrollment_no
+                for student in students:
+                    student_key = student.enrollment_no
+                    if student_key in book_data[book_key]['students_map']:
+                        continue
 
-                    # Add count (total allotments)
+                    is_old = student_course_map.get((student.id, course_id), False)
+                    book_status = 'Old' if is_old else 'New'
+
+                    book_data[book_key]['students_map'][student_key] = {
+                        'name': student.name,
+                        'enrollment_no': student.enrollment_no,
+                        'book_issue_date': issue_date,
+                        'book_issue_by': issued_by,
+                        'course': book.name,
+                        'book_status': book_status,
+                    }
+
                     book_data[book_key]['count'] += 1
 
-                    # Add student info if not already added
-                    if key not in book_data[book_key]['students_map']:
-                        book_data[book_key]['students_map'][key] = {
-                            'name': student.name,
-                            'enrollment_no': student.enrollment_no,
-                            'book_issue_date': issue_date,
-                            'book_issue_by': allot_by_name,
-                            'course':book.name,
-                        }
-
-        # Final formatted response
+        # 📦 Final optimized response
         response = {'all_book_tasks': {}}
         for book_key, info in book_data.items():
             response['all_book_tasks'][f"{book_key}_count"] = info['count']
             response['all_book_tasks'][f"{book_key}_book_take_by"] = list(info['students_map'].values())
 
-        return Response(response)
+        return Response(response, status=status.HTTP_200_OK)
+
     
-
-
 
 # This is for apply filter on issue books...
 class BookIssueFilterAPIView(APIView):
@@ -593,97 +611,109 @@ class BookIssueFilterAPIView(APIView):
             return Response({'error': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
 
         filter_type = request.query_params.get('filter_type')
-        today = now().date()
+        today = now()
 
         try:
             match filter_type:
                 case "today":
-                    start_date = end_date = today
-
+                    start_datetime = today.replace(hour=0, minute=0, second=0, microsecond=0)
+                    end_datetime = start_datetime + timedelta(days=1)
                 case "yesterday":
-                    start_date = end_date = today - timedelta(days=1)
-
+                    start_datetime = (today - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+                    end_datetime = start_datetime + timedelta(days=1)
                 case "this_week":
-                    start_date = today - timedelta(days=today.weekday())
-                    end_date = today
-
+                    start_datetime = (today - timedelta(days=today.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+                    end_datetime = today
                 case "last_week":
-                    end_date = today - timedelta(days=today.weekday() + 1)
-                    start_date = end_date - timedelta(days=6)
-
+                    end_datetime = (today - timedelta(days=today.weekday() + 1)).replace(hour=23, minute=59, second=59, microsecond=999999)
+                    start_datetime = (end_datetime - timedelta(days=6)).replace(hour=0, minute=0, second=0, microsecond=0)
                 case "this_month":
-                    start_date = today.replace(day=1)
-                    end_date = today
-
+                    start_datetime = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                    end_datetime = today
                 case "last_month":
                     first_day_this_month = today.replace(day=1)
                     last_month_end = first_day_this_month - timedelta(days=1)
-                    start_date = last_month_end.replace(day=1)
-                    end_date = last_month_end
-
+                    start_datetime = last_month_end.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                    end_datetime = last_month_end.replace(hour=23, minute=59, second=59, microsecond=999999)
                 case "this_year":
-                    start_date = today.replace(month=1, day=1)
-                    end_date = today
-
+                    start_datetime = today.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+                    end_datetime = today
                 case "last_year":
-                    start_date = today.replace(year=today.year - 1, month=1, day=1)
-                    end_date = today.replace(year=today.year - 1, month=12, day=31)
-
+                    start_datetime = today.replace(year=today.year - 1, month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+                    end_datetime = today.replace(year=today.year - 1, month=12, day=31, hour=23, minute=59, second=59, microsecond=999999)
                 case "custom":
                     start_date_str = request.query_params.get('start_date')
                     end_date_str = request.query_params.get('end_date')
                     if not start_date_str or not end_date_str:
                         return Response({'error': 'Start and end dates are required for custom filter'}, status=400)
-                    start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
-                    end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
-
+                    start_dt = datetime.strptime(start_date_str, "%Y-%m-%d")
+                    end_dt = datetime.strptime(end_date_str, "%Y-%m-%d") + timedelta(days=1)
+                    start_datetime = today.replace(year=start_dt.year, month=start_dt.month, day=start_dt.day, hour=0, minute=0, second=0, microsecond=0)
+                    end_datetime = today.replace(year=end_dt.year, month=end_dt.month, day=end_dt.day, hour=0, minute=0, second=0, microsecond=0)
                 case _:
                     return Response({'error': 'Invalid filter_type'}, status=400)
-
         except Exception as e:
             return Response({'error': 'Invalid date processing', 'details': str(e)}, status=400)
 
-        try:
-            start_date_aware = make_aware(datetime.combine(start_date, datetime.min.time()))
-            end_date_aware = make_aware(datetime.combine(end_date + timedelta(days=1), datetime.min.time()))
-        except Exception as e:
-            return Response({'error': 'Date conversion failed', 'details': str(e)}, status=400)
-
+        # 📌 Efficient prefetch
         allotments = BookAllotment.objects.filter(
-            allotment_datetime__range=(start_date_aware, end_date_aware)
+            allotment_datetime__range=(start_datetime, end_datetime)
         ).select_related('allot_by').prefetch_related(
-            Prefetch('student'),
-            Prefetch('book')
+            Prefetch('student', queryset=Student.objects.only('id', 'name', 'enrollment_no')),
+            Prefetch('book', queryset=Book.objects.only('id', 'name', 'course_id'))
         )
 
-        book_data = defaultdict(lambda: {'count': 0, 'students_map': {}})
+        # 🔁 Bulk load StudentCourse data
+        student_courses = StudentCourse.objects.values_list(
+            'student_id', 'course_id', 'student_old_book_allotment'
+        )
+        student_course_map = {
+            (sid, cid): bool(old)
+            for sid, cid, old in student_courses
+        }
+
+        book_data = {}
 
         for allotment in allotments:
-            allot_by_name = getattr(allotment.allot_by, 'first_name', 'Unknown')
+            issued_by = getattr(allotment.allot_by, 'first_name', 'Unknown')
             issue_date = allotment.allotment_datetime
+            books = list(allotment.book.all())
+            students = list(allotment.student.all())
 
-            for book in allotment.book.all():
+            for book in books:
                 book_key = book.name.replace(" ", "_")
-                for student in allotment.student.all():
-                    student_key = student.enrollment_no
-                    book_data[book_key]['count'] += 1
+                course_id = book.course_id
+                if book_key not in book_data:
+                    book_data[book_key] = {
+                        'count': 0,
+                        'students_map': {}
+                    }
 
-                    if student_key not in book_data[book_key]['students_map']:
-                        book_data[book_key]['students_map'][student_key] = {
-                            'name': student.name,
-                            'enrollment_no': student.enrollment_no,
-                            'book_issue_date': issue_date,
-                            'book_issue_by': allot_by_name,
-                            'course':book.name,
-                        }
+                for student in students:
+                    student_key = student.enrollment_no
+                    if student_key in book_data[book_key]['students_map']:
+                        continue
+
+                    is_old = student_course_map.get((student.id, course_id), False)
+                    book_status = 'Old' if is_old else 'New'
+
+                    book_data[book_key]['students_map'][student_key] = {
+                        'name': student.name,
+                        'enrollment_no': student.enrollment_no,
+                        'book_issue_date': issue_date,
+                        'book_issue_by': issued_by,
+                        'course': book.name,
+                        'book_status': book_status,
+                    }
+
+                    book_data[book_key]['count'] += 1
 
         response = {'all_book_tasks': {}}
         for book_key, info in book_data.items():
             response['all_book_tasks'][f"{book_key}_count"] = info['count']
             response['all_book_tasks'][f"{book_key}_book_take_by"] = list(info['students_map'].values())
 
-        return Response(response, status=200)
-
+        return Response(response, status=status.HTTP_200_OK)
 
 
 # This if for Book Info also send issued or not issued students..
@@ -753,7 +783,7 @@ class BookInfoAPIView(APIView):
             for student in allot.student.all():
                 allotment_map[student.id] = {
                     'issue_by': str(allot.allot_by.first_name) if allot.allot_by.first_name else None,
-                    'allotment_datetime': localtime(allot.allotment_datetime).strftime('%Y-%m-%d %H:%M')
+                    'allotment_datetime': allot.allotment_datetime.strftime('%Y-%m-%d %H:%M') 
                 }
 
         # Not Issued List (no date to sort by, so keep as-is)
@@ -815,48 +845,49 @@ class AllBookIssuedDataAPIView(APIView):
             return Response({'error': 'No books found.'}, status=status.HTTP_404_NOT_FOUND)
 
         filter_type = request.query_params.get('filter_type')
-        today = now().date()
+        today = now()
         start_dt = end_dt = None
 
         try:
             if filter_type:
                 match filter_type:
                     case "today":
-                        start_date = end_date = today
+                        start_dt = today.replace(hour=0, minute=0, second=0, microsecond=0)
+                        end_dt = start_dt + timedelta(days=1)
                     case "yesterday":
-                        start_date = end_date = today - timedelta(days=1)
+                        start_dt = (today - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+                        end_dt = start_dt + timedelta(days=1)
                     case "this_week":
-                        start_date = today - timedelta(days=today.weekday())
-                        end_date = today
+                        start_dt = (today - timedelta(days=today.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+                        end_dt = today
                     case "last_week":
-                        end_date = today - timedelta(days=today.weekday() + 1)
-                        start_date = end_date - timedelta(days=6)
+                        end_dt = (today - timedelta(days=today.weekday() + 1)).replace(hour=23, minute=59, second=59, microsecond=999999)
+                        start_dt = (end_dt - timedelta(days=6)).replace(hour=0, minute=0, second=0, microsecond=0)
                     case "this_month":
-                        start_date = today.replace(day=1)
-                        end_date = today
+                        start_dt = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                        end_dt = today
                     case "last_month":
                         first_day_this_month = today.replace(day=1)
                         last_month_end = first_day_this_month - timedelta(days=1)
-                        start_date = last_month_end.replace(day=1)
-                        end_date = last_month_end
+                        start_dt = last_month_end.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                        end_dt = last_month_end.replace(hour=23, minute=59, second=59, microsecond=999999)
                     case "this_year":
-                        start_date = today.replace(month=1, day=1)
-                        end_date = today
+                        start_dt = today.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+                        end_dt = today
                     case "last_year":
-                        start_date = today.replace(year=today.year - 1, month=1, day=1)
-                        end_date = today.replace(year=today.year - 1, month=12, day=31)
+                        start_dt = today.replace(year=today.year - 1, month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+                        end_dt = today.replace(year=today.year - 1, month=12, day=31, hour=23, minute=59, second=59, microsecond=999999)
                     case "custom":
                         start_date_str = request.query_params.get('start_date')
                         end_date_str = request.query_params.get('end_date')
                         if not start_date_str or not end_date_str:
                             return Response({'error': 'Start and end dates are required for custom filter'}, status=400)
-                        start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
-                        end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+                        start_raw = datetime.strptime(start_date_str, "%Y-%m-%d")
+                        end_raw = datetime.strptime(end_date_str, "%Y-%m-%d") + timedelta(days=1)
+                        start_dt = now().replace(year=start_raw.year, month=start_raw.month, day=start_raw.day, hour=0, minute=0, second=0, microsecond=0)
+                        end_dt = now().replace(year=end_raw.year, month=end_raw.month, day=end_raw.day, hour=0, minute=0, second=0, microsecond=0)
                     case _:
                         return Response({'error': 'Invalid filter_type'}, status=400)
-
-                start_dt = datetime.combine(start_date, datetime.min.time())
-                end_dt = datetime.combine(end_date + timedelta(days=1), datetime.min.time())
         except Exception as e:
             return Response({'error': 'Invalid date processing', 'details': str(e)}, status=400)
 
@@ -893,7 +924,7 @@ class AllBookIssuedDataAPIView(APIView):
                         'course': sc.course.name,
                         'book_status': book_status,
                         'issue_by': allotment_map[sc.student.id]['issue_by'],
-                        'allotment_datetime': localtime(allotment_map[sc.student.id]['allotment_datetime']).strftime('%Y-%m-%d %H:%M')
+                        'allotment_datetime': allotment_map[sc.student.id]['allotment_datetime'].strftime('%Y-%m-%d %H:%M')
                     })
 
         # Search filter

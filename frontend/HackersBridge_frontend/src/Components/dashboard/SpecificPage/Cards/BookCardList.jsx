@@ -8,7 +8,6 @@ const BookCardList = () => {
     const { data } = location.state || { data: "No Data Available"}
     
     const courseName = data[0]?.course
-    console.log(data);
     
     return (
         <>
@@ -43,9 +42,9 @@ const BookCardList = () => {
                                                     <th scope="col" className="px-3 py-3 md:px-1">
                                                         Issued Time
                                                     </th>
-                                                    {/* <th scope="col" className="px-3 py-3 md:px-1">
-                                                        Date of Joining
-                                                    </th> */}
+                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                        Book Status
+                                                    </th>
                                                     <th scope="col" className="px-3 py-3 md:px-1">
                                                         Issued By
                                                     </th>
@@ -73,7 +72,10 @@ const BookCardList = () => {
                                                     {item.book_issue_date ? dayjs(item.book_issue_date).format("DD/MM/YYYY | hh:mm A") : "Not Available"}
                                                 </td>
                                                 <td className="px-3 py-2 md:px-1">
-                                                    {item.book_issue_by}
+                                                    {item.book_status ?? '-'}
+                                                </td> 
+                                                <td className="px-3 py-2 md:px-1">
+                                                    {item.book_issue_by ?? '-'}
                                                 </td> 
                                             </tr>
                                         ))

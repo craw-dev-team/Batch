@@ -28,10 +28,34 @@ const BatchStart = (data) => {
               <p>📅 <strong>Start Date:</strong> ${data?.batch?.start_date}</p>
               <p>🕒 <strong>Timing:</strong> ${to12HourFormat(data?.batch?.batch_time_data?.start_time)} - ${to12HourFormat(data?.batch?.batch_time_data?.end_time)}</p>
               <p>🖥️ <strong>Mode:</strong> ${data?.batch.mode}</p>
+              <p>🌐 <strong>Language:</strong> ${data?.batch.language}</p>
+              <p>📍 <strong>Location:</strong> ${data?.batch.batch_location}</p>
               <p>📅 <strong>Classes on:</strong> ${data?.batch.preferred_week}</p>
               <p>👤 <strong>Trainer:</strong> ${data?.batch.trainer_name}</p>
               <p>🛏️ <strong>Trainer Week off:</strong> ${data?.batch.trainer_weekoff}</p><br>
             </div>
+
+             <!-- ✅ New Class Meet Instructions Card -->
+            <div style="background-color: #eaf6ff; padding: 20px; border-radius: 6px; margin-top: 30px;">
+                <h3 style="color: #ff2a2a; font-size: 18px; margin-top: 0;">📲 Important Steps for CLASS MEET before the CLASS STARTS</h3>
+                <p style="margin-bottom: 12px;">✅ <strong>Step 1: Download the App</strong><br>
+                For Android users: Search and download <strong>CRAW ACADEMY</strong> from the Play Store.<br>
+                For iPhone users: Search and download <strong>CLASS PLUS</strong> from the App Store.</p>
+
+                <p style="margin-bottom: 12px;">✅ <strong>Step 2: Sign In</strong><br>
+                Open the app after installing.<br>
+                Sign in using your registered mobile number.<br>
+                When asked for the Org Code, enter: <strong>CICZB</strong>.</p>
+
+                <p style="margin-bottom: 12px;">✅ <strong>Step 3: Access Your Batch</strong><br>
+                After signing in, go to the bottom of the screen and tap on "Batches".<br>
+                You will see the batches you are part of.</p>
+
+                <p style="margin-bottom: 0;">✅ <strong>Step 4: View Recordings & Chat</strong><br>
+                Go to the "Chats" section in the app.<br>
+                <em>(If you don't see the enrolled batches, contact your batch coordinator.)</em></p>
+            </div>
+            <!-- End of New Section -->
 
             <!-- Additional Info -->
             <p>We look forward to your participation and learning journey with Craw Security.</p><br>

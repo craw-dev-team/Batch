@@ -43,10 +43,7 @@ class StandardResultsSetPagination(PageNumberPagination):
     max_page_size = 200
 
 
-
-
 class LogEntryListAPIView(ListAPIView):
-    """Paginated log listing with filters (standard page-based)."""
     serializer_class = LogEntrySerializer
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -56,45 +53,79 @@ class LogEntryListAPIView(ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-
         if user.role not in ['admin', 'coordinator']:
             return LogEntry.objects.none()
 
         queryset = LogEntry.objects.all().order_by('-timestamp')
 
-        # Apply filters
+        # Filter params
         action = self.request.query_params.get('action')
         actor_username = self.request.query_params.get('actor_username')
         actor_firstname = self.request.query_params.get('actor_firstname')
         object_id = self.request.query_params.get('object_id')
+        filter_type = self.request.query_params.get('filter_type')
+
+        today = now().date()
+        start_date = None
+
+        if filter_type:
+            match filter_type:
+                case "today":
+                    start_date = today
+                case "yesterday":
+                    start_date = today - timedelta(days=1)
+                case "last_7_days":
+                    start_date = today - timedelta(days=7)
+                case "last_30_days":
+                    start_date = today - timedelta(days=30)
+
+        if start_date:
+            queryset = queryset.filter(timestamp__date__gte=start_date)
 
         if action:
             queryset = queryset.filter(action__iexact=action)
-
         if actor_username:
             queryset = queryset.filter(actor__username__iexact=actor_username)
-
         if actor_firstname:
             queryset = queryset.filter(actor__first_name__iexact=actor_firstname)
-
         if object_id:
             queryset = queryset.filter(object_id=object_id)
 
         return queryset
 
     def list(self, request, *args, **kwargs):
-        response = super().list(request, *args, **kwargs)
-        today = timezone.now().date()
-        
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+
+        # Get log counts for today
+        today = now()
+        start_datetime = today.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_datetime = start_datetime + timedelta(days=1)
+
         log_counts = (
             LogEntry.objects
-            .filter(actor__role='coordinator', timestamp__date=today)
+            .filter(actor__role='coordinator', timestamp__range=(start_datetime, end_datetime))
             .values('actor__id', 'actor__username', 'actor__first_name')
             .annotate(log_count=Count('id'))
             .order_by('-log_count')
         )
 
-        response.data['log_counts_by_coordinator'] = log_counts
-        return response
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return Response({
+                'results': serializer.data,
+                'count': self.paginator.page.paginator.count,
+                'next': self.paginator.get_next_link(),
+                'previous': self.paginator.get_previous_link(),
+                'log_counts_by_coordinator': log_counts
+            })
 
-
+        # If pagination is disabled or page is None
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({
+            'results': serializer.data,
+            'log_counts_by_coordinator': log_counts
+        })

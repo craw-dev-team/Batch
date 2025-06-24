@@ -32,7 +32,7 @@ const BatchChatsProvider = ({children}) => {
     setWsMessages([]);
 
     const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-    const wsUrl = `${protocol}://192.168.0.33:8000/ws/admin-batch-chat/${batchId}/?token=${token}`;
+    const wsUrl = `${protocol}://13.203.183.149:8000/ws/admin-batch-chat/${batchId}/?token=${token}`;
 
     ws.current = new WebSocket(wsUrl);
 

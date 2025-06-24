@@ -68,7 +68,8 @@ const StudentsList = () => {
               return (
                 (student.name?.toLowerCase() || "").includes(term) ||
                 (student.email?.toLowerCase() || "").includes(term) ||
-                (student.phone?.toLowerCase() || "").includes(term)
+                (student.phone?.toLowerCase() || "").includes(term) ||
+                (student.support_coordinator_name?.toLowerCase() || "").includes(term)
               );
             });
           }, [filteredStudents, searchTerm]);

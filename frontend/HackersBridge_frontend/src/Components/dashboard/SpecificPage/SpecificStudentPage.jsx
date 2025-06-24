@@ -742,7 +742,7 @@ const SpecificStudentPage = () => {
                                                                 {dayjs(item.start_date).format("DD/MM/YYYY")}
                                                             </td>
                                                             <td className="px-3 py-2 md:px-1">
-                                                                {dayjs(item.end_date).format("dd/MM/YYYY")}
+                                                                {dayjs(item.end_date).format("DD/MM/YYYY")}
                                                             </td>
 
                                                             <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(navigate,item.trainer)}>
