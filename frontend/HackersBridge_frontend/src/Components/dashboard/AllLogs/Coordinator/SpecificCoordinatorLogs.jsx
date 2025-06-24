@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Spin, Empty } from 'antd';
 import dayjs from "dayjs";
 import { useSpecificCoordinator } from "../../Contexts/SpecificCoordinators";
-import { handleCoordinatorClick } from "../../Navigations/Navigations";
+import { handleCoordinatorClick } from "../../../Navigations/Navigations";
 
 
 

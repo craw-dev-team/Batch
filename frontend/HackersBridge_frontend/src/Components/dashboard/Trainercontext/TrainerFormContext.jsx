@@ -29,11 +29,14 @@ const initialFormData = {
 
 const TrainerFormProvider = ({ children }) => {
     
-     const [trainerFormData, setTrainerFormData] = useState(initialFormData);
-     const [trainerData, setTrainerData] = useState([]);
-     const [loading, setLoading] = useState(false);  // Loading state to manage fetch state
-     const [errors, setErrors] = useState({});
-     const [availableTrainers, setAvailableTrainers] = useState();
+    const [trainerFormData, setTrainerFormData] = useState(initialFormData);
+    const [trainerData, setTrainerData] = useState([]);
+    const [loading, setLoading] = useState(false);  // Loading state to manage fetch state
+    const [errors, setErrors] = useState({});
+    const [availableTrainers, setAvailableTrainers] = useState();
+
+    // store trainer count for cards 
+    const [trainersCount, setTrainersCount] = useState();
 
         // Function to reset form
         const resetTrainerForm = () => {
@@ -84,9 +87,41 @@ const TrainerFormProvider = ({ children }) => {
                 setLoading(false);  // Reset loading state after fetch
             }
         };
+
+        
+        // FETCH TRAINER COUNT TO DISPLAY IN CARDS
+        const fetchTrainersCount = async () => {
+            if (loading) return;
+            
+            const token = localStorage.getItem('token');
+            if (!token) {
+                console.error("No token found, user might be logged out.");
+                return;
+            };
+
+            
+            setLoading(true);
+            try {
+                const response = await axios.get(`${BASE_URL}/api/trainers/card/`, 
+                    { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
+                );
+                const data = response?.data;        
+                
+                setTrainersCount(prevData => 
+                    JSON.stringify(prevData) !== JSON.stringify(data) ? data : prevData
+                );
+
+                // console.log('Student Count Data ', data)
+            } catch (error) {
+                console.error('Error fetching Batches Data', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
     
         return (
-            <TrainerFormContext.Provider value={{ trainerFormData, loading, setTrainerFormData, errors, setErrors, resetTrainerForm, trainerData, setTrainerData, fetchTrainers, availableTrainers }}>
+            <TrainerFormContext.Provider value={{ trainerFormData, loading, setTrainerFormData, errors, setErrors, resetTrainerForm, trainerData, setTrainerData, fetchTrainers, availableTrainers, trainersCount, fetchTrainersCount }}>
                 {children}
             </TrainerFormContext.Provider>
         );

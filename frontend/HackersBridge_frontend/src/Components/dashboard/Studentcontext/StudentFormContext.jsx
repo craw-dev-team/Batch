@@ -93,34 +93,34 @@ const StudentFormProvider = ({ children }) => {
 
 
 
-  const fetchStudentCount = async () => {
-    if (loading) return;
-    
-    const token = localStorage.getItem('token');
-    if (!token) {
-        console.error("No token found, user might be logged out.");
-        return;
-    };
-
-    
-    setLoading(true);
-    try {
-        const response = await axios.get(`${BASE_URL}/api/studentscraw/`, 
-            { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
-        );
-        const data = response?.data;        
+    const fetchStudentCount = async () => {
+        if (loading) return;
         
-        setStudentsCounts(prevData => 
-            JSON.stringify(prevData) !== JSON.stringify(data) ? data : prevData
-        );
+        const token = localStorage.getItem('token');
+        if (!token) {
+            console.error("No token found, user might be logged out.");
+            return;
+        };
 
-        // console.log('Student Count Data ', data)
-    } catch (error) {
-      console.error('Error fetching Batches Data', error);
-    } finally {
-      setLoading(false);
-    }
-};
+        
+        setLoading(true);
+        try {
+            const response = await axios.get(`${BASE_URL}/api/studentscraw/`, 
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
+            );
+            const data = response?.data;        
+            
+            setStudentsCounts(prevData => 
+                JSON.stringify(prevData) !== JSON.stringify(data) ? data : prevData
+            );
+
+            // console.log('Student Count Data ', data)
+        } catch (error) {
+        console.error('Error fetching Batches Data', error);
+        } finally {
+        setLoading(false);
+        }
+    };
 
 
 // FETCH ALL STUDENTS

@@ -1,8 +1,8 @@
-import { useEffect, useState, useCallback,useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom"
 import { useSpecificBatch } from "../Contexts/SpecificBatch";
-import { DatePicker, Empty, Spin, Avatar, Tooltip, Tag, Button, Popconfirm, message, Input, Badge  } from 'antd';
-import { CheckCircleOutlined, CloseCircleOutlined, EditOutlined, SendOutlined, ClearOutlined    } from "@ant-design/icons";
+import { DatePicker, Empty, Spin, Avatar, Tooltip, Tag, Button, Popconfirm, message, Input, Badge, Switch  } from 'antd';
+import { CheckCircleOutlined, CloseCircleOutlined, EditOutlined, SendOutlined, ClearOutlined, CheckOutlined, CloseOutlined  } from "@ant-design/icons";
 import dayjs from "dayjs";
 import axios from 'axios';
 import BASE_URL from "../../../ip/Ip";
@@ -14,7 +14,7 @@ import { useBatchForm } from "../Batchcontext/BatchFormContext";
 import { useSpecificStudent } from "../Contexts/SpecificStudent";
 import EmailPopup from "../../Emails/EmailPopup";
 import BatchInfoLoading from "../../../Pages/SkeletonLoading.jsx/BatchINfoLoading";
-import { handleStudentClick } from "../Navigations/Navigations";
+import { handleStudentClick } from "../../Navigations/Navigations";
 
 
 // const SpecificBatchPage = () => {
@@ -201,10 +201,13 @@ const SpecificBatchPage = () => {
     const [searchTerm, setSearchTerm] = useState("");
     // store student id's to send email
     const [showPopup, setShowPopup] = useState(false);
-    const [selectedStudents, setSelectedStudents] = useState([]);
+    const [checkStudentid, setCheckStudentid] = useState([]);
  
     // store the batch class link in input field 
     const [classLink, setClassLink] = useState('');
+    // store student status in a batch 
+    const [studentStatuses, setStudentStatuses] = useState({}); // Store status per trainer
+
 
     const navigate = useNavigate();
     
@@ -240,7 +243,7 @@ const SpecificBatchPage = () => {
           const filteredBatchStudents = useMemo(() => {
             if (!Array.isArray(specificBatch?.students)) return [];
           
-            return specificBatch.students.filter(item =>
+            return specificBatch?.students?.filter(item =>
               item?.student?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
               item?.student?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
               item?.student?.phone?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -327,7 +330,23 @@ const SpecificBatchPage = () => {
         if (specificBatch?.batch) {
             setUpdatedValues(specificBatch.batch);
             setClassLink(specificBatch?.batch?.batch_link)
-        }
+        };
+
+        if (specificBatch) {
+            const studentArray = Array.isArray(specificBatch?.students) 
+            ? specificBatch?.students : [];
+
+            const timer = setTimeout(() => {
+                const initialStatus = {};
+                studentArray.forEach((student) => {
+                    initialStatus[student.id] = student.student_batch_status;
+                })
+                setStudentStatuses(initialStatus);
+            }, 100);
+
+            return () => clearTimeout(timer);
+        };
+
     }, [specificBatch]);
 
     if (!updatedValues) {
@@ -347,52 +366,7 @@ const SpecificBatchPage = () => {
         return path.split(".").reduce((acc, part) => acc && acc[part], obj);
     };
 
-    // Function to safely update nested properties
-    const setNestedValue = (obj, path, value) => {
-        const keys = path.split(".");
-        const lastKey = keys.pop();
-        const deepCopy = { ...obj };
-
-        let temp = deepCopy;
-        keys.forEach((key) => {
-            if (!temp[key]) temp[key] = {};
-            temp = temp[key];
-        });
-
-        temp[lastKey] = value;
-        return deepCopy;
-    };
-
-    const handleEdit = (field) => {
-        setEditingField(field);
-    };
-
-    const handleChange = (field, value) => {
-        setUpdatedValues((prev) => setNestedValue(prev, field, value));
-    };
-
-    const saveChanges = async (field) => {
-        if (!updatedValues) return;
-        setEditingField(null);
-        setIsDatePickerOpen(false); // Close DatePicker if it was open
-    
-        try {
-            const decodedBatchId = atob(batchId); // Decode batchId before using it
-            const updatePayload = JSON.stringify({ [field]: updatedValues[field] }); // Convert to JSON string
-    
-            await axios.put(`${BASE_URL}/api/batches/edit/${decodedBatchId}`, 
-                updatePayload, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
-                withCredentials : true
-            }
-            );
-        } catch (error) {
-            // console.error(`Error updating ${field}:`, error);
-        }
-    };
-    
-
-
+ 
     // REMOVE STUDENT FROM BATCH 
      const handleRemoveStudent = async (studentId) => {
         try {     
@@ -487,25 +461,30 @@ const SpecificBatchPage = () => {
 
 
         // HANDLE EMAIL SENT TO STUDENT BASED ON THE EMAIL TYPE (BATCH START, COMPLETE, WARNING, EXAM, ETC.)
+        const activeStudentList = activeTab === "students" ? filteredBatchStudents : filteredAvailableStudents;
+
+        const allStudentIds = activeStudentList.map((item) => item?.student?.id || item.id);
+        const checkAll = checkStudentid.length === allStudentIds.length;
+        const indeterminate = checkStudentid.length > 0 && checkStudentid.length < allStudentIds.length;
         
         // HANDLE SELECT ALL CHECKBOX 
         const toggleSelectAll = (checked) => {
             if (checked) {
-              const selected = filteredBatchStudents.map((item) => ({
-                students: item.student.id,
-                emails : item.student.email
+              const selected = activeStudentList.map((item) => ({
+                students: item?.student?.id || item?.id,
+                emails : item?.student?.email || item?.email
               }));
               
-              setSelectedStudents(selected);
+              setCheckStudentid(selected);
             } else {
-              setSelectedStudents([]);
+              setCheckStudentid([]);
             }
         };
           
           
         
         const toggleStudent = (id, email) => {
-            setSelectedStudents((prev) => {
+            setCheckStudentid((prev) => {
               const exists = prev.find((s) => s.students === id);
               if (exists) {
                 return prev.filter((s) => s.students !== id);
@@ -567,7 +546,7 @@ const SpecificBatchPage = () => {
         };
         
     
-        const RequestTOBatchCancel = async (studentId) => {
+        const RequestToBatchCancel = async (studentId) => {
             await handleRejectRequestToBatch(studentId)
             message.error('Batch Request Cancelled');
         };
@@ -575,7 +554,31 @@ const SpecificBatchPage = () => {
         const RequestCancel = () => {
             message.error('Request Deletion Cancelled');
         };
+
+
+        // HANDLE STUDENT STATUS CHANGE IN A BATCH 
+        const handleToggle = async (checked, studentId) => {
+        const newStatus = checked ? "Active" : "Inactive";
+        
+        setStudentStatuses((prev) => ({ ...prev, [studentId]: checked }));
     
+        try {
+            await axios.patch(`${BASE_URL}/api/batches/student-status/${studentId}/`, 
+                { status: newStatus },
+                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                withCredentials : true
+            }
+            );
+            message.success(`Student status updated to ${newStatus}`);
+        } catch (error) {
+            message.error("Failed to update status");            
+            //  Revert UI if API fails
+            setStudentStatuses((prev) => ({ ...prev, [studentId]: !checked }));
+        }
+    };
+
+
+
 
     return (
         <>
@@ -653,7 +656,7 @@ const SpecificBatchPage = () => {
                                     value={classLink}
                                     onChange={(e) => setClassLink(e.target.value)}
                                     placeholder="Class Link"
-                                    className="px-2 rounded-md h-7 mr-2 border-1 border-gray-300 focus:ring-blue-300 focus:outline-none"
+                                    className="px-2 rounded-md h-7 mr-2 border-1 border-gray-300 focus:ring-0"
                                 />
                                 <CheckCircleOutlined
                                     onClick={handleSaveClassLink}
@@ -831,7 +834,7 @@ const SpecificBatchPage = () => {
                                                 <tr>
                                                     <th scope="col" className="p-2">
                                                         <div className="flex items-center">
-                                                            <input id="checkbox-all-search" type="checkbox" onChange={(e) => toggleSelectAll(e.target.checked)} className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
+                                                            <input id="checkbox-all-search" type="checkbox" onChange={(e) => toggleSelectAll(e.target.checked)} checked={checkAll} ref={(el) => {if (el) {el.indeterminate = indeterminate}}} className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 focus:ring-1"></input>
                                                             <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
                                                         </div>
                                                     </th>
@@ -871,6 +874,11 @@ const SpecificBatchPage = () => {
                                                     <th scope="col" className="px-3 py-3 md:px-1">
                                                         support Coordinator
                                                     </th>
+                                                    {activeTab === "students" && (
+                                                        <th scope="col" className="px-3 py-3 md:px-1">
+                                                            Status
+                                                        </th>
+                                                    )}
                                                     <th scope="col" className="px-3 py-3 md:px-1">
                                                         Action
                                                     </th>
@@ -883,12 +891,6 @@ const SpecificBatchPage = () => {
                                             {activeTab === "batch_request" && (
                                             <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10">
                                                 <tr>
-                                                    <th scope="col" className="p-2">
-                                                        <div className="flex items-center">
-                                                            <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
-                                                            <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
-                                                        </div>
-                                                    </th>
                                                     <th scope="col" className="px-3 py-3 md:px-2">
                                                         s.No
                                                     </th>
@@ -944,7 +946,7 @@ const SpecificBatchPage = () => {
                                                     <tr key={item.id} className="bg-white font-normal border-b border-gray-200 hover:bg-gray-50 scroll-smooth">
                                                         <td scope="col" className="p-2">
                                                             <div className="flex items-center">
-                                                                <input id="checkbox-all-search" type="checkbox" checked={selectedStudents.some((s) => s.students === item.student.id)} onChange={() => toggleStudent(item.student.id, item.student.email)} className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
+                                                                <input id="checkbox-all-search" type="checkbox" checked={checkStudentid.some((s) => s.students === item?.student?.id)} onChange={() => toggleStudent(item?.student?.id, item?.student?.email)} className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 focus:ring-1"></input>
                                                                 <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
                                                             </div>
                                                         </td>
@@ -1020,6 +1022,20 @@ const SpecificBatchPage = () => {
                                                         <td className="px-3 py-2 md:px-1">
                                                             {item.student.support_coordinator_name}
                                                         </td>
+
+                                                        <td className="px-3 py-2 md:px-1">
+                                                            <Switch
+                                                                size="small"
+                                                                checkedChildren={<CheckOutlined />}
+                                                                unCheckedChildren={<CloseOutlined />}
+                                                                checked={studentStatuses[item.id] || false} // Get correct status per trainer
+                                                                onChange={(checked) => handleToggle(checked, item.id)}
+                                                                style={{
+                                                                    backgroundColor: studentStatuses[item.id] ? "#38b000" : "gray", // Change color when checked
+                                                                }}
+                                                            />   
+                                                        </td>
+
                                                         <td > <Button 
                                                                 color="primary" 
                                                                 variant="filled" 
@@ -1076,7 +1092,7 @@ const SpecificBatchPage = () => {
                                                         <tr key={item.id} className="bg-white font-normal border-b border-gray-200 hover:bg-gray-50 scroll-smooth">
                                                             <td scope="col" className="p-2">
                                                                 <div className="flex items-center">
-                                                                    <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 focus:ring-2"></input>
+                                                                    <input id="checkbox-all-search" type="checkbox" checked={checkStudentid.some((s) => s.students === item?.id)} onChange={() => toggleStudent(item?.id, item?.email)} className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 focus:ring-1"></input>
                                                                     <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
                                                                 </div>
                                                             </td>
@@ -1227,13 +1243,7 @@ const SpecificBatchPage = () => {
                                                 ) : Array.isArray(specificBatch?.batch_requests) && specificBatch?.batch_requests.length > 0 ? (
                                                     Array.isArray(specificBatch?.batch_requests) && specificBatch?.batch_requests.map((item, index) => (
                                                     <tr key={item.id} className="bg-white font-normal border-b border-gray-200 hover:bg-gray-50 scroll-smooth">
-                                                        <td scope="col" className="p-2">
-                                                            <div className="flex items-center">
-                                                                <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
-                                                                <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
-                                                            </div>
-                                                        </td>
-                                                        <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
+                                                        <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900">
                                                             {index + 1}
                                                         </td>
                                                         
@@ -1301,17 +1311,17 @@ const SpecificBatchPage = () => {
                                                             {item.support_coordinator_name}
                                                         </td>
 
-                                                        <td className="flex gap-x-1 items-center my-auto"> 
+                                                        <td className="flex gap-x-1 items-center py-2"> 
                                                             {   item?.request_status === "Approved" || item?.request_status === "Rejected" || item?.request_status === "Removed" ?
                                                                     <Tag color={item.request_status === "Approved" ? "green" : "red" }>{item.request_status}</Tag> : (
                                                                 <>
                                                                 <Button 
                                                                     color="danger" 
                                                                     variant="outlined" 
-                                                                    className="rounded-lg w-auto px-2 text-xs"
+                                                                    className="rounded-md w-auto h-auto p-1 text-xs"
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
-                                                                        RequestTOBatchCancel(item.id) 
+                                                                        RequestToBatchCancel(item.id) 
                                                                     }}
                                                                 >
                                                                     Reject
@@ -1328,7 +1338,7 @@ const SpecificBatchPage = () => {
                                                                     <Button 
                                                                         color="primary" 
                                                                         variant="solid" 
-                                                                        className="rounded-lg w-auto px-2 text-xs"
+                                                                        className="rounded-md w-auto h-auto p-1 text-xs"
                                                                         onClick={(e) => e.stopPropagation()} // Prevent the click from triggering the Edit button
                                                                     >
                                                                         Accept
@@ -1366,7 +1376,8 @@ const SpecificBatchPage = () => {
             <EmailPopup
                 open={showPopup}
                 onClose={() => setShowPopup(false)}
-                selectedStudents={selectedStudents}
+                checkStudentid={checkStudentid}
+                onSuccess={() => setCheckStudentid([])}
                 
             />
         </>

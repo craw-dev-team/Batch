@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTrainerForm } from "../Trainercontext/TrainerFormContext";
 import CreateTrainerForm from "./CreateTrainerForm";
-import { Button, message, Popconfirm, Switch, Avatar, Tooltip, Tag, Empty } from 'antd';
+import { Button, message, Popconfirm, Switch, Avatar, Tooltip, Tag, Empty, Spin } from 'antd';
 import { EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import axios from "axios";
 import BASE_URL from "../../../ip/Ip";
@@ -10,11 +10,13 @@ import { useSpecificTrainer } from "../Contexts/SpecificTrainers";
 import AvailableTrainers from "./AvailableTrainers";
 import FutureAvailableTrainers from "./FutureAvailableTrainers";
 import { useAuth } from "../AuthContext/AuthContext";
-import { handleTrainerClick } from "../Navigations/Navigations";
+import { handleTrainerClick } from "../../Navigations/Navigations";
 import dayjs from "dayjs";
+import TrainerCards from "../SpecificPage/Cards/Trainer/TrainerCards";
 
 
 const Trainers = () => {
+    const { token } = useAuth();
     const [isModalOpen, setIsModalOpen] = useState(false) 
     const [activeTab, setActiveTab] = useState('tab1');
     const [selectedTrainer, setSelectedTrainer] = useState();
@@ -24,26 +26,28 @@ const Trainers = () => {
     const [showSearch, setShowSearch] = useState(false);
 
 
-    const { trainerData, setTrainerData, fetchTrainers } = useTrainerForm();
-    const { token } = useAuth();
+    const { trainerData, loading, setTrainerData, fetchTrainers } = useTrainerForm();
     
     const navigate = useNavigate();
 
 
-    const handleTabClick = (tab) => {
-        setActiveTab(tab);
-    };
+        const handleTabClick = (tab) => {
+            setActiveTab(tab);
+        };
 
-          // Filter trainers based on the search term (searches by name)
-          const filteredTrainers = Array.isArray(trainerData?.all_data?.trainers)
-          ? trainerData.all_data.trainers.filter(trainer =>
-              trainer.name.toLowerCase().includes(searchTerm.toLowerCase())
-          )
-          : [];
+        // Filter trainers based on the search term (searches by name)
+        const filteredTrainers = Array.isArray(trainerData?.all_data?.trainers)
+        ? trainerData.all_data.trainers.filter(trainer =>
+            trainer.name.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+        : [];
 
 
         useEffect(() => {
-            fetchTrainers();  // Fetch courses after deletion
+            fetchTrainers(); 
+        },[trainerData, selectedTrainer]);
+
+        useEffect(() => {
             setIsDeleted(false); // Reset deletion flag
             
             if (trainerData?.all_data?.trainers) {
@@ -56,22 +60,18 @@ const Trainers = () => {
                 const timer = setTimeout(() => {
                     const initialStatuses = {};
                     trainersArray.forEach((trainer) => {
-                        initialStatuses[trainer.id] = trainer.status === "Active"; 
+                        initialStatuses[trainer.id] = trainer.status; 
                     });
     
                     setTrainerStatuses(initialStatuses); 
-                }, 300);
+                }, 100);
     
                 // Cleanup function to clear the timer if the component unmounts
                 return () => clearTimeout(timer);
             };
 
-            // FOR CLEARING SEARCH INPUT IF NO DATA FOUND
-            if (searchTerm && filteredTrainers.length === 0) {
-                setSearchTerm("");  // Clear search only if no data is found
-            }
-
-        }, [isDeleted, selectedTrainer, isModalOpen]);
+           
+        }, [trainerData, isDeleted, selectedTrainer, isModalOpen]);
         
 
     // Function to handle Edit button click
@@ -163,7 +163,8 @@ const Trainers = () => {
     return (
         <>
         <div className="w-auto pt-4 px-2 mt-10">
-            <div className="relative w-full h-full shadow-md sm:rounded-lg border border-gray-50">
+            <TrainerCards />
+            <div className="relative mt-3 w-full h-full shadow-md sm:rounded-lg border border-gray-50">
                 <div className="w-full p-3 grid grid-cols-3 grid-flow-row space-y-4 sm:space-y-0 items-center justify-between gap-x-4">
                         <div className="relative">
                             {/* Dropdown for small screens */}
@@ -212,16 +213,16 @@ const Trainers = () => {
                         <label htmlFor="table-search" className="sr-only">Search</label>
                         <div className="relative">
                             <input onChange={(e) => setSearchTerm(e.target.value.trim())} value={searchTerm} type="text" id="table-search" placeholder="Search for trainer"
-                                className="2xl:w-96 lg:w-96 md:w-40 h-8 block p-2 pr-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-0 focus:border-blue-500" 
+                                className="2xl:w-96 lg:w-96 md:w-40 h-8 block p-2 pr-10 text-xs text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-0 focus:border-blue-500" 
                                 />
                             <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                             <button onClick={() => setSearchTerm("")}>
                             {searchTerm ? (
-                                    <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                    <svg className="w-4 h-4 text-gray-500" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M6.293 6.293a1 1 0 011.414 0L10 8.586l2.293-2.293a1 1 0 111.414 1.414L11.414 10l2.293 2.293a1 1 0 01-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 01-1.414-1.414L8.586 10 6.293 7.707a1 1 0 010-1.414z" clipRule="evenodd"></path>
                                     </svg>
                                 ) : (
-                                    <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                    <svg className="w-4 h-4 text-gray-500" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"></path>
                                     </svg>
                                 )}
@@ -244,7 +245,7 @@ const Trainers = () => {
                 
                 {activeTab === 'tab1' && (
                 <div className={"overflow-hidden pb-2"}>
-                <div className="w-full h-[43rem] overflow-y-auto dark:border-gray-700 rounded-lg pb-2">
+                <div className="w-full h-[38rem] overflow-y-auto dark:border-gray-700 rounded-lg pb-2">
                 <table className="w-full text-xs text-left text-gray-500">
                 <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10">
                         <tr>
@@ -367,8 +368,15 @@ const Trainers = () => {
                         </tr>
                     </thead>
                     <tbody>
-                    {filteredTrainers.length > 0 ? (
-                    filteredTrainers.map((item, index) => (
+                    {loading ? (
+                                <tr>
+                                    <td colSpan="100%" className="text-center py-4">
+                                        <Spin size="large" />
+                                    </td>
+                                </tr>
+                        
+                    ) : filteredTrainers.length > 0 ? (
+                        filteredTrainers.map((item, index) => (
                         <tr key={index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 scroll-smooth">
                             <td scope="col" className="p-2">
                                 <div className="flex items-center">

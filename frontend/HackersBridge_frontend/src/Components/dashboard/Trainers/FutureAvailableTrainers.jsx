@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Tooltip, Tag, Empty } from 'antd';
 import { useTrainerForm } from "../Trainercontext/TrainerFormContext";
 import { useNavigate } from "react-router-dom";
-import handleBatchClick, { handleTrainerClick } from "../Navigations/Navigations";
+import handleBatchClick, { handleTrainerClick } from "../../Navigations/Navigations";
 import dayjs from "dayjs";
 
 const FutureAvailableTrainers = () => {

@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom"
 import { useSpecificStudent } from "../Contexts/SpecificStudent";
-import { Dropdown, message, Tag, DatePicker, Button, Checkbox, Input, Popconfirm, Popover  } from 'antd';
-import {  DownOutlined, CheckCircleOutlined, EditOutlined } from '@ant-design/icons';
+import { Dropdown, message, Tag, DatePicker, Button, Checkbox, Input, Popconfirm, Tooltip, Popover  } from 'antd';
+import {  DownOutlined, CheckCircleOutlined, EditOutlined, DownloadOutlined, CheckOutlined } from '@ant-design/icons';
 import BASE_URL from "../../../ip/Ip";
 import axios from "axios";
 import dayjs from "dayjs";
@@ -11,18 +11,21 @@ import { useAuth } from "../AuthContext/AuthContext";
 import SpecificStudentLogs from "../AllLogs/Student/SpecificStudentLogs";
 import SpecificStudentNotes from "./SpecificNotesPage";
 import StudentInfoLoading from "../../../Pages/SkeletonLoading.jsx/StudentInfoLoading";
-import handleBatchClick, { handleTrainerClick } from "../Navigations/Navigations";
+import handleBatchClick, { handleTrainerClick } from "../../Navigations/Navigations";
+import useStudentStatusChange, { statusDescription } from "../../Functions/StudentStatusChange";
 
 const { TextArea } = Input;
 
 const SpecificStudentPage = () => {
+    const { token } = useAuth();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [topTab, setTopTab] = useState("Info");
     const [selectedStudent, setSelectedStudent] = useState();
 
     const { studentId } = useParams();
-    const { specificStudent, setSpecificStudent, fetchSpecificStudent } = useSpecificStudent();
-    const { token } = useAuth();
+    const { specificStudent, setSpecificStudent, fetchSpecificStudent, sendMarksUpdate } = useSpecificStudent();
+
+    const { studentStatuses, setStudentStatuses, handleStudentStatusChange } = useStudentStatusChange(token);
 
     const [activeTab, setActiveTab] = useState("running");
     const [certificateData, setCertificateData] = useState({});
@@ -32,6 +35,10 @@ const SpecificStudentPage = () => {
     // store issuing popover states issued book confirmation 
     const [confirmingId, setConfirmingId] = useState(null);
     const [pendingCourse, setPendingCourse] = useState(null);
+
+    // for marks
+    const [marksData, setMarksData] = useState({});
+    const [openPopoverId, setOpenPopoverId] = useState(null);
 
     const navigate = useNavigate();
     
@@ -58,6 +65,15 @@ const SpecificStudentPage = () => {
             }
         }
     },[studentId, certificateData, isModalOpen]);
+
+    useEffect(() => {
+        // Wait until fetchSpecificStudent sets the data
+        const studentData = specificStudent?.All_in_One?.student;
+
+        if (studentData?.id && studentData?.status) {
+            setStudentStatuses({ [studentData.id]: studentData.status });
+        }
+    }, [specificStudent]);
 
     
     // FUNCTION TO HANDLE EDIT BUTTON CLICK
@@ -313,6 +329,74 @@ const SpecificStudentPage = () => {
     };
 
 
+    // Handle Toggle of trainer active, inactive, temporary block and restricted 
+    const onChangeStatus = (studentId, newStatus) => {
+        handleStudentStatusChange({ studentId, newStatus });
+    };
+
+
+
+     const handleMarksUpdate = async (courseId) => {
+            const data = marksData[courseId];
+            if (!data?.marks || !data?.exam_date) {
+              message.warning("Please provide both marks and exam date.");
+              return;
+            }
+          
+            await sendMarksUpdate({
+              courseId,
+              marks: data.marks,
+              exam_date: data.exam_date,
+            });
+          
+            setOpenPopoverId(null); // close popover
+          };
+    
+        //   console.log(marksData);
+          
+          const marksPopoverContent = (item) => (
+            <div className="flex flex-col gap-2">
+              <DatePicker
+                size="small"
+                placeholder="Exam date"
+                value={marksData[item.id]?.exam_date ? dayjs(marksData[item.id].exam_date) : null}
+                onChange={(date) =>
+                  setMarksData((prev) => ({
+                    ...prev,
+                    [item.id]: {
+                      ...prev[item.id],
+                      exam_date: date ? dayjs(date).format("YYYY-MM-DD") : null,
+                    },
+                  }))
+                }
+              />
+              <Input
+                size="small"
+                placeholder="Marks"
+                className="rounded-md w-48 h-6 text-sm"
+                value={marksData[item.id]?.marks || ""}
+                onChange={(e) =>
+                  setMarksData((prev) => ({
+                    ...prev,
+                    [item.id]: {
+                      ...prev[item.id],
+                      marks: e.target.value,
+                    },
+                  }))
+                }
+              />
+              <Button
+                type="primary"
+                size="small"
+                onClick={() => handleMarksUpdate(item.id)}
+              >
+                Submit
+              </Button>
+            </div>
+          );
+
+
+
     return (
         <>
             <div className="w-auto h-full pt-14 px-2 mt-0">
@@ -433,7 +517,32 @@ const SpecificStudentPage = () => {
 
                                      <div className="col-span-1 px-1 py-1 mt-6">
                                         <h1>Status</h1>
-                                        <p className="font-semibold">{studentDetails.status || "Not Available"}</p>
+                                        {/* <p className="font-semibold">{studentDetails.status || "Not Available"}</p> */}
+                                        <Dropdown
+                                            menu={{
+                                                items: ["Active", "Inactive", "Temp Block", "Restricted"]
+                                                    .map((status) => ({
+                                                        key: status,
+                                                        label:(
+                                                            <Tooltip title={statusDescription[status]} placement="left">
+                                                            <span>{status}</span>
+                                                            </Tooltip>
+                                                        ),
+                                                    })),
+                                                onClick: ({ key }) => onChangeStatus(studentDetails.id, key),
+                                            }}
+                                            >
+                                            <a onClick={(e) => e.preventDefault()}>
+                                                <Tag color={
+                                                    (studentStatuses[studentDetails.id] || studentDetails.status) === "Active" ? "#28a745" :
+                                                    (studentStatuses[studentDetails.id] || studentDetails.status) === "Inactive" ? "#6c757d" :
+                                                    (studentStatuses[studentDetails.id] || studentDetails.status) === "Temp Block" ? "#ff9100" :
+                                                    "#ef233c"
+                                                }>
+                                                    {studentStatuses[studentDetails.id || studentDetails.status]} <span><DownOutlined /></span>
+                                                </Tag>
+                                            </a>
+                                        </Dropdown>
                                     </div>
 
                                     <div className="2xl:col-span-4 col-span-3 mt-6">
@@ -462,7 +571,7 @@ const SpecificStudentPage = () => {
                                     </div>
                             </div>
 
-                            <div className="px-4 py-4 col-span-6 mt-6 h-auto shadow-md sm:rounded-lg border border-gray-50 bg-white">
+                            <div className="px-4 py-4 col-span-6 mt-2 h-auto shadow-md sm:rounded-lg border border-gray-50 bg-white">
                                 <div className="w-full font-semibold">
                                     
                                     <div className="col-span-1 text-lg px-4 py-4">
@@ -470,8 +579,8 @@ const SpecificStudentPage = () => {
                                     </div>
 
                                     <div className="col-span-1 px-0 py-2 leading-8">
-                                    <table className="w-full text-xs text-left text-gray-500 dark:text-gray-400 ">
-                                                <thead className="text-xs text-gray-700 uppercase bg-green-200 sticky top-0 z-10">
+                                    <table className="w-full text-xs text-left text-gray-500">
+                                                <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10">
                                                         <tr>
                                                             <th scope="col" className="px-3 py-3 md:px-2">
                                                                 S.No
@@ -491,6 +600,12 @@ const SpecificStudentPage = () => {
                                                             <th scope="col" className="px-3 py-3 md:px-1">
                                                                 Books
                                                             </th>
+                                                            <th className="px-3 py-3 md:px-1">
+                                                                Exam Date
+                                                            </th>
+                                                            <th className="px-3 py-3 md:px-1">
+                                                                Marks
+                                                            </th>
                                                             <th scope="col" className="px-3 py-3 md:px-1">
                                                                 Issue Certificate
                                                             </th>
@@ -505,8 +620,8 @@ const SpecificStudentPage = () => {
                                                     <tbody>
 
                                                     {specificStudent?.All_in_One?.student_courses.map((item, index) => (                          
-                                                        <tr key={index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 scroll-smooth">
-                                                            <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
+                                                        <tr key={index} className="bg-white border-b  border-gray-200 hover:bg-gray-50 scroll-smooth">
+                                                            <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900">
                                                                 {index + 1}
                                                             </td>
 
@@ -569,8 +684,51 @@ const SpecificStudentPage = () => {
                                                                 </Popconfirm>
                                                             </td>
 
+                                                            <td className="px-3 py-2 md:px-1">{item.student_exam_date ? dayjs(item.student_exam_date).format("DD-MM-YYYY") : '-'}</td>
+
+                                                            {/* for marks update */}
+                                                            <td className="px-3 py-2 md:px-1 align-center">
+                                                                <div className="flex items-center gap-2">
+                                                                    {item.student_marks !== null && (
+                                                                    <div
+                                                                        className="text-sm bg-blue-100 text-blue-800 rounded font-semibold flex items-center justify-center"
+                                                                        style={{ height: "25px", minWidth: "40px", padding: "0 12px" }}
+                                                                    >
+                                                                        {item.student_marks}
+                                                                    </div>
+                                                                    )}
+    
+                                                                    {item.course_status === "Completed" ? (
+                                                                    <Popover
+                                                                        content={marksPopoverContent(item)}
+                                                                        title="Update Marks"
+                                                                        trigger="click"
+                                                                        open={openPopoverId === item.id}
+                                                                        onOpenChange={(open) => setOpenPopoverId(open ? item.id : null)}
+                                                                    >
+                                                                        <Button
+                                                                        className="text-xs flex items-center justify-center "
+                                                                        style={{ height: "25px", minWidth: item.student_marks !== null ? "40px" : "80px" }}
+                                                                        size="small"
+                                                                        >
+                                                                        {item.student_marks !== null ? <EditOutlined /> : "Update"}
+                                                                        </Button>
+                                                                    </Popover>
+                                                                    ) : (
+                                                                    <Button
+                                                                        disabled
+                                                                        className="bg-gray-300 text-gray-700 text-xs font-medium cursor-not-allowed"
+                                                                        style={{ height: "24px", minWidth: "80px" }}
+                                                                        size="small"
+                                                                    >
+                                                                        Update
+                                                                    </Button>
+                                                                    )}
+                                                                </div>
+                                                            </td>
+
                                                             <td className="px-3 py-2 md:px-1 flex">
-                                                                <DatePicker name='certificateIssueDate' className='border-gray-300' size='small'  placeholder="Certificate issue date"                    
+                                                                <DatePicker name='certificateIssueDate' className='border-gray-300 w-28' size='small'  placeholder="Certificate Date"                    
                                                                     disabled={item.course_status !== "Completed"}
                                                                     value={certificateData[item.id] 
                                                                             ? dayjs(certificateData[item.id])  // Show selected date 
@@ -589,28 +747,32 @@ const SpecificStudentPage = () => {
                                                                     
                                                                 />     
                                                                 <Button variant="solid" disabled={item.course_status !== "Completed"}
-                                                                    className={`mx-2 text-gray-50 ${item.course_certificate_date ? "bg-lime-600" : "bg-lime-500"}`}
+                                                                    className={`mx-1 rounded-full p-2 ${item.course_certificate_date ? "bg-blue-400 text-white" : ""}`}
                                                                     onClick={() => issueCertificate(item.id, certificateData[item.id], item.course_name)}
-                                                                >{item.course_certificate_date ? "Issued" : "Issue"}</Button>
+                                                                >
+                                                                    <Tooltip title={item?.course_certificate_date ? "Certificate Issued" : "Issue Certificate"}>
+                                                                        {item.course_certificate_date ? <CheckOutlined className="w-3" /> : <CheckOutlined className="w-3" />}
+                                                                    </Tooltip>
+                                                                </Button>
                                                             
                                                             {/* button for download certificate */}
                                                             {item.course_certificate_date && ( // Only show "Download" button if certificate is issued
-                                                                    <Button 
+                                                                   <Tooltip title="Download Certificate" placement="top">
+                                                                     <Button 
                                                                         variant="solid"  
-                                                                        className="mx-2 bg-blue-500 text-white"
+                                                                        className="mx-0 p-2 rounded-full bg-blue-400 text-white"
                                                                         onClick={() => downloadCertificate(item.id, item.course_name)}
                                                                     >
-                                                                        Download
+                                                                        <DownloadOutlined />
                                                                     </Button>
+                                                                   </Tooltip>
                                                                 )}
                                                             </td>
 
-                                                            <td> {item.course_certificate_date || 'N/A'} </td>
+                                                            <td> {item.course_certificate_date ? dayjs(item.course_certificate_date).format("DD-MM-YYYY") : '-'} </td>
 
                                                             <td>
-                                                                {item.certificate_issued_at
-                                                                    ? `${new Date(item.certificate_issued_at).toISOString().split("T")[0]} | ${new Date(item.certificate_issued_at).toTimeString().split(" ")[0]}`
-                                                                    : "N/A"}
+                                                                {item.certificate_issued_at ? dayjs(item.certificate_issued_at).format("DD-MM-YYYY | hh:mm A") : "-"}
                                                             </td>
 
                                                         </tr>

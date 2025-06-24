@@ -7,23 +7,25 @@ import { EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined, FilterOutli
 import BASE_URL from "../../../ip/Ip";
 import { useAuth } from "../AuthContext/AuthContext";
 import { useStudentForm } from "../Studentcontext/StudentFormContext";
-import StudentCards from "../SpecificPage/Cards/StudentCard";
 import dayjs from "dayjs";
-import { handleStudentClick } from "../Navigations/Navigations";
+import { handleStudentClick } from "../../Navigations/Navigations";
+import useStudentStatusChange, { statusDescription } from "../../Functions/StudentStatusChange";
+import StudentCards from "../SpecificPage/Cards/Student/StudentCard";
 
 const { Search } = Input;
 const { RangePicker } = DatePicker;
 
 
 const Students = () => {
+    const { token } = useAuth();
     const [isModalOpen, setIsModalOpen] = useState(false) 
     const [activeTab, setActiveTab] = useState('');
     const [selectedStudent, setSelectedStudent] = useState()
     const [isDeleted, setIsDeleted] = useState(false)
-    const [studentStatuses, setStudentStatuses] = useState({}); // Store status per student
-    
+    // const [studentStatuses, setStudentStatuses] = useState({}); // Store status per student
+    const { studentStatuses, setStudentStatuses, handleStudentStatusChange } = useStudentStatusChange(token);
+
     const { studentData, loading, setLoading, setStudentData, fetchStudents } = useStudentForm();
-    const { token } = useAuth();
     
     const navigate = useNavigate();
     
@@ -74,7 +76,6 @@ const Students = () => {
           useEffect(() => {
             setIsDeleted(false); // Reset deletion flag
    
-            
             if (studentData) {
                 
                 const studentsArray = Array.isArray(studentData?.results)
@@ -163,30 +164,12 @@ const Students = () => {
     };
 
 
-    // Handle Toggle of trainer active, inactive, temporary block and restricted 
-    const handleStudentStatusChange = async (studentId, newStatus) => {
-        const previousStatus = studentStatuses[studentId]; // store current before update
-        //  Optimistically update UI before API call
-        setStudentStatuses((prev) => ({ ...prev, [studentId]: newStatus }));
-
-        try {
-            await axios.put(`${BASE_URL}/api/students/edit/${studentId}/`, 
-                { status: newStatus },
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
-                withCredentials : true
-            }
-            );
-            message.success(`Student status updated to ${newStatus}`);
-        } catch (error) {
-            message.error("Failed to update status");
-            //  Revert UI if API fails
-             setStudentStatuses((prev) => ({ ...prev, [studentId]: previousStatus }));
-        }
+    // Handle Toggle of student active, inactive, temporary block and restricted 
+    const onChangeStatus = (studentId, newStatus) => {
+        handleStudentStatusChange({ studentId, newStatus });
     };
 
-        
-
-
+    
         const handleSort = async (key, filterType) => {
             if (key === "clear") {
                 
@@ -250,17 +233,6 @@ const Students = () => {
             ],
             onClick: ({ key }) => handleSort(Number(key), "location"),
         };
-
-
-        const statusDescription = {
-            "Active": "Student is currently attending classes regularly and participating as expected.",
-
-            "Inactive": "Student has completed the course or is no longer attending classes without any disciplinary issues.",
-
-            "Temp Block": "Student is temporarily blocked due to issues such as pending fees, poor attendance, or inability to attend classes for a valid reason.",
-
-            "Restricted": "Student has been permanently or strictly restricted due to serious misconduct, such as using abusive language towards the coordinator or trainer, violating institute rules, or repeated disruptive behavior."
-            }
 
 
     return (
@@ -355,12 +327,12 @@ const Students = () => {
                         <table className="w-full text-xs text-left text-gray-500">
                         <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10">
                             <tr>
-                                <td scope="col" className="p-2">
+                                <th scope="col" className="p-2">
                                     <div className="flex items-center">
                                         <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 focus:ring-2"></input>
                                         <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
                                     </div>
-                                </td>
+                                </th>
                                 <th scope="col" className="px-3 py-3 md:px-2">
                                     s.No
                                 </th>
@@ -458,10 +430,10 @@ const Students = () => {
                                     </Tooltip>
                                 </th>
                                 <th scope="col" className="px-3 py-3 md:px-1">
-                                    course Counsellor
+                                    Counsellor
                                 </th>
                                 <th scope="col" className="px-3 py-3 md:px-1">
-                                    support Coordinator
+                                    Coordinator
                                 </th>
                                 <th scope="col" className="px-3 py-3 md:px-1">
                                     Status
@@ -487,7 +459,7 @@ const Students = () => {
                             <tr key={item.id} className="bg-white border-b border-gray-200 hover:bg-gray-50 scroll-smooth">
                                 <td scope="col" className="p-2">
                                     <div className="flex items-center">
-                                        <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
+                                        <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 focus:ring-1"></input>
                                         <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
                                     </div>
                                 </td>
@@ -497,10 +469,10 @@ const Students = () => {
                                 {/* <td className="px-3 py-2 md:px-1">
                                     {item.id}
                                 </td> */}
-                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(navigate,item.id)}>
+                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(navigate, item.id)}>
                                     {item.enrollment_no}
                                 </td>
-                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(navigate,item.id)}>
+                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(navigate, item.id)}>
                                     {item.name}
                                 </td>
                                 <td className="px-3 py-2 md:px-1">
@@ -565,17 +537,6 @@ const Students = () => {
                                 </td>
                                 
                                 <td className="px-3 py-2 md:px-1">
-                                    {/* <Switch
-                                        size="small"
-                                        checkedChildren={<CheckOutlined />}
-                                        unCheckedChildren={<CloseOutlined />}
-                                        checked={studentStatuses[item.id] || false} // Get correct status per student
-                                        onChange={(checked) => handleStudentStatusChange(checked, item.id)}
-                                        style={{
-                                            backgroundColor: studentStatuses[item.id] ? "#38b000" : "gray", // Change color when checked 38b000
-                                        }}
-                                    /> */}
-
                                     <Dropdown
                                         menu={{
                                             items: ["Active", "Inactive", "Temp Block", "Restricted"]
@@ -587,7 +548,7 @@ const Students = () => {
                                                         </Tooltip>
                                                     ),
                                                 })),
-                                            onClick: ({ key }) => handleStudentStatusChange(item.id, key),
+                                            onClick: ({ key }) => onChangeStatus(item.id, key),
                                         }}
                                         >
                                             <a onClick={(e) => e.preventDefault()}>

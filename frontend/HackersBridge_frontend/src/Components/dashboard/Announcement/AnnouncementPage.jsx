@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { NotificationOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { NotificationOutlined, EditOutlined, DeleteOutlined, PushpinOutlined } from '@ant-design/icons';
 import { Modal, Button, message, Popconfirm } from 'antd';
 import { useAnnouncement } from './AnnouncementContext';
 import CreateAnnouncementForm from './AnnouncementFormPage';
@@ -13,86 +13,88 @@ const AnnouncementPage = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isDeleted, setIsDeleted] = useState(false);
 
+  const [viewAnnouncement, setViewAnnouncement] = useState(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+
   const { token } = useAuth();
-  
 
   useEffect(() => {
     setIsDeleted(false);
-
     fetchAnnouncement();
   }, [isDeleted]);
-
 
   const announcements = Announcement?.announcement || [];
 
   const handleOpenModal = () => setIsModalVisible(true);
-  const handleCloseModal = () => {setIsModalVisible(false), setAnnouncementData(null)};
+  const handleCloseModal = () => {
+    setIsModalVisible(false);
+    setAnnouncementData(null);
+  };
 
-  // Edit Function
+  const handleViewAnnouncement = (announcement) => {
+    setViewAnnouncement(announcement);
+    setIsViewModalOpen(true);
+  };
+
   const handleEditClick = (data) => {
     setAnnouncementData(data);
     handleOpenModal(true);
   };
 
-  
-  // Delete Function
-  const handleDelete = async (announcementId)=>{
-    if(!announcementId) return;
-
+  const handleDelete = async (announcementId) => {
+    if (!announcementId) return;
     try {
-      const response = await axios.delete(`${BASE_URL}/api/announcement/delete/${announcementId}/`,
-        {headers: {'Content-Type': 'application/json','Authorization':`Bearer ${token}`}, 
-        withCredentials : true
-      }
-      );
-      
+      const response = await axios.delete(`${BASE_URL}/api/announcement/delete/${announcementId}/`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        withCredentials: true
+      });
+
       if (response.status >= 200 && response.status <= 204) {
         message.success("Announcement deleted successfully");
         setIsDeleted(true);
         fetchAnnouncement();
       }
-
     } catch (error) {
       console.error("Error deleting announcement:", error);
       message.error("Failed to delete announcement");
     }
-  }
+  };
 
-
-  // Confirm and Cancel Handlers for delete button
   const confirm = (announcementId) => {
-    handleDelete(announcementId); // Call delete function with course ID
+    handleDelete(announcementId);
   };
 
   const cancel = () => {
-      message.error('Student Deletion Cancelled');
+    message.error('Student Deletion Cancelled');
   };
-
-
-
 
   return (
     <div className='bg-white p-4 h-full w-full'>
       <div className="min-h-fit bg-[#f1efef]">
         <div className="h-full overflow-y-auto overflow-x-hidden bg-white shadow-xs">
 
-          {/* Page Heading */}
           <div className="flex justify-between items-center px-4 mt-12 mb-5">
             <h1 className="text-base font-semibold">Announcements</h1>
-            <button type="button"
+            <button
+              type="button"
               className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 focus:outline-none focus:ring-3 focus:ring-green-300 font-medium"
-              onClick={() => handleOpenModal()}
+              onClick={handleOpenModal}
             >
               Create Announcement
             </button>
           </div>
 
-          {/* Announcement List */}
           <div className="w-full overflow-y-scroll h-screen mx-auto space-y-4 px-4 py-2 border-t rounded-md">
             {announcements.length > 0 ? (
               announcements.map((ann, index) => (
-                <div key={index} className="flex items-start bg-white p-4 rounded-lg hover:shadow-lg border-2 transition-shadow w-full">
-                  {/* Notification Icon */}
+                <div
+                  key={index}
+                  className="flex items-start bg-white p-4 rounded-lg hover:shadow-lg border-2 transition-shadow w-full cursor-pointer"
+                  onClick={() => handleViewAnnouncement(ann)}
+                >
                   <div className="mr-4 mt-1">
                     <NotificationOutlined className="text-green-500 text-xl" />
                   </div>
@@ -136,15 +138,11 @@ const AnnouncementPage = () => {
                       </div>
                     </div>
 
-                    {/* Safely render HTML content */}
                     <div
                       className="text-gray-700 mb-2"
-                      dangerouslySetInnerHTML={{
-                        __html: ann.text || "No message available"
-                      }}
+                      dangerouslySetInnerHTML={{ __html: ann.text || "No message available" }}
                     />
 
-                    {/* Formatted Date */}
                     <p className="text-sm text-gray-500">
                       {ann.gen_time
                         ? new Date(ann.gen_time).toLocaleString('en-US', {
@@ -166,9 +164,8 @@ const AnnouncementPage = () => {
         </div>
       </div>
 
-      {/* Modal for Create Announcement Form */}
+      {/* Create/Edit Modal */}
       <Modal
-        // title={<h2 className="text-2xl text-green-500 font-bold">Create/Edit Announcement</h2>}
         open={isModalVisible}
         onCancel={handleCloseModal}
         footer={null}
@@ -182,6 +179,61 @@ const AnnouncementPage = () => {
           selectedAnnouncement={announcementData || {}}
         />
       </Modal>
+
+      {/* View Announcement Modal */}
+      <Modal
+  title={
+    <div className="text-lg font-semibold text-gray-800">
+      Announcement Details
+      <hr className="mt-2 border border-gray-300" />
+    </div>
+  }
+  open={isViewModalOpen}
+  onCancel={() => setIsViewModalOpen(false)}
+  footer={null}
+  width={1000}
+  centered
+  bodyStyle={{
+    minHeight: '20vh',
+    padding: '24px',
+    backgroundColor: '#f9fafb',
+    borderRadius: '12px',
+  }}
+>
+  {viewAnnouncement && (
+    <div className="space-y-6">
+      {/* Subject and Time */}
+      <div className="flex items-center justify-between bg-gray-100 p-4 rounded-md">
+        <p className="text-base font-medium text-gray-800 uppercase tracking-wide">
+          {viewAnnouncement.subject || "No Subject"}
+        </p>
+        <p className="text-sm text-gray-500">
+          {viewAnnouncement.gen_time
+            ? new Date(viewAnnouncement.gen_time).toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            : "No date available"}
+        </p>
+      </div>
+
+      {/* Message Content */}
+      <div className="bg-white border h-44 border-gray-300 rounded-lg p-5 shadow-sm">
+        <div
+          className="text-gray-700 text-base leading-relaxed"
+          dangerouslySetInnerHTML={{
+            __html: viewAnnouncement.text || "No content available",
+          }}
+        />
+      </div>
+    </div>
+  )}
+</Modal>
+
+
     </div>
   );
 };

@@ -1,27 +1,28 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSpecificTrainer } from "../Contexts/SpecificTrainers";
-import { Button, message, Select, Popover, Avatar, Tooltip, Tag, DatePicker } from 'antd';
+import { Button, message, Select, Popover, Avatar, Tooltip, Tag, DatePicker, Checkbox } from 'antd';
 import { EditOutlined, SyncOutlined, CheckOutlined, DownOutlined } from '@ant-design/icons';
 import CreateTrainerForm from "../Trainers/CreateTrainerForm";
 import dayjs from "dayjs";
-import axios from "axios";
-import BASE_URL from "../../../ip/Ip";
-import handleBatchClick from "../Navigations/Navigations";
+import handleBatchClick from "../../Navigations/Navigations";
 
 
+const CheckboxGroup = Checkbox.Group;
 
 const { RangePicker } = DatePicker;
 
 const SpecificTrainerPage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState("running");
     const [selectedTrainer, setSelectedTrainer] = useState();
 
     const { trainerId } = useParams();
     const { specificTrainer, fetchSpecificTrainer, isEditing, setIsEditing, selectedOption, setSelectedOption, 
         startDate, setStartDate, endDate, setEndDate, loading, handleTrainerStatusChange } = useSpecificTrainer();
-    const [activeTab, setActiveTab] = useState("running");
     const [searchTerm, setSearchTerm] = useState("");
+    // for checkbox
+    const [checkBatchList, setCheckBatchList] = useState([]); 
 
     const navigate = useNavigate();
 
@@ -92,14 +93,6 @@ const SpecificTrainerPage = () => {
             setSelectedTrainer(null);
         };
 
-        // TO NAVIGATE TO BATCH SPECIFIC PAGE 
-        // const handleBatchClick = async (batchId) => {
-        //     if (!batchId) return;            
-        //     const encodedBatchId = btoa(batchId);
-            
-        //     navigate(`/batches/${encodedBatchId}`)
-        // };
-
          
         // handle status change to date select in dropdown
         const handleRangeChange = (value) => {
@@ -123,7 +116,27 @@ const SpecificTrainerPage = () => {
             setStartDate(null);
             setEndDate(null);
           };
-          
+
+
+        // HANDLE SEND LEAVE EMAIL TO SELECTED BATCH OF SPECIFIC TRAINER 
+        const allBatchIds = filteredBatches.map((item) => item.batch_id);
+        const checkAll = checkBatchList.length === allBatchIds.length;
+        const indeterminate = checkBatchList.length > 0 && checkBatchList.length < allBatchIds.length;
+
+        // Fix toggleSelectAll
+        const toggleSelectAll = (checked) => {
+            const selected = checked ? filteredBatches.map((item) => item.batch_id) : [];
+            setCheckBatchList(selected);
+        };
+
+        // Fix toggleStudent
+        const toggleStudent = (id) => {            
+            setCheckBatchList((prev) =>
+                prev.includes(id) ? prev.filter((b) => b !== id) : [...prev, id]
+            );
+        };
+
+
 
     return (
         <>
@@ -160,11 +173,7 @@ const SpecificTrainerPage = () => {
                         <div className="col-span-1 px-1 py-1">
                             <h1>Date of Joining</h1>
                             <p className="font-semibold">
-                                {new Date(trainerDetails.date_of_joining).toLocaleDateString("en-GB", {
-                                    day: "2-digit",
-                                    month: "2-digit",
-                                    year: "numeric",
-                                })}
+                                {dayjs(trainerDetails.date_of_joining).format("DD/MM/YYYY")}
                             </p>
                         </div>
 
@@ -246,7 +255,7 @@ const SpecificTrainerPage = () => {
                               
                                     <div className="flex gap-2 mt-2">
                                         <button
-                                            onClick={() => handleTrainerStatusChange(trainerDetails?.id)}
+                                            onClick={() => handleTrainerStatusChange(trainerDetails?.id, checkBatchList, () => setCheckBatchList([]))}
                                             disabled={loading}
                                             className="text-xs px-3 py-1 bg-blue-500 text-white rounded"
                                             >
@@ -257,11 +266,11 @@ const SpecificTrainerPage = () => {
                                                 </>
                                             ) : "Save" }
                                             </button>
-                                            <button
+                                        <button
                                             onClick={resetTrainerEditForm}
-                                            className="text-xs px-3 py-1 bg-gray-300 dark:bg-gray-700 text-black dark:text-white rounded"
+                                            className="text-xs px-3 py-1 bg-gray-300 text-black rounded"
                                         >
-                                        Cancel
+                                            Cancel
                                         </button>
                                     </div>
                                 </>
@@ -386,6 +395,12 @@ const SpecificTrainerPage = () => {
                                <table className="w-full text-xs text-left text-gray-500 dark:text-gray-400 ">
                                     <thead className="text-xs text-gray-700 uppercase bg-blue-50 dark:bg-gray-700 dark:text-gray-400 sticky top-0 z-10">
                                             <tr>
+                                                <th scope="col" className="p-2">
+                                                    <div className="flex items-center">
+                                                        <input id="checkbox-all-search" type="checkbox" onChange={(e) => toggleSelectAll(e.target.checked)} checked={checkAll} ref={(el) => {if (el) {el.indeterminate = indeterminate}}} className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 focus:ring-1"></input>
+                                                        <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
+                                                    </div>
+                                                </th>
                                                 <th scope="col" className="px-3 py-3 md:px-2">
                                                     S.No
                                                 </th>
@@ -425,8 +440,14 @@ const SpecificTrainerPage = () => {
                                         <tbody>
                                         {Array.isArray(searchFilteredBatches) && searchFilteredBatches.length > 0 ? (
                                             searchFilteredBatches.map((item, index) => (
-                                            <tr key={index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 scroll-smooth">
-                                                <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
+                                            <tr key={index} className="bg-white border-b border-gray-200 hover:bg-gray-50 scroll-smooth">
+                                                <td scope="col" className="p-2">
+                                                    <div className="flex items-center">
+                                                        <input id="checkbox-all-search" type="checkbox" checked={checkBatchList.includes(item.batch_id)} onChange={() => toggleStudent(item.batch_id)} className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 focus:ring-1"></input>
+                                                        <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
+                                                    </div>
+                                                </td>
+                                                <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900">
                                                     {index + 1}
                                                 </td>
                                                 <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleBatchClick(navigate,item.batch_id)}>

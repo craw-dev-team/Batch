@@ -17,7 +17,7 @@
 
 
 
-// const EmailPopup = ({ open, onClose, selectedStudents }) => {
+// const EmailPopup = ({ open, onClose, checkStudentid }) => {
 //     if (!open) return null;
 
 //     const [selectedTemplate, setSelectedTemplate] = useState('');
@@ -34,11 +34,11 @@
 
 
 //     useEffect(() => {
-//       if (open && selectedStudents?.length) {
-//         const uniqueEmails = [...new Set(selectedStudents.map(s => s.emails))];
+//       if (open && checkStudentid?.length) {
+//         const uniqueEmails = [...new Set(checkStudentid.map(s => s.emails))];
 //         setToEmails(uniqueEmails);
 //       }
-//     }, [open, selectedStudents]);
+//     }, [open, checkStudentid]);
     
 
 
@@ -106,7 +106,7 @@
 //         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       
 //         // Get emails from selected students
-//         const selectedEmails = selectedStudents.map((s) => s.emails);
+//         const selectedEmails = checkStudentid.map((s) => s.emails);
       
 //         // Combine all emails: selected + added + (inputEmail if valid)
 //         const combinedEmailsSet = new Set([...selectedEmails, ...toEmails]);
@@ -342,7 +342,7 @@ Quill.register(AlignStyle, true);
 
 
 
-const EmailPopup = ({ open, onClose, selectedStudents }) => {
+const EmailPopup = ({ open, onClose, checkStudentid, onSuccess = () => {} }) => {
     if (!open) return null;
 
     const [selectedTemplate, setSelectedTemplate] = useState('');
@@ -362,18 +362,17 @@ const EmailPopup = ({ open, onClose, selectedStudents }) => {
     const [inputCcEmail, setInputCcEmail] = useState('');
 
 
-
     const [emailSubject, setEmailSubject] = useState("");
 
-console.log(specificBatch);
+
 
 
     useEffect(() => {
-      if (open && selectedStudents?.length) {
-        const uniqueEmails = [...new Set(selectedStudents.map(s => s.emails))];
+      if (open && checkStudentid?.length) {
+        const uniqueEmails = [...new Set(checkStudentid.map(s => s.emails))];
         setBccEmails(uniqueEmails);
       }
-    }, [open, selectedStudents]);
+    }, [open, checkStudentid]);
     
 
 
@@ -457,7 +456,7 @@ console.log(specificBatch);
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       
         // Get emails from selected students
-        const selectedEmails = selectedStudents.map((s) => s.emails);
+        const selectedEmails = checkStudentid.map((s) => s.emails);
       
         // Combine all emails: selected + added + (inputEmail if valid)
         const combinedEmailsSet = new Set([...selectedEmails, ...BccEmails]);
@@ -488,6 +487,7 @@ console.log(specificBatch);
             
             if (response.status >= 200 && response.status <= 299) {
                 message.success("Email sent successfully");
+                onSuccess();
                 onClose();
             } else {
                 message.error("Unexpected response from server");
