@@ -10,6 +10,7 @@ from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from .models import Student, Installment, FeesRecords, StudentCourse, StudentNotes, BookAllotment
 from .serializer import StudentSerializer, StudentNoteSerializer, StudentCourseSerializer, StudentBookAllotmentSerializer, SimpleStudentSerializer
+from django_filters.rest_framework import DjangoFilterBackend, DateFromToRangeFilter, FilterSet
 from nexus.models import Batch, Timeslot, Course, Attendance, Book
 from django.db.models import Count, Q, Exists, OuterRef
 from rest_framework.authtoken.models import Token
@@ -34,7 +35,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from datetime import date
 from django.utils.html import escape
 from django.utils import timezone
-
+from datetime import date, datetime
 User = get_user_model()
 
 
@@ -63,7 +64,7 @@ class ALLStudentListView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-from django_filters.rest_framework import DjangoFilterBackend, DateFromToRangeFilter, FilterSet
+
 # ✅ Custom Filter for range filtering on date_of_joining
 class StudentFilter(FilterSet):
     date_of_joining = DateFromToRangeFilter()
@@ -527,7 +528,7 @@ class StudentInfoAPIView(APIView):
                 'student_book_allotment': sc.student_book_allotment,
                 'student_old_book_allotment': sc.student_old_book_allotment,
                 'student_book_issue_date': list(book_issues),
-                'studnet_marks': sc.marks,
+                'student_marks': sc.marks,
                 'student_exam_date': sc.marks_update_date,
             })
 
@@ -1273,7 +1274,7 @@ class StudentBookAllotmentAPIView(APIView):
                     #         <p>Best regards,<br><strong>CRAW Security Library Team</strong></p>
                     #     </div>
                     # </body>
-                    # </html> 
+                    # </html>
 
                     from_email = "CRAW SECURITY BOOK <training@craw.in>"
                     try:
@@ -1477,7 +1478,7 @@ class StudentAttendanceEdit(APIView):
 
 
 # Student Marks Update with Sending Email...
-class StudentMarksUpdateAPIView (APIView):
+class StudentMarksUpdateAPIView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
@@ -1496,7 +1497,14 @@ class StudentMarksUpdateAPIView (APIView):
         except ValueError:
             return Response({'error': 'Marks must be a number.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        try:
+            exam_date = datetime.strptime(exam_date, '%Y-%m-%d').date()
+        except ValueError:
+            return Response({'error': 'Invalid date format. Use YYYY-MM-DD.'}, status=status.HTTP_400_BAD_REQUEST)
+
         student_course = StudentCourse.objects.filter(id=id).select_related('student', 'course').first()
+        print(student_course.student.name)
+
 
         if not student_course:
             return Response({'error': 'StudentCourse not found.'}, status=status.HTTP_404_NOT_FOUND)
@@ -1505,6 +1513,7 @@ class StudentMarksUpdateAPIView (APIView):
             if student_course and marks is not None:
                 student_course.marks = marks
                 student_course.marks_update_date = date.today()
+                student_course.student_exam_date = exam_date  # Update exam date
                 student_course.save()
                 
         except Exception as e:

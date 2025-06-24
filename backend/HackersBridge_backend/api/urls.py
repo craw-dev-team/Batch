@@ -66,7 +66,7 @@ urlpatterns = [
     # path('students/free/', FreeStudentListView.as_view(), name='trainer-availability'),
     
     path('trainers/', TrainerListAPIviews.as_view(), name='trainer-list'),
-    # path('trainers/card/', TrainerCardsAPIView.as_view(), name='trainer-card'),
+    path('trainers/card/', TrainerCardsAPIView.as_view(), name='trainer-card'),
     path('trainers/add/', AddTrainerAPIView.as_view(), name='add_trainer_api'),
     path('trainers-logs/', TrainerLogListView.as_view(), name='trainers-logs'),
     path('trainers/info/<int:id>/', TrainerInfoAPIView.as_view(), name='info_trainer_api'),
@@ -132,6 +132,11 @@ urlpatterns = [
 
     # path('allbatchchats/', BatchChatsTesting.as_view(), name='email-sender'),
     # path('batch/chats/<int:id>/', BatchChatMessageAPIView.as_view(), name='batch-chat-message')
+
+    path('test_function/', TestAPIFake.as_view(), name="test_functions")
+
+
+    
 ]
 
 

@@ -135,6 +135,72 @@ class CourseDeleteAPIView(APIView):
 
 
 
+# class CourseinfoAPIView(APIView):
+#     authentication_classes = [JWTAuthentication]
+#     permission_classes = [IsAuthenticated]
+
+#     def get(self, request, id):
+#         if request.user.role not in ['admin', 'coordinator']:
+#             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
+#         # ✅ Fetch course using only required fields
+#         course = get_object_or_404(Course.objects.only('id', 'name'), id=id)
+
+#         # ✅ Fetch all student IDs in this course
+#         student_course_qs = StudentCourse.objects.filter(course_id=course.id).only('student_id')
+#         student_ids = list(student_course_qs.values_list('student_id', flat=True))
+
+#         # ✅ Fetch students with related data in bulk
+#         students = Student.objects.filter(id__in=student_ids).select_related(
+#             'support_coordinator', 'course_counsellor', 'location'
+#         ).prefetch_related(
+#             'courses', 'notes', 'studentcourse_set'
+#         ).only('id', 'name', 'email', 'support_coordinator', 'course_counsellor', 'location')
+
+#         student_data = StudentSerializer(students, many=True).data
+
+#         # ✅ Fetch batches with related info and only student id/name
+#         batches = Batch.objects.filter(course_id=course.id).select_related(
+#             'course', 'trainer', 'batch_time', 'location', 'batch_coordinator'
+#         ).prefetch_related(
+#             Prefetch('student', queryset=Student.objects.only('id', 'name'))
+#         ).only(
+#             'id', 'batch_id', 'course', 'trainer', 'mode', 'status', 'start_date', 'end_date',
+#             'preferred_week', 'batch_time', 'language', 'location', 'batch_coordinator'
+#         )
+
+#         # ✅ Construct batch data manually (faster than full serialization)
+#         batch_data = []
+#         for batch in batches:
+#             batch_data.append({
+#                 "id": batch.id,
+#                 "batch_id": batch.batch_id,
+#                 "course": batch.course.name if batch.course else None,
+#                 "trainer": batch.trainer.name if batch.trainer else None,
+#                 "mode": batch.mode,
+#                 "status": batch.status,
+#                 "start_date": batch.start_date,
+#                 "end_date": batch.end_date,
+#                 "preferred_week": batch.preferred_week,
+#                 "batch_time": str(batch.batch_time) if batch.batch_time else None,
+#                 "language": str(batch.language) if batch.language else None,
+#                 "location": str(batch.location) if batch.location else None,
+#                 "batch_coordinator": str(batch.batch_coordinator) if batch.batch_coordinator else None,
+#                 "students": [{"id": student.id, "name": student.name} for student in batch.student.all()]
+#             })
+
+#         # ✅ Send minimal course data
+#         course_info = {
+#             'course': {
+#                 "id": course.id,
+#                 "name": course.name
+#             },
+#             'Student_take_by': student_data,
+#             'Batch_take_by': batch_data
+#         }
+
+#         return Response({'course_info': course_info})
+
 
 class CourseinfoAPIView(APIView):
     authentication_classes = [JWTAuthentication]
@@ -144,33 +210,58 @@ class CourseinfoAPIView(APIView):
         if request.user.role not in ['admin', 'coordinator']:
             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
 
-        # Step 1: Get the course
-        course = get_object_or_404(Course, id=id)
+        # ✅ Step 1: Get course
+        course = get_object_or_404(Course.objects.only('id', 'name'), id=id)
+        course_info = {"id": course.id, "name": course.name}
 
-        # Step 2: Get student IDs and prefetch full student data efficiently
-        student_ids = StudentCourse.objects.filter(course=course).values_list('student_id', flat=True).distinct()
+        # ✅ Step 2: Get student IDs in this course
+        student_ids = list(
+            StudentCourse.objects.filter(course_id=id).values_list('student_id', flat=True)
+        )
+
+        # ✅ Step 3: Fetch students with related data
         students = Student.objects.filter(id__in=student_ids).select_related(
             'support_coordinator', 'course_counsellor', 'location'
         ).prefetch_related(
-            'courses', 'notes', 'studentcourse_set'
+            'courses'
         )
 
-        Student_take_by = StudentSerializer(students, many=True).data
+        # ✅ Step 4: Manually build student data including course list
+        student_data = []
+        for student in students:
+            student_data.append({
+                'id': student.id,
+                'name': student.name,
+                'email': student.email,
+                'support_coordinator': getattr(student.support_coordinator, 'name', None),
+                'course_counsellor': getattr(student.course_counsellor, 'name', None),
+                'location': getattr(student.location, 'locality', None),
+                'date_of_joining': student.date_of_joining,
+                'phone': student.phone,
+                'language': student.language,
+                'mode': student.mode,
+                'preferred_week': student.preferred_week,
+                'courses': list(student.courses.values_list('name', flat=True))  # ✅ course list
+            })
 
-        # Step 3: Fetch related batch data efficiently
-        batches = Batch.objects.filter(course=course).select_related(
-            'course', 'trainer', 'batch_time', 'location', 'batch_coordinator'
+        # ✅ Step 5: Fetch batches with related students
+        batches = Batch.objects.filter(course_id=id).select_related(
+            'trainer', 'batch_time', 'location', 'batch_coordinator'
         ).prefetch_related(
             Prefetch('student', queryset=Student.objects.only('id', 'name'))
+        ).only(
+            'id', 'batch_id', 'mode', 'status', 'start_date', 'end_date',
+            'preferred_week', 'language', 'course_id', 'trainer_id',
+            'batch_time_id', 'location_id', 'batch_coordinator_id'
         )
 
-        Batch_take_by = []
+        batch_data = []
         for batch in batches:
-            Batch_take_by.append({
+            batch_data.append({
                 "id": batch.id,
                 "batch_id": batch.batch_id,
-                "course": batch.course.name,
-                "trainer": batch.trainer.name if batch.trainer else None,
+                "course": course.name,
+                "trainer": getattr(batch.trainer, 'name', None),
                 "mode": batch.mode,
                 "status": batch.status,
                 "start_date": batch.start_date,
@@ -180,21 +271,17 @@ class CourseinfoAPIView(APIView):
                 "language": str(batch.language) if batch.language else None,
                 "location": str(batch.location) if batch.location else None,
                 "batch_coordinator": str(batch.batch_coordinator) if batch.batch_coordinator else None,
-                "students": [
-                    {"id": student.id, "name": student.name} for student in batch.student.all()
-                ]
+                "students": list(batch.student.values('id', 'name'))
             })
 
-        # Step 4: Final Response
-        course_info = {
-            'course': CourseSerializer(course).data,
-            'Student_take_by': Student_take_by,
-            'Batch_take_by': Batch_take_by
-        }
-
-        return Response({'course_info': course_info})
-
-
+        return Response({
+            'course_info': {
+                'course': CourseSerializer(course).data,
+                'Student_take_by': student_data,
+                'Batch_take_by': batch_data
+            }
+        })
+    
 
 
 class CourseTakebyEdit(APIView):
@@ -322,8 +409,7 @@ class BatchCourseUpdate(APIView):
             "updated_batches": updated_batches
         }, status=status.HTTP_200_OK)
     
-
-    
+  
 
 
 class BookListAPIView(APIView):
@@ -381,7 +467,6 @@ class BookCreateAPIView(APIView):
 
 
 
-
 class BookUpdateAPIView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -418,7 +503,6 @@ class BookUpdateAPIView(APIView):
 
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 
     
@@ -598,7 +682,6 @@ class BookTakeByAllDataAPIView(APIView):
             response['all_book_tasks'][f"{book_key}_book_take_by"] = list(info['students_map'].values())
 
         return Response(response, status=status.HTTP_200_OK)
-
     
 
 # This is for apply filter on issue books...
@@ -714,7 +797,6 @@ class BookIssueFilterAPIView(APIView):
             response['all_book_tasks'][f"{book_key}_book_take_by"] = list(info['students_map'].values())
 
         return Response(response, status=status.HTTP_200_OK)
-
 
 # This if for Book Info also send issued or not issued students..
 class BookInfoAPIView(APIView):
