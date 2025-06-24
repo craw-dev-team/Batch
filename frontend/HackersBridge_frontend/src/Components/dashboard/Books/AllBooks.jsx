@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useSpecificBook } from "../Contexts/SpecificBook";
 import { Pagination, Empty, Spin } from 'antd';
 import dayjs from "dayjs";
-import { handleStudentClick } from "../Navigations/Navigations";
+import { handleStudentClick } from "../../Navigations/Navigations";
 import { useNavigate } from "react-router-dom";
 
 

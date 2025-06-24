@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Col, Row } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import { useStudentForm } from '../../Studentcontext/StudentFormContext';
+import { useStudentForm } from '../../../Studentcontext/StudentFormContext';
 
 
 
@@ -64,31 +64,31 @@ const handleCardClick = (cardType, callback) => {
             { key: "inactive_students", label: "Inactive Students", count: studentsCounts?.inactive_student_count || '0', data: inactive_Students }
           ].map(({ key, label, count, data }) => (
             <Col span={4} key={key}>
-            <Card
-          title={<span style={{ fontSize: '18px' }}>{count}</span>}
-          variant="bordered"
-          className={`!p-0 rounded-md shadow-sm cursor-pointer transition-all duration-150 ${
-            selectedCard === key ? "text-blue-500 border-blue-500" : "text-gray-800 border-gray-200"
-          }`}
-          styles={{
-            header: {
-                      padding: '2px 8px',
-                      height: '28px',
-                      backgroundColor: '#ebf5ff',
-                    },
-            body: {
-                    padding: '4px 8px',
-                    fontSize: '13px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    height: '40px',
-                    overflow: 'hidden',
-                  }
-          }}
-          onClick={() => handleCardClick(key, data)}
-        >
-          <div className="truncate">{label}</div>
-        </Card>
+              <Card
+                title={<span style={{ fontSize: '18px' }}>{count}</span>}
+                variant="bordered"
+                className={`!p-0 rounded-md shadow-sm cursor-pointer transition-all duration-150 ${
+                  selectedCard === key ? "text-blue-500 border-blue-500" : "text-gray-800 border-gray-200"
+                }`}
+                styles={{
+                  header: {
+                            padding: '2px 8px',
+                            height: '28px',
+                            backgroundColor: '#ebf5ff',
+                          },
+                  body: {
+                          padding: '4px 8px',
+                          fontSize: '13px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          height: '40px',
+                          overflow: 'hidden',
+                        }
+                }}
+                onClick={() => handleCardClick(key, data)}
+              >
+              <div className="truncate">{label}</div>
+              </Card>
 
             </Col>
           ))}

@@ -53,7 +53,7 @@ const SpecificTrainerProvider = ({ children }) => {
 
 
     // change trainer status based on leave 
-    const handleTrainerStatusChange = async (trainerId) => {
+    const handleTrainerStatusChange = async (trainerId, selectedBatchIds = [], onSuccess = () => {}) => {
       if (loading) return;
     
       const token = localStorage.getItem("token");
@@ -75,7 +75,8 @@ const SpecificTrainerProvider = ({ children }) => {
             trainer_id: specificTrainer?.Trainer_All?.trainer?.id,
             start_date: startDate,
             end_date: endDate,
-            leave_status: selectedOption
+            leave_status: selectedOption,
+            batch_list: selectedBatchIds 
           };
         } else {
           // Send to regular leave status API
@@ -83,20 +84,24 @@ const SpecificTrainerProvider = ({ children }) => {
           payload = {
             trainer_id: specificTrainer?.Trainer_All?.trainer?.id,
             leave_status: selectedOption,
+            batch_list: selectedBatchIds 
           };
         }
+        console.log(payload);
+        
     
         const response = await axios.post(apiUrl, payload, {
           headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
           withCredentials : true
         }
         );
-        // console.log(response);
+        console.log(response);
         
     
         if (response.status === 200) {
           message.success("All done! Trainer leave updated and email sent");
           setIsEditing(false);
+          onSuccess();
         } else {
           message.error("Issue in Updating Trainer Leave Status");
         }

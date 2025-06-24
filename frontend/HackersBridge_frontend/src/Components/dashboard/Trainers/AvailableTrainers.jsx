@@ -3,7 +3,7 @@ import { useTrainerForm } from "../Trainercontext/TrainerFormContext";
 import { Avatar, Tooltip, Tag } from 'antd';
 import { CreateAvailableBatchForm } from "../Batches/AvailableBatches";
 import { useNavigate } from "react-router-dom";
-import { handleTrainerClick } from "../Navigations/Navigations";
+import { handleTrainerClick } from "../../Navigations/Navigations";
 import dayjs from "dayjs";
 
 const AvailableTrainers = () => {

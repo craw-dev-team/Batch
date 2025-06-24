@@ -8,7 +8,7 @@ import dayjs from "dayjs";
 import BASE_URL from "../../../ip/Ip";
 import { useAuth } from "../AuthContext/AuthContext";
 import { useNavigate } from "react-router-dom";
-import handleBatchClick, { handleTrainerClick } from "../Navigations/Navigations";
+import handleBatchClick, { handleTrainerClick } from "../../Navigations/Navigations";
 
 
 

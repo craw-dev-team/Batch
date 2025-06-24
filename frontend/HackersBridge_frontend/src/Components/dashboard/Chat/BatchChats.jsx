@@ -416,7 +416,7 @@ const BatchChats = () => {
                 {Object.keys(groupedMessages).length > 0 ? (
                   Object.entries(groupedMessages).map(([dateLabel, msgs], i) => (
                     <div key={i}>
-                      <p className="text-center text-gray-500 text-sm font-medium mb-4">
+                      <p className="text-center text-gray-500 text-xs font-normal mb-4">
                         {dateLabel}
                       </p>
                       {msgs.map((msg, index) => (

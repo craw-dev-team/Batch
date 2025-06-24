@@ -6,10 +6,10 @@ import BASE_URL from "../../../ip/Ip";
 import { useAuth } from "../AuthContext/AuthContext";
 import AddBookForm from "./AddBookForm";
 import { useBookForm } from "../BooksContext/BookFormContext";
-import BookCards from "../SpecificPage/Cards/BookCards";
 import { useNavigate } from "react-router-dom";
-import { handleBookClick } from "../Navigations/Navigations";
+import { handleBookClick } from "../../Navigations/Navigations";
 import AllBooks from "./AllBooks";
+import BookCards from "../SpecificPage/Cards/Book/BookCards";
 
 
 const Books = () => {

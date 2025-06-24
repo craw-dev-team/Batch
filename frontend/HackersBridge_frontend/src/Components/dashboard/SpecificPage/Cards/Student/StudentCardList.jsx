@@ -4,8 +4,10 @@ import { Avatar, Tag, Tooltip, Dropdown, message, Empty } from 'antd';
 import { CheckOutlined, DownOutlined  } from '@ant-design/icons';
 import StudentCards from "./StudentCard";
 import axios from "axios";
-import BASE_URL from "../../../../ip/Ip";
-import { useAuth } from "../../AuthContext/AuthContext";
+import BASE_URL from "../../../../../ip/Ip";
+import { useAuth } from "../../../AuthContext/AuthContext";
+import { handleStudentClick } from "../../../../Navigations/Navigations";
+import useStudentStatusChange, { statusDescription } from "../../../../Functions/StudentStatusChange";
 
 
 const StudentsList = () => {
@@ -13,48 +15,36 @@ const StudentsList = () => {
     const location = useLocation();
     const { data } = location.state || { data: "No data available", type: "Unknown" };
     // To store students status and set active and inactive 
-    const [studentStatuses, setStudentStatuses] = useState({}); // Store status per trainer
+    // const [studentStatuses, setStudentStatuses] = useState({}); // Store status per trainer
     const { token } = useAuth();
     const [searchTerm, setSearchTerm] = useState('');
-
+    const { studentStatuses, setStudentStatuses, handleStudentStatusChange } = useStudentStatusChange(token);
     const navigate = useNavigate();
 
     const filteredStudents = Array.isArray(data) ? data : [];
 
     useEffect(() => {
         if (Array.isArray(filteredStudents) && filteredStudents.length > 0) {
-            const initialStatuses = {};
-            filteredStudents.forEach((student) => {
+            
+            const timer =  setTimeout(() => {
+                const initialStatuses = {};
+                filteredStudents.forEach((student) => {
                 initialStatuses[student.id] = student.status;
             });
 
             setStudentStatuses(initialStatuses);
+           }, 100);
+           
+           return () => clearTimeout(timer);
         }
+
     }, [filteredStudents]);
 
 
 
     // Handle Toggle of trainer active and inactive 
-    const handleStudentStatusChange = async (studentId, newStatus) => {
-        const previousStatus = studentStatuses[studentId]; // store current before update
-        
-        //  Optimistically update UI before API call
-        setStudentStatuses((prev) => ({ ...prev, [studentId]: newStatus }));
-
-        try {
-            const response = await axios.put(`${BASE_URL}/api/students/edit/${studentId}/`, 
-                { status: newStatus },
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
-                withCredentials : true
-            }
-            );            
-            message.success(`Student status updated to ${newStatus}`);
-        } catch (error) {
-            message.error("Failed to update status");
-            console.error(error);
-            //  Revert UI if API fails
-            setStudentStatuses((prev) => ({ ...prev, [studentId]: previousStatus }));
-        }
+    const onChangeStatus = (studentId, newStatus) => {
+        handleStudentStatusChange({ studentId, newStatus });
     };
 
 
@@ -69,19 +59,12 @@ const StudentsList = () => {
                 (student.name?.toLowerCase() || "").includes(term) ||
                 (student.email?.toLowerCase() || "").includes(term) ||
                 (student.phone?.toLowerCase() || "").includes(term) ||
-                (student.support_coordinator_name?.toLowerCase() || "").includes(term)
-              );
+                (student.support_coordinator_name?.toLowerCase() || "").includes(term)              );
             });
           }, [filteredStudents, searchTerm]);
           
 
 
-    // NAVIGATE TO SPECIFIC STUDENT PAGE INFO 
-    const handleStudentClick = async (studentId) => {
-        if (!studentId) return;
-        const encodedStudentId = btoa(studentId)
-        navigate(`/students/${encodedStudentId}`)
-    };
 
 
     return (
@@ -172,13 +155,13 @@ const StudentsList = () => {
                         {searchFilteredStudents.length > 0 ? (
                             searchFilteredStudents.map((item, index) => (
                                 <tr key={item.id} className="bg-white border-b border-gray-200 hover:bg-gray-50">
-                                    <td className="px-3 py-2 md:px-2 font-medium text-gray-900 dark:text-white">
+                                    <td className="px-3 py-2 md:px-2 font-medium text-gray-900 ">
                                         {index + 1}
                                     </td>
-                                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.id)}>
+                                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(navigate, item.id)}>
                                         {item.enrollment_no}
                                     </td>
-                                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(item.id)}>
+                                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(navigate, item.id)}>
                                         {item.name}
                                     </td>
                                     <td className="px-3 py-2 md:px-1">
@@ -249,9 +232,13 @@ const StudentsList = () => {
                                                 items: ["Active", "Inactive", "Temp Block", "Restricted"]
                                                     .map((status) => ({
                                                         key: status,
-                                                        label: status,
+                                                        label:(
+                                                        <Tooltip title={statusDescription[status]} placement="left">
+                                                            <span>{status}</span>
+                                                        </Tooltip>
+                                                    ),
                                                     })),
-                                                onClick: ({ key }) => handleStudentStatusChange(item.id, key),
+                                                onClick: ({ key }) => onChangeStatus(item.id, key),
                                             }}
                                             >
                                                 <a onClick={(e) => e.preventDefault()}>

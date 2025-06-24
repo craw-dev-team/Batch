@@ -7,7 +7,7 @@ import { EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined } from '@ant
 import SpecificCoordinatorLogs from "../AllLogs/Coordinator/SpecificCoordinatorLogs";
 import AddCoordinatorForm from "../AddDetails/Coordinator/AddCoordinatorForm";
 import SpecificCoordinatorActivityLogs from "../AllLogs/Coordinator/SpecificCoordinatorActivityLogs";
-import { handleStudentClick, handleTrainerClick } from "../Navigations/Navigations";
+import { handleStudentClick, handleTrainerClick } from "../../Navigations/Navigations";
 import dayjs from "dayjs";
 
 

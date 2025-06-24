@@ -324,7 +324,7 @@ const TicketOperation = () => {
                   <input
                     type="text"
                     placeholder="Type your message..."
-                    className="flex-1 border-1 rounded-3xl px-3 py-1"
+                    className="flex-1 border-1 rounded-3xl px-3 py-1 focus:ring-0"
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyDown={(e) => {

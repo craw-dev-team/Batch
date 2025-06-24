@@ -9,13 +9,15 @@ import BASE_URL from "../../../ip/Ip";
 import AvailableBatches from "./AvailableBatches";
 import { useCourseForm } from "../Coursecontext/CourseFormContext";
 import { useAuth } from "../AuthContext/AuthContext";
-import BatchCards from "../SpecificPage/Cards/BatchCards";
-import handleBatchClick, { handleTrainerClick } from "../Navigations/Navigations";
+import handleBatchClick, { handleTrainerClick } from "../../Navigations/Navigations";
 import dayjs from "dayjs";
+import BatchCards from "../SpecificPage/Cards/Batch/BatchCards";
+import useBatchStatusChange from "../../Functions/BatchStatusChange";
 
 
 
 const Batches = () => {
+    const { token } = useAuth();
     const [isModalOpen, setIsModalOpen] = useState(false); 
     const [activeTab, setActiveTab] = useState("Running");
     const [selectedBatch, setSelectedBatch] = useState();
@@ -32,8 +34,8 @@ const Batches = () => {
     const [sortByLocation, setSortByLocation] = useState(null);
     // const [sortByCourse, setSortByCourse] = useState(null);
     
-    const { batchData, loading, setLoading, setBatchData, fetchBatches, countBatchesByType } = useBatchForm();
-    const { token } = useAuth();
+    const { batchData, loading, setLoading, setBatchData, fetchBatches } = useBatchForm();
+    const { handleBatchStatusChange } = useBatchStatusChange(token);
 
 
     const navigate = useNavigate();
@@ -253,41 +255,46 @@ const Batches = () => {
 
 
     // HANDLE STATUS CHANGE OF BATCH 
-    const handlestatusChange = async (batchId, status) => {
-        if (!batchId || !status) return;
+    // const handleBatchStatusChange = async (batchId, status) => {
+    //     if (!batchId || !status) return;
 
-            // Get today's date in YYYY-MM-DD format
-                const today = new Date().toISOString().split("T")[0];
+    //         // Get today's date in YYYY-MM-DD format
+    //             const today = new Date().toISOString().split("T")[0];
         
-            // If status is "Completed" or "Cancelled", set batch_end_date to today
-            const updatedData = {
-                status,
-                ...(status === "Completed" || status === "Cancelled" ? { end_date: today } : {}),
-            };
+    //         // If status is "Completed" or "Cancelled", set batch_end_date to today
+    //         const updatedData = {
+    //             status,
+    //             ...(status === "Completed" || status === "Cancelled" ? { end_date: today } : {}),
+    //         };
                 
-        try {
-            const response = await axios.put(`${BASE_URL}/api/batches/edit/${batchId}/`,
-                JSON.stringify(updatedData),
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                withCredentials : true
-            }
-            );
+    //     try {
+    //         const response = await axios.put(`${BASE_URL}/api/batches/edit/${batchId}/`,
+    //             JSON.stringify(updatedData),
+    //             { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+    //             withCredentials : true
+    //         }
+    //         );
             
-            if (response.status >= 200 && response.status < 300) {
-                message.success(`Batch status updated successfully to ${status} !`);
-                // console.log(updatedData);
+    //         if (response.status >= 200 && response.status < 300) {
+    //             message.success(`Batch status updated successfully to ${status} !`);
+    //             // console.log(updatedData);
                 
-            } else {
-                message.error("Batch status not updated.");
-            };
+    //         } else {
+    //             message.error("Batch status not updated.");
+    //         };
             
-           await fetchBatches(currentFilters)
+    //        await fetchBatches(currentFilters)
     
-        } catch (error) {
-            console.error("Error sending status data to server", error);
-        }
+    //     } catch (error) {
+    //         console.error("Error sending status data to server", error);
+    //     }
+    // };
+    
+    // Handle Toggle of batch running, scheduled, hold and completed, cancelled 
+    const onChangeStatus = async (batchId, status) => {
+        handleBatchStatusChange({ batchId, status });
+        await fetchBatches(currentFilters)
     };
-    
 
 
     // FOR SORTING BY START TIME AND START DATE
@@ -308,25 +315,26 @@ const Batches = () => {
         };
         
         
+        const data = batchData?.results?.batches || [];
         
-        // const sortedBatches = useMemo(() => {
-        //     let sorted = [...searchFilteredBatches];
+        const sortedBatches = useMemo(() => {
+            let sorted = [...data];
         
             
-        //     if (sortByTime) {
-        //         sorted.sort((a, b) => a.batch_time_data.start_time.localeCompare(b.batch_time_data.start_time));
-        //     }
+            if (sortByTime) {
+                sorted.sort((a, b) => a.batch_time_data.start_time.localeCompare(b.batch_time_data.start_time));
+            }
         
-        //     if (sortByStartDate) {
-        //         sorted.sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
-        //     }
+            if (sortByStartDate) {
+                sorted.sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
+            }
         
-        //     if (sortByEndDate) {
-        //         sorted.sort((a, b) => new Date(a.end_date) - new Date(b.end_date));
-        //     }
+            if (sortByEndDate) {
+                sorted.sort((a, b) => new Date(a.end_date) - new Date(b.end_date));
+            }
         
-        //     return sorted;
-        // }, [batchData, sortByTime, sortByStartDate, sortByEndDate]);
+            return sorted;
+        }, [data, sortByTime, sortByStartDate, sortByEndDate]);
         
 
 
@@ -687,8 +695,8 @@ const Batches = () => {
                                             <Spin size="large" />
                                         </td>
                                     </tr>
-                                ) : batchData?.results?.batches.length > 0 ? (
-                                    batchData?.results?.batches.map((item, index) => (
+                                ) : sortedBatches.length > 0 ? (
+                                    sortedBatches.map((item, index) => (
                                         <tr key={index} className="bg-white border-b border-gray-200 hover:bg-gray-50 scroll-smooth">
                                             <td scope="col" className="p-2">
                                                 <div className="flex items-center">
@@ -711,7 +719,7 @@ const Batches = () => {
                                                         <LinkOutlined style={{ color: "blue" }} />
                                                         </span>
                                                     </Tooltip>
-)}
+                                                )}
                                             </td>
                                             <td className="px-3 py-2 md:px-1">
                                                 {dayjs(`1970-01-01T${item.batch_time_data?.start_time}`).format("hh:mm A")}
@@ -891,7 +899,7 @@ const Batches = () => {
                                                                 key: status,
                                                                 label: status,
                                                             })),
-                                                        onClick: ({ key }) => handlestatusChange(item.id, key),
+                                                        onClick: ({ key }) => onChangeStatus(item.id, key),
                                                     }}
                                                     >
                                                     <a onClick={(e) => e.preventDefault()}>

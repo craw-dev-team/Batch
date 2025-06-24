@@ -7,7 +7,7 @@ import { useCourseForm } from "../Coursecontext/CourseFormContext";
 import BASE_URL from "../../../ip/Ip";
 import { useAuth } from "../AuthContext/AuthContext";
 import { Navigate, useNavigate } from "react-router-dom";
-import { handleCourseClick } from "../Navigations/Navigations";
+import { handleCourseClick } from "../../Navigations/Navigations";
 
 
 const Courses = () => {

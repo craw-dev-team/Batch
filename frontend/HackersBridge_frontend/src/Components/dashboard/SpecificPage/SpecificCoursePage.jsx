@@ -5,7 +5,7 @@ import { EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined } from '@ant
 import { useSpecificCourse } from "../Contexts/SpecificCourse";
 import CreateCourseForm from "../Courses/CreateCourseForm";
 import { useCourseForm } from "../Coursecontext/CourseFormContext";
-import handleBatchClick, { handleStudentClick } from "../Navigations/Navigations";
+import handleBatchClick, { handleStudentClick } from "../../Navigations/Navigations";
 import dayjs from "dayjs";
 
 

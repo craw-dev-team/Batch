@@ -1,22 +1,29 @@
-import React from 'react';
+
 import { Card, Col, Row } from 'antd';
-import { useBatchForm } from '../../Batchcontext/BatchFormContext';
+import { useBatchForm } from '../../../Batchcontext/BatchFormContext';
+import { useTrainerForm } from '../../../Trainercontext/TrainerFormContext';
+import { useEffect } from 'react';
 
 
 
-const BatchCards = ({ handleTabClick, activeTab }) => {
+const TrainerCards = ({ handleTabClick, activeTab }) => {
 
-    const { batchData } = useBatchForm();
+    const { trainersCount, fetchTrainersCount } = useTrainerForm();
+
+    useEffect(() => {
+      fetchTrainersCount();
+    },[]);
+
     
     return (
         <Row gutter={[14, 14]}>
           {[
-            { key: "all", label: "Total Batches", count: batchData?.results?.all_batch_count || '0' },
-            { key: "Running", label: "Running Batches", count: batchData?.results?.running_batch_count || '0' },
-            { key: "Scheduled", label: "Scheduled Batches", count: batchData?.results?.upcoming_batch_count || '0' },
-            { key: "Hold", label: "Hold Batches", count: batchData?.results?.hold_batch_count || '0' },
-            { key: "Completed", label: "Completed Batches", count: batchData?.results?.completed_batch_count || '0' },
-            { key: "Cancelled", label: "Cancelled Batches", count: batchData?.results?.cancelled_batch_count || '0' },
+            { key: "all", label: "Total Trainers", count: trainersCount?.all_in_one?.total_count_trainer || '0' },
+            { key: "leave", label: "Trainers on leave", count: trainersCount?.all_in_one?.leave_count_trainer || '0' },
+            { key: "active_trainers", label: "Active Trainers", count: trainersCount?.all_in_one?.active_count_trainer || '0' },
+            { key: "inactive_trainers", label: "Inactive Trainers", count: trainersCount?.all_in_one?.inactive_count_trainer || '0' },
+            { key: "Saket", label: "Saket", count: trainersCount?.all_in_one?.Saket_count_trainer || '0' },
+            { key: "Laxmi Nagar", label: "Laxmi Nagar", count: trainersCount?.all_in_one?.Laxmi_Nagar_count_trainer || '0' },
           ].map(({ key, label, count }) => (
             <Col span={4} key={key}>
               <Card
@@ -52,4 +59,4 @@ const BatchCards = ({ handleTabClick, activeTab }) => {
 
     )
 }
-export default BatchCards;
+export default TrainerCards;

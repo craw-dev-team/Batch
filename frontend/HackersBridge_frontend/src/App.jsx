@@ -35,12 +35,10 @@ import BooksHome from "./Pages/BooksHome";
 import { BookFormProvider } from "./Components/dashboard/BooksContext/BookFormContext";
 import StudentLogin from "./Components/StudentDashboard/Pages/StudentLogin";
 import StudentRegister from "./Components/StudentDashboard/Pages/StudentRegister";
-import StudentInfo from "./Components/StudentDashboard/Dashboard/StudentInfo/StudentDetails/StudentInfo";
 import StudentLayout from "./StudentLayout";
 import StudentDashboardHome from "./Components/StudentDashboard/Pages/StudentDashboardHome";
 import { SpecificCourseProvider } from "./Components/dashboard/Contexts/SpecificCourse";
 import SpecificCoursePage from "./Components/dashboard/SpecificPage/SpecificCoursePage";
-import { StudentAuthProvider } from "./Components/StudentDashboard/Dashboard/StudentAuthContext/StudentAuthContext";
 import DashboardLayout from "./Components/common/DashboardLayout";
 import StudentTrainerChat from "./Components/StudentDashboard/Dashboard/StudentInfo/Chat/StudentTrainerChat";
 import StudentBatches from "./Components/StudentDashboard/Dashboard/StudentInfo/StudentBatches/StudentBatches";
@@ -59,15 +57,15 @@ import AnnouncementPage from "./Components/dashboard/Announcement/AnnouncementPa
 import { AnnouncementProvider } from "./Components/dashboard/Announcement/AnnouncementContext";
 import TicketsOperation from "./Components/dashboard/Tickets/TicketsOperation";
 import { TicketsProvider } from "./Components/dashboard/Tickets/TicketContext";
-import StudentsList from "./Components/dashboard/SpecificPage/Cards/StudentCardList";
 import PageNotFound from "./Pages/PageNotFound";
 import SpecificBookPage from "./Components/dashboard/SpecificPage/SpecificBookPage";
 import { SpecificBookProvider } from "./Components/dashboard/Contexts/SpecificBook";
 import { StudentInfoProvider } from "./Components/StudentDashboard/Dashboard/StudentInfo/StudentDetails/StudentInfoContext";
-import BookCardList from "./Components/dashboard/SpecificPage/Cards/BookCardList";
 import { BatchChatsProvider } from "./Components/dashboard/Chat/BatchChatsContext";
 import TrainerStudentChat from "./Components/dashboard/Chat/BatchChats";
 import BatchChats from "./Components/dashboard/Chat/BatchChats";
+import BookCardList from "./Components/dashboard/SpecificPage/Cards/Book/BookCardList";
+import StudentsList from "./Components/dashboard/SpecificPage/Cards/Student/StudentCardList";
 
 
 
