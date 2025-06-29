@@ -8,10 +8,10 @@ from .models import Batch, Chats, ChatMessage
 from .serializer import AllChatsSerializer
 from django_filters.rest_framework import DjangoFilterBackend, DateFromToRangeFilter, FilterSet
 from rest_framework.generics import ListAPIView
+from django.db.models import Q
 
 
-
-# This for geting all batch chats list...
+# This is for getting all batch chats list...
 class AllChatsAPIView(ListAPIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -19,15 +19,27 @@ class AllChatsAPIView(ListAPIView):
     serializer_class = AllChatsSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     search_fields = ['batch__batch_id', 'batch__status', 'batch__trainer__name', 'batch__course__name']
-    filterset_fields = ['batch__status']
+
 
     def get_queryset(self):
         if self.request.user.role not in ['admin', 'coordinator']:
             return Chats.objects.none()
 
-        return Chats.objects.select_related(
+        queryset = Chats.objects.select_related(
             'batch', 'batch__trainer', 'batch__course', 'batch__batch_time'
         ).prefetch_related('messages')
+
+        # Apply custom status filtering logic
+        batch_status = self.request.query_params.get('batch__status')
+
+        if batch_status == "Completed":
+            queryset = queryset.filter(Q(batch__status='Completed') | Q(batch__status='Cancelled'))
+            print("COMPLETED")
+        elif batch_status == "Running":
+            queryset = queryset.filter(batch__status="Running")
+            print("ONGOING")
+
+        return queryset
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
@@ -41,6 +53,8 @@ class AllChatsAPIView(ListAPIView):
         sorted_data = sorted(data, key=lambda x: status_priority.get(x['batch_status'], 3))
 
         return Response({'all_batch_chats': sorted_data}, status=status.HTTP_200_OK)
+
+
 
 
 # # This is for geting all chats in selected batch...

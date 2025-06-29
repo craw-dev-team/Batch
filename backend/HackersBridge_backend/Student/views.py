@@ -1527,7 +1527,7 @@ class StudentMarksUpdateAPIView(APIView):
 
         from_email = "CRAW SECURITY BATCH <training@craw.in>"
 
-        if marks/50*100 <= 75:
+        if marks/50*100 <= 49:
             subject = "Exam Result Notification"
             html_message = f"""<html>
             <head>
@@ -1543,7 +1543,7 @@ class StudentMarksUpdateAPIView(APIView):
                     <h2 style="text-align: center; font-size: 22px; color: #000;">📢 Exam Result Notification</h2>
                     <p style="color: #000;">Dear <strong>{student_name}</strong>,</p>
                     <p style="color: #000;">You did not pass the <strong>{course_name}</strong> exam held on <strong>{exam_date}</strong>.</p>
-                    <p style="color: #000;">You scored <strong>{marks/50*100} % </strong> marks. Please prepare and try again because our pass marks percentage needs to be above 55%.</p>
+                    <p style="color: #000;">You scored <strong>{marks/50*100} % </strong> marks. Please prepare and try again because our pass marks percentage needs to be above 50%.</p>
                     <p style="margin-top: 30px; color: #000;">
                         📍 <strong>Our Address:</strong><br>
                         1st Floor, Plot no. 4, Lane no. 2, Kehar Singh Estate, Westend Marg,<br>
