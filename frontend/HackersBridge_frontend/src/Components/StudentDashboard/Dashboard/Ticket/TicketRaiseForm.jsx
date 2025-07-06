@@ -1,6 +1,8 @@
-import React from "react";
-import { Form, Input, Button, Select, Card, Typography } from "antd";
+import React, { useEffect, useState } from "react";
+import { Form, Input, Button, Select, Card, Typography, Modal } from "antd";
 import { useAllTickets } from "./TicketRaiseContext";
+
+import ReCAPTCHA from 'react-google-recaptcha';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -8,11 +10,22 @@ const { Title } = Typography;
 
 const TicketRaiseForm = ({ onCancel }) => {
   const [form] = Form.useForm();
-  const { handleFormSubmit } = useAllTickets();
+  const { ticketData, handleFormSubmit } = useAllTickets();
+  const [recaptchaToken, setRecaptchaToken] = useState(null);
 
-  const handleSubmit = async (values) => {
+  const user = ticketData?.user_info || { name: "", email: "" };
+
+  useEffect(() => {
+    // Set default values when the form mounts
+    form.setFieldsValue({
+      username: user.name,
+      email: user.email,
+    });
+  }, [user, form]);
+
+  const handleSubmit = async (values, recaptchaToken) => {        
     try {
-      await handleFormSubmit(values); // Send to server via context
+      await handleFormSubmit(values, recaptchaToken); // Send to server via context
       onCancel()
       form.resetFields();
     } catch (error) {
@@ -21,17 +34,28 @@ const TicketRaiseForm = ({ onCancel }) => {
   };
 
   return (
-    <Card bordered style={{ maxWidth: 800, margin: "0 auto", padding: "0 " }} bodyStyle={{ padding: 10 }}>
-      <Title level={4} style={{ marginBottom: 20, padding: 0 }}>
+    // <Modal bordered style={{ maxWidth: 800, margin: "0", padding: "0" }} styles={{ body: { padding: 8 } }}>
+      <>
+      <Title level={4} style={{ marginBottom: 10, padding: 0, fontSize: '18px' }}>
         Raise a Ticket
       </Title>
-      <Form layout="vertical" form={form} onFinish={handleSubmit}>
-        <Form.Item
-          label="Issue"
-          name="issue"
+      <Form layout="vertical" form={form} onFinish={(values) => handleSubmit(values, recaptchaToken)} requiredMark={false}>
+
+        {/* <Form.Item label="Username" name="username">
+          <Input disabled className='rounded-md h-8 text-sm focus:ring-0 hover:border-[#10b07b] focus:border-[#10b07b] border-gray-300'/>
+        </Form.Item> */}
+
+        {/* <Form.Item label="Email" name="email">
+          <Input disabled className='rounded-md h-8 text-sm focus:ring-0 hover:border-[#10b07b] focus:border-[#10b07b] border-gray-300'/>
+        </Form.Item> */}
+
+        <div className="grid grid-cols-2 gap-x-4">
+          <Form.Item
+          label="Issue Type"
+          name="issue_type"
           rules={[{ required: true, message: "Please select an issue type" }]}
         >
-          <Select placeholder="Select issue type">
+          <Select placeholder="Select Issue Type" className="custom-green-select">
             <Option value="Book">Books Issue</Option>
             <Option value="Batch">Batches Issue</Option>
             <Option value="Certificate">Certificates Access</Option>
@@ -40,28 +64,51 @@ const TicketRaiseForm = ({ onCancel }) => {
         </Form.Item>
 
         <Form.Item
-          label="Subject"
-          name="subject"
-          rules={[{ required: true, message: "Please enter a subject" }]}
+          label="Priority"
+          name="priority"
+          rules={[{ required: true, message: "Please select priority" }]}
         >
-          <Input placeholder="Short summary of the issue" />
+          <Select placeholder="Select Priority" className="custom-green-select">
+            <Option value="high">High</Option>
+            <Option value="medium">Medium</Option>
+            <Option value="low">Low</Option>
+          </Select>
+        </Form.Item>
+        </div>
+
+        <Form.Item
+          label="Title"
+          name="title"
+          rules={[{ required: true, message: "Please Enter Title" }]}
+        >
+          <Input placeholder="Short Summary Of The Issue"  className='rounded-md h-8 text-sm focus:ring-0 hover:border-[#10b07b] focus:border-[#10b07b] border-gray-300'/>
         </Form.Item>
 
         <Form.Item
           label="Description"
-          name="description"
+          name="message"
           rules={[{ required: true, message: "Please describe the issue" }]}
         >
-          <TextArea rows={5} placeholder="Describe your issue in detail" />
+          <TextArea rows={5} placeholder="Describe Your Issue In Detail" className="focus:ring-0 hover:border-[#10b07b] focus:border-[#10b07b] border-gray-300"/>
         </Form.Item>
 
         <Form.Item>
-          <Button type="primary" htmlType="submit" block>
+          <div style={{ transform: "scale(0.7)", transformOrigin: "0 0" }}>
+          <ReCAPTCHA
+            sitekey="6LdHF24rAAAAADYWk6V5GokFKLJvcv-vh_bhNqjw"
+            onChange={(token) => setRecaptchaToken(token)}
+          />
+          </div>
+        </Form.Item>
+
+        <Form.Item>
+          <Button type="primary" htmlType="submit" style={{ backgroundColor: "#0e9f6e", borderColor: "#0e9f6e", hover: "#0c7d57" }} block>
             Submit Ticket
           </Button>
         </Form.Item>
       </Form>
-    </Card>
+      </>
+    // </Modal>
   );
 };
 

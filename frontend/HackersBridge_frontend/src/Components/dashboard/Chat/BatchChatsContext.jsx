@@ -1,6 +1,6 @@
 import axios from "axios";
 import React, {createContext, useState, useContext, useCallback, children, useRef, useEffect} from "react";
-import BASE_URL from "../../../ip/Ip";
+import BASE_URL, { WEBSOCKET_URL } from "../../../ip/Ip";
 import { message } from "antd";
 import dayjs from "dayjs";
 
@@ -20,49 +20,49 @@ const BatchChatsProvider = ({children}) => {
 
 
     const connectWebSocket = (batchId) => {
-    const token = localStorage.getItem("token");
-    if (!token || !batchId) return;
+      // const token = localStorage.getItem("token");
+      // if (!token || !batchId) return;
 
-    // ✅ Close existing WebSocket if open
-    if (ws.current) {
-      ws.current.close();
-      ws.current = null;
-    }
+      // Close existing WebSocket if open
+      if (ws.current) {
+        ws.current.close();
+        ws.current = null;
+      }
 
-    setWsMessages([]);
+      setWsMessages([]);
 
-    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-    const wsUrl = `${protocol}://13.203.183.149:8000/ws/admin-batch-chat/${batchId}/?token=${token}`;
+      const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+      const wsUrl = `${protocol}://${WEBSOCKET_URL}/ws/admin-batch-chat/${batchId}/`;
 
-    ws.current = new WebSocket(wsUrl);
+      ws.current = new WebSocket(wsUrl);
 
-    ws.current.onopen = () => {
-      console.log("WebSocket connected");
-    };
-
-   ws.current.onmessage = (event) => {
-  const data = JSON.parse(event.data);
-  console.log("WebSocket received:", data);
-
-  if (data.type === "history") {
-    // Initial batch load
-    setWsMessages(data); // full history replaces everything
-  } else if (data.type === "chat") {
-    // New real-time message
-    setWsMessages((prev) => {
-      if (!prev) return { messages: [data], self_messages: [], type: "history" };
-
-      return {
-        ...prev,
-        messages: [...prev.messages, data],
-        // optionally: if it's sent by self, add to self_messages
-        self_messages: data.sender === "admin" 
-          ? [...(prev.self_messages || []), data] 
-          : prev.self_messages,
+      ws.current.onopen = () => {
+        console.log("WebSocket connected");
       };
-    });
-  }
-};
+
+    ws.current.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      console.log("WebSocket received:", data);
+
+      if (data.type === "history") {
+        // Initial batch load
+        setWsMessages(data); // full history replaces everything
+      } else if (data.type === "chat") {
+        // New real-time message
+        setWsMessages((prev) => {
+          if (!prev) return { messages: [data], self_messages: [], type: "history" };
+
+          return {
+            ...prev,
+            messages: [...prev.messages, data],
+            // optionally: if it's sent by self, add to self_messages
+            self_messages: data.sender === "admin" 
+              ? [...(prev.self_messages || []), data] 
+              : prev.self_messages,
+          };
+      });
+    }
+  };
 
 
     ws.current.onerror = (error) => {
@@ -74,31 +74,31 @@ const BatchChatsProvider = ({children}) => {
     };
     };
 
-  const disconnectWebSocket = () => {
-    if (ws.current) {
-      ws.current.close();
+    const disconnectWebSocket = () => {
+      if (ws.current) {
+        ws.current.close();
+      }
+    };
+  
+  const sendMessage = (batchId, messageText) => {
+    if (!ws.current) {
+      console.warn("WebSocket not initialized.");
+      return;
+    }
+
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+      const payload = {
+        batch_id: batchId,
+        type: "send_message",
+        message: messageText,
+      };
+      console.log('payload',payload );
+      
+      ws.current.send(JSON.stringify(payload));
+    } else {
+      console.error("WebSocket not connected.");
     }
   };
-  
- const sendMessage = (batchId, messageText) => {
-  if (!ws.current) {
-    console.warn("WebSocket not initialized.");
-    return;
-  }
-
-  if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-    const payload = {
-      batch_id: batchId,
-      type: "send_message",
-      message: messageText,
-    };
-    console.log('payload',payload );
-    
-    ws.current.send(JSON.stringify(payload));
-  } else {
-    console.error("WebSocket not connected.");
-  }
-};
 
 
   useEffect(() => {
@@ -115,17 +115,18 @@ const BatchChatsProvider = ({children}) => {
 
     // Fetch Chats
     const fetchChats = useCallback( async ({ search = '', batch__status = '' }) => {
-    if (loading) return;
-        const token = localStorage.getItem('token');
-        if(!token) {
-            console.log("No token found, user might be logged out");
-            return;
-        }
+      if (loading) return;
+
+        //   const token = localStorage.getItem('token');
+        //   if(!token) {
+        //       console.log("No token found, user might be logged out");
+        //     return;
+        // }
 
         setloading(true);
         try {
             const response = await axios.get(`${BASE_URL}/api/all_chats/`,
-                {headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
+                {headers: {'Content-Type': 'application/json'},
                 withCredentials: true,
                 params: {
                     search,
@@ -238,16 +239,16 @@ const deleteMessage = async(id) => {
     }
 
     if (loading) return;
-    const token = localStorage.getItem("token");
-    if(!token) {
-        message.error("Unauthorized, Please log in.")
-        return;
-    }
+    // const token = localStorage.getItem("token");
+    // if(!token) {
+    //     message.error("Unauthorized, Please log in.")
+    //     return;
+    // }
     try {
         const response = await axios.post(`${BASE_URL}//${id}`,
             { message: messageText },
             {
-                headers:{"Content-Type": "application/json", Authorization: `Bearer ${token}`},
+                headers:{"Content-Type": "application/json"},
                 withCredentials: true,
             }
         );

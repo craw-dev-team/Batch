@@ -16,7 +16,6 @@ const AnnouncementPage = () => {
   const [viewAnnouncement, setViewAnnouncement] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
-  const { token } = useAuth();
 
   useEffect(() => {
     setIsDeleted(false);
@@ -47,7 +46,7 @@ const AnnouncementPage = () => {
       const response = await axios.delete(`${BASE_URL}/api/announcement/delete/${announcementId}/`, {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+         
         },
         withCredentials: true
       });

@@ -28,7 +28,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication  # JWT aut
 from .serializer import CounsellorSerializer     # Serializer for Counsellor model
 from Student.serializer import StudentSerializer # Serializer for Student model
 from nexus.serializer import LogEntrySerializer  # Serializer for LogEntry audit logs
-
+from nexus.JWTCookie import JWTAuthFromCookie
 # ✅ Custom User model
 User = get_user_model()                          # Assign your custom user model to `User`
 
@@ -40,7 +40,7 @@ cid = str(uuid.uuid4())                          # Generate a unique ID to trace
 # API view to fetch the list of all counsellors
 class CounsellorAPIView(APIView):
     # Require JWT authentication for accessing this view
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     # Ensure the user is authenticated
     permission_classes = [IsAuthenticated]
     
@@ -63,7 +63,7 @@ class CounsellorAPIView(APIView):
 # API view to get a list of students who are assigned to a specific counsellor
 class StudentsUnderCounsellorAPIView(APIView):
     # Require JWT authentication to access this view
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     # Ensure that the user is authenticated
     permission_classes = [IsAuthenticated]
 
@@ -98,7 +98,7 @@ class StudentsUnderCounsellorAPIView(APIView):
 # API view to handle the creation of a new Counsellor
 class CounsellorCreateAPIView(APIView):
     # Require JWT authentication
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     # Ensure the user is authenticated
     permission_classes = [IsAuthenticated]
     
@@ -162,7 +162,7 @@ class CounsellorCreateAPIView(APIView):
 # ✅ API view to edit/update an existing counsellor's details
 class CounsellorEditAPIView(APIView):
     # ✅ Use JWT for authentication
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     # ✅ Ensure user is authenticated
     permission_classes = [IsAuthenticated]
     
@@ -250,7 +250,7 @@ class CounsellorEditAPIView(APIView):
 # API view to delete a counsellor along with their associated user and authentication token
 class CounsellorDeleteAPIView(APIView):
     # Require JWT-based authentication
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     # Ensure user is authenticated
     permission_classes = [IsAuthenticated]
     
@@ -325,7 +325,7 @@ class CounsellorDeleteAPIView(APIView):
 # API view to get detailed information about a specific counsellor
 class CousellorInfoAPIView(APIView):
     # Use JWT for user authentication
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     # Ensure the user is logged in
     permission_classes = [IsAuthenticated]
 
@@ -381,7 +381,7 @@ class CousellorInfoAPIView(APIView):
 # API view to retrieve all logs related to Counsellor actions (create, update, delete)
 class CounsellorLogListView(APIView):
     # ✅ Use JWT-based authentication
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     # ✅ Ensure the request is made by an authenticated user
     permission_classes = [IsAuthenticated]
 

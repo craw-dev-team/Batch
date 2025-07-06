@@ -15,7 +15,6 @@ const AddCoordinatorForm = ( { isOpen, onClose, coordinatorData } ) => {
     const isEditing = Boolean(coordinatorData?.id); 
 
     const { coordinatorFormData, setCoordinatorFormData, errors, setErrors, resetCoordinatorForm } = useCoordinatorForm();
-    const { token } = useAuth();
 
     const [ loading, setLoading] = useState(false);
 
@@ -65,7 +64,7 @@ const AddCoordinatorForm = ( { isOpen, onClose, coordinatorData } ) => {
                 // Update existing course (PUT)
                 response = await axios.put(`${BASE_URL}/api/coordinators/edit/${coordinatorData.id}/`, 
                     payload,
-                    { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    { headers: { 'Content-Type': 'application/json' },
                     withCredentials : true
                 }
                 );
@@ -74,7 +73,7 @@ const AddCoordinatorForm = ( { isOpen, onClose, coordinatorData } ) => {
                     // Add new course (POST)
                     response = await axios.post(`${BASE_URL}/api/coordinators/add/`, 
                         payload, 
-                        { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        { headers: { 'Content-Type': 'application/json'},
                         withCredentials : true
                     }
                     );

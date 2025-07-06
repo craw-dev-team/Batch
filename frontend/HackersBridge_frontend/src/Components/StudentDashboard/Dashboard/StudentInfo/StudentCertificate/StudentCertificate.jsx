@@ -16,16 +16,15 @@ const StudentCertificate = () => {
 
   // HANDLE DOWNLOAD CERTIFICATE 
   const handleDownload = async (url, filename) => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      console.error("No token found.");
-      return;
-    }
+    // const token = localStorage.getItem("token");
+    // if (!token) {
+    //   console.error("No token found.");
+    //   return;
+    // }
   
     try {
       const response = await axios.get(url, {
         responseType: "blob",
-        headers: { "Authorization": `Bearer ${token}` },
         withCredentials: true,
       });
   
@@ -52,8 +51,8 @@ const StudentCertificate = () => {
     <div className="bg-white rounded-md shadow p-6 w-full mx-auto mt-0.5">
 
       <div className="p-0">
-      <h2 className="text-2xl font-semibold mb-6 flex items-center gap-2 ">
-        <FileDoneOutlined /> Certificates
+      <h2 className="text-lg font-semibold mb-6 flex items-center gap-2 ">
+        Certificates
       </h2>
 
       <div className="grid md:grid-cols-2 gap-4">

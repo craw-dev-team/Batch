@@ -13,16 +13,16 @@ const StudentAttendanceProvider = ({ children }) => {
   
       const fetchStudentAttendance = useCallback (async () => {
           if (loading) return; 
-          const token = localStorage.getItem('token');
-          if (!token) {
-              console.error("No token found, user might be logged out.");
-              return;
-          };
+          // const token = localStorage.getItem('token');
+          // if (!token) {
+          //     console.error("No token found, user might be logged out.");
+          //     return;
+          // };
   
           setLoading(true);
           try {
               const response = await axios.get(`${BASE_URL}/Student_login/student_attendance_batchlist/`,
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                { headers: { 'Content-Type': 'application/json'}, 
                 withCredentials: true,
               }  
               );

@@ -21,7 +21,6 @@ const StudentBatchInfo = () => {
         }
       }
     }, []);
-console.log(studentBatchInfo);
 
 
   return (

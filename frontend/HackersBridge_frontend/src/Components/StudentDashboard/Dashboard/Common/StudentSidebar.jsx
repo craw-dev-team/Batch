@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import {
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
-  UsergroupAddOutlined,
   UserOutlined,
-  ProductOutlined,
+  AppstoreAddOutlined,
+  SecurityScanOutlined,
+  ScheduleOutlined,
   WechatWorkOutlined,
+  TagsOutlined,
   FileDoneOutlined,
   LoginOutlined,
 } from '@ant-design/icons';
@@ -26,42 +26,44 @@ const StudentSidebar = ({ collapsed, setCollapsed, drawerOpen, setDrawerOpen }) 
 
   const {batchId} = useParams();
 
-
-  const handleLogout = () => {
-    setSpinning(true); // Show the loader
-
-    setTimeout(() => {
-      setSpinning(false); // Hide loader after logout
-      logout(); // Perform logout
-    }, 2000); // Show spin for 3 seconds
+  
+   const handleLogout = async () => {
+    setSpinning(true);
+    await logout();
+    setSpinning(false);
   };
+
 
   const menuItems = [
     {
       key: '/student-info',
-      icon: <ProductOutlined />,
+      icon:  <UserOutlined />,
       label: <span>Overview</span>,
-      className: "rounded-md ",            
     },
     {
       key: '/student-info/student-batches',
-      icon: <UsergroupAddOutlined />,
-      label: <span>Batches</span>,
+      icon:  <AppstoreAddOutlined />,
+      label: <span>My Batches</span>,
     },
     {
       key: '/student-info/student-recommended-batches',
-      icon: <UsergroupAddOutlined />,
+      icon: <SecurityScanOutlined />,
       label: <span>Explore Batches</span>,
     },
     {
       key: '/student-info/student-attendance',
-      icon: <UserOutlined />,
+      icon:  <ScheduleOutlined />,
       label: <span>Attendance</span>,
     },
     {
       key: '/student-info/student-chat',
       icon : <WechatWorkOutlined/>,
       label: <span>Chat</span>,
+    },
+    {
+      key: '/student-info/all-tickets',
+      icon : <TagsOutlined/>,
+      label: <span>Tickets</span>,
     },
     {
       key: '/student-info/student-certificates',

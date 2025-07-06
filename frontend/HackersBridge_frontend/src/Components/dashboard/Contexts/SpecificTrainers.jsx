@@ -22,17 +22,19 @@ const SpecificTrainerProvider = ({ children }) => {
     const fetchSpecificTrainer = async (trainerId) => {
         if (loading) return;
 
-        const token = localStorage.getItem('token');
-        if (!token) {
-            console.error("No token found, user might be logged out.");
-            return;
-        };
+        // const token = localStorage.getItem('token');
+        // if (!token) {
+        //     console.error("No token found, user might be logged out.");
+        //     return;
+        // };
 
         setLoading(true)
 
         try {
             const response = await axios.get(`${BASE_URL}/api/trainers/info/${trainerId}/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
+                { headers: { 'Content-Type': 'application/json' },
+                withCredentials: true
+              }
             );
             const data = response?.data
             // console.log(data);
@@ -56,11 +58,11 @@ const SpecificTrainerProvider = ({ children }) => {
     const handleTrainerStatusChange = async (trainerId, selectedBatchIds = [], onSuccess = () => {}) => {
       if (loading) return;
     
-      const token = localStorage.getItem("token");
-      if (!token) {
-        console.error("No token found, user might be logged out.");
-        return;
-      }
+      // const token = localStorage.getItem("token");
+      // if (!token) {
+      //   console.error("No token found, user might be logged out.");
+      //   return;
+      // }
     
       
       try {
@@ -91,7 +93,7 @@ const SpecificTrainerProvider = ({ children }) => {
         
     
         const response = await axios.post(apiUrl, payload, {
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          headers: { "Content-Type": "application/json" },
           withCredentials : true
         }
         );

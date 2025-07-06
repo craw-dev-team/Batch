@@ -6,15 +6,17 @@ import { EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons';
 import axios from "axios";
 import BASE_URL from "../ip/Ip";
 
-
+import ReCAPTCHA from 'react-google-recaptcha';
 
 
 
 const Login = () => {
   const [credentials, setCredentials] = useState({ username: "", password: "" });
-  const { universalLogin } = useAuth();
+  const { loading, universalLogin } = useAuth();
   const navigate = useNavigate();
   const [showpass, setShowpass] = useState(null);
+  
+  const [recaptchaToken, setRecaptchaToken] = useState(null);
 
   const handleChange = (e) => setCredentials({ ...credentials, [e.target.name]: e.target.value });
 
@@ -23,14 +25,14 @@ const Login = () => {
     e.preventDefault();
   
     try {
-      const response = await universalLogin(credentials.username, credentials.password);
+      const response = await universalLogin(credentials.username, credentials.password,recaptchaToken );
       if (response?.user_info?.role) {
         const role = response.user_info.role;
   
         message.success("Login successful");
   
         if (role === "coordinator" || role === "admin") {
-          navigate("/batches");``
+          navigate("/batches");
         } else if (role === "student") {
           navigate("/student-info");
         } else {
@@ -40,15 +42,15 @@ const Login = () => {
         message.error("Invalid login response");
       }
     } catch (err) {
-      console.error("Login error:", err);
+      // console.error("Login error:", err);
       message.error("Login failed. Please check credentials.");
     }
   };
   
 
-  const navigateToRegister = () => {
-    navigate('/register')
-  };
+  // const navigateToRegister = () => {
+  //   navigate('/register')
+  // };
 
 
   return (
@@ -77,17 +79,24 @@ const Login = () => {
                       }
                         </span>
                   </div>
-                  
+
+                  <div style={{ transform: "scale(0.8)", transformOrigin: "0 0" }}>
+                    <ReCAPTCHA
+                      sitekey="6LdHF24rAAAAADYWk6V5GokFKLJvcv-vh_bhNqjw"  // 🔁 Replace with your real site key
+                      onChange={(token) => setRecaptchaToken(token)}
+                    />
+                  </div>
+
                   <div>
-                      <button type="submit" className="w-full bg-green-400 p-3 rounded-md hover:bg-green-500 transition-all ease-in">Login</button>
+                      <button disabled={loading} type="submit" className="w-full bg-green-400 p-3 rounded-md hover:bg-green-500 transition-all ease-in">Login</button>
                   </div>
 
                       <div>
                       <Link to="/forgot-password" className="text-blue-700 text-sm hover:underline">Reset Password</Link>
                       </div>
 
-                  <p className="text-sm font-light flex text-gray-500 dark:text-gray-400">
-                      Didn't have an account? <span onClick={() => navigateToRegister()} className="pl-2 cursor-pointer font-medium text-primary-600 hover:underline dark:text-primary-500">Register here</span>
+                  <p className="text-sm font-light flex text-gray-500">
+                      Didn't have an account? <span className="pl-2 font-light text-primary-600">Contact your coordinator</span>
                   </p>
               </form>
           </div>

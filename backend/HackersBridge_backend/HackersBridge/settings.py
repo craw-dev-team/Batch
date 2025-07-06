@@ -91,12 +91,12 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'api.middleware.IPBlockMiddleware',
     'api.middleware.DailyRequestLoggerMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'auditlog.middleware.AuditlogMiddleware',
 ]
-
 
 ROOT_URLCONF = 'HackersBridge.urls'
 
@@ -219,11 +219,15 @@ REST_FRAMEWORK = {
 # Optional: Token lifetime
 from datetime import timedelta
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(days=30), # minutes=15
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=1), # minutes=15
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
     "AUTH_HEADER_TYPES": ("Bearer",),
+    "AUTH_COOKIE": "access_token",  # Must match your login and logout
+    "AUTH_COOKIE_SECURE": False,    # Set to True on HTTPS
+    "AUTH_COOKIE_HTTP_ONLY": True,
+    "AUTH_COOKIE_PATH": "/",
+    "AUTH_COOKIE_SAMESITE": "Lax",
 }
-
 
 STATIC_URL = 'static/'
 
@@ -239,3 +243,10 @@ CHANNEL_LAYERS = {
         "BACKEND": "channels.layers.InMemoryChannelLayer",  # For development
     }
 }
+
+
+
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+
+# reCAPTCHA
+RECAPTCHA_SECRET_KEY = '6LfKEG4rAAAAAMMFt9QuJMQBQB95aSKAkSDqFwQg'

@@ -19,17 +19,17 @@ const SpecificCoordinatorProvider = ({ children }) => {
     const fetchSpecificCoordinator = async (coordinatorId) => {
         if (loading) return;
 
-        const token = localStorage.getItem('token');
-        if (!token) {
-            console.error("No token found, user might be logged out.");
-            return;
-        };
+        // const token = localStorage.getItem('token');
+        // if (!token) {
+        //     console.error("No token found, user might be logged out.");
+        //     return;
+        // };
 
         setLoading(true)
 
         try {
             const response = await axios.get(`${BASE_URL}/api/coordinators/info/${coordinatorId}/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                { headers: { 'Content-Type': 'application/json' },
                 withCredentials : true
             }
             )
@@ -50,17 +50,17 @@ const SpecificCoordinatorProvider = ({ children }) => {
     const fetchSpecificCoordinatorStudents = async (coordinatorId) => {
         if (loading) return;
 
-        const token = localStorage.getItem('token');
-        if (!token) {
-            console.error("No token found, user might be logged out.");
-            return;
-        };
+        // const token = localStorage.getItem('token');
+        // if (!token) {
+        //     console.error("No token found, user might be logged out.");
+        //     return;
+        // };
 
         setLoading(true)
 
         try {
             const response = await axios.get(`${BASE_URL}/api/coordinators/${coordinatorId}/students/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                { headers: { 'Content-Type': 'application/json' }, 
                 withCredentials : true
             }
             )
@@ -87,17 +87,17 @@ const SpecificCoordinatorProvider = ({ children }) => {
     const fetchSpecificCoordinatorTrainers = async (coordinatorId) => {
         if (loading) return;
 
-        const token = localStorage.getItem('token');
-        if (!token) {
-            console.error("No token found, user might be logged out.");
-            return;
-        };
+        // const token = localStorage.getItem('token');
+        // if (!token) {
+        //     console.error("No token found, user might be logged out.");
+        //     return;
+        // };
 
         setLoading(true)
 
         try {
             const response = await axios.get(`${BASE_URL}/api/coordinators/${coordinatorId}/trainer/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                { headers: { 'Content-Type': 'application/json' }, 
                 withCredentials : true
             }
             )
@@ -124,17 +124,17 @@ const SpecificCoordinatorProvider = ({ children }) => {
     const fetchSpecificCoordinatorActivityLogs = async (coordinatorId, { page = 1, pageSize = 50, search = '', type } = {}) => {
         if (loading) return;
 
-        const token = localStorage.getItem('token');
-        if (!token) {
-            console.error("No token found, user might be logged out.");
-            return;
-        };
+        // const token = localStorage.getItem('token');
+        // if (!token) {
+        //     console.error("No token found, user might be logged out.");
+        //     return;
+        // };
 
         setLoading(true)
 
         try {
             const response = await axios.get(`${BASE_URL}/api/coordinators/info/${coordinatorId}/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                { headers: { 'Content-Type': 'application/json' },
                 params: {
                     page,
                     page_size: pageSize,

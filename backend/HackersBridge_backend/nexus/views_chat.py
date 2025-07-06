@@ -9,11 +9,12 @@ from .serializer import AllChatsSerializer
 from django_filters.rest_framework import DjangoFilterBackend, DateFromToRangeFilter, FilterSet
 from rest_framework.generics import ListAPIView
 from django.db.models import Q
+from nexus.JWTCookie import JWTAuthFromCookie
 
 
 # This is for getting all batch chats list...
 class AllChatsAPIView(ListAPIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     serializer_class = AllChatsSerializer
@@ -56,10 +57,10 @@ class AllChatsAPIView(ListAPIView):
 
 
 
-
+{
 # # This is for geting all chats in selected batch...
 # class BatchChatAPIView(APIView):
-#     authentication_classes = [JWTAuthentication]
+#     authentication_classes = [JWTAuthFromCookie]
 #     permission_classes = [IsAuthenticated]
 
 #     def get(self, request, id):
@@ -108,7 +109,7 @@ class AllChatsAPIView(ListAPIView):
 
 # # This is for sending message in batch chats...
 # class BatchChatMessageAPIView(APIView):
-#     authentication_classes = [JWTAuthentication]
+#     authentication_classes = [JWTAuthFromCookie]
 #     permission_classes = [IsAuthenticated]
 
 #     def post(self, request, id):
@@ -152,7 +153,7 @@ class AllChatsAPIView(ListAPIView):
 
 # # This is for sending message in batch chats...
 # # class BatchChatMessageAPIView(APIView):
-# #     authentication_classes = [JWTAuthentication]
+# #     authentication_classes = [JWTAuthFromCookie]
 # #     permission_classes = [IsAuthenticated]
 
 # #     def post(self, request, id):
@@ -183,3 +184,4 @@ class AllChatsAPIView(ListAPIView):
 # #         )
 
 # #         return Response({'success': "Message sent successfully"}, status=status.HTTP_200_OK)
+}

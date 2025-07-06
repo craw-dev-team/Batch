@@ -9,7 +9,7 @@ def websocket_urlpatterns():
 
     return [
         path("ws/test/", MySyncConsumer.as_asgi()),
-        path("ws/batchchat/<int:id>/", StudentBatchChatConsumer.as_asgi()),
+        path("ws/student-batch-chat/<int:id>/", StudentBatchChatConsumer.as_asgi()),
         path("ws/batch-chat/<int:id>/", BatchChatConsumer.as_asgi()),
         path("ws/admin-batch-chat/<int:id>/", BatchChatAndMessageConsumer.as_asgi()),
     ]

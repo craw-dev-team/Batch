@@ -19,9 +19,10 @@ from collections import defaultdict
 from django.utils.timezone import datetime, now
 from datetime import timedelta
 from rest_framework.pagination import PageNumberPagination
+from nexus.JWTCookie import JWTAuthFromCookie
 
 class CourseListAPIView(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -34,7 +35,7 @@ class CourseListAPIView(APIView):
 
 
 class CourseCreateAPIView(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -65,7 +66,7 @@ class CourseCreateAPIView(APIView):
 
 
 class CourseEditAPIView(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def put(self, request, id):
@@ -102,7 +103,7 @@ class CourseEditAPIView(APIView):
 
 
 class CourseDeleteAPIView(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, id):
@@ -136,7 +137,7 @@ class CourseDeleteAPIView(APIView):
 
 
 # class CourseinfoAPIView(APIView):
-#     authentication_classes = [JWTAuthentication]
+#     authentication_classes = [JWTAuthFromCookie]
 #     permission_classes = [IsAuthenticated]
 
 #     def get(self, request, id):
@@ -203,7 +204,7 @@ class CourseDeleteAPIView(APIView):
 
 
 class CourseinfoAPIView(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def get(self, request, id):
@@ -231,6 +232,7 @@ class CourseinfoAPIView(APIView):
         for student in students:
             student_data.append({
                 'id': student.id,
+                'enrollment_no': student.enrollment_no,
                 'name': student.name,
                 'email': student.email,
                 'support_coordinator': getattr(student.support_coordinator, 'name', None),
@@ -285,7 +287,7 @@ class CourseinfoAPIView(APIView):
 
 
 class CourseTakebyEdit(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def put(self, request, course_id):
@@ -326,7 +328,7 @@ class CourseTakebyEdit(APIView):
 
 
 class StudentCourseUpdate(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def put(self, request, course_id):
@@ -369,7 +371,7 @@ class StudentCourseUpdate(APIView):
 
 
 class BatchCourseUpdate(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def put(self, request, course_id):
@@ -413,7 +415,7 @@ class BatchCourseUpdate(APIView):
 
 
 class BookListAPIView(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -436,7 +438,7 @@ class BookListAPIView(APIView):
 
 
 class BookCreateAPIView(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -468,7 +470,7 @@ class BookCreateAPIView(APIView):
 
 
 class BookUpdateAPIView(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def put(self, request, id):
@@ -507,7 +509,7 @@ class BookUpdateAPIView(APIView):
 
     
 class BookDeleteAPIView(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, id):
@@ -542,7 +544,7 @@ class BookDeleteAPIView(APIView):
 
 {
 # class BookTakeByCountAPIView(APIView):
-#     authentication_classes = [JWTAuthentication]
+#     authentication_classes = [JWTAuthFromCookie]
 #     permission_classes = [IsAuthenticated]
 
 #     def get(self, request):
@@ -574,7 +576,7 @@ class BookDeleteAPIView(APIView):
 
 
 # class BookTakeByStudentListAPIView(APIView):
-#     authentication_classes = [JWTAuthentication]
+#     authentication_classes = [JWTAuthFromCookie]
 #     permission_classes = [IsAuthenticated]
 
 #     def get(self, request):
@@ -608,7 +610,7 @@ class BookDeleteAPIView(APIView):
 
 # This is for geting all info about book issue...
 class BookTakeByAllDataAPIView(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -686,7 +688,7 @@ class BookTakeByAllDataAPIView(APIView):
 
 # This is for apply filter on issue books...
 class BookIssueFilterAPIView(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -800,7 +802,7 @@ class BookIssueFilterAPIView(APIView):
 
 # This if for Book Info also send issued or not issued students..
 class BookInfoAPIView(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def get(self, request, id):
@@ -915,7 +917,7 @@ class StandardResultsSetPagination(PageNumberPagination):
 
 # Giving all book student issued data...
 class AllBookIssuedDataAPIView(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):

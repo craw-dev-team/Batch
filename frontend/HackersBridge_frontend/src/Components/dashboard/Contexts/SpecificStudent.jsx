@@ -14,17 +14,17 @@ const SpecificStudentProvider = ({ children }) => {
     const fetchSpecificStudent = async (studentId) => {
         if (loading) return;
 
-        const token = localStorage.getItem('token');
-        if (!token) {
-            console.error("No token found, user might be logged out.");
-            return;
-        };
+        // const token = localStorage.getItem('token');
+        // if (!token) {
+        //     console.error("No token found, user might be logged out.");
+        //     return;
+        // };
         
         setLoading(true)
 
         try {
             const response = await axios.get(`${BASE_URL}/api/students/info/${studentId}/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                { headers: { 'Content-Type': 'application/json' }, 
                 withCredentials : true
             }
             );
@@ -51,22 +51,19 @@ const SpecificStudentProvider = ({ children }) => {
             return;
         }
 
-        const token = localStorage.getItem("token");
-        if (!token) {
-            message.error("Unauthorized. Please log in.");
-            return;
-        }
+        // const token = localStorage.getItem("token");
+        // if (!token) {
+        //     message.error("Unauthorized. Please log in.");
+        //     return;
+        // }
 
         try {
             const response = await axios.patch(
                 `${BASE_URL}/api/student-course/marks/${courseId}/`,
                 { exam_date, marks },
-                {
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
+                { headers: { "Content-Type": "application/json"},
+                withCredentials: true,
+            }
             );
 
             if (response.status === 200 || response.status === 201) {

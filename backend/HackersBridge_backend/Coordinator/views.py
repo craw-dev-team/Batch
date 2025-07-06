@@ -36,6 +36,7 @@ from .serializer import CoordinatorSerializer  # Serializer for Coordinator data
 from Student.serializer import StudentSerializer  # Serializer for Student model
 from Trainer.serializer import TrainerSerializer  # Serializer for Trainer model
 from nexus.serializer import LogEntrySerializer  # Serializer for LogEntry (logs)
+from nexus.JWTCookie import JWTAuthFromCookie
 
 # Initialize a global correlation ID (for example usage — not recommended globally in real apps)
 User = get_user_model()  # Reference to custom User model
@@ -46,7 +47,7 @@ cid = str(uuid.uuid4())  # Generate a unique correlation ID
 # API View to get a list of all Coordinators
 class CoordinatorListView(APIView):
     # Use JWT authentication to verify user identity
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     # Ensure that only authenticated users can access this view
     permission_classes = [IsAuthenticated]
 
@@ -66,10 +67,18 @@ class CoordinatorListView(APIView):
 
 
 
+
+
+
+
+
+
+
+
 # This API view fetches all students assigned to a specific coordinator
 class StudentsUnderCoordinatorView(APIView):
     # Enforce JWT-based authentication
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     # Allow only authenticated users to access the view
     permission_classes = [IsAuthenticated]
 
@@ -103,7 +112,7 @@ class StudentsUnderCoordinatorView(APIView):
 # API view to get a list of trainers assigned under a specific coordinator
 class TrainerUnderCoordinatorView(APIView):
     # Enforce JWT-based authentication
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     # Ensure only authenticated users can access the API
     permission_classes = [IsAuthenticated]
 
@@ -137,7 +146,7 @@ class TrainerUnderCoordinatorView(APIView):
 # API View to handle the creation of a new coordinator
 class CoordinatorCreateAPIView(APIView):
     # Enforce JWT-based authentication
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     # Ensure only authenticated users can access the view
     permission_classes = [IsAuthenticated]
 
@@ -200,7 +209,7 @@ class CoordinatorCreateAPIView(APIView):
 
 # API view to handle coordinator updates
 class CoordinatorEditAPIView(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def put(self, request, id):
@@ -282,7 +291,7 @@ class CoordinatorEditAPIView(APIView):
 # API View to delete a Coordinator along with the associated User and auth tokens
 class CoordinatorDeleteAPIView(APIView):
     # Enforce JWT-based authentication
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     # Allow only authenticated users
     permission_classes = [IsAuthenticated]
 
@@ -361,7 +370,7 @@ class StandardResultsSetPagination(PageNumberPagination):
 
 # API View to retrieve full information about a specific coordinator
 class CoordinatorInfoAPIView(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     # Helper method to paginate any queryset
@@ -467,7 +476,7 @@ class CoordinatorInfoAPIView(APIView):
 
 # API View for fetching all logs related to Coordinator objects
 class CoordinatorLogListView(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
     
     # Serializer used for formatting the log entries

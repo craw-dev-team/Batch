@@ -21,20 +21,20 @@ const AnnouncementProvider = ({ children }) => {
     setAnnouncement(initialFormData);
   };
 
-  // ✅ Fetch announcements
+  // Fetch announcements
   const fetchAnnouncement = useCallback(async () => {
     if (loading) return;
 
-    const token = localStorage.getItem("token");
-    if (!token) {
-      console.error("No token found, user might be logged out.");
-      return;
-    }
+    // const token = localStorage.getItem("token");
+    // if (!token) {
+    //   console.error("No token found, user might be logged out.");
+    //   return;
+    // }
 
     setLoading(true);
     try {
       const response = await axios.get(`${BASE_URL}/api/announcement/`, 
-        { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        { headers: { 'Content-Type': 'application/json'},
         withCredentials: true
       }
       );
@@ -91,16 +91,16 @@ const AnnouncementProvider = ({ children }) => {
   const fetchTrainer = useCallback(async () => {
     if (loading) return;
 
-    const token = localStorage.getItem('token');
-    if (!token) {
-      console.error("No token found, user might be logged out.");
-      return;
-    }
+    // const token = localStorage.getItem('token');
+    // if (!token) {
+    //   console.error("No token found, user might be logged out.");
+    //   return;
+    // }
 
     setLoading(true);
     try {
       const response = await axios.get(`${BASE_URL}/api/announcement/trainer/`, 
-        { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        { headers: { 'Content-Type': 'application/json' },
         withCredentials: true
       }
       );
@@ -128,7 +128,7 @@ const AnnouncementProvider = ({ children }) => {
   );
 };
 
-// ✅ Custom hook to access context
+// Custom hook to access context
 const useAnnouncement = () => {
   const context = useContext(AnnouncementContext);
   if (!context) {

@@ -2,8 +2,8 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import CreateStudentForm from "./CreateStudentForm";
 import axios from "axios";
-import { Button, message, Popconfirm,  Avatar, Tag, Tooltip, Input, Spin, Empty, Pagination, Dropdown, Popover, DatePicker  } from 'antd';
-import { EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined, FilterOutlined , DownOutlined } from '@ant-design/icons';
+import { Button, message, Popconfirm,  Avatar, Tag, Tooltip, Input, Spin, Empty, Pagination, Dropdown, Popover, DatePicker, Select  } from 'antd';
+import { EditOutlined, DeleteOutlined, CheckOutlined, TagOutlined, FilterOutlined , DownOutlined } from '@ant-design/icons';
 import BASE_URL from "../../../ip/Ip";
 import { useAuth } from "../AuthContext/AuthContext";
 import { useStudentForm } from "../Studentcontext/StudentFormContext";
@@ -11,27 +11,33 @@ import dayjs from "dayjs";
 import { handleStudentClick } from "../../Navigations/Navigations";
 import useStudentStatusChange, { statusDescription } from "../../Functions/StudentStatusChange";
 import StudentCards from "../SpecificPage/Cards/Student/StudentCard";
+import SearchBar from "../../SearchInput/SearchInput";
+import { useTagContext } from "../Tags/TagsContext";
 
 const { Search } = Input;
 const { RangePicker } = DatePicker;
 
 
 const Students = () => {
-    const { token } = useAuth();
     const [isModalOpen, setIsModalOpen] = useState(false) 
     const [activeTab, setActiveTab] = useState('');
     const [selectedStudent, setSelectedStudent] = useState()
     const [isDeleted, setIsDeleted] = useState(false)
-    // const [studentStatuses, setStudentStatuses] = useState({}); // Store status per student
-    const { studentStatuses, setStudentStatuses, handleStudentStatusChange } = useStudentStatusChange(token);
+    const { studentStatuses, setStudentStatuses, handleStudentStatusChange } = useStudentStatusChange();
 
     const { studentData, loading, setLoading, setStudentData, fetchStudents } = useStudentForm();
     
     const navigate = useNavigate();
-    
+
+    // for tags 
+        const {tagData, fetchTagData} = useTagContext();
+        const [selectedStudentId, setSelectedStudentId] = useState(null);
+        const [addTagValue, setAddTagValue] = useState([]);
+        const [assignTagData, setAssignTagData] = useState([]);
+        const [unassignTagData, setUnassignTagData] = useState([]); 
+
     // for Pagination 
     const [searchTerm, setSearchTerm] = useState('');
-    const [inputValue, setInputValue] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 30;
 
@@ -56,48 +62,38 @@ const Students = () => {
     // FETCH STUDENTDATA OM MOUNT
     useEffect(() => {
         fetchStudents({  page: currentPage, pageSize, search: searchTerm, mode: sortByMode, language: sortByLanguage, preferred_week: sortByPreferredWeek, location: sortByLocation, status: activeTab, date_of_joining_after: startDate, date_of_joining_before: endDate })        
+        
+        fetchTagData();
     },[!isModalOpen, searchTerm, currentPage, sortByMode, sortByLanguage, sortByPreferredWeek, sortByLocation, activeTab, startDate, endDate]);
 
-    
-    // HANDLE SEARCH INPUT AND DEBOUNCE 
-    useEffect(() => {        
-        const handler = setTimeout(() => {
-            setSearchTerm(inputValue.trimStart());
-            setCurrentPage(1);
-        }, 500); // debounce delay in ms
-        
-        return () => {
-            clearTimeout(handler); // clear previous timeout on re-typing
-        };
-    }, [inputValue]);
           
 
-       // Fetch students after deletion or modal interaction
-          useEffect(() => {
-            setIsDeleted(false); // Reset deletion flag
-   
-            if (studentData) {
-                
-                const studentsArray = Array.isArray(studentData?.results)
-                    ? studentData?.results
-                    : [];
-    
-                // Set a timeout to wait 2 seconds before initializing statuses
-                const timer = setTimeout(() => {
-                    const initialStatuses = {};
-                    studentsArray.forEach((student) => {
-                        initialStatuses[student.id] = student.status; 
-                    });
-    
-                    setStudentStatuses(initialStatuses); 
-                }, 100);
-    
-                // Cleanup function to clear the timer if the component unmounts
-                return () => clearTimeout(timer);
-            };
+    // Fetch students after deletion or modal interaction
+    useEffect(() => {
+        setIsDeleted(false); // Reset deletion flag
 
-        // }, [isDeleted, selectedStudent, isModalOpen, studentData]);
-        }, [studentData, isModalOpen, isDeleted ]);
+        if (studentData) {
+            
+            const studentsArray = Array.isArray(studentData?.results)
+                ? studentData?.results
+                : [];
+
+            // Set a timeout to wait 2 seconds before initializing statuses
+            const timer = setTimeout(() => {
+                const initialStatuses = {};
+                studentsArray.forEach((student) => {
+                    initialStatuses[student.id] = student.status; 
+                });
+                
+                setStudentStatuses(initialStatuses); 
+            }, 100);
+
+        // Cleanup function to clear the timer if the component unmounts
+        return () => clearTimeout(timer);
+    };
+
+// }, [isDeleted, selectedStudent, isModalOpen, studentData]);
+    }, [studentData, isModalOpen, isDeleted ]);
     
 
    // Function to handle Edit BUTTON click
@@ -108,13 +104,13 @@ const Students = () => {
     };
 
     
-   // Delete Function
-   const handleDelete = async (studentId) => {
+    // Delete Function
+    const handleDelete = async (studentId) => {
     if (!studentId) return;
 
     try {
         const response = await axios.delete(`${BASE_URL}/api/students/delete/${studentId}/`, 
-            { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+            { headers: { 'Content-Type': 'application/json' }, 
             withCredentials : true
         }
         );
@@ -151,7 +147,7 @@ const Students = () => {
             message.error("An unexpected error occurred.");
         }
     }       
-};
+    };
 
     // Confirm and Cancel Handlers for delete button
     const confirm = (studentId) => {
@@ -170,69 +166,127 @@ const Students = () => {
     };
 
     
-        const handleSort = async (key, filterType) => {
-            if (key === "clear") {
-                
-                if (filterType === "mode") setSortByMode(null);
-                if (filterType === "language") setSortByLanguage(null);
-                if (filterType === "preferred_week") setSortByPreferredWeek(null);
-                if (filterType === "location") setSortByLocation(null);
-                
-                return;
+    const handleSort = async (key, filterType) => {
+        if (key === "clear") {
+            
+            if (filterType === "mode") setSortByMode(null);
+            if (filterType === "language") setSortByLanguage(null);
+            if (filterType === "preferred_week") setSortByPreferredWeek(null);
+            if (filterType === "location") setSortByLocation(null);
+            
+            return;
+        }
+    
+        if (filterType === "mode") setSortByMode(key);
+        if (filterType === "language") setSortByLanguage(key);
+        if (filterType === "preferred_week") setSortByPreferredWeek(key);
+        if (filterType === "location") setSortByLocation(key);
+    
+    };
+
+
+    const modeMenu = {
+        items: [
+            { key: "Online", label: <span style={{ color: "red" }}>Online</span> },
+            { key: "Offline", label: <span style={{ color: "green" }}>Offline</span> },
+            { key: "Hybrid", label: <span style={{ color: "blue" }}>Hybrid</span> },
+            { type: "divider" },
+            { key: "clear", label:  <span style={{ color: "red", fontWeight: "bold" }}>Clear Filter</span> },
+        ],
+        onClick: ({ key }) => handleSort(key, "mode"),
+    };
+
+
+    const languageMenu = {
+        items: [
+            { key: "Hindi", label: <span style={{ color: "green" }}>Hindi</span> },
+            { key: "English", label: <span style={{ color: "red" }}>English</span> },
+            { key: "Both", label: <span style={{ color: "blue" }}>Both</span> },
+            { type: "divider" },
+            { key: "clear", label:  <span style={{ color: "red", fontWeight: "bold" }}>Clear Filter</span> },
+        ],
+        onClick: ({ key }) => handleSort(key, "language"),
+    };
+
+    const preferredWeekMenu = {
+        items: [
+            { key: "Weekdays", label: <span style={{ color: "gray" }}>Weekdays</span> },
+            { key: "Weekends", label: <span style={{ color: "gray" }}>Weekends</span> },
+            { key: "Both", label: <span style={{ color: "gray" }}>Both</span> },
+                { type: "divider" },
+            { key: "clear", label:  <span style={{ color: "red", fontWeight: "bold" }}>Clear Filter</span> },
+        ],
+        onClick: ({ key }) => handleSort(key, "preferred_week"),
+    };
+
+    const locationMenu = {
+        items: [
+            { key: "1", label: <span style={{ color: "blue" }}>Saket</span> },
+            { key: "2", label: <span style={{ color: "magenta" }}>Laxmi Nagar</span> },
+            { key: "3", label: <span style={{ color: "blue" }}>Both</span> },
+            { type: "divider" },
+            { key: "clear", label:  <span style={{ color: "red", fontWeight: "bold" }}>Clear Filter</span> },
+        ],
+        onClick: ({ key }) => handleSort(Number(key), "location"),
+    };
+
+
+
+    // Handle Tag Add (POST)
+    const handleAddTag = async (tagIds, studentId) => {
+        if (!studentId || !tagIds?.length) return;
+    
+        const payload = {
+            tag_ids: tagIds, // expects an array of IDs like [1, 2, 3]
+        };
+    
+        console.log("Payload being sent to backend:", payload);
+    
+        try {
+        const response = await axios.post(`${BASE_URL}/api/student/assign_tag/${studentId}/`,
+            payload, // ✅ send the payload here
+            { headers: {"Content-Type": "application/json"},
+            withCredentials: true
             }
-        
-            if (filterType === "mode") setSortByMode(key);
-            if (filterType === "language") setSortByLanguage(key);
-            if (filterType === "preferred_week") setSortByPreferredWeek(key);
-            if (filterType === "location") setSortByLocation(key);
-        
-        };
+        );
+    
+        if (response.status === 200 || response.status === 201) {
+            message.success("Tag(s) added successfully!");
+            // Optionally refresh tags
+            // fetchTagData();
+        } else {
+            message.error("Failed to add tag(s).");
+        }
+        } catch (error) {
+        console.error("Error creating tag:", error);
+        message.error("Error adding tag(s).");
+        }
+    };
+    
+    
+    // Fetch Assign and Unassign Tag
+    const fetchAssignTagData = async (studentId) => {
+    try {
+        const response = await axios.get(`${BASE_URL}/api/student/assign_tag/${studentId}/`, 
+            { headers: {"Content-Type": "application/json"},
+            withCredentials: true
+        }
+        );
+    
+        const assigned = response.data?.assigned_tags || [];
+        const unassigned = response.data?.unassigned_tags || [];
+    
+        setAssignTagData(assigned);       // full objects
+        setUnassignTagData(unassigned);   // full objects
+
+    } catch (error) {
+        console.error("Error fetching tags:", error);
+        setAssignTagData([]);
+        setUnassignTagData([]);
+    }
+    };
 
 
-        const modeMenu = {
-            items: [
-                { key: "Online", label: <span style={{ color: "red" }}>Online</span> },
-                { key: "Offline", label: <span style={{ color: "green" }}>Offline</span> },
-                { key: "Hybrid", label: <span style={{ color: "blue" }}>Hybrid</span> },
-                { type: "divider" },
-                { key: "clear", label:  <span style={{ color: "red", fontWeight: "bold" }}>Clear Filter</span> },
-            ],
-           onClick: ({ key }) => handleSort(key, "mode"),
-        };
-
-
-        const languageMenu = {
-            items: [
-                { key: "Hindi", label: <span style={{ color: "green" }}>Hindi</span> },
-                { key: "English", label: <span style={{ color: "red" }}>English</span> },
-                { key: "Both", label: <span style={{ color: "blue" }}>Both</span> },
-                { type: "divider" },
-                { key: "clear", label:  <span style={{ color: "red", fontWeight: "bold" }}>Clear Filter</span> },
-            ],
-            onClick: ({ key }) => handleSort(key, "language"),
-        };
-
-        const preferredWeekMenu = {
-            items: [
-                { key: "Weekdays", label: <span style={{ color: "gray" }}>Weekdays</span> },
-                { key: "Weekends", label: <span style={{ color: "gray" }}>Weekends</span> },
-                { key: "Both", label: <span style={{ color: "gray" }}>Both</span> },
-                   { type: "divider" },
-                { key: "clear", label:  <span style={{ color: "red", fontWeight: "bold" }}>Clear Filter</span> },
-            ],
-            onClick: ({ key }) => handleSort(key, "preferred_week"),
-        };
-
-        const locationMenu = {
-            items: [
-                { key: "1", label: <span style={{ color: "blue" }}>Saket</span> },
-                { key: "2", label: <span style={{ color: "magenta" }}>Laxmi Nagar</span> },
-                { key: "3", label: <span style={{ color: "blue" }}>Both</span> },
-                { type: "divider" },
-                { key: "clear", label:  <span style={{ color: "red", fontWeight: "bold" }}>Clear Filter</span> },
-            ],
-            onClick: ({ key }) => handleSort(Number(key), "location"),
-        };
 
 
     return (
@@ -249,13 +303,13 @@ const Students = () => {
 
                 <div className="w-full grid grid-cols-3 grid-flow-row space-y-4 sm:space-y-0 items-center justify-between gap-x-8 px-4 py-4">
                     <div className="grid col-span-1">
-                        <div className="flex gap-x-4 h-10 items-center">
+                        <div className="flex gap-x-4 h-auto items-center">
                             
-                            <div className="lg:hidden mb-2">
+                            <div className="lg:hidden">
                                 <select
                                     value={activeTab}
                                     onChange={(e) => handleTabClick(e.target.value)}
-                                    className="block w-auto px-4 py-1 text-sm border rounded-md bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                    className="block w-auto h-7 px-4 py-1 text-sm border rounded-md bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
                                 >
                                 <option value="">All Students</option>
                                 <option value="Temp Block">Temporary Block</option>
@@ -292,25 +346,13 @@ const Students = () => {
 
                     <div className="flex justify-center">
                         <label htmlFor="table-search" className="sr-only">Search</label>
-                        <div className="relative">
-                            <input value={inputValue} type="text" id="table-search" placeholder="Search for student"
-                                onChange={(e) => setInputValue(e.target.value)}
-                                className="2xl:w-96 lg:w-96 md:w-72 h-8 block p-2 pr-10 text-xs text-gray-600 font-normal border border-gray-300 rounded-lg bg-gray-50 focus:ring-0 focus:border-blue-500" 
+                            <SearchBar placeholder="Search for Student"
+                                inputClassName="2xl:w-96 lg:w-96 md:w-72 h-8 block p-2 pr-10 text-xs text-gray-600 font-normal border border-gray-300 rounded-lg bg-gray-50 focus:ring-0 focus:border-blue-500"
+                                onSearch={(value) => {
+                                    setSearchTerm(value);
+                                    setCurrentPage(1);
+                                }}
                             />
-                            <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                            <button onClick={() => {setInputValue(""); setSearchTerm("");}}>
-                            {searchTerm ? (
-                                    <svg className="w-4 h-4 text-gray-500" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M6.293 6.293a1 1 0 011.414 0L10 8.586l2.293-2.293a1 1 0 111.414 1.414L11.414 10l2.293 2.293a1 1 0 01-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 01-1.414-1.414L8.586 10 6.293 7.707a1 1 0 010-1.414z" clipRule="evenodd"></path>
-                                    </svg>
-                                ) : (
-                                    <svg className="w-4 h-4 text-gray-500" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"></path>
-                                    </svg>
-                                )}
-                            </button>
-                            </div>
-                        </div>
 
                     </div>
 
@@ -463,15 +505,181 @@ const Students = () => {
                                         <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
                                     </div>
                                 </td>
-                                <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
+                                <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900">
                                     {(currentPage - 1) * pageSize + index + 1}
                                 </td>
                                 {/* <td className="px-3 py-2 md:px-1">
                                     {item.id}
                                 </td> */}
-                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(navigate, item.id)}>
+                                {/* <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(navigate, item.id)}>
                                     {item.enrollment_no}
+                                </td> */}
+                                <td className="px-3 py-2 md:px-1 font-bold">
+                                    <div className="flex items-center gap-2">
+                                        <span onClick={() => handleStudentClick(navigate, item.id)} className="cursor-pointer">
+                                            {item.enrollment_no}
+                                        </span>
+
+                                    <Popover
+                                    trigger="hover"
+                                    placement="bottomLeft"
+                                    open={selectedStudentId === item.id}
+                                    content={
+                                        <div
+                                        className="w-64 space-y-3"
+                                        onMouseEnter={() => {
+                                            clearTimeout(window.__popoverTimer);
+                                        }}
+                                        onMouseLeave={() => {
+                                            window.__popoverTimer = setTimeout(() => {
+                                            setSelectedStudentId(null);
+                                            setAssignTagData([]);
+                                            setUnassignTagData([]);
+                                            setAddTagValue([]);
+                                            }, 200);
+                                        }}
+                                        >
+                                        {/* ✅ Assigned Tags */}
+                                        <div className="space-y-1">
+                                            {assignTagData.length > 0 ? (
+                                            <>
+                                                <p className="text-xs text-gray-500 font-medium">Assigned Tags:</p>
+                                                <div className="flex flex-wrap gap-1">
+                                                {assignTagData.map((tag) => (
+                                                    <span
+                                                    key={tag.id}
+                                                    className="text-xs font-medium px-2 py-1 rounded"
+                                                    style={{ backgroundColor: tag.tag_color, color: "#fff" }}
+                                                    >
+                                                    {tag.tag_name}
+                                                    </span>
+                                                ))}
+                                                </div>
+                                            </>
+                                            ) : (
+                                            <span className="text-xs text-gray-500">No Tags Assigned</span>
+                                            )}
+                                        </div>
+
+                                        {/* Select New Tags */}
+                                        <Select
+                                            mode="multiple"
+                                            showSearch
+                                            placeholder="Select Tags"
+                                            value={addTagValue}
+                                            onChange={setAddTagValue}
+                                            options={unassignTagData.map((tag) => ({
+                                            value: tag.id,
+                                            label: tag.tag_name,
+                                            }))}
+                                            className="w-full"
+                                            size="small"
+                                            optionRender={(option) => {
+                                            const tag = unassignTagData.find((t) => t.id === option.value);
+                                            return (
+                                                <div
+                                                style={{
+                                                    backgroundColor: tag?.tag_color,
+                                                    padding: "2px 8px",
+                                                    borderRadius: "4px",
+                                                    color: "#fff",
+                                                }}
+                                                >
+                                                {option.label}
+                                                </div>
+                                            );
+                                            }}
+                                            tagRender={(props) => {
+                                            const { label, value, closable, onClose } = props;
+                                            const tag = unassignTagData.find((t) => t.id === value);
+                                            return (
+                                                <span
+                                                style={{
+                                                    backgroundColor: tag?.tag_color,
+                                                    color: "#fff",
+                                                    padding: "2px 8px",
+                                                    borderRadius: "4px",
+                                                    marginRight: "4px",
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    fontSize: "12px",
+                                                }}
+                                                >
+                                                {label}
+                                                {closable && (
+                                                    <span
+                                                    onClick={onClose}
+                                                    style={{
+                                                        marginLeft: 6,
+                                                        cursor: "pointer",
+                                                        fontWeight: "bold",
+                                                    }}
+                                                    >
+                                                    ×
+                                                    </span>
+                                                )}
+                                                </span>
+                                            );
+                                            }}
+                                        />
+
+                                        {/* ✅ Add Tags Button */}
+                                        <Button
+                                            type="primary"
+                                            size="small"
+                                            block
+                                            disabled={!addTagValue || addTagValue.length === 0}
+                                            onClick={async () => {
+                                            if (!item.id || addTagValue.length === 0) return;
+
+                                            await handleAddTag(addTagValue, item.id);
+                                            await fetchAssignTagData(item.id);
+
+                                            setStudentData((prev) => {
+                                                const updated = prev.results.map((student) => {
+                                                if (student.id === item.id) {
+                                                    return {
+                                                    ...student,
+                                                    tags: [...(student.tags || []), ...addTagValue],
+                                                    };
+                                                }
+                                                return student;
+                                                });
+                                                return { ...prev, results: updated };
+                                            });
+
+                                            setAddTagValue([]); // ✅ Do not close popover yet
+                                            }}
+                                        >
+                                            Add Tag(s)
+                                        </Button>
+                                        </div>
+                                    }
+                                    >
+                                    <TagOutlined
+                                        className="cursor-pointer text-gray-600 hover:text-black"
+                                        onMouseEnter={async () => {
+                                        setSelectedStudentId(item.id);
+                                        await fetchAssignTagData(item.id);
+                                        setAddTagValue([]);
+                                        }}
+                                        onMouseLeave={() => {
+                                        window.__popoverTimer = setTimeout(() => {
+                                            setSelectedStudentId(null);
+                                            setAssignTagData([]);
+                                            setUnassignTagData([]);
+                                            setAddTagValue([]);
+                                        }, 200);
+                                        }}
+                                    />
+                                    </Popover>
+
+
+
+
+                                    </div>
                                 </td>
+
                                 <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(navigate, item.id)}>
                                     {item.name}
                                 </td>
@@ -612,7 +820,7 @@ const Students = () => {
                 {/* <div className="w-full h-14 bg-slate-200"> */}
                 <div className="flex justify-center items-center mt-0 py-2 bg-blue-50">
                     <Pagination
-                    size="small"
+                        size="small"
                         current={currentPage}
                         total={studentData?.count || 0}
                         pageSize={pageSize} // example: 30

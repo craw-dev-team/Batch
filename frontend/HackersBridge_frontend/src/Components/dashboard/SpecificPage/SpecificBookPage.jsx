@@ -65,7 +65,6 @@ const SpecificBookPage = () => {
             );
         }, [activeTab, searchTerm, specificBook]);
 
-          console.log(searchFilteredBooks);
           
     
     return (

@@ -13,17 +13,17 @@ const SpecificBatchProvider = ({ children }) => {
     const fetchSpecificBatch = async (batchId) => {
         if (loading) return;
 
-        const token = localStorage.getItem('token');
-        if (!token) {
-            console.error("No token found, user might be logged out.");
-            return;
-        };
+        // const token = localStorage.getItem('token');
+        // if (!token) {
+        //     console.error("No token found, user might be logged out.");
+        //     return;
+        // };
         
         setLoading(true)
 
         try {
             const response = await axios.get(`${BASE_URL}/api/batches/info/${batchId}/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                { headers: { 'Content-Type': 'application/json' }, 
                 withCredentials : true
             }
             );

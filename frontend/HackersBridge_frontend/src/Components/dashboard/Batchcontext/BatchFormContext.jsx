@@ -37,16 +37,16 @@ const BatchFormProvider = ({ children }) => {
     const fetchBatches = async ({ page = 1, pageSize = 30, search = '', mode = '', language = '', preferred_week = '', location = '', status = ''  }) => {
         if (loading) return;
        
-        const token = localStorage.getItem('token');
-        if (!token) {
-            console.error("No token found, user might be logged out.");
-            return;
-        };
+        // const token = localStorage.getItem('token');
+        // if (!token) {
+        //     console.error("No token found, user might be logged out.");
+        //     return;
+        // };
 
         setLoading(true);
         try {
             const response = await axios.get(`${BASE_URL}/api/batches/`,
-              { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              { headers: { 'Content-Type': 'application/json'},
               withCredentials : true,
               params: {
                 page,

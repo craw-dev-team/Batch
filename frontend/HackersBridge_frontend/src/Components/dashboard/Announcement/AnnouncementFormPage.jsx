@@ -138,16 +138,16 @@ const CreateAnnouncementForm = ({ onCancel, selectedAnnouncement }) => {
       if (selectedAnnouncement && selectedAnnouncement.id) {
         response = await axios.put(`${BASE_URL}/api/announcement/edit/${selectedAnnouncement.id}/`, 
           formData, 
-          { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
+          { headers: { 'Content-Type': 'application/json'},
+          withCredentials: true
         }
         );
         
         message.success('Announcement Updated Successfully!');
       } else {
         response = await axios.post(`${BASE_URL}/api/announcement/create/`, formData, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: {'Content-Type': 'application/json'},
+          withCredentials: true
         });
         message.success('Announcement Added Successfully!');
       }

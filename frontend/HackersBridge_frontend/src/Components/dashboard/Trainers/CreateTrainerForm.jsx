@@ -17,7 +17,6 @@ const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
     const { trainerFormData, setTrainerFormData, errors, setErrors, trainerData, fetchTrainers, resetTrainerForm } = useTrainerForm();
     const { coursesData, fetchCourses  } = useCourseForm();
     const { coordinatorData, fetchCoordinators } = useCoordinatorForm();
-    const { token } = useAuth();
 
     const [ loading, setLoading] = useState(false);
  // fetching trainers and assigning prefilled value to fields in form 
@@ -129,7 +128,7 @@ const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
                 if (selectedTrainerData && selectedTrainerData.id) {
                     // Update existing course (PUT)
                     response = await axios.put(`${BASE_URL}/api/trainers/edit/${selectedTrainerData.id}/`, payload, {
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        headers: { 'Content-Type': 'application/json' },
                         withCredentials : true
                     }
                     );
@@ -137,7 +136,7 @@ const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
                     } else {
                         // Add new course (POST)
                         response = await axios.post(`${BASE_URL}/api/trainers/add/`, payload, {
-                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                            headers: { 'Content-Type': 'application/json' },
                             withCredentials : true
                         }
                         );

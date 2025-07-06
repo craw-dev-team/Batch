@@ -173,3 +173,28 @@ class BookAllotment(models.Model):
 
 # class StudentEmails(models.Model):
 
+
+class Tags(models.Model):
+    tag_name = models.CharField(max_length=100, unique=True)
+    tag_description = models.TextField(null=True, blank=True)
+    tag_color = models.CharField(max_length=20, null=True, blank=True) 
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey("nexus.CustomUser", on_delete=models.SET_NULL, null=True, blank=True, related_name='tag_created_by')
+    updated_by = models.ForeignKey("nexus.CustomUser", on_delete=models.SET_NULL, null=True, blank=True, related_name='tag_updated_by')
+
+    def __str__(self):
+        return self.tag_name
+
+
+class StudentTags(models.Model):
+    student = models.ForeignKey( Student, on_delete=models.CASCADE, related_name='tag_mappings')
+    tag = models.ForeignKey( Tags, on_delete=models.CASCADE, related_name='tagged_students') 
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True , null=True, blank=True)
+
+    class Meta:
+        unique_together = ('student', 'tag')
+
+    def __str__(self):
+        return f"{self.student.name} - {self.tag.tag_name}"

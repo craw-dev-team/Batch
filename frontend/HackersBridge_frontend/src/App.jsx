@@ -5,10 +5,8 @@ import BatchesHome from "./Pages/BatchesHome";
 import StudentsHome from "./Pages/StudentsHome";
 import TrainersHome from "./Pages/TrainersHome";
 import CoursesHome from "./Pages/CoursesHome";
-import { Layout } from "antd";
-import Navbar from "./Components/common/Navbar";
-import SearchBar from "./Components/common/Searchbar";
-import { useEffect, useState } from "react";
+import { Layout, Spin } from "antd";
+import { useState } from "react";
 import { CourseFormProvider } from "./Components/dashboard/Coursecontext/CourseFormContext";
 import { BatchFormProvider } from "./Components/dashboard/Batchcontext/BatchFormContext";
 import { StudentFormProvider } from "./Components/dashboard/Studentcontext/StudentFormContext";
@@ -24,7 +22,7 @@ import { SpecificStudentProvider } from "./Components/dashboard/Contexts/Specifi
 import Login, { ForgotPassword, ResetPassword, VerifyOTP } from "./Pages/Login";
 import Register from "./Pages/Register";
 import ProtectedRoute, { PublicRoute, StudentRoute } from "./Pages/ProtectedRoute";
-import { AuthProvider } from "./Components/dashboard/AuthContext/AuthContext";
+import { AuthProvider, useAuth } from "./Components/dashboard/AuthContext/AuthContext";
 import { SpecificBatchProvider } from "./Components/dashboard/Contexts/SpecificBatch";
 import SpecificBatchPage from "./Components/dashboard/SpecificPage/SpecificBatchPage";
 import { SpecificCoordinatorProvider } from "./Components/dashboard/Contexts/SpecificCoordinators";
@@ -33,14 +31,12 @@ import AllLogs from "./Components/dashboard/AllLogs/AllLogs";
 import { AllLogsProvider } from "./Components/dashboard/AllLogsContext/AllLogsContext";
 import BooksHome from "./Pages/BooksHome";
 import { BookFormProvider } from "./Components/dashboard/BooksContext/BookFormContext";
-import StudentLogin from "./Components/StudentDashboard/Pages/StudentLogin";
-import StudentRegister from "./Components/StudentDashboard/Pages/StudentRegister";
 import StudentLayout from "./StudentLayout";
 import StudentDashboardHome from "./Components/StudentDashboard/Pages/StudentDashboardHome";
 import { SpecificCourseProvider } from "./Components/dashboard/Contexts/SpecificCourse";
 import SpecificCoursePage from "./Components/dashboard/SpecificPage/SpecificCoursePage";
 import DashboardLayout from "./Components/common/DashboardLayout";
-import StudentTrainerChat from "./Components/StudentDashboard/Dashboard/StudentInfo/Chat/StudentTrainerChat";
+import StudentBatchChat from "./Components/StudentDashboard/Dashboard/StudentInfo/Chat/StudentBatchChat";
 import StudentBatches from "./Components/StudentDashboard/Dashboard/StudentInfo/StudentBatches/StudentBatches";
 import StudentAttendance from "./Components/StudentDashboard/Dashboard/StudentInfo/StudentAttendance/StudentAttendance";
 import StudentBatchInfo from "./Components/StudentDashboard/Dashboard/StudentInfo/StudentBatches/StudentBatchesInfo";
@@ -49,7 +45,6 @@ import StudentRecommendedBatches from "./Components/StudentDashboard/Dashboard/S
 import { StudentAttendanceProvider } from "./Components/StudentDashboard/Dashboard/StudentInfo/StudentAttendance/StudentAttendanceContext";
 import { RequestBatchProvider } from "./Components/StudentDashboard/Dashboard/StudentInfo/StudentBatches/RequestBatch/RequestBatchContext";
 import { StudentCertificateProvider } from "./Components/StudentDashboard/Dashboard/StudentInfo/StudentCertificate/StudentCertificateContext";
-import { AllTicketsProvider } from "./Components/StudentDashboard/Dashboard/Ticket/TicketRaiseContext";
 import AllTickets from "./Components/StudentDashboard/Dashboard/Ticket/AllTickets";
 import StudentCertificate from "./Components/StudentDashboard/Dashboard/StudentInfo/StudentCertificate/StudentCertificate";
 import CreateAnnouncementForm from "./Components/dashboard/Announcement/AnnouncementFormPage";
@@ -62,21 +57,23 @@ import SpecificBookPage from "./Components/dashboard/SpecificPage/SpecificBookPa
 import { SpecificBookProvider } from "./Components/dashboard/Contexts/SpecificBook";
 import { StudentInfoProvider } from "./Components/StudentDashboard/Dashboard/StudentInfo/StudentDetails/StudentInfoContext";
 import { BatchChatsProvider } from "./Components/dashboard/Chat/BatchChatsContext";
-import TrainerStudentChat from "./Components/dashboard/Chat/BatchChats";
 import BatchChats from "./Components/dashboard/Chat/BatchChats";
 import BookCardList from "./Components/dashboard/SpecificPage/Cards/Book/BookCardList";
 import StudentsList from "./Components/dashboard/SpecificPage/Cards/Student/StudentCardList";
+import { AllTicketsProvider } from "./Components/StudentDashboard/Dashboard/Ticket/TicketRaiseContext";
+import { TagProvider } from "./Components/dashboard/Tags/TagsContext";
 
 
 
 const { Content, Header } = Layout;
 
 function App() {  
-  const [collapsed, setCollapsed] = useState(true);
+    const [collapsed, setCollapsed] = useState(true);
+
 
   return (
-    <AppProviders>
       <AuthProvider>
+        <AppProviders>
           <Router>
             <Routes>
 
@@ -89,12 +86,6 @@ function App() {
                 <Route path="/reset-password" element={<ResetPassword />} />
               </Route>
 
-              {/* STUDENT PUBLIC ROUTES */}
-              {/* <Route element={<PublicRoute />}>
-                <Route path="/" element={<StudentLogin />} />
-                <Route path="/student-register" element={<StudentRegister />} />
-              </Route> */}
-
               {/* STUDENT PROTECTED ROUTES */}
               <Route element={<StudentRoute />}>
                 <Route path="/student-info" element={<StudentLayout />}>
@@ -103,7 +94,7 @@ function App() {
                   <Route path="student-recommended-batches" element={<StudentRecommendedBatches />} />
                   <Route path="student-batches/:batchId" element={<StudentBatchInfo />} />
                   <Route path="student-attendance" element={<StudentAttendance />} />
-                  <Route path="student-chat" element={<StudentTrainerChat />} />
+                  <Route path="student-chat" element={<StudentBatchChat />} />
                   <Route path="student-certificates" element={<StudentCertificate />} />
                   <Route path="all-tickets" element={<AllTickets />} />
                   {/* <Route path="student-announcement-page" element={<StudentAnnouncementPage />} /> */}
@@ -114,8 +105,7 @@ function App() {
               {/* ADMIN/COORDINATOR PROTECTED ROUTES */}
               <Route element={<ProtectedRoute  />}>
                 <Route
-                  element={<DashboardLayout collapsed={collapsed} setCollapsed={setCollapsed} />}
-                  >
+                  element={<DashboardLayout collapsed={collapsed} setCollapsed={setCollapsed} />}>
                   <Route path={route.BATCHES_PATH} element={<BatchesHome />} />
                   <Route path="/batches/:batchId" element={<SpecificBatchPage />} />
                   <Route path={route.STUDENTS_PATH} element={<StudentsHome />} />
@@ -135,14 +125,14 @@ function App() {
                   <Route path="announcement-form-page" element={<CreateAnnouncementForm />} />
                   <Route path={route.ANNOUNCEMENTS_PATH} element={<AnnouncementPage />} />
                   <Route path={route.TICKETS_PATH} element={<TicketsOperation />} />
-                  <Route path="trainer-student-chat" element={<BatchChats/>} />
-                {/* <Route path="*" element={<PageNotFound />} /> */}
+                  <Route path={route.BATCH_CHAT_PATH} element={<BatchChats/>} />
+                <Route path="*" element={<PageNotFound />} />
                 </Route>
               </Route>
             </Routes>
           </Router>
-      </AuthProvider>
-    </AppProviders>
+        </AppProviders>
+    </AuthProvider>
   );
 }
 
@@ -151,6 +141,9 @@ export default App;
 
  
 const AppProviders = ({ children }) => {
+
+
+
   return (
       <CourseFormProvider>
           <BatchFormProvider>
@@ -162,35 +155,35 @@ const AppProviders = ({ children }) => {
                             <SpecificStudentProvider>
                               <SpecificBatchProvider>
                                 <SpecificCoordinatorProvider>
-                                    <SpecificCourseProvider>
-                                      <AllLogsProvider>
-                                        <BookFormProvider>
-                                          <StudentAttendanceProvider>
-                                            <StudentBatchProvider>
-                                              <RequestBatchProvider>
-                                                <StudentCertificateProvider>
-                                                  <AllTicketsProvider>
-                                                    <AnnouncementProvider>
-                                                      <TicketsProvider>
-                                                        <SpecificBookProvider>
-                                                          <StudentInfoProvider>
-                                                            {/* <BatchChatProvider> */}
-                                                              <BatchChatsProvider>
-                                                                {children}
-                                                              </BatchChatsProvider>
-                                                            {/* </BatchChatProvider> */}
-                                                          </StudentInfoProvider>
-                                                        </SpecificBookProvider>
-                                                      </TicketsProvider>
-                                                    </AnnouncementProvider>
-                                                  </AllTicketsProvider>
-                                                </StudentCertificateProvider>
-                                              </RequestBatchProvider>
-                                            </StudentBatchProvider>
-                                          </StudentAttendanceProvider>
-                                        </BookFormProvider>
-                                      </AllLogsProvider>
-                                    </SpecificCourseProvider>
+                                  <SpecificCourseProvider>
+                                    <AllLogsProvider>
+                                      <BookFormProvider>
+                                        <StudentAttendanceProvider>
+                                          <StudentBatchProvider>
+                                            <RequestBatchProvider>
+                                              <StudentCertificateProvider>
+                                                <AllTicketsProvider>
+                                                  <AnnouncementProvider>
+                                                    <TicketsProvider>
+                                                      <SpecificBookProvider>
+                                                        <StudentInfoProvider>
+                                                          <BatchChatsProvider>
+                                                            <TagProvider>
+                                                              {children}
+                                                            </TagProvider>
+                                                          </BatchChatsProvider>
+                                                        </StudentInfoProvider>
+                                                      </SpecificBookProvider>
+                                                    </TicketsProvider>
+                                                  </AnnouncementProvider>
+                                                </AllTicketsProvider>
+                                              </StudentCertificateProvider>
+                                            </RequestBatchProvider>
+                                          </StudentBatchProvider>
+                                        </StudentAttendanceProvider>
+                                      </BookFormProvider>
+                                    </AllLogsProvider>
+                                  </SpecificCourseProvider>
                                 </SpecificCoordinatorProvider>
                               </SpecificBatchProvider>
                             </SpecificStudentProvider>

@@ -20,7 +20,6 @@ const AddBookForm = ({ isOpen, onClose, selectedBookData }) => {
     const { coursesData, fetchCourses } = useCourseForm();
     
     const [ loading, setLoading] = useState(false);
-    const { token } = useAuth();
 
     // Reset form data when courseData changes (for Add or Edit mode)
     useEffect(() => {
@@ -68,7 +67,7 @@ const AddBookForm = ({ isOpen, onClose, selectedBookData }) => {
                 // Update existing course (PUT)
                 response = await axios.put(`${BASE_URL}/api/books/edit/${selectedBookData.id}/`, 
                     payload, 
-                    { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                    { headers: { 'Content-Type': 'application/json' }, 
                     withCredentials : true
                 }
                 );
@@ -78,7 +77,7 @@ const AddBookForm = ({ isOpen, onClose, selectedBookData }) => {
                     // Add new course (POST)
                     response = await axios.post(`${BASE_URL}/api/books/add/`, 
                         payload, 
-                        { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                        { headers: { 'Content-Type': 'application/json' }, 
                         withCredentials : true
                     }
                     );

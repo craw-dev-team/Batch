@@ -13,11 +13,11 @@ import handleBatchClick, { handleTrainerClick } from "../../Navigations/Navigati
 import dayjs from "dayjs";
 import BatchCards from "../SpecificPage/Cards/Batch/BatchCards";
 import useBatchStatusChange from "../../Functions/BatchStatusChange";
+import SearchBar from "../../SearchInput/SearchInput";
 
 
 
 const Batches = () => {
-    const { token } = useAuth();
     const [isModalOpen, setIsModalOpen] = useState(false); 
     const [activeTab, setActiveTab] = useState("Running");
     const [selectedBatch, setSelectedBatch] = useState();
@@ -35,14 +35,13 @@ const Batches = () => {
     // const [sortByCourse, setSortByCourse] = useState(null);
     
     const { batchData, loading, setLoading, setBatchData, fetchBatches } = useBatchForm();
-    const { handleBatchStatusChange } = useBatchStatusChange(token);
+    const { handleBatchStatusChange } = useBatchStatusChange();
 
 
     const navigate = useNavigate();
 
     // for Pagination 
     const [searchTerm, setSearchTerm] = useState('');
-    const [inputValue, setInputValue] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 30;
 
@@ -69,19 +68,6 @@ const Batches = () => {
     },[isModalOpen, currentFilters]);
 
 
-    // HANDLE SEARCH INPUT AND DEBOUNCE 
-    useEffect(() => {        
-        const handler = setTimeout(() => {
-          setSearchTerm(inputValue.trimStart());
-          setCurrentPage(1);
-        }, 500); // debounce delay in ms
-      
-        return () => {
-          clearTimeout(handler); // clear previous timeout on re-typing
-        };
-    }, [inputValue]);
-
-    
 
     // Function to handle Edit button click 
     const handleEditClick = (batch) => {
@@ -99,7 +85,7 @@ const Batches = () => {
 
         try {
             const response = await axios.delete(`${BASE_URL}/api/batches/delete/${batchId}/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                { headers: { 'Content-Type': 'application/json' },
                 withCredentials : true
             }
             );
@@ -173,7 +159,7 @@ const Batches = () => {
     const fetchAvailableStudents = useCallback(async (batchId) => {
         try {
             const response = await axios.get(`${BASE_URL}/api/batches/${batchId}/available-students/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                { headers: { 'Content-Type': 'application/json' },
                 withCredentials : true
             }
             );
@@ -215,7 +201,7 @@ const Batches = () => {
         try {
             const response = await axios.post(`${BASE_URL}/api/batches/${batchId}/add-students/`, 
                 { students: studentIds }, // Ensure correct payload format
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                { headers: { 'Content-Type': 'application/json'},
                 withCredentials : true
             }
             );
@@ -223,7 +209,7 @@ const Batches = () => {
             if (response.status >= 200 && response.status < 300) {
                 message.success("Student added successfully!");
                 setAddStudentDropdown(false); // Close dropdown on success
-                fetchBatches();
+                await fetchBatches(currentFilters);
             } else {
                 message.error("Student not added.");
             }
@@ -449,7 +435,7 @@ const Batches = () => {
 
                 <div className="w-full grid grid-cols-5 grid-flow-row space-y-4 sm:space-y-0 items-center justify-between gap-x-8 px-4 pb-4">
                     <div className="grid col-span-5">
-                        <div className="flex gap-x-4 h-auto flex-wrap justify-between">
+                        <div className="flex gap-x-4 h-auto flex-wrap justify-between items-center">
                             
                              <div className="lg:hidden mb-2">
                                 <select
@@ -547,30 +533,16 @@ const Batches = () => {
 
 
 
-
-
                             <div className="grid col-span-1 justify-items-end">
                                 <div className="flex gap-x-6">
                                     <label htmlFor="table-search" className="sr-only">Search</label>
-                                    <div className="relative h-auto">
-                                        <input value={inputValue} type="text" id="table-search" placeholder="Search for Batch"
-                                            onChange={(e) => setInputValue(e.target.value)}
-                                            className="2xl:w-96 lg:w-96 md:w-72 h-8 block p-2 pr-10 text-xs text-gray-600 font-normal border border-gray-300 rounded-lg bg-gray-50 focus:ring-0 focus:border-blue-500" 
-                                            />
-                                        <div className="absolute inset-y-0 right-0 h-8 flex items-center pr-3">
-                                        <button onClick={() => {setInputValue(""); setSearchTerm("");}}>
-                                        {searchTerm ? (
-                                            <svg className="w-4 h-4 text-gray-500" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M6.293 6.293a1 1 0 011.414 0L10 8.586l2.293-2.293a1 1 0 111.414 1.414L11.414 10l2.293 2.293a1 1 0 01-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 01-1.414-1.414L8.586 10 6.293 7.707a1 1 0 010-1.414z" clipRule="evenodd"></path>
-                                                </svg>
-                                            ) : (
-                                                <svg className="w-4 h-4 text-gray-500" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"></path>
-                                                </svg>
-                                            )}
-                                        </button>
-                                        </div>
-                                    </div>
+                                        <SearchBar placeholder="Search for Batch"
+                                            inputClassName="2xl:w-96 lg:w-96 md:w-72 h-8 block p-2 pr-10 text-xs text-gray-600 font-normal border border-gray-300 rounded-lg bg-gray-50 focus:ring-0 focus:border-blue-500"
+                                            onSearch={(value) => {
+                                                setSearchTerm(value);
+                                                setCurrentPage(1);
+                                            }}
+                                        />
                                 </div>
                             </div>
 

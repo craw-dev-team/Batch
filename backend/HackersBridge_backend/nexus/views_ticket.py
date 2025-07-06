@@ -31,13 +31,14 @@ from rest_framework.exceptions import AuthenticationFailed
 from .models import Ticket, TicketChat
 from rest_framework.authentication import TokenAuthentication
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from nexus.JWTCookie import JWTAuthFromCookie
 from Student.serializer import StudentSerializer, StudentCourseSerializer
 from nexus.generate_certificate import generate_certificate, get_certificate_path
 from .serializer import BatchSerializer, BatchCreateSerializer, BatchStudentAssignmentSerializer, LogEntrySerializer, AttendanceSerializer
 
 
 class TicketAPIView(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -60,7 +61,7 @@ class TicketAPIView(APIView):
 
 # THIS IS FOR UPDATING TICKET 
 class TicketStatusUpdate(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def patch(self, request, id):
@@ -81,7 +82,7 @@ class TicketStatusUpdate(APIView):
 
 
 class TicketChatAPIView(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def get(self, request, id):
@@ -111,7 +112,7 @@ class TicketChatAPIView(APIView):
 
 
 class TicketChatMessageAPIView(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def post(self, request, id):

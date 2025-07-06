@@ -246,15 +246,16 @@ class BatchSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
+        
         rep['user_first_name'] = instance.last_update_user.first_name if instance.last_update_user else None
         rep['course_name'] = instance.course.name if instance.course else None
         rep['trainer_name'] = instance.trainer.name if instance.trainer else None
         rep['batch_location'] = instance.location.locality if instance.location else None
         rep['student_name'] = [s.name for s in instance.student.all()]
-
-        # Trainer weekoff (handled manually)
-        rep['trainer_weekoff'] = instance.trainer.weekoff if hasattr(instance.trainer, 'weekoff') else None
-
+        
+        # Additional trainer fields
+        rep['trainer_weekoff'] = getattr(instance.trainer, 'weekoff', None)
+        rep['trainer_email'] = getattr(instance.trainer, 'email', None)
 
         # Safely access nested coordinator data
         coordinator = getattr(instance.trainer, 'coordinator', None)
@@ -838,3 +839,18 @@ class AllChatsSerializer(serializers.ModelSerializer):
             "send_by": message.send_by.first_name if message.send_by else None,
             "time": message.gen_time.strftime('%I:%M %p')
         }
+    
+        # def get_last_message(self, obj):
+        # message = obj.messages.order_by('-gen_time').first()
+        # if not message:
+        #     return None
+
+        # content = message.message
+        # if len(content) > 60:
+        #     content = content[:60] + "..."
+
+        # return {
+        #     "message": content,
+        #     "send_by": message.send_by.first_name if message.send_by else None,
+        #     "time": message.gen_time.strftime('%I:%M %p')
+        # }

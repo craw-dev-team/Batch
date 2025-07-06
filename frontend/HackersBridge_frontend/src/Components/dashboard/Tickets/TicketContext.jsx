@@ -17,15 +17,15 @@ const TicketsProvider = ({ children }) => {
     // FETCH DATA FROM SERVER OF ALL THE TICKETS RAISED BY THAT STUDENT
     const fetchTicketData = useCallback(async () => {
         if (loading) return; 
-        const token = localStorage.getItem('token');
-        if (!token) {
-            console.error("No token found, user might be logged out.");
-            return;
-        };
+        // const token = localStorage.getItem('token');
+        // if (!token) {
+        //     console.error("No token found, user might be logged out.");
+        //     return;
+        // };
         setLoading(true);
         try {
             const response = await axios.get(`${BASE_URL}/api/ticket/`,
-              { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+              { headers: { 'Content-Type': 'application/json' }, 
               withCredentials: true,
             }  
             );
@@ -50,13 +50,13 @@ const TicketsProvider = ({ children }) => {
     // Get Tickets Chats 
   const fetchChat = useCallback(async (id) => {
     if (!id) return;
-    const token = localStorage.getItem('token');
-    if (!token) return;
+    // const token = localStorage.getItem('token');
+    // if (!token) return;
 
     setLoading(true);
     try {
       const response = await axios.get(`${BASE_URL}/api/ticket/chat/${id}/`, {
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
         withCredentials: true,
       });
       const data = response?.data;
@@ -71,16 +71,16 @@ const TicketsProvider = ({ children }) => {
 
   // Post Request for send ticket messages
     const sendTicketMessage = async (ticketId, messageText) => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        message.error("Unauthorized. Please log in.");
-        return;
-      }
+      // const token = localStorage.getItem("token");
+      // if (!token) {
+      //   message.error("Unauthorized. Please log in.");
+      //   return;
+      // }
   
       try {
         const response = await axios.post(`${BASE_URL}/api/ticket/message/${ticketId}/`,
           { message: messageText },
-          { headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}`},
+          { headers: { "Content-Type": "application/json"},
             withCredentials: true,
           }
         );

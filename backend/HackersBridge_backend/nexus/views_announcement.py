@@ -23,6 +23,7 @@ from .serializer_announcement import AnnouncementCreateSerializer  # Announcemen
 
 # Audit log model
 from auditlog.models import LogEntry  # Model to store log entries (create, update, delete actions)
+from .JWTCookie import JWTAuthFromCookie
 
 # Global unique change ID (can be used for logging if needed globally)
 cid = str(uuid.uuid4())
@@ -31,7 +32,7 @@ cid = str(uuid.uuid4())
 # API View to get all announcements (for admin and coordinator roles only)
 class AnnouncementListView(APIView):
     # Enable JWT-based authentication
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     
     # Ensure the user is authenticated before accessing this view
     permission_classes = [IsAuthenticated]
@@ -60,7 +61,7 @@ class AnnouncementListView(APIView):
 # API View to create a new announcement (accessible by admin and coordinator roles)
 class AnnouncementCreateAPIView(APIView):
     # Enable JWT-based authentication
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     
     # Ensure the user is authenticated
     permission_classes = [IsAuthenticated]
@@ -110,7 +111,7 @@ class AnnouncementCreateAPIView(APIView):
 # API View to handle updating an existing announcement
 class AnnouncementEditAPIView(APIView):
     # Use JWT authentication for securing the endpoint
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     # Ensure only authenticated users can access
     permission_classes = [IsAuthenticated]
 
@@ -190,7 +191,7 @@ class AnnouncementEditAPIView(APIView):
 # API View to delete an announcement (accessible by admin and coordinator roles)
 class AnnouncementDeleteAPIView(APIView):
     # Enable JWT-based authentication
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     
     # Ensure the user is authenticated
     permission_classes = [IsAuthenticated]
@@ -244,7 +245,7 @@ class AnnouncementDeleteAPIView(APIView):
 # API View to send list of trainers along with their assigned batches
 class AnnouncementTrainerBatchesAPIView(APIView):
     # Enable JWT-based authentication
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     
     # Ensure the user is authenticated
     permission_classes = [IsAuthenticated]

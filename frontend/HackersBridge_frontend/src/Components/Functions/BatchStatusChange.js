@@ -4,7 +4,7 @@ import { message } from "antd";
 
 
 
-const useBatchStatusChange = (token) => {
+const useBatchStatusChange = () => {
 
     const handleBatchStatusChange = async ({batchId, status}) => {
         if (!batchId || !status) return;
@@ -21,7 +21,7 @@ const useBatchStatusChange = (token) => {
         try {
             const response = await axios.put(`${BASE_URL}/api/batches/edit/${batchId}/`,
                 updatedData,
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                { headers: { 'Content-Type': 'application/json' },
                 withCredentials : true
             }
             );

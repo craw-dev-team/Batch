@@ -46,27 +46,26 @@ const TrainerFormProvider = ({ children }) => {
         const fetchTrainers = async () => {
             if (loading) return;  // Prevent multiple fetches at the same time
             
-            const token = localStorage.getItem('token');
-            if (!token) {
-                console.error("No token found, user might be logged out.");
-                return;
-            };
+            // const token = localStorage.getItem('token');
+            // if (!token) {
+            //     console.error("No token found, user might be logged out.");
+            //     return;
+            // };
 
             setLoading(true);  // Set loading state
             try {
                 const response = await axios.get(`${BASE_URL}/api/trainers/`, 
-                    { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                    { headers: { 'Content-Type': 'application/json' }, 
                     withCredentials : true
                 }
                 );
                 const trainers = response?.data;
                 const available = await axios.get(`${BASE_URL}/api/trainers/availability/`, 
-                    { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                    { headers: { 'Content-Type': 'application/json' }, 
                     withCredentials : true
                 }
                 );
                 const availableTrainer = available?.data;
-                // console.log(availableTrainer);
                 
                 // Update trainerData state only if data has changed
                 setTrainerData((prevData) => {
@@ -93,17 +92,19 @@ const TrainerFormProvider = ({ children }) => {
         const fetchTrainersCount = async () => {
             if (loading) return;
             
-            const token = localStorage.getItem('token');
-            if (!token) {
-                console.error("No token found, user might be logged out.");
-                return;
-            };
+            // const token = localStorage.getItem('token');
+            // if (!token) {
+            //     console.error("No token found, user might be logged out.");
+            //     return;
+            // };
 
             
             setLoading(true);
             try {
                 const response = await axios.get(`${BASE_URL}/api/trainers/card/`, 
-                    { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
+                    { headers: { 'Content-Type': 'application/json' },
+                    withCredentials: true
+                }
                 );
                 const data = response?.data;        
                 

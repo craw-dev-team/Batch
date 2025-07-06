@@ -17,7 +17,11 @@ from django.utils.dateparse import parse_date
 from Student.models import Student
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.db.models import Q
+from HackersBridge.reCAPTCHA import verify_recaptcha
+from .JWTCookie import JWTAuthFromCookie
+from Trainer.models import Trainer
 User = get_user_model()
+
 
 
 # **User Registration API**
@@ -57,7 +61,7 @@ class UserRegistrationAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 
-
+{
 # # **User Login API**
 # class UserLoginAPIView(APIView):
 #     def post(self, request):
@@ -107,91 +111,77 @@ class UserRegistrationAPIView(APIView):
 #             }, status=status.HTTP_200_OK)
 
 #         return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
+}
 
 
 class UserLoginAPIView(APIView):
     def post(self, request):
+        recaptcha_token = request.data.get('recaptcha_token')
+        if not recaptcha_token:
+            return Response({'error': 'reCAPTCHA token missing'}, status=status.HTTP_400_BAD_REQUEST)
+
+        verify_recaptcha(recaptcha_token)
+
         serializer = UserLoginSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.validated_data['user']
             refresh = RefreshToken.for_user(user)
             access_token = str(refresh.access_token)
+
             role = user.role
             username = user.username
             useremail = user.email
             first_name = user.first_name
 
+            # consistent cookie settings
+            cookie_settings = {
+                "httponly": True,
+                "secure": False,  # ✅ True in production
+                "samesite": "Lax",
+                "path": "/",
+            }
+
+            user_info = {
+                'role': role,
+                'token': access_token,  # optional; consider removing if relying on HTTP-only cookie
+                'user_name': username,
+                'first_name': first_name
+            }
+
+            response_data = {
+                'message': 'Login successful',
+                'user_info': user_info
+            }
+
             if role == 'student':
-                student_id = Student.objects.filter(Q(enrollment_no = username) | Q(email = useremail)).values('id', 'enrollment_no', 'name')
-                user_info = {'role': role,
-                            'token':access_token,
-                            'user_name':username,
-                            'first_name':first_name}
+                student_id = Student.objects.filter(
+                    Q(enrollment_no=username) | Q(email=useremail)
+                ).values('id', 'enrollment_no', 'name')
+                response_data['student_id'] = student_id
 
-                response = Response({'message': 'Login successful',
-                                    'student_id': student_id,
-                                    'user_info':user_info}, status=status.HTTP_200_OK)
+            response = Response(response_data, status=status.HTTP_200_OK)
 
-                response.set_cookie(
-                    key='access_token',
-                    value=access_token,
-                    httponly=True,
-                    secure=False,
-                    samesite='None'  # Required for cross-site cookies
-                )
+            if role == 'Trainer':
+                trainer_log = Trainer.objects.filter(
+                    Q(trainer_id=username) | Q(email=useremail)
+                ).values('id', 'trainer_id', 'name')
+                response_data['trainer_log'] = trainer_log
 
-                response.set_cookie(
-                    key='user_role',
-                    value=role,
-                    httponly=False,
-                    secure=False,
-                    samesite='None'
-                )
+            response = Response(response_data, status=status.HTTP_200_OK)
 
-                return response
-            else:
-                user_info = {'role':role,
-                             'token':access_token,
-                             'user_name':username,
-                             'first_name':first_name}
-                response = Response({'message':'Login successful',
-                                     'user_info':user_info}, status=status.HTTP_200_OK)
-                
-                response.set_cookie(
-                    key='access_token',
-                    value=access_token,
-                    httponly=True
-                )
+            response.set_cookie('access_token', access_token, **cookie_settings)
+            response.set_cookie('user_role', role, httponly=False, secure=False, samesite="Lax", path="/")
 
-                response.set_cookie(
-                    key='user_role',
-                    value=role,
-                    httponly=False
-                )
+            return response
 
-                return response
         return Response(serializer.errors, status=status.HTTP_401_UNAUTHORIZED)
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
 
 # ** First_time Reset Password API**
 class FirstTimeResetPasswordAPIView(APIView):
-    authentication_classes = [TokenAuthentication]  # Ensures user must provide a valid token
+    authentication_classes = [JWTAuthFromCookie]  # Ensures user must provide a valid token
     permission_classes = [IsAuthenticated]  # User must be logged in
 
     def post(self, request):
@@ -277,19 +267,15 @@ class ResetPasswordView(APIView):
 
 class UserLogoutAPIView(APIView):
     """
-    API endpoint for user logout.
-    - Requires authentication.
-    - Deletes the user's token to log them out.
+    API endpoint for user logout (cookie-based).
+    Requires JWT authentication via cookie.
     """
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
         try:
-            user = request.user  # ✅ Get the logged-in user
-
-            # ✅ Delete the user's token (logout)
-            user.auth_token.delete()
+            user = request.user
 
             # ✅ Log the logout event
             LogEntry.objects.create(
@@ -298,7 +284,7 @@ class UserLogoutAPIView(APIView):
                 object_pk=user.id,
                 object_id=user.id,
                 object_repr=f"User: {user.username}",
-                action=LogEntry.Action.LOGOUT,  # Make sure LOGOUT exists in your LogEntry actions
+                action=LogEntry.Action.DELETE,
                 changes=f"User {user.username} logged out.",
                 serialized_data=json.dumps({
                     'username': user.username,
@@ -310,7 +296,30 @@ class UserLogoutAPIView(APIView):
                 timestamp=now()
             )
 
-            return Response({"message": "Successfully logged out"}, status=status.HTTP_200_OK)
+            # ✅ Clear cookies (must match how you set them during login)
+            response = Response({"message": "Successfully logged out"}, status=200)
+            response.delete_cookie('access_token', path='/', samesite='Lax')
+            response.delete_cookie('user_role', path='/', samesite='Lax')
+
+            return response
 
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": str(e)}, status=400)
+
+
+class USERRELOADAPIView(APIView):
+    authentication_classes = [JWTAuthFromCookie]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # print("Cookies received:", request.COOKIES)  # ✅ debug line
+
+        user = request.user
+        return Response({
+            'user_info': {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'role': user.role,
+            }
+        })

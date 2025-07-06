@@ -130,7 +130,7 @@ const StudentInfo = () => {
                                         </div>
     
                                         <div className="col-span-1 leading-8 border">
-                                            <table className="w-full text-xs text-left text-gray-500 dark:text-gray-400 ">
+                                            <table className="w-full text-xs text-left text-gray-500">
                                                 <thead className="text-xs text-gray-700 uppercase bg-green-200 sticky top-0 z-10">
                                                     <tr>
                                                         <th scope="col" className="px-1 py-2 md:px-1">

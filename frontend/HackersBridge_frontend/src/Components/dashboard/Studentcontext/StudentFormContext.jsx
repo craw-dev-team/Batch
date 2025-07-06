@@ -47,16 +47,16 @@ const StudentFormProvider = ({ children }) => {
     const fetchStudents = async ({ page = 1, pageSize = 30, search = '', mode = '', language = '', preferred_week = '', location = '', status = '', date_of_joining_after = '', date_of_joining_before = '' } = {}) => {
         if (loading) return;  // Prevent multiple fetches at the same time
 
-        const token = localStorage.getItem('token');
-        if (!token) {
-            console.error("No token found, user might be logged out.");
-            return;
-        };
+        // const token = localStorage.getItem('token');
+        // if (!token) {
+        //     console.error("No token found, user might be logged out.");
+        //     return;
+        // };
 
         setLoading(true);  // Set loading state
         try {
             const response = await axios.get(`${BASE_URL}/api/students/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                { headers: { 'Content-Type': 'application/json' },
                 withCredentials : true,
                 params: {
                     page,
@@ -96,17 +96,19 @@ const StudentFormProvider = ({ children }) => {
     const fetchStudentCount = async () => {
         if (loading) return;
         
-        const token = localStorage.getItem('token');
-        if (!token) {
-            console.error("No token found, user might be logged out.");
-            return;
-        };
+        // const token = localStorage.getItem('token');
+        // if (!token) {
+        //     console.error("No token found, user might be logged out.");
+        //     return;
+        // };
 
         
         setLoading(true);
         try {
             const response = await axios.get(`${BASE_URL}/api/studentscraw/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
+                { headers: { 'Content-Type': 'application/json' },
+            withCredentials: true
+            }
             );
             const data = response?.data;        
             
@@ -127,17 +129,17 @@ const StudentFormProvider = ({ children }) => {
 const fetchAllStudent = async () => {
     if (loading) return;
     
-    const token = localStorage.getItem('token');
-    if (!token) {
-        console.error("No token found, user might be logged out.");
-        return;
-    };
+    // const token = localStorage.getItem('token');
+    // if (!token) {
+    //     console.error("No token found, user might be logged out.");
+    //     return;
+    // };
 
     
     setLoading(true);
     try {
         const response = await axios.get(`${BASE_URL}/api/allstudents/`, 
-            { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+            { headers: { 'Content-Type': 'application/json' }, 
             withCredentials : true
         }
         );

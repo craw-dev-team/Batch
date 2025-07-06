@@ -30,7 +30,7 @@ import calendar
 import json
 import uuid
 from time import sleep
-
+from nexus.JWTCookie import JWTAuthFromCookie
 
 
 User = get_user_model()  # Get custom User model if used
@@ -38,7 +38,7 @@ cid = str(uuid.uuid4())
 
 # For Trainer-List-Only
 class TrainerListAPIviews(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -84,7 +84,7 @@ class TrainerListAPIviews(APIView):
 
 
 class TrainerCardsAPIView(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -109,7 +109,7 @@ class TrainerCardsAPIView(APIView):
 
 # For Trainer-Availability-In-CurrentlyFreeTrainers-Or-FutureAvailabilityOfTrainers
 class TrainerAvailabilityAPIView(APIView):
-    authentication_classes = [JWTAuthentication]  # Ensures user must provide a valid token
+    authentication_classes = [JWTAuthFromCookie]  # Ensures user must provide a valid token
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -224,7 +224,7 @@ class TrainerAvailabilityAPIView(APIView):
 
 class AddTrainerAPIView(APIView):
     """API View to add a new trainer (without creating a user)"""
-    authentication_classes = [JWTAuthentication]  # Ensures user must provide a valid token
+    authentication_classes = [JWTAuthFromCookie]  # Ensures user must provide a valid token
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -273,7 +273,7 @@ class AddTrainerAPIView(APIView):
 
 class EditTrainerAPIView(APIView):
     """API View to edit an existing trainer"""
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def put(self, request, id):
@@ -285,7 +285,6 @@ class EditTrainerAPIView(APIView):
         old_trainer_data = model_to_dict(trainer)  # Get all old field values
 
         serializer = TrainerSerializer(trainer, data=request.data, partial=True, context={'request': request})
-
         if serializer.is_valid():
             old_email = trainer.email 
             trainer = serializer.save(last_update_coordinator=request.user)
@@ -358,7 +357,7 @@ class EditTrainerAPIView(APIView):
 
 class DeleteTrainerAPIView(APIView):
     """API View to delete a trainer"""
-    authentication_classes = [JWTAuthentication]  # Ensures user must provide a valid token
+    authentication_classes = [JWTAuthFromCookie]  # Ensures user must provide a valid token
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, id):
@@ -413,7 +412,7 @@ class DeleteTrainerAPIView(APIView):
 
 
 class TrainerInfoAPIView(APIView):
-    authentication_classes = [JWTAuthentication]  # Ensures user must provide a valid token
+    authentication_classes = [JWTAuthFromCookie]  # Ensures user must provide a valid token
     permission_classes = [IsAuthenticated]
     
     def get(self, request, id):
@@ -563,7 +562,7 @@ class TrainerInfoAPIView(APIView):
 
 
 class TrainerLogListView(APIView):
-    authentication_classes = [JWTAuthentication] 
+    authentication_classes = [JWTAuthFromCookie] 
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -645,7 +644,7 @@ class TrainerLogListView(APIView):
 
 # This is for sending email when trainer on one day and half day leave.....
 # class TrainerLeaveMail(APIView):
-#     authentication_classes = [JWTAuthentication]
+#     authentication_classes = [JWTAuthFromCookie]
 #     permission_classes = [IsAuthenticated]
 
 #     def post(self, request, id):
@@ -856,7 +855,7 @@ class TrainerLogListView(APIView):
 
 
 class TrainerLeaveMail(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def post(self, request, id):
@@ -1046,7 +1045,7 @@ class TrainerLeaveMail(APIView):
 
 # This is for sending email when trainer on long leave
 class TrainerLongLeaveMail(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
 

@@ -31,7 +31,7 @@ const StudentRecommendedBatches = () => {
 
 
   return (
-    <div className="p-1 col-span-6 w-full h-screen shadow-md sm:rounded-lg border border-gray-50 bg-white">
+    <div className="p-1 col-span-6 w-full h-screen shadow-md sm:rounded-lg border border-gray-50 bg-white scrollbar-custom">
 
       <div className="flex justify-between items-center p-2">
         <h1 className="text-lg font-semibold">Recommended Batches For You</h1>

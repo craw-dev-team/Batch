@@ -180,7 +180,6 @@ const SpecificBatchPage = () => {
     const { specificBatch, fetchSpecificBatch } = useSpecificBatch();
     const {batchFormData, setBatchFormData} = useBatchForm();
 
-    const { token } = useAuth();
 
     const [editingField, setEditingField] = useState(null);
     const [updatedValues, setUpdatedValues] = useState(null);
@@ -208,6 +207,7 @@ const SpecificBatchPage = () => {
     // store student status in a batch 
     const [studentStatuses, setStudentStatuses] = useState({}); // Store status per trainer
 
+    const trainer_email = specificBatch?.batch?.trainer_email || ''
 
     const navigate = useNavigate();
     
@@ -220,7 +220,7 @@ const SpecificBatchPage = () => {
         const fetchAvailableStudents = useCallback(async (batchId) => {              
             try {
                 const response = await axios.get(`${BASE_URL}/api/batches/${batchId}/available-students/`, 
-                    { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                    { headers: { 'Content-Type': 'application/json'}, 
                     withCredentials : true
                 }
                 );
@@ -276,7 +276,7 @@ const SpecificBatchPage = () => {
             try {
                 const response = await axios.post(`${BASE_URL}/api/batches/${batch_id}/add-students/`, 
                     { students: [studentId] }, // Ensure correct payload format
-                    { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                    { headers: { 'Content-Type': 'application/json'}, 
                     withCredentials : true
                 }
                 );
@@ -375,7 +375,7 @@ const SpecificBatchPage = () => {
 
             const response = await axios.post(`${BASE_URL}/api/batch/remove-student/${decodedBatchId}/`,  
                 payload,  // Student IDs in the body
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                { headers: { 'Content-Type': 'application/json' }, 
                 withCredentials : true
             }
             );
@@ -440,7 +440,7 @@ const SpecificBatchPage = () => {
             try {
                 const response = await axios.post(`${BASE_URL}/api/batch-generate-certificate/${batch_id}/`, 
                     payload,
-                    { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                    { headers: { 'Content-Type': 'application/json' }, 
                     withCredentials : true
                 }
                 );
@@ -501,7 +501,7 @@ const SpecificBatchPage = () => {
             try {
                 const response = await axios.patch(`${BASE_URL}/api/batch-link/${batch_id}/`,
                     {batch_link: classLink }, 
-                    { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                    { headers: { 'Content-Type': 'application/json' }, 
                     withCredentials : true
                 }
                 );
@@ -531,7 +531,7 @@ const SpecificBatchPage = () => {
             try {
                 const response = await axios.patch(`${BASE_URL}/api/batches/${batch_id}/reject-request/`, 
                     { students: [studentId] },
-                    { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                    { headers: { 'Content-Type': 'application/json' }, 
                     withCredentials : true
                 }
                 );
@@ -565,7 +565,7 @@ const SpecificBatchPage = () => {
         try {
             await axios.patch(`${BASE_URL}/api/batches/student-status/${studentId}/`, 
                 { status: newStatus },
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                { headers: { 'Content-Type': 'application/json' }, 
                 withCredentials : true
             }
             );
@@ -576,8 +576,6 @@ const SpecificBatchPage = () => {
             setStudentStatuses((prev) => ({ ...prev, [studentId]: !checked }));
         }
     };
-
-
 
 
     return (
@@ -1378,7 +1376,7 @@ const SpecificBatchPage = () => {
                 onClose={() => setShowPopup(false)}
                 checkStudentid={checkStudentid}
                 onSuccess={() => setCheckStudentid([])}
-                
+                trainer_email={trainer_email}
             />
         </>
     );

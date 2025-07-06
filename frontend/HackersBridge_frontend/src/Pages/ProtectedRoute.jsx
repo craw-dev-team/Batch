@@ -1,6 +1,7 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../Components/dashboard/AuthContext/AuthContext";
 import { useStudentAuth } from "../Components/StudentDashboard/Dashboard/StudentAuthContext/StudentAuthContext";
+import { Spin } from "antd";
 
 
 
@@ -136,9 +137,6 @@ const PublicRoute = () => {
 export { PublicRoute };
 
 
-
-
-
   
 const ProtectedRoute = () => {
   const { role, loading } = useAuth();
@@ -168,3 +166,104 @@ const StudentRoute = () => {
 };
 
 export {StudentRoute};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// const PublicRoute = () => {
+//   const { role, loading } = useAuth();
+
+//   if (loading) {
+//     return (
+//       <div className="h-screen flex items-center justify-center">
+//         <Spin size="large" tip="Checking session..." />
+//       </div>
+//     );
+//   }
+
+//   if (role === "admin" || role === "coordinator") return <Navigate to="/batches" replace />;
+//   if (role === "student") return <Navigate to="/student-info" replace />;
+//   if (role === "trainer") return <Navigate to="/trainer-info" replace />;
+
+//   return <Outlet />;
+// };
+
+// export { PublicRoute };
+
+
+
+// const ProtectedRoute = () => {
+//   const { role, loading } = useAuth();
+
+//   if (loading) {
+//     return (
+//       <div className="h-screen flex items-center justify-center">
+//         <Spin size="large" tip="Authenticating..." />
+//       </div>
+//     );
+//   }
+
+//   if (!role || (role !== "admin" && role !== "coordinator")) {
+//     return <Navigate to="/" replace />;
+//   }
+
+//   return <Outlet />;
+// };
+
+// export default ProtectedRoute;
+
+
+// const StudentRoute = () => {
+//   const { role, loading } = useAuth();
+
+//   if (loading) {
+//     return (
+//       <div className="h-screen flex items-center justify-center">
+//         <Spin size="large" tip="Authenticating student..." />
+//       </div>
+//     );
+//   }
+
+//   if (!role || role !== "student") {
+//     return <Navigate to="/" replace />;
+//   }
+
+//   return <Outlet />;
+// };
+
+// export { StudentRoute };
+
+
+
+// const TrainerRoute = () => {
+//   const { role, loading } = useAuth();
+
+//   if (loading) {
+//     return (
+//       <div className="h-screen flex items-center justify-center">
+//         <Spin size="large" tip="Authenticating trainer..." />
+//       </div>
+//     );
+//   }
+
+//   if (!role || role !== "trainer") {
+//     return <Navigate to="/" replace />;
+//   }
+
+//   return <Outlet />;
+// };
+
+// export { TrainerRoute };

@@ -13,11 +13,11 @@ import SpecificStudentNotes from "./SpecificNotesPage";
 import StudentInfoLoading from "../../../Pages/SkeletonLoading.jsx/StudentInfoLoading";
 import handleBatchClick, { handleTrainerClick } from "../../Navigations/Navigations";
 import useStudentStatusChange, { statusDescription } from "../../Functions/StudentStatusChange";
+import { useTagContext } from "../Tags/TagsContext";
 
 const { TextArea } = Input;
 
 const SpecificStudentPage = () => {
-    const { token } = useAuth();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [topTab, setTopTab] = useState("Info");
     const [selectedStudent, setSelectedStudent] = useState();
@@ -25,8 +25,10 @@ const SpecificStudentPage = () => {
     const { studentId } = useParams();
     const { specificStudent, setSpecificStudent, fetchSpecificStudent, sendMarksUpdate } = useSpecificStudent();
 
-    const { studentStatuses, setStudentStatuses, handleStudentStatusChange } = useStudentStatusChange(token);
-
+    const { studentStatuses, setStudentStatuses, handleStudentStatusChange } = useStudentStatusChange();
+    
+    const { handleRemoveTag } = useTagContext();
+    
     const [activeTab, setActiveTab] = useState("running");
     const [certificateData, setCertificateData] = useState({});
     // store student not typed in input field 
@@ -105,7 +107,7 @@ const SpecificStudentPage = () => {
         try {
             const response = await axios.patch(`${BASE_URL}/api/student-course/edit/${id}/`, 
                 selectesStatus,
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                { headers: { 'Content-Type': 'application/json' }, 
                 withCredentials : true
             }
             );
@@ -132,7 +134,7 @@ const SpecificStudentPage = () => {
         try {
             const response = await axios.patch(`${BASE_URL}/api/generate-certificate/${courseId}/`, 
                 { certificate_date: certificateIssueDate },
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                { headers: { 'Content-Type': 'application/json' }, 
                 withCredentials : true
             }
             );
@@ -161,7 +163,7 @@ const SpecificStudentPage = () => {
         try {
             const response = await axios.get(`${BASE_URL}/api/download-certificate/${courseId}/`, 
                 { responseType: "blob",
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                    headers: { 'Content-Type': 'application/json' }, 
                     withCredentials : true
                 }
         );
@@ -202,7 +204,7 @@ const SpecificStudentPage = () => {
         try {
             const response = await axios.patch(`${BASE_URL}/api/student/old_book/${courseId}/`,
                 { old_status : isChecked},
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                { headers: { 'Content-Type': 'application/json'}, 
                 withCredentials : true
             }
             );
@@ -238,7 +240,7 @@ const SpecificStudentPage = () => {
         try {
             const response = await axios.patch(`${BASE_URL}/api/student/book/${courseId}/`,
                 { Book : isChecked},
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                { headers: { 'Content-Type': 'application/json' }, 
                 withCredentials : true
             }
             );
@@ -269,6 +271,7 @@ const SpecificStudentPage = () => {
        }
         
     };
+
 
     // handle checkbox click
     const handleCheckboxClick = (e, item) => {
@@ -311,7 +314,7 @@ const SpecificStudentPage = () => {
         try {
             const response = await axios.post(`${BASE_URL}/api/student-note-create/`,
                 { student_id: studentId, note: studentNote },
-                { headers : {"Content-Type" : "application/json", "Authorization" : `Bearer ${token}` },
+                { headers : {"Content-Type" : "application/json" },
                 withCredentials : true
             }
             )
@@ -435,7 +438,45 @@ const SpecificStudentPage = () => {
                             <div className="px-4 py-4 col-span-6 h-auto shadow-md sm:rounded-lg border border-gray-50 bg-white">
                                 
                                 <div className="w-full h-auto px-1 py-3 text-lg font-semibold flex justify-between">
-                                    <p># {studentDetails.enrollment_no}</p>
+                                    <div className="flex items-center gap-3 flex-wrap">
+                                        <p># {studentDetails.enrollment_no}</p>
+
+                                        {/* Tags Display */}
+                                        {studentDetails.tags_values?.length > 0 ? (
+                                        <div className="flex flex-wrap gap-2">
+                                            {studentDetails.tags_values.map((tag) => (
+                                            <div
+                                                key={tag.id}
+                                                className="relative text-xs font-medium px-2 py-1 rounded"
+                                                style={{
+                                                backgroundColor: tag.tag_color,
+                                                color: "#fff",
+                                                paddingRight: "20px", // space for close icon
+                                                }}
+                                            >
+                                                {tag.tag_name}
+                                                
+                                                {/* Cancel Icon */}
+                                                <span
+                                                className="absolute top-0 right-0 mr-1 mt-0.5 text-white text-xs cursor-pointer font-bold"
+                                                onClick={async () => {
+                                                    await handleRemoveTag([tag.id], studentDetails.id);
+                                                    // Remove from UI
+                                                    // setTagData((prev) => ({
+                                                    //   ...prev,
+                                                    //   tags_values: prev.tags_values.filter((t) => t.id !== tag.id),
+                                                    // }));
+                                                }}
+                                                >
+                                                ×
+                                                </span>
+                                            </div>
+                                            ))}
+                                        </div>
+                                        ) : (
+                                        <span className="text-xs text-gray-400"></span>
+                                        )}
+                                    </div>
                                     
                                     <Button  
                                         color="secondary" 
@@ -846,8 +887,8 @@ const SpecificStudentPage = () => {
                             </div>
                                     <div className="">
                                             <>
-                                            <table className="w-full text-xs text-left text-gray-500 dark:text-gray-400 ">
-                                                <thead className="text-xs text-gray-700 uppercase bg-blue-50 dark:bg-gray-700 dark:text-gray-400 sticky top-0 z-10">
+                                            <table className="w-full text-xs text-left text-gray-500">
+                                                <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10">
                                                         <tr>
                                                             <th scope="col" className="px-3 py-3 md:px-2">
                                                                 S.No
@@ -888,8 +929,8 @@ const SpecificStudentPage = () => {
                                                     <tbody>
                                                     {Array.isArray(filteredStudentData) && filteredStudentData.length > 0 ? (
                                                         filteredStudentData.map((item, index) => (
-                                                        <tr key={index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 scroll-smooth">
-                                                            <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
+                                                        <tr key={index} className="bg-white border-b border-gray-200 hover:bg-gray-50 scroll-smooth">
+                                                            <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900">
                                                                 {index + 1}
                                                             </td>
                                                             <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleBatchClick(navigate,item.id)}>

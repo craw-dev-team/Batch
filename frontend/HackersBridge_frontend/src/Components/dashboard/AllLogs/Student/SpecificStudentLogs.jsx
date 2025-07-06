@@ -32,8 +32,8 @@ const SpecificStudentLogs = () => {
     return (
         <>
            <div className="w-auto mt-0 bg-white">
-                <div className="relative w-full h-auto shadow-md sm:rounded-lg border border-gray-50 dark:border dark:border-gray-600">
-                    <div className="w-full px-4 py-3 text flex justify-between font-semibold ">
+                <div className="relative w-full h-auto shadow-md sm:rounded-lg border border-gray-50">
+                    <div className="w-full px-4 py-3 text flex justify-between font-semibold">
                         <h1>Logs</h1>
                     </div>
 

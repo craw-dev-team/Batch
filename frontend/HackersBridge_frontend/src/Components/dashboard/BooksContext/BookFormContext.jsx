@@ -34,17 +34,17 @@ export const BookFormProvider = ({ children }) => {
         const fetchBooks = async () => {
             if (loading) return;  // Prevent multiple fetches at the same time
 
-            const token = localStorage.getItem('token');
-            if (!token) {
-                console.error("No token found, user might be logged out.");
-                return;
-            };
+            // const token = localStorage.getItem('token');
+            // if (!token) {
+            //     console.error("No token found, user might be logged out.");
+            //     return;
+            // };
 
 
             setLoading(true);  // Set loading state
             try {
                 const response = await axios.get(`${BASE_URL}/api/books/`, 
-                    { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                    { headers: { 'Content-Type': 'application/json'}, 
                     withCredentials : true
                 }
                 );
@@ -109,11 +109,11 @@ export const BookFormProvider = ({ children }) => {
         const handleBookFilter = async (filter = "", customStart = null, customEnd = null) => {
             if (loading) return;
 
-            const token = localStorage.getItem("token");
-            if (!token) {
-                console.log("No token found, user might be logged out");
-                return;
-            }
+            // const token = localStorage.getItem("token");
+            // if (!token) {
+            //     console.log("No token found, user might be logged out");
+            //     return;
+            // }
 
             setLoading(true);
             try {
@@ -137,7 +137,7 @@ export const BookFormProvider = ({ children }) => {
                     }
 
                     const response = await axios.get(url, 
-                        { headers: { Authorization: `Bearer ${token}`},
+                        { headers: { "Content-Type": "application/json"},
                         withCredentials: true,
                     });
 

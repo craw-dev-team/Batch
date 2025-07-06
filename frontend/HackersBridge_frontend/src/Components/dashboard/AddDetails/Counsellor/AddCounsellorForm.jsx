@@ -16,7 +16,6 @@ const AddCounsellorForm = ( { isOpen, onClose, counsellorData } ) => {
     const isEditing = Boolean(counsellorData?.id); 
 
     const { counsellorFormData, setCounsellorFormData, errors, setErrors, resetCounsellorForm } = useCounsellorForm();
-    const { token } = useAuth();
 
     const [ loading, setLoading] = useState(false);
 
@@ -64,7 +63,7 @@ const AddCounsellorForm = ( { isOpen, onClose, counsellorData } ) => {
                 if (counsellorData && counsellorData.id) {
                 // Update existing course (PUT)
                 response = await axios.put(`${BASE_URL}/api/counsellors/edit/${counsellorData.id}/`, payload, {
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    headers: { 'Content-Type': 'application/json' },
                     withCredentials : true
                 }
                 );
@@ -72,7 +71,7 @@ const AddCounsellorForm = ( { isOpen, onClose, counsellorData } ) => {
                 } else {
                     // Add new course (POST)
                     response = await axios.post(`${BASE_URL}/api/counsellors/add/`, payload, {
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        headers: { 'Content-Type': 'application/json' },
                         withCredentials : true
                     }
                     );

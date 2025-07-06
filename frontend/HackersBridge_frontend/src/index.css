@@ -1,10 +1,38 @@
 @import 'tailwindcss/base';
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
+@import 'react-quill/dist/quill.snow.css';
 
 
 /* custom new  */
+.custom-menu .ant-menu-item-selected {
+    background-color: #bcf0da !important; /* light green */
+    color: #000 ;
+    border-radius: 8px;
+  }
+  
+  .custom-menu .ant-menu-item-selected .anticon {
+    color: #000 !important; 
+  }
+  
+  .custom-menu .ant-menu-item:hover {
+    background-color: #eafaef !important; /* lighter green hover */
+  }
 
+ /* Target AntD inner selector box */
+.custom-green-select .ant-select-selector {
+  border-radius: 6px;
+  height: 32px;
+  border: 1px solid #d1d5db; /* default gray border */
+  transition: border-color 0.3s ease;
+}
+
+/* Green border on hover and focus */
+.custom-green-select.ant-select:hover .ant-select-selector,
+.custom-green-select.ant-select-focused .ant-select-selector {
+  border-color: #28a745 !important; /* Bootstrap green */
+}
+  
 .darkmode {
    @apply bg-lightPrimaryColor dark:bg-[#282C34] transition-all duration-300
 } 
@@ -70,7 +98,7 @@
 }
 
 ::-webkit-scrollbar {
-    width: 7px;
+    width: 5px;
     height: 8px;
 }
 
@@ -87,4 +115,26 @@
 
 ::-webkit-scrollbar-thumb:hover {
     background: #a7cefe;
+}
+
+
+
+
+
+/* scrollbar for student portal  */
+/* styles.css or inside a <style> block */
+.scrollbar-custom::-webkit-scrollbar {
+  width: 5px;
+}
+
+.scrollbar-custom::-webkit-scrollbar-track {
+  background: #e3ece1;
+  border-radius: 10px;
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb {
+  background-color: #13d192;
+  /* border-radius: 10px; */
+  /* border: 2px solid transparent; */
+  background-clip: content-box;
 }

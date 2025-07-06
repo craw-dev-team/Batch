@@ -2,15 +2,15 @@ import os
 import base64
 from io import BytesIO
 from pdf2image import convert_from_path
-
+from rest_framework.generics import ListAPIView
 from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, filters
 from rest_framework_simplejwt.tokens import RefreshToken
 from .serializer import TicketChatSerializer, TicketSerializer
 from Student.serializer import StudentSerializer
-from nexus.serializer import BatchSerializer
+from nexus.serializer import BatchSerializer, AllChatsSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.authtoken.models import Token
@@ -29,151 +29,17 @@ from django.utils.timezone import now
 from nexus.generate_certificate import get_certificate_path
 from django.http import FileResponse
 from django.urls import reverse
-
+from HackersBridge.reCAPTCHA import verify_recaptcha
+from django_filters.rest_framework import DjangoFilterBackend
+from nexus.JWTCookie import JWTAuthFromCookie
 User = get_user_model()
 
-
-{
-
-# class StudentLoginView(APIView):
-#     def post(self, request):
-#         serializer = StudentLoginSerializer(data=request.data)
-#         if serializer.is_valid():
-#             user = serializer.validated_data['user']
-#             refresh = RefreshToken.for_user(user)
-#             access_token = str(refresh.access_token)
-#             role = user.role
-#             username = user.username
-#             useremail = user.email
-
-#             student_id = Student.objects.filter(Q(enrollment_no = username) | Q(email = useremail)).values('id', 'enrollment_no', 'name')
-#             user_info = {'role': role,
-#                          'token':access_token}
-
-#             response = Response({'message': 'Login successful',
-#                                  'student_id': student_id,
-#                                  'user_info':user_info}, status=status.HTTP_200_OK)
-
-#             response.set_cookie(
-#                 key='access_token',
-#                 value=access_token,
-#                 httponly=True,
-#                 secure=False,  # ✅ Allow HTTP during local dev
-#                 samesite='Lax'
-#             )
-#             response.set_cookie(
-#                 key='user_role',
-#                 value=role,
-#                 httponly=False,  # ✅ Allows frontend to read
-#                 secure=False,
-#                 samesite='Lax'
-#             )
-
-#             return response
-
-#         return Response(serializer.errors, status=status.HTTP_401_UNAUTHORIZED)
-    
-
-
-
-# class JWTAuthFromCookie(JWTAuthentication):
-#     def authenticate(self, request):
-#         token = request.COOKIES.get('access_token')
-
-#         if not token:
-#             print("No access_token cookie found")
-#             return None
-
-#         try:
-#             validated_token = self.get_validated_token(token)
-#             user = self.get_user(validated_token)
-#             return user, validated_token
-#         except Exception as e:
-#             print("JWT cookie authentication failed:", str(e))
-#             raise AuthenticationFailed('Invalid or expired token')
-
-}
-
-
-
-class StudentMeView(APIView):
-
-    # def get(self, request):
-    #     return Response({'Error':'Nhi milega bhi'})
-    # # authentication_classes = [JWTAuthFromCookie]
-    
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        print("Cookies received:", request.COOKIES)  # ✅ debug line
-
-        user = request.user
-        return Response({
-            'user_info': {
-                'id': user.id,
-                'username': user.username,
-                'email': user.email,
-                'role': user.role,
-            }
-        })
-
-
-
-{
-# class StudentMeView(APIView):
-#     authentication_classes = [JWTAuthFromCookie]
-#     permission_classes = [IsAuthenticated]
-
-#     def get(self, request):
-#         user = request.user
-
-#         return Response({
-#             'user_info': {
-#                 'id': user.id,
-#                 'username': user.username,
-#                 'email': user.email,
-#                 'role': user.role,
-#                 'token': str(request.auth)  # Send back token if needed
-#             }
-#         })
-
-
-
-
-# class StudentMeView(APIView):
-#     def post(self, request):
-#         serializer = StudentLoginSerializer(data=request.data)
-
-#         if serializer.is_valid():
-#             user = serializer.validated_data['user']
-#             token, created = Token.objects.get_or_create(user=user)
-            
-            
-#             # Redirect to password reset if it's first login
-#             if serializer.validated_data.get('first_login'):
-#                 return Response({
-#                     'message': "First login detected. Please reset your password.",
-#                     'redirect_to': "/reset-password/",
-#                     'username':user.username,
-#                     'token': token.key,
-#                     'role':user.role
-#                 }, status=status.HTTP_307_TEMPORARY_REDIRECT)
-
-#             return Response({
-#                 'username': user.username,
-#                 'role': user.role,
-#                 'token': token.key
-#             }, status=status.HTTP_200_OK)
-
-#         return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-}
 
 
 
 
 class StudentInfoView(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -238,35 +104,11 @@ class StudentInfoView(APIView):
             'studentcourse': student_course_list
         }, status=status.HTTP_200_OK)
 
-{
-# class StudentBatchListView(APIView):
-#     authentication_classes = [JWTAuthentication]
-#     permission_classes = [IsAuthenticated]
 
-#     def get(self, request):
-#         if request.user.role != 'student':
-#             return Response({'error':'User is not Authorized.'}, status=status.HTTP_401_UNAUTHORIZED)
-        
-#         user_email = request.user.email
-#         user_name = request.user.username 
-
-#         student = Student.objects.filter(Q(enrollment_no=user_name) | Q(email=user_email)).values('id')
-
-#         batches = Batch.objects.filter(student__id=student)
-#         all_batchs = {
-#             'Ongoing_batch':BatchSerializer(batches.filter(status='Running'), many=True).data,
-#             'Shedule_batch':BatchSerializer(batches.filter(status='Upcoming'), many=True).data,
-#             'Completed_batch':BatchSerializer(batches.filter(status='Completed'), many=True).data,
-#         }
-
-
-#         # serilaizer = BatchSerializer(batches, many=True).data
-#         return Response({'batch':all_batchs})
-}    
 
 
 class StudentBatchListView(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -296,7 +138,7 @@ class StudentBatchListView(APIView):
 
 
 class StudentUpcomingBatchListView(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -357,7 +199,7 @@ class StudentUpcomingBatchListView(APIView):
 
 
 class StudentBatchInfoView(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def get(self, request, id):
@@ -453,7 +295,7 @@ class StudentBatchInfoView(APIView):
 
 
 class BatchCertificateDownloadView(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def get(self, request, id):
@@ -485,174 +327,9 @@ class BatchCertificateDownloadView(APIView):
 
 
 
-# class  BatchAttencdancerequest(APIView):
-#     authentication_classes = [JWTAuthentication]
-#     permission_classes = [IsAuthenticated]
-
-#     def get(self, request, id):
-#         if 
-
-
-{
-
-# class AllStudentCertificate(APIView):
-#     authentication_classes = [JWTAuthentication]
-#     permission_classes = [IsAuthenticated]
-
-#     def get(self, request, id=None):
-#         if request.user.role != 'student':
-#             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
-
-#         user_email = request.user.email
-#         user_name = request.user.username
-
-#         student = Student.objects.filter(Q(enrollment_no=user_name) | Q(email=user_email)).first()
-#         if not student:
-#             return Response({'error': 'Student not found'}, status=status.HTTP_404_NOT_FOUND)
-
-#         student_courses = StudentCourse.objects.filter(student=student).select_related('course')
-
-#         certificates = []
-
-#         for sc in student_courses:
-#             file_path = get_certificate_path(sc.course.name, sc.student.name, sc.student.enrollment_no)
-
-#             if os.path.exists(file_path):
-#                 return FileResponse(open(file_path, 'rb'), content_type='application/pdf')
-#             else:
-#                 certificates.append({
-#                     'course_name': sc.course.name,
-#                     'certificate_available': False,
-#                     'message': 'Certificate not generated yet.'
-#                 })
-
-#         return Response({'certificates': certificates}, status=status.HTTP_200_OK)
-
-
-
-# class AllStudentCertificate(APIView):
-#     authentication_classes = [JWTAuthentication]
-#     permission_classes = [IsAuthenticated]
-
-#     def get(self, request):
-#         if request.user.role != 'student':
-#             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
-
-#         user_email = request.user.email
-#         user_name = request.user.username
-
-#         student = Student.objects.filter(Q(enrollment_no=user_name) | Q(email=user_email)).first()
-#         if not student:
-#             return Response({'error': 'Student not found'}, status=status.HTTP_404_NOT_FOUND)
-
-#         student_courses = StudentCourse.objects.filter(student=student, status='Completed').select_related('course')
-#         if not student_courses.exists():
-#             return Response({'error': 'No completed courses found'}, status=status.HTTP_404_NOT_FOUND)
-
-#         certificates = []
-
-#         for sc in student_courses:
-#             file_path = get_certificate_path(sc.course.name, sc.student.name, sc.student.enrollment_no)
-
-#             if os.path.exists(file_path):
-#                 download_url = request.build_absolute_uri(
-#                     reverse('student_certificate_download', kwargs={'course_id': sc.course.id})
-#                 )
-#                 certificates.append({
-#                     'course_name': sc.course.name,
-#                     'certificate_available': True,
-#                     'download_url': download_url
-#                 })
-#             else:
-#                 certificates.append({
-#                     'course_name': sc.course.name,
-#                     'certificate_available': False,
-#                     'message': 'Certificate not generated yet.'
-#                 })
-
-#         return Response({'certificates': certificates}, status=status.HTTP_200_OK)
-
-
-
-# class DownloadStudentCertificate(APIView):
-#     authentication_classes = [JWTAuthentication]
-#     permission_classes = [IsAuthenticated]
-
-#     def get(self, request, course_id):
-#         if request.user.role != 'student':
-#             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
-
-#         user_email = request.user.email
-#         user_name = request.user.username
-
-#         student = Student.objects.filter(Q(enrollment_no=user_name) | Q(email=user_email)).first()
-#         if not student:
-#             return Response({'error': 'Student not found'}, status=status.HTTP_404_NOT_FOUND)
-
-#         student_course = StudentCourse.objects.filter(student=student, course__id=course_id).select_related('course').first()
-#         if not student_course:
-#             return Response({'error': 'Course not found or not assigned to student'}, status=status.HTTP_404_NOT_FOUND)
-
-#         file_path = get_certificate_path(student_course.course.name, student.name, student.enrollment_no)
-
-#         if os.path.exists(file_path):
-#             return FileResponse(open(file_path, 'rb'), content_type='application/pdf')
-
-#         return Response({'error': 'Certificate not generated yet.'}, status=status.HTTP_404_NOT_FOUND)
-
-
-}
-
-{
-# class AllStudentCertificate(APIView):
-#     authentication_classes = [JWTAuthentication]
-#     permission_classes = [IsAuthenticated]
-
-#     def get(self, request):
-#         if request.user.role != 'student':
-#             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
-
-#         user_email = request.user.email
-#         user_name = request.user.username
-
-#         student = Student.objects.filter(Q(enrollment_no=user_name) | Q(email=user_email)).first()
-#         if not student:
-#             return Response({'error': 'Student not found'}, status=status.HTTP_404_NOT_FOUND)
-
-#         student_courses = StudentCourse.objects.filter(student=student).select_related('course')
-#         # if not student_courses.exists():
-#         #     return Response({'error': 'No completed courses found'}, status=status.HTTP_404_NOT_FOUND)
-
-#         certificates = []
-
-#         for sc in student_courses:
-#             file_path = get_certificate_path(sc.course.name, sc.student.name, sc.student.enrollment_no)
-
-#             if os.path.exists(file_path):
-#                 download_url = request.build_absolute_uri(
-#                     reverse('student_certificate_download', kwargs={'course_id': sc.course.id})
-#                 )
-#                 certificates.append({
-#                     'course_name': sc.course.name,
-#                     'certificate_available': True,
-#                     'certificate_date': sc.certificate_date,
-#                     'download_url': download_url
-#                 })
-#             else:
-#                 certificates.append({
-#                     'course_name': sc.course.name,
-#                     'certificate_available': False,
-#                     'certificate_date': sc.certificate_date,
-#                     'message': 'Certificate not generated yet.'
-#                 })
-
-#         return Response({'certificates': certificates}, status=status.HTTP_200_OK)
-}
-
-
 
 class AllStudentCertificate(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -701,7 +378,7 @@ class AllStudentCertificate(APIView):
 
 
 class DownloadStudentCertificate(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def get(self, request, course_id):
@@ -731,7 +408,7 @@ class DownloadStudentCertificate(APIView):
 
 
 class StudentAttendanceListView(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -792,157 +469,9 @@ class StudentAttendanceListView(APIView):
                          }, status=status.HTTP_200_OK)
     
 
-
-{
-
-    # batch_fields = [
-    #     'id',
-    #     'batch_id',
-    #     'batch_time__start_time',
-    #     'batch_time__end_time',
-    #     'start_date',
-    #     'end_date',
-    #     'course__name',
-    # ]
-
-    # def get(self, request, id):
-    #     if request.user.role != 'student':
-    #         return Response({'error':'User is not Authorized'}, status=status.HTTP_401_UNAUTHORIZED)
-        
-    #     user_email = request.user.email
-    #     user_name = request.user.username
-
-    #     # Fetch a single student object
-    #     student = Student.objects.filter(Q(enrollment_no=user_name) | Q(email=user_email)).values('id')
-        
-    #     if not student:
-    #         return Response({'error': 'Student not found.'}, status=status.HTTP_404_NOT_FOUND)
-
-    #     batch_list = Batch.objects.filter(student=student)
-
-    #     print(batch_list)
-    
-}
-
-
-### This is for creating all batch Attendance
-{
-# # views.py
-# from utils import create_daily_attendance_records
-
-# def create_attendance_for_all_batches_view(request):
-#     if request.method != 'GET':
-#         return JsonResponse({'error': 'Invalid method'}, status=405)
-
-#     batches = Batch.objects.prefetch_related('student').all()
-#     created_count = 0
-
-#     for batch in batches:
-#         students = batch.student.all()
-#         if not students:
-#             continue
-
-#         existing_student_ids = Attendance.objects.filter(batch=batch) \
-#                                 .values_list('student_id', flat=True).distinct()
-#         students_to_add = [s for s in students if s.id not in existing_student_ids]
-
-#         if students_to_add:
-#             create_daily_attendance_records(
-#                 batch=batch,
-#                 students=students_to_add,
-#                 start_date=batch.start_date,
-#                 end_date=batch.end_date,
-#                 preferred_week=batch.preferred_week
-#             )
-#             created_count += len(students_to_add)
-
-#     return JsonResponse({'message': f'Attendance created for {created_count} students (if missing).'})
-}
-
-### For mark present those student whose batch completed 
-{
-# from .utils import mark_attendance_present_for_completed_batches
-
-# def batch_attendance_present(request):
-#     message = mark_attendance_present_for_completed_batches()
-#     return JsonResponse({'message': message})
-}
-
-
-{
-# class StudentBatchRequestAPI(APIView):
-#     authentication_classes = [JWTAuthentication]
-#     permission_classes = [IsAuthenticated]
-
-#     def post(self, request):
-#         # Only students allowed
-#         if getattr(request.user, 'role', None) != 'student':
-#             return Response({'error': 'Unauthorized access. Only students are allowed.'}, status=status.HTTP_401_UNAUTHORIZED)
-
-#         email = request.user.email
-#         username = request.user.username
-#         request_batch_code = request.data.get('batch_code')
-
-#         if not request_batch_code:
-#             return Response({'error': 'Batch code is required.'}, status=status.HTTP_400_BAD_REQUEST)
-
-#         # Get student instance
-#         student = Student.objects.filter(Q(enrollment_no=username) | Q(email=email)).first()
-#         if not student:
-#             return Response({'error': 'Student not found.'}, status=status.HTTP_404_NOT_FOUND)
-
-#         # Get student courses
-#         student_courses = StudentCourse.objects.filter(student=student).select_related('course')
-#         student_course_ids = student_courses.values_list("course_id", flat=True)
-
-#         # Get batch IDs where student is already enrolled in "Upcoming" batches
-#         student_upcoming_batch_ids = Batch.objects.filter(
-#             student=student, status='Upcoming'
-#         ).values_list('id', flat=True)
-
-#         # Get course IDs that are already completed or ongoing
-#         completed_or_ongoing_course_ids = student_courses.filter(
-#             status__in=['Completed', 'Ongoing']
-#         ).values_list('course_id', flat=True)
-
-#         # Fetch all upcoming batches for the student's courses
-#         all_upcoming_batches = Batch.objects.filter(
-#             course_id__in=student_course_ids,
-#             status='Upcoming'
-#         )
-
-#         # Filter out already assigned batches and completed/ongoing course batches
-#         filtered_upcoming_batches = all_upcoming_batches.exclude(
-#             course_id__in=completed_or_ongoing_course_ids
-#         ).exclude(id__in=student_upcoming_batch_ids)
-
-#         # Find batch by code
-#         matching_batches = filtered_upcoming_batches.filter(batch_id=request_batch_code)
-
-#         if matching_batches.exists():
-#             batch_instance = matching_batches.first()
-
-#             # Check if a request already exists
-#             if StudentBatchRequest.objects.filter(student=student, batch=batch_instance).exists():
-#                 return Response({'message': 'Request for this batch already submitted.'}, status=status.HTTP_409_CONFLICT)
-
-#             # Create StudentBatchRequest entry
-#             StudentBatchRequest.objects.create(
-#                 student=student,
-#                 batch=batch_instance,
-#                 request_type='Batch Request',
-#                 batch_request='Pending'
-#             )
-
-#             return Response({'message': 'Batch request submitted successfully.'}, status=status.HTTP_201_CREATED)
-
-#         else:
-#             return Response({'message': 'Student is not eligible or already enrolled in this batch.'}, status=status.HTTP_404_NOT_FOUND)
-}
-
 # This is for Creating Batch Request..
 class StudentBatchRequestAPI(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -985,43 +514,10 @@ class StudentBatchRequestAPI(APIView):
 
         return Response({'message': 'Batch Request Sent Successfully.'}, status=status.HTTP_201_CREATED)
 
-{
-
-# class StudentTicketCreateAPIView(APIView):
-#     authentication_classes = [JWTAuthentication]
-#     permission_classes = [IsAuthenticated]
-
-#     def post(self, request):
-#         if request.user.role != 'student':
-#             return Response({'error': 'User is not authorized.'}, status=status.HTTP_401_UNAUTHORIZED)
-
-#         user_email = request.user.email
-#         user_name = request.user.username
-#         issue_type = request.data.get('issue_type')
-#         title = request.data.get('title')
-#         description = request.data.get('description')
-
-#         # Fetch a single student object
-#         student = Student.objects.filter(Q(enrollment_no=user_name) | Q(email=user_email)).first()
-
-#         if not student:
-#             return Response({'error': 'Student not found.'}, status=status.HTTP_404_NOT_FOUND)
-        
-#         Ticket.objects.create(
-#             student=student,
-#             issue_type=issue_type,
-#             title=title,
-#             description=description,
-#             status='In Progress',
-#             is_active=True
-#         )
-
-#         return Response({'message':'Ticket Send...'}, status=status.HTTP_201_CREATED)
-    }
 
 
 class StudentAnnouncementAPIView(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -1045,7 +541,7 @@ class StudentAnnouncementAPIView(APIView):
 
 
 class StudentRecommendedAPIView(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def patch(self, request):
@@ -1072,7 +568,7 @@ class StudentRecommendedAPIView(APIView):
 
 # This is for view student ticket...
 class StudentTicketAPIView(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -1112,13 +608,20 @@ class StudentTicketAPIView(APIView):
 
 # This is for creating ticket...
 class StudentTicketCreateAPIView(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        recaptcha_token = request.data.get('recaptcha_token')
+        if not recaptcha_token:
+            return Response({'error': 'reCAPTCHA token missing'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # ✅ First verify reCAPTCHA
+        verify_recaptcha(recaptcha_token)
+
         if request.user.role != 'student':
             return Response({'error': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
-
+        
         user_email = request.user.email
         user_name = request.user.username
         user_role = request.user.role
@@ -1133,6 +636,10 @@ class StudentTicketCreateAPIView(APIView):
         issue_type = request.data.get('issue_type')
         message = request.data.get('message')
         priority = request.data.get('priority', 'Medium')  # default priority if not provided
+        print(title)
+        print(issue_type)
+        print(message)
+        print(priority)
 
         if not title or not issue_type or not message:
             return Response({'error': 'Title, issue_type, and message are required.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -1175,7 +682,7 @@ class StudentTicketCreateAPIView(APIView):
 
 # This is for Geting Chats in Ticket
 class StudentTicketChatAPIView(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def get(self, request, id):
@@ -1208,7 +715,7 @@ class StudentTicketChatAPIView(APIView):
 
 
 class StudentTicketChatMessageAPIView(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def post(self, request, id):
@@ -1231,7 +738,7 @@ class StudentTicketChatMessageAPIView(APIView):
 
         # Update ticket status based on current state
         if ticket.status == 'Answered':
-            ticket.status = 'Customer-Reply'
+            ticket.status = 'Your-Query'
             ticket.save()
         elif ticket.status == 'Closed':
             ticket.status = 'Open'
@@ -1259,7 +766,7 @@ class StudentTicketChatMessageAPIView(APIView):
 
 
 class StudentTicketstatus(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def post(self, request, id):
@@ -1289,47 +796,53 @@ class StudentTicketstatus(APIView):
 
 
 
-
-class StudentALLBatchChatsAPIViews(APIView):
-    authentication_classes = [JWTAuthentication]
+class StudentALLBatchChatsAPIView(ListAPIView):
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
+    serializer_class = AllChatsSerializer
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    search_fields = ['batch__batch_id', 'batch__status', 'batch__trainer__name', 'batch__course__name']
+    filterset_fields = ['batch__status']
 
-    def get(self, request):
-        if request.user.role != 'student':
-            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+    def get_queryset(self):
+        if self.request.user.role != 'student':
+            return Chats.objects.none()
 
-        # Get student based on enrollment number or email
         student = Student.objects.filter(
-            Q(enrollment_no=request.user.username) | Q(email=request.user.email)
+            Q(enrollment_no=self.request.user.username) | Q(email=self.request.user.email)
         ).first()
 
         if not student:
-            return Response({'error': 'Student not found'}, status=status.HTTP_404_NOT_FOUND)
+            return Chats.objects.none()
 
-        # Get all batches the student is part of (adjust if using a through model)
         batches = Batch.objects.filter(student=student)
-
         if not batches.exists():
-            return Response({'error': 'No batches found for student'}, status=status.HTTP_404_NOT_FOUND)
+            return Chats.objects.none()
 
-        # Get Chats related to these batches and return only batch ID and code
-        chats = Chats.objects.filter(batch__in=batches).select_related('batch')
+        return Chats.objects.filter(batch__in=batches).select_related(
+            'batch', 'batch__trainer', 'batch__course', 'batch__batch_time'
+        ).prefetch_related('messages')
 
-        batch_list = [
-            {
-                'batch_id': chat.batch.id,
-                'batch_code': chat.batch.batch_id
-            }
-            for chat in chats
-        ]
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
 
-        return Response({'all_batch_chats': batch_list}, status=status.HTTP_200_OK)
+        if not queryset.exists():
+            return Response({'error': 'No batch chats found for student'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = self.get_serializer(queryset, many=True)
+        data = serializer.data
+
+        # Optional: sort by batch_status color
+        status_priority = {'Green': 0, 'Yellow': 1, 'Red': 2}
+        sorted_data = sorted(data, key=lambda x: status_priority.get(x['batch_status'], 3))
+
+        return Response({'all_batch_chats': sorted_data}, status=status.HTTP_200_OK)
 
 
 
 
 class StudentBatchChatsMessage(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def get(self, request, id):
@@ -1387,7 +900,7 @@ class StudentBatchChatsMessage(APIView):
 
 
 class StudentBatchChatsMessageSender(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
     
     def post(self, request, id):
@@ -1425,12 +938,4 @@ class StudentBatchChatsMessageSender(APIView):
         )
 
         return Response({'success': 'Message sent successfully'}, status=status.HTTP_201_CREATED)
-
-        
-        
-
-# ...WebSocket for student Batch chats... #
-
-
-
 

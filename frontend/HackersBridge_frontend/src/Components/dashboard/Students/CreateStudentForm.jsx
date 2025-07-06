@@ -9,6 +9,7 @@ import { useCoordinatorForm } from '../AddDetails/Coordinator/CoordinatorContext
 import { useCounsellorForm } from '../AddDetails/Counsellor/CounsellorContext';
 import { useAuth } from '../AuthContext/AuthContext';
 import { useStudentForm } from '../Studentcontext/StudentFormContext';
+import { useTagContext } from '../Tags/TagsContext';
 
 
 const { TextArea } = Input;
@@ -25,8 +26,8 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
     const { coursesData, fetchCourses  } = useCourseForm();
     const { coordinatorData, fetchCoordinators } = useCoordinatorForm();
     const { counsellorData, fetchCounsellors } = useCounsellorForm();
-    const { token } = useAuth();
-    
+    const { tagData, fetchTagData} = useTagContext();
+
     const [ loading, setLoading] = useState(false);
     // store visibility of alternate phone number of student
     const [showAltPhone, setShowAltPhone] = useState(false);
@@ -39,8 +40,8 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
        useEffect(() => {
         fetchCourses();
         fetchCoordinators();
-        fetchCounsellors()
-
+        fetchCounsellors();
+        fetchTagData();
         // console.log(selectedStudentData);
         
         if (selectedStudentData) {
@@ -79,6 +80,9 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
         }
 
     }, []);
+
+
+    const tagList = Array.isArray(tagData?.data) ? tagData.data : [];
 
 
     //handle change of input fields  
@@ -131,7 +135,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
             ? dayjs(studentFormData.dateOfBirth).format("YYYY-MM-DD") 
             : null,
             dateOfJoining: studentFormData.dateOfJoining && dayjs(studentFormData.dateOfJoining, "DD/MM/YYYY").isValid()
-            ? dayjs(studentFormData.dateOfJoining, "DD/MM/YYYY").format("YYYY-MM-DD")  // onvert to "YYYY-MM-DD"
+            ? dayjs(studentFormData.dateOfJoining, "DD/MM/YYYY").format("YYYY-MM-DD")  // convert to "YYYY-MM-DD"
             : null,
         };
 
@@ -156,7 +160,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
             course_counsellor: formattedData.courseCounsellor,
             support_coordinator: formattedData.supportCoordinator,
             note: formattedData.note,
-            // profile_picture: studentFormData.studentProfilePicture,
+            tags:formattedData.tags,
         };
         // console.log("Final Payload:", JSON.stringify(payload, null, 2));
 
@@ -172,7 +176,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
             if (selectedStudentData && selectedStudentData.id) {
                 // Update existing course (PUT)
                 response = await axios.put(`${BASE_URL}/api/students/edit/${selectedStudentData.id}/`, payload, {
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    headers: { 'Content-Type': 'application/json' },
                     withCredentials : true
                 }
                 );
@@ -180,7 +184,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
                 } else {
                     // Add new course (POST)
                     response = await axios.post(`${BASE_URL}/api/students/add/`, payload, {
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        headers: { 'Content-Type': 'application/json' },
                         withCredentials : true
                     }
                     );
@@ -272,14 +276,14 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
                     <form className="p-4 md:p-5" onSubmit={handleFormSubmit}>
                     <div className="grid gap-4 mb-4 grid-cols-4">
                         <div className="col-span-1">
-                            <label htmlFor="enrollmentNumber" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Enrollment Number</label>
+                            <label htmlFor="enrollmentNumber" className="block mb-2 text-sm font-medium text-gray-900">Enrollment Number</label>
                             <Input name="enrollmentNumber" value={studentFormData.enrollmentNumber} onChange={(e) => handleChange("enrollmentNumber", e.target.value)} disabled={isEditing} className='rounded-lg border-gray-300' placeholder="Enter Enrollment Number" />
                             {errors.enrollmentNumber && <p className="text-red-500 text-sm">{errors.enrollmentNumber}</p>}
                         </div>
                         
                         {/*  Student Name  */}
                         <div className="col-span-1">
-                            <label htmlFor="studentName" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Student Name</label>
+                            <label htmlFor="studentName" className="block mb-2 text-sm font-medium text-gray-900">Student Name</label>
                             <Input name="studentName" value={studentFormData.studentName} className='rounded-lg border-gray-300' placeholder="Enter Student Name" 
                                     onChange={(e) => {
                                         const inputValue = e.target.value.replace(/[^a-zA-Z\s]/g, ""); // Remove non-alphabetic characters
@@ -291,15 +295,15 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
 
                         {/* Student Date of Birth  */}
                         <div className="col-span-1">
-                            <label htmlFor="dateOfBirth" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Student's Date of Birth</label>
+                            <label htmlFor="dateOfBirth" className="block mb-2 text-sm font-medium text-gray-900">Student's Date of Birth</label>
                             <DatePicker name='dateOfBirth' value={studentFormData.dateOfBirth ? dayjs(studentFormData.dateOfBirth, "YYYY-MM-DD") : null}  onChange={(date, dateString) => setStudentFormData({ ...studentFormData, dateOfBirth: dateString })} className='w-full border-gray-300' size='large'  placeholder="Select Date of Birth"/>                       
                             {errors.dateOfBirth && <p className="text-red-500 text-sm">{errors.dateOfBirth}</p>}
-                            </div>
+                        </div>
 
                         {/* Phone Number */}
                         <div className="col-span-1 flex gap-2">
                             <div>
-                                <label htmlFor="phoneNumber" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Phone Number</label>
+                                <label htmlFor="phoneNumber" className="block mb-2 text-sm font-medium text-gray-900">Phone Number</label>
                                 <Input name="phoneNumber"  value={studentFormData.phoneNumber} className='rounded-lg border-gray-300'  placeholder='Enter Phone Number' 
                                     onChange={(e) => {
                                         const inputValue = e.target.value.replace(/\D/g, ""); // Remove non-numeric values
@@ -311,7 +315,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
                                 
                                 {showAltPhone && (
                                     <>
-                                        <label htmlFor="alternatePhoneNumber" className="block mt-2 mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                        <label htmlFor="alternatePhoneNumber" className="block mt-2 mb-2 text-sm font-medium text-gray-900">
                                             Alternate Phone Number
                                         </label>
                                         <Input
@@ -330,48 +334,48 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
                                 )}
                             </div>
                             <div className='flex items-end mb-3'>
-                            {showAltPhone ? (
-                                <MinusCircleOutlined
-                                    className="text-red-500 text-lg cursor-pointer hover:text-red-700"
-                                    onClick={() => setShowAltPhone(false)}
-                                />
-                            ) : (
-                                <PlusCircleOutlined
-                                    className="text-green-500 text-lg cursor-pointer hover:text-green-700"
-                                    onClick={() => setShowAltPhone(true)}
-                                />
-                            )}
+                                {showAltPhone ? (
+                                    <MinusCircleOutlined
+                                        className="text-red-500 text-lg cursor-pointer hover:text-red-700"
+                                        onClick={() => setShowAltPhone(false)}
+                                    />
+                                ) : (
+                                    <PlusCircleOutlined
+                                        className="text-green-500 text-lg cursor-pointer hover:text-green-700"
+                                        onClick={() => setShowAltPhone(true)}
+                                    />
+                                )}
                             </div>
-                            {errors.phoneNumber && <p className="text-red-500 text-sm">{errors.phoneNumber}</p>}
+                                {errors.phoneNumber && <p className="text-red-500 text-sm">{errors.phoneNumber}</p>}
                         </div>
 
                             {/* Email Address */}
                             <div className="col-span-1">
-                            <label htmlFor="emailAddress" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Email Address</label>
-                            <Input name="emailAddress" value={studentFormData.emailAddress} className='rounded-lg border-gray-300' placeholder="Enter Email Address" 
-                                    onChange={(e) => {
-                                        const inputValue = e.target.value.replace(/[^a-zA-Z0-9@._-]/g, ""); // Allow email characters
-                                        handleChange("emailAddress", inputValue);
-                                    }}
-                            />
-                            {errors.emailAddress && <p className="text-red-500 text-sm">{errors.emailAddress}</p>}
+                                <label htmlFor="emailAddress" className="block mb-2 text-sm font-medium text-gray-900">Email Address</label>
+                                <Input name="emailAddress" value={studentFormData.emailAddress} className='rounded-lg border-gray-300' placeholder="Enter Email Address" 
+                                        onChange={(e) => {
+                                            const inputValue = e.target.value.replace(/[^a-zA-Z0-9@._-]/g, ""); // Allow email characters
+                                            handleChange("emailAddress", inputValue);
+                                        }}
+                                />
+                                {errors.emailAddress && <p className="text-red-500 text-sm">{errors.emailAddress}</p>}
                             </div>
 
                             {/* Text Area Adding Address */}
-                        <div className="col-span-1 sm:col-span-1">
-                            <label htmlFor="studentAddress" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Student Address</label>
-                            <TextArea name="studentAddress" value={studentFormData.studentAddress} onChange={(e) => handleChange("studentAddress", e.target.value)} placeholder="Add Address Here" autoSize size='large' />
+                            <div className="col-span-1 sm:col-span-1">
+                                <label htmlFor="studentAddress" className="block mb-2 text-sm font-medium text-gray-900">Student Address</label>
+                                <TextArea name="studentAddress" value={studentFormData.studentAddress} onChange={(e) => handleChange("studentAddress", e.target.value)} placeholder="Add Address Here" autoSize size='large' />
                                     <div
                                         style={{
                                         margin: '24px 0',
                                         }}
-                                    />
-                        </div>
+                                />
+                            </div>
                             
 
                         {/* Enrollment Date  */}
                         <div className="col-span-1">
-                            <label htmlFor="dateOfJoining" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Enrollment Date</label>
+                            <label htmlFor="dateOfJoining" className="block mb-2 text-sm font-medium text-gray-900">Enrollment Date</label>
                             <DatePicker name='dateOfJoining' value={studentFormData.dateOfJoining ? dayjs(studentFormData.dateOfJoining, "DD/MM/YYYY") : null}  className='w-full border-gray-300' size='large'  placeholder="Select Enrollment Date"
                                     format="DD/MM/YYYY"
                                     onChange={(date, dateString) =>
@@ -386,65 +390,65 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
 
                             {/* Dropdown for Language Selection */}
                             <div className="col-span-1 sm:col-span-1">
-                            <label htmlFor="language" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Language</label>
-                            <Select name="language" value={studentFormData.language.length > 0 ? studentFormData.language : null } onChange={(value) => handleChange("language", value)} className='w-full border-gray-300' size='large' placeholder='Select Language'
+                                <label htmlFor="language" className="block mb-2 text-sm font-medium text-gray-900">Language</label>
+                                <Select name="language" value={studentFormData.language.length > 0 ? studentFormData.language : null } onChange={(value) => handleChange("language", value)} className='w-full border-gray-300' size='large' placeholder='Select Language'
                                     options={[
                                                 { value: 'Hindi', label: 'Hindi' },
                                                 { value: 'English', label: 'English' },
                                                 { value: 'Both', label: 'Both' },
                                             ]} 
                                 />
-                                {errors.language && <p className="text-red-500 text-sm">{errors.language}</p>}
-                        </div>
+                                    {errors.language && <p className="text-red-500 text-sm">{errors.language}</p>}
+                             </div>
 
     
                         {/* Dropdown for Courses Selection */}
                         <div className="col-span-1 sm:col-span-2">
-                                <label htmlFor="course" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Enrolled Courses</label>
-                                <Select name="course" mode="multiple" className='w-full border-gray-300' size='large' placeholder="select Courses" 
-                                        showSearch  
-                                        
-                                        onChange={(values) => handleCourseChange(values)}
-                                        value={selectedCourses}
-                                        filterOption={(input, option) =>
-                                            option.label.toLowerCase().includes(input.toLowerCase()) // Search filter
-                                        }
-                                        options={coursesData.map(course => ({
-                                            value: course.id,
-                                            label: course.name,
-                                        }))}
-                                />
-                                {errors.course && <p className="text-red-500 text-sm">{errors.course}</p>}
+                            <label htmlFor="course" className="block mb-2 text-sm font-medium text-gray-900">Enrolled Courses</label>
+                            <Select name="course" mode="multiple" className='w-full border-gray-300' size='large' placeholder="select Courses" 
+                                showSearch  
+                                
+                                onChange={(values) => handleCourseChange(values)}
+                                value={selectedCourses}
+                                filterOption={(input, option) =>
+                                    option.label.toLowerCase().includes(input.toLowerCase()) // Search filter
+                                }
+                                options={coursesData.map(course => ({
+                                    value: course.id,
+                                    label: course.name,
+                                }))}
+                            />
+                            {errors.course && <p className="text-red-500 text-sm">{errors.course}</p>}
                         </div>
 
 
                         {/* Dropdown for Completed Courses Selection */}
                         <div className="col-span-1 sm:col-span-2">
-                                <label htmlFor="completedCourse" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Completed Courses</label>
-                                <Select name="completedCourse" mode="multiple" className='w-full border-gray-300' size='large' placeholder="select Completed Courses" 
-                                        showSearch 
-                                        
-                                        onChange={handleCompletedCourseChange}
-                                        value={completedCourses}
-                                        filterOption={(input, option) =>
-                                            option.label.toLowerCase().includes(input.toLowerCase()) // Search filter
-                                        }
-                                        options={coursesData
-                                            .filter(course => selectedCourses.includes(course.id))
-                                            .map(course => ({
-                                                key: course.id, 
-                                                value: course.id,
-                                                label: course.name,
-                                            }))
-                                        }
-                                        disabled={selectedCourses.length === 0} // Disable if no courses are selected
-                                        />
+                            <label htmlFor="completedCourse" className="block mb-2 text-sm font-medium text-gray-900">Completed Courses</label>
+                            <Select name="completedCourse" mode="multiple" className='w-full border-gray-300' size='large' placeholder="select Completed Courses" 
+                                showSearch 
+                                
+                                onChange={handleCompletedCourseChange}
+                                value={completedCourses}
+                                filterOption={(input, option) =>
+                                    option.label.toLowerCase().includes(input.toLowerCase()) // Search filter
+                                }
+                                options={coursesData
+                                    .filter(course => selectedCourses.includes(course.id))
+                                    .map(course => ({
+                                        key: course.id, 
+                                        value: course.id,
+                                        label: course.name,
+                                    }))
+                                }
+                                disabled={selectedCourses.length === 0} // Disable if no courses are selected
+                            />
                         </div>
 
 
                             {/* Dropdown for Mode Selection */}
                             <div className="col-span-1 sm:col-span-1">
-                            <label htmlFor="mode" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Mode</label>
+                            <label htmlFor="mode" className="block mb-2 text-sm font-medium text-gray-900">Mode</label>
                             <Select name="mode" value={studentFormData.mode.length > 0 ? studentFormData.mode : null } onChange={(value) => handleChange("mode", value)} className='w-full border-gray-300' size='large' placeholder='Select Mode' 
                                     options={[
                                                     { value: 'Offline', label: 'Offline' },
@@ -457,7 +461,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
 
                             {/* Dropdown for Preferres Week Selection */}
                             <div className="col-span-1 sm:col-span-1">
-                            <label htmlFor="preferredWeek" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Preferred Week</label>
+                            <label htmlFor="preferredWeek" className="block mb-2 text-sm font-medium text-gray-900">Preferred Week</label>
                             <Select name="preferredWeek" value={studentFormData.preferredWeek.length > 0 ? studentFormData.preferredWeek : null } onChange={(value) => handleChange("preferredWeek", value)} className='w-full border-gray-300' size='large' placeholder='Select Preferred Week' 
                                     options={[
                                                     { value: 'Weekdays', label: 'Weekdays' },
@@ -470,7 +474,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
 
                             {/* Dropdown for Location Selection */}
                             <div className="col-span-1 sm:col-span-1">
-                            <label htmlFor="location" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Location</label>
+                            <label htmlFor="location" className="block mb-2 text-sm font-medium text-gray-900">Location</label>
                             <Select name="location" value={studentFormData.location ? String(studentFormData.location) : null}  onChange={(value) => handleChange("location", value)} className='w-full border-gray-300' size='large' placeholder='Select Location' 
                                     options={[
                                                 { value: '1', label: 'Saket' },
@@ -483,7 +487,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
 
                         {/*  Student's Guardian Name  */}
                         <div className="col-span-1">
-                            <label htmlFor="guardianName" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Guardian Name</label>
+                            <label htmlFor="guardianName" className="block mb-2 text-sm font-medium text-gray-900">Guardian Name</label>
                             <Input name="guardianName" value={studentFormData.guardianName} className='rounded-lg border-gray-300' placeholder="Enter Guardian Name" 
                                     onChange={(e) => {
                                         const inputValue = e.target.value.replace(/[^a-zA-Z\s]/g, ""); // Remove non-alphabetic characters
@@ -496,7 +500,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
 
                             {/* Guardian Phone Number */}
                             <div className="col-span-1">
-                            <label htmlFor="guardianPhoneNumber" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Guardian Phone Number</label>
+                            <label htmlFor="guardianPhoneNumber" className="block mb-2 text-sm font-medium text-gray-900">Guardian Phone Number</label>
                             <Input name="guardianPhoneNumber"  value={studentFormData.guardianPhoneNumber} className='rounded-lg border-gray-300'  size='large' placeholder='Enter Phone Number' 
                                     onChange={(e) => {
                                         const inputValue = e.target.value.replace(/\D/g, ""); // Remove non-numeric values
@@ -510,7 +514,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
 
                         {/* Dropdown for Course Counseller Selection */}
                         <div className="col-span-1 sm:col-span-1">
-                            <label htmlFor="courseCounsellor" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Course Counsellor</label>
+                            <label htmlFor="courseCounsellor" className="block mb-2 text-sm font-medium text-gray-900 ">Course Counsellor</label>
                             <Select name="courseCounsellor" className='w-full border-gray-300' size='large' placeholder='Select Course Counsellor' 
                                     showSearch  // This enables search functionality
                                         
@@ -529,7 +533,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
 
                         {/* Dropdown for Support Coordinator Selection */}
                         <div className="col-span-1 sm:col-span-1">
-                            <label htmlFor="supportCoordinator" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Support Coordinator</label>
+                            <label htmlFor="supportCoordinator" className="block mb-2 text-sm font-medium text-gray-900 ">Support Coordinator</label>
                             <Select name="supportCoordinator" className='w-full border-gray-300' size='large' placeholder='Select Support Coordinator' 
                                 showSearch  // This enables search functionality
                                         
@@ -549,16 +553,58 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
                         
                         {/* Text Area for Adding Note */}
                         <div className="col-span-1 sm:col-span-1">
-                            <label htmlFor="note" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Add Note</label>
-                            <TextArea  maxLength={1500} showCount name="note" value={studentFormData.note} onChange={(e) => handleChange("note", e.target.value)} placeholder="Add Note Here" autoSize size='large' />
-                                    <div
-                                        style={{
-                                        margin: '24px 0',
-                                        }}
-                                    />
+                            <label htmlFor="note" className="block mb-2 text-sm font-medium text-gray-900">Add Note</label>
+                            <TextArea maxLength={1500} showCount name="note" value={studentFormData.note} onChange={(e) => handleChange("note", e.target.value)} placeholder="Add Note Here" autoSize size='large' />
+                                <div
+                                    style={{
+                                    margin: '24px 0',
+                                    }}
+                                />
                         </div>
 
-                            {/* Text Area for Adding Note */}
+
+                        {/* Dropdown for Adding Tags */}
+                        <div className="col-span-1 sm:col-span-1">
+                            <label htmlFor="tags" className="block mb-2 text-sm font-medium text-gray-900">Add Tags</label>
+                            <Select size='large'
+                                mode="multiple"
+                                showSearch
+                                placeholder="Select Tags"
+                                className="w-full border-gray-300"
+                                name="tags"
+                                value={studentFormData.tags}
+                                onChange={(value) =>
+                                setStudentFormData((prev) => ({ ...prev, tags: value }))
+                                }
+                                filterOption={(input, option) =>
+                                option?.label?.toLowerCase().includes(input.toLowerCase())
+                                }
+                                options={tagList.map((tag) => ({
+                                value: tag.id,
+                                label: tag.tag_name,
+                                tag_color: tag.tag_color,
+                                }))}
+                                optionRender={(option) => (
+                                <div
+                                    className="w-full px-2 py-2 rounded"
+                                    style={{
+                                    backgroundColor: `${option.data.tag_color}`, // light background using transparency
+                                    // clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 0 100%)',
+                                    }}
+                                >
+                                    <span className="text-sm font-medium text-white">
+                                    {option.label}
+                                    </span>
+                                </div>
+                                )}
+                            />
+                        {errors?.tags && (
+                            <p className="text-red-500 text-sm mt-1">{errors.tags}</p>
+                        )}
+                        <div style={{ margin: '24px 0' }} />
+                        </div>        
+
+                            {/* Text Area for Profile Picture */}
                             {/* <div className="col-span-1 sm:col-span-1">
                                 <label htmlFor="studentProfilePicture" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Add Profile Picture</label>
                                     <div className='flex'>

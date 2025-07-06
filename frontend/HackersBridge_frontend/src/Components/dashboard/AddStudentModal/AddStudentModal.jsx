@@ -7,7 +7,6 @@ import BASE_URL from '../../../ip/Ip';
 import { useBatchForm } from '../Batchcontext/BatchFormContext';
 import { useParams } from 'react-router-dom';
 import { useSpecificBatch } from '../Contexts/SpecificBatch';
-import { useAuth } from '../AuthContext/AuthContext';
 
 
 
@@ -18,7 +17,6 @@ const AddStudentModal = ({ isOpen, onClose }) => {
     const [decodedBatchId, setDecodedBatchId] = useState(null);
     const {batchFormData, setBatchFormData, resetBatchForm} = useBatchForm();
     const { fetchSpecificBatch } = useSpecificBatch();
-    const { token } = useAuth();
 
     const [ loading, setLoading ] = useState(false);
     const [students, setStudents] = useState({}); // Stores selected students per batch
@@ -54,7 +52,7 @@ const AddStudentModal = ({ isOpen, onClose }) => {
         try {
             const response = await axios.post(`${BASE_URL}/api/batches/${batch_id}/add-students/`, 
                 { students: studentIds }, // Ensure correct payload format
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                { headers: { 'Content-Type': 'application/json'},
                 withCredentials : true
             }
             );
@@ -64,7 +62,7 @@ const AddStudentModal = ({ isOpen, onClose }) => {
                  setTimeout( () => {
                     setLoading(false);
                     onClose();
-                    setBatchFormData((prev) => ({ ...prev, [batch_id]: [] })); // ✅ Reset selected students
+                    setBatchFormData((prev) => ({ ...prev, [batch_id]: [] })); // Reset selected students
                     fetchSpecificBatch(batch_id)
                 }, 1000);
 
@@ -85,7 +83,7 @@ const AddStudentModal = ({ isOpen, onClose }) => {
     const fetchAvailableStudents = useCallback(async (decodedBatchId) => {        
         try {
             const response = await axios.get(`${BASE_URL}/api/batches/${decodedBatchId}/available-students/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                { headers: { 'Content-Type': 'application/json' },
                 withCredentials : true
             }
             );

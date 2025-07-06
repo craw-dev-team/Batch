@@ -40,8 +40,8 @@ import { useRequestBatch } from './RequestBatchContext';
             type="text"
             value={batchCode}
             onChange={(e) => setBatchCode(e.target.value)}
-            placeholder="Enter your code...."
-            className="w-full text-sm border border-gray-300 px-3 py-1 rounded focus:outline-none focus:ring focus:ring-blue-300 mb-4"
+            placeholder="Enter Batch Code"
+            className="w-full text-xs border border-gray-300 px-2 py-1 rounded-md focus:ring-0 focus:border-green-500 mb-4"
           />
           {/* <label className="block text-sm font-medium text-gray-700 mb-2">
            

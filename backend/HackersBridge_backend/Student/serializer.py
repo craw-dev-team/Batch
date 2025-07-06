@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Student, Installment , StudentCourse, StudentNotes, BookAllotment
+from .models import Student, Installment , StudentCourse, StudentNotes, BookAllotment, StudentTags, Tags
 from django.core.mail import send_mail
 from django.utils.crypto import get_random_string
 from django.contrib.auth import get_user_model
@@ -8,6 +8,7 @@ from nexus.models import Course, Book
 from datetime import date
 from functools import lru_cache
 from django.utils import timezone
+from django.utils.timezone import now
 
 User = get_user_model()  # ✅ Dynamically fetch the User model
 
@@ -233,6 +234,7 @@ class StudentSerializer(serializers.ModelSerializer):
     support_coordinator_name = serializers.CharField(source='support_coordinator.name', read_only=True)
 
     complete_course_name = serializers.SerializerMethodField()
+    tags_values = serializers.SerializerMethodField()  # Added for tags names
     complete_course_id = serializers.SerializerMethodField()
 
     complete_course = serializers.ListField(
@@ -242,6 +244,14 @@ class StudentSerializer(serializers.ModelSerializer):
     )
 
     notes = StudentNoteSerializer(many=True, read_only=True)
+
+    tags = serializers.PrimaryKeyRelatedField(
+        queryset=Tags.objects.all(),
+        many=True,
+        write_only=True,
+        required=False
+    )
+
 
     class Meta:
         model = Student
@@ -253,7 +263,7 @@ class StudentSerializer(serializers.ModelSerializer):
             'last_update_user', 'student_assing_by', 'last_update_datetime',
             'course_counsellor_name', 'support_coordinator_name',
             'complete_course', 'complete_course_id', 'complete_course_name',
-            'notes'
+            'notes', 'tags', 'tags_values'
         ]
 
     def to_representation(self, instance):
@@ -267,6 +277,15 @@ class StudentSerializer(serializers.ModelSerializer):
     def get_complete_course_name(self, obj):
         completed = StudentCourse.objects.filter(student=obj, status='Completed').select_related('course')
         return [sc.course.name for sc in completed]
+    
+    def get_tags_values(self, obj):
+        """Fetch Values of tags associated with the student."""
+        tags = StudentTags.objects.filter(student=obj).select_related('tag')
+        return [{
+                'id': tag.tag.id,
+                'tag_name' :tag.tag.tag_name ,
+                'tag_color': tag.tag.tag_color
+                } for tag in tags]
 
     def get_complete_course_id(self, obj):
         completed = StudentCourse.objects.filter(student=obj, status='Completed').select_related('course')
@@ -375,7 +394,6 @@ class StudentSerializer(serializers.ModelSerializer):
 
         instance.save()
         return instance
-
 
 
 
@@ -556,4 +574,53 @@ class StudentBookAllotmentSerializer(serializers.ModelSerializer):
 #             student_course.save(update_fields=['student_book_allotment'])
 
 #             return {'removed_books': removed_books}
+
+
+
+class TagsSerializer(serializers.ModelSerializer):
+    students = serializers.PrimaryKeyRelatedField(
+        queryset=Student.objects.all(),
+        many=True,
+        write_only=True,
+        required=False
+    )
+
+    created_by = serializers.CharField(source='created_by.username', read_only=True)
+    updated_by = serializers.CharField(source='updated_by.username', read_only=True)
+
+    class Meta:
+        model = Tags
+        fields = [
+            'id', 'tag_name', 'tag_description', 'tag_color',
+            'created_at', 'updated_at',
+            'created_by', 'updated_by',
+            'students'
+        ]
+
+    def create(self, validated_data):
+        students = validated_data.pop('students', [])
+        print("📦 Received students:", students)
+
+        tag = Tags.objects.create(**validated_data)
+        print("✅ Created tag:", tag.tag_name)
+
+        for student in students:
+            print("➡️ Creating mapping for student:", student.id)
+            StudentTags.objects.create(student=student, tag=tag, created_at=now(), updated_at=now())  # ✅ move inside loop
+
+        return tag
+
+    def update(self, instance, validated_data):
+        students = validated_data.pop('students', None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if students is not None:
+            instance.tagged_students.all().delete()
+            for student in students:
+                StudentTags.objects.create(student=student, tag=instance, updated_at=now())
+
+        return instance
 

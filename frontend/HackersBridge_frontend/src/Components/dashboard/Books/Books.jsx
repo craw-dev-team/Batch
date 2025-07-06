@@ -18,7 +18,6 @@ const Books = () => {
     const [selectedBook, setSelectedBook] = useState();
     const [isDeleted, setIsDeleted] = useState(false)
     const { bookData, loading, setBookData, fetchBooks } = useBookForm();
-    const { token } = useAuth();
     
     const navigate = useNavigate();
 
@@ -48,7 +47,7 @@ const Books = () => {
 
         try {
             const response = await axios.delete(`${BASE_URL}/api/books/delete/${bookId}/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                { headers: { 'Content-Type': 'application/json'}, 
                 withCredentials : true
             }
             );

@@ -41,7 +41,7 @@ const StudentAttendance = () => {
   return (
     <div className="bg-white rounded-xl shadow p-6 w-full mx-auto mt-0.5">
       
-      <h2 className="text-2xl font-semibold mb-0 text-black">Attendance Record</h2>
+      <h2 className="text-lg font-semibold mb-0 text-black">Attendance Record</h2>
 
       {/* Doughnut Chart */}
       <div className="flex flex-wrap justify-center gap-36 mb-16 mt-2">
@@ -73,7 +73,7 @@ const StudentAttendance = () => {
         <button
           onClick={() => setActiveTab('ongoing')}
           className={`pb-2 px-4 font-medium ${
-            activeTab === 'ongoing' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'
+            activeTab === 'ongoing' ? 'border-b-2 border-green-500 text-green-500' : 'text-gray-500'
           }`}
         >
           Ongoing Batches
@@ -81,13 +81,13 @@ const StudentAttendance = () => {
         <button
           onClick={() => setActiveTab('completed')}
           className={`pb-2 px-4 font-medium ${
-            activeTab === 'completed' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'
+            activeTab === 'completed' ? 'border-b-2 border-green-500 text-green-500' : 'text-gray-500'
           }`}
         >
           Completed Batches
         </button>
       </div>
-      <div className="max-h-[500px] overflow-y-auto space-y-4 pr-2 h-20rem">
+      <div className="max-h-[500px] overflow-y-auto space-y-4 pr-2 h-20rem scrollbar-custom">
       {(activeTab === 'ongoing'
           ? studentAttendance?.batch?.ongoing_batches
           : studentAttendance?.batch?.completed_batches

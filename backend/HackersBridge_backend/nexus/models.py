@@ -9,6 +9,24 @@ import string
 from django.core.validators import FileExtensionValidator
 
 
+
+
+class BlockedIP(models.Model):
+    ip_address = models.GenericIPAddressField(unique=True)
+    user_agent = models.TextField()
+    blocked_at = models.DateTimeField(auto_now_add=True)
+    unblock_at = models.DateTimeField()
+
+    def is_active(self):
+        return self.unblock_at > timezone.now()
+
+    def __str__(self):
+        return f"{self.ip_address} blocked until {self.unblock_at}"
+
+
+
+
+
 class CustomUser(AbstractUser):
     ROLE_CHOICES = [
         ('admin', 'Admin'),
@@ -327,7 +345,7 @@ class Ticket(models.Model):
     STATUS_CHOICES = [
         ('Open', 'Open'),
         ('Answered', 'Answered'),
-        ('Customer-Reply', 'Customer-Reply'),
+        ('Your-Query', 'Your-Query'),
         ('Closed', 'Closed'),
     ]
 

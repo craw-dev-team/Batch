@@ -67,7 +67,7 @@ const Sidebarnew = ({ collapsed }) => {
         },
         
         {
-          key: "trainer-student-chat",
+          key: route.BATCH_CHAT_PATH,
           icon: <WechatWorkOutlined />,
           label: "Batch Chats",
           className: "rounded-md hover:bg-gray-300 dark:hover:bg-[#344c6b] dark:text-gray-300",

@@ -3,6 +3,7 @@ import { Button, message, Popconfirm, Avatar, Tooltip, Select, Tag, Dropdown, Pa
 import dayjs from "dayjs";
 import { useAllLogs } from "../AllLogsContext/AllLogsContext";
 import LogsCountCards from "./LogsCountCards";
+import SearchBar from "../../SearchInput/SearchInput";
 
 
 
@@ -10,22 +11,8 @@ const AllLogs = () => {
     const { allLogsData, loading, fetchAllLogs } = useAllLogs();
 
     const [searchTerm, setSearchTerm] = useState('');
-    const [inputValue, setInputValue] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 100;
-
-
-        // HANDLE SEARCH INPUT AND DEBOUNCE 
-        useEffect(() => {
-            const handler = setTimeout(() => {
-                setSearchTerm(inputValue.trimStart());
-                setCurrentPage(1)
-            }, 500); // debounce delay in ms
-          
-            return () => {
-              clearTimeout(handler); // clear previous timeout on re-typing
-            };
-          }, [inputValue]);
 
         
         // FETCH STUDENTdATA OM MOUNT
@@ -43,7 +30,7 @@ const AllLogs = () => {
                         <h1>All Logs</h1>
 
                         <label htmlFor="table-search" className="sr-only">Search</label>
-                            <div className="relative">
+                            {/* <div className="relative">
                                 <input  value={inputValue} type="text" id="table-search" placeholder="Search for items"
                                     onChange={(e) => setInputValue(e.target.value)}
                                     className=" w-96 h-8 block p-2 pr-10 text-xs text-gray-600 font-normal border border-gray-300 rounded-lg bg-gray-50 focus:ring-0 focus:border-blue-500" 
@@ -61,11 +48,19 @@ const AllLogs = () => {
                                     )}
                                 </button>
                                 </div>
-                            </div>
+                            </div> */}
+                                <SearchBar placeholder="Search Logs"
+                                    inputClassName="w-96 h-8 block p-2 pr-10 text-xs text-gray-600 font-normal border border-gray-300 rounded-lg bg-gray-50 focus:ring-0 focus:border-blue-500"
+                                    onSearch={(value) => {
+                                        setSearchTerm(value);
+                                        setCurrentPage(1);
+                                    }}
+                                />
+
                     </div>
 
                     <div className={`overflow-hidden pb-2 relative `}>
-                        <div className="w-full h-[50rem] overflow-y-auto  rounded-lg pb-2">
+                        <div className="w-full h-[45rem] overflow-y-auto rounded-lg pb-2">
                             <table className="w-full text-xs text-left text-gray-500">
                             <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10">
                                 <tr>
@@ -208,8 +203,9 @@ const AllLogs = () => {
                             </table>
                         </div>
             
-            <div className="flex justify-center items-center py-3 bg-slate-300">
-            <Pagination
+            <div className="flex justify-center items-center py-2 bg-blue-50">
+                <Pagination
+                    size="small"
                     current={currentPage}
                     total={allLogsData?.count || 0}
                     pageSize={pageSize} // example: 10

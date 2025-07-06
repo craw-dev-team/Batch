@@ -11,7 +11,6 @@ const BookCardList = () => {
     const { data } = location.state || { data: "No Data Available"}
     
     const courseName = data[0]?.course
-    console.log(data);
     
     // Filter students based on the search term of all students added in that batch
         const filteredStudents = useMemo(() => {

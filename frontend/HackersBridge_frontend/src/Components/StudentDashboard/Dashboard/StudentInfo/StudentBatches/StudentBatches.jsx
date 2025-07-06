@@ -64,22 +64,22 @@ const StudentBatches = () => {
 
   return (
     <>
-      <div className="grid grid-cols-6 gap-x-6">
+      <div className="">
         <>
-          <div className="p-1 col-span-6 w-full h-auto shadow-md sm:rounded-lg border border-gray-50 bg-white">
+          <div className="col-span-6 w-full h-screen shadow-md sm:rounded-lg border border-gray-50 bg-white relative overflow-y-scroll scrollbar-custom">
 
-            <div className="w-full h-auto px-2 py-3 text-lg font-semibold flex justify-between">
+            <div className="w-full h-auto px-2 py-3 text-lg font-semibold flex justify-between sticky top-0 right-0 left-30 bg-white z-30 border-b">
               Batches
               <div className="flex justify-end items-center ml-3">
-                <div className="relative w-22 sm:w-40 md:w-56 lg:w-60 xl:w-70 2xl:w-80">
-                  <div className="absolute inset-y-0 end-0 flex items-center pe-3.5">
+                <div className="relative w-22 sm:w-56 md:w-56 lg:w-72 xl:w-80 2xl:w-96">
+                  <div className="absolute inset-y-0 end-0 flex items-center pe-2">
                     <button onClick={() => setSearchTerm("")}>
                       {searchTerm ? (
-                        <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="w-4 h-4 text-gray-500 " aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M6.293 6.293a1 1 0 011.414 0L10 8.586l2.293-2.293a1 1 0 111.414 1.414L11.414 10l2.293 2.293a1 1 0 01-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 01-1.414-1.414L8.586 10 6.293 7.707a1 1 0 010-1.414z" clipRule="evenodd"></path>
                         </svg>
                       ) : (
-                        <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="w-4 h-4 text-gray-500" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"></path>
                         </svg>
                       )}
@@ -88,7 +88,7 @@ const StudentBatches = () => {
                   <input onChange={(e) => setSearchTerm(e.target.value.replace(/^\s+/, ''))} value={searchTerm}
                     type="text"
                     placeholder="Search Batch"
-                    className="block w-full h-8 ps-2 pe-8 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-green-500" />
+                    className="block w-full h-8 ps-2 pe-8 text-xs bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-0 focus:border-green-500" />
                 </div>
 
 
@@ -133,10 +133,10 @@ const StudentBatches = () => {
                               <FieldTimeOutlined className='text-gray-400 mr-1'/>
                               <div className='flex flex-col items-end'>
                                 <span className="text-xs text-gray-900">
-                                  {dayjs(batch.batch_time_data.start_time, "HH:mm:ss").format("hh:mm A")}
+                                  {dayjs(batch.batch_time_data.start_time, "hh:mm:ss").format("hh:mm A")}
                                 </span>
                                 <span className="text-xs text-gray-900">
-                                  {dayjs(batch.batch_time_data.end_time, "HH:mm:ss").format("hh:mm A")}
+                                  {dayjs(batch.batch_time_data.end_time, "hh:mm:ss").format("hh:mm A")}
                                 </span>
                               </div>
                             </div>

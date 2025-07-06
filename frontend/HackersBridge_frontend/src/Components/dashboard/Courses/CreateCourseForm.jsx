@@ -17,7 +17,6 @@ const CreateCourseForm = ({ isOpen, onClose, selectedCourseData }) => {
 
     const { courseFormData, setCourseFormData, errors, setErrors, resetCourseForm } = useCourseForm();
     const [ loading, setLoading] = useState(false);
-    const { token } = useAuth();
 
     // Reset form data when selectedCourseData changes (for Add or Edit mode)
     useEffect(() => {        
@@ -75,7 +74,7 @@ const CreateCourseForm = ({ isOpen, onClose, selectedCourseData }) => {
                 if (selectedCourseData && selectedCourseData.id) {
                 // Update existing course (PUT)
                 response = await axios.put(`${BASE_URL}/api/courses/edit/${selectedCourseData.id}/`, payload, {
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    headers: { 'Content-Type': 'application/json' },
                     withCredentials : true
                 }
                 );
@@ -83,7 +82,7 @@ const CreateCourseForm = ({ isOpen, onClose, selectedCourseData }) => {
                 } else {
                     // Add new course (POST)
                     response = await axios.post(`${BASE_URL}/api/courses/add/`, payload, {
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        headers: { 'Content-Type': 'application/json' },
                         withCredentials : true
                     }
                     );

@@ -19,7 +19,7 @@ import { useState } from "react";
 
 // Handle Toggle of student active, inactive, temporary block and restricted 
 
-    const useStudentStatusChange = (token) => {
+    const useStudentStatusChange = () => {
         const [studentStatuses, setStudentStatuses] = useState({});
 
         const handleStudentStatusChange = async ({studentId, newStatus}) => {
@@ -30,7 +30,7 @@ import { useState } from "react";
             try {
                 await axios.put(`${BASE_URL}/api/students/edit/${studentId}/`, 
                     { status: newStatus },
-                    { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                    { headers: { 'Content-Type': 'application/json'}, 
                     withCredentials : true
                 }
                 );

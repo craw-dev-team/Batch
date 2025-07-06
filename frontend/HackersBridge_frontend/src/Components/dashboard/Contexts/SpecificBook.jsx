@@ -16,17 +16,17 @@ const SpecificBookProvider = ({ children }) => {
     const fetchSpecificBook = async (bookId) => {
         if (loading) return;
 
-        const token = localStorage.getItem('token');
-        if (!token) {
-            console.error("No token found, user might be logged out.");
-            return;
-        };
+        // const token = localStorage.getItem('token');
+        // if (!token) {
+        //     console.error("No token found, user might be logged out.");
+        //     return;
+        // };
 
         setLoading(true);
 
         try {
             const response = await axios.get(`${BASE_URL}/api/books/info/${bookId}/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                { headers: { 'Content-Type': 'application/json'},
                 withCredentials : true
             }
             )
@@ -47,17 +47,17 @@ const SpecificBookProvider = ({ children }) => {
     const fetchStudentReceivedBooks = async ({ page = 1, pageSize = 50, search = '' }) => {
         if (loading) return;
 
-        const token = localStorage.getItem('token');
-        if (!token) {
-            console.error("No token found, user might be logged out.");
-            return;
-        };
+        // const token = localStorage.getItem('token');
+        // if (!token) {
+        //     console.error("No token found, user might be logged out.");
+        //     return;
+        // };
 
         setLoading(true);
 
         try {
             const response = await axios.get(`${BASE_URL}/api/books/issued/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                { headers: { 'Content-Type': 'application/json' },
                 withCredentials : true,
                 params: {
                     page,

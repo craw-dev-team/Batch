@@ -27,7 +27,6 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
     const { coursesData, fetchCourses } = useCourseForm();
     const { trainerData, fetchTrainers } = useTrainerForm();
     const { fetchStudents, allStudentData, fetchAllStudent } = useStudentForm();
-    const { token } = useAuth();
     const [ loading, setLoading ] = useState(false);
 
 
@@ -133,7 +132,7 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
             if (selectedBatchData && selectedBatchData.id) {
                 // Update existing course (PUT)
                 response = await axios.put(`${BASE_URL}/api/batches/edit/${selectedBatchData.id}/`, payload, {
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    headers: { 'Content-Type': 'application/json'},
                     withCredentials : true
                 }
                 );
@@ -141,7 +140,7 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
                 } else {
                     // Add new course (POST)
                     response = await axios.post(`${BASE_URL}/api/batches/add/`, payload, {
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        headers: { 'Content-Type': 'application/json'},
                         withCredentials : true
                     }
                     );

@@ -16,7 +16,6 @@ import TrainerCards from "../SpecificPage/Cards/Trainer/TrainerCards";
 
 
 const Trainers = () => {
-    const { token } = useAuth();
     const [isModalOpen, setIsModalOpen] = useState(false) 
     const [activeTab, setActiveTab] = useState('tab1');
     const [selectedTrainer, setSelectedTrainer] = useState();
@@ -55,14 +54,14 @@ const Trainers = () => {
                 const trainersArray = Array.isArray(trainerData.all_data.trainers)
                     ? trainerData.all_data.trainers
                     : [];
-    
-                // Set a timeout to wait 2 seconds before initializing statuses
-                const timer = setTimeout(() => {
-                    const initialStatuses = {};
-                    trainersArray.forEach((trainer) => {
-                        initialStatuses[trainer.id] = trainer.status; 
-                    });
-    
+                    
+                    // Set a timeout to wait 2 seconds before initializing statuses
+                    const timer = setTimeout(() => {
+                        const initialStatuses = {};
+                        trainersArray.forEach((trainer) => {
+                            initialStatuses[trainer.id] = trainer.status === "Active"; 
+                        });
+                        
                     setTrainerStatuses(initialStatuses); 
                 }, 100);
     
@@ -88,7 +87,7 @@ const Trainers = () => {
         
     try {
         const response = await axios.delete(`${BASE_URL}/api/trainers/delete/${trainerId}/`, 
-            { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+            { headers: { 'Content-Type': 'application/json'}, 
             withCredentials : true
         }
         );
@@ -142,12 +141,14 @@ const Trainers = () => {
         setTrainerStatuses((prev) => ({ ...prev, [trainerId]: checked }));
     
         try {
-            await axios.put(`${BASE_URL}/api/trainers/edit/${trainerId}/`, 
+            const response = await axios.put(`${BASE_URL}/api/trainers/edit/${trainerId}/`, 
                 { status: newStatus, email: trainerEmail },
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                { headers: { 'Content-Type': 'application/json' }, 
                 withCredentials : true
             }
             );
+            console.log(response);
+            
             message.success(`Trainer status updated to ${newStatus}`);
         } catch (error) {
             message.error("Failed to update status");            

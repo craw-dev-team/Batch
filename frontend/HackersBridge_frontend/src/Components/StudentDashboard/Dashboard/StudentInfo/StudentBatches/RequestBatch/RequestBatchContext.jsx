@@ -24,16 +24,16 @@ const RequestBatchProvider = ({ children }) => {
     const handleRequestBatch = async (e) => {
         
         e.preventDefault();
-        const token = localStorage.getItem('token');
-        if (!token) {
-            console.error("No token found, user might be logged out.");
-            return;
-        };
+        // const token = localStorage.getItem('token');
+        // if (!token) {
+        //     console.error("No token found, user might be logged out.");
+        //     return;
+        // };
 
         try {
             const response = await axios.post(`${BASE_URL}/Student_login/student_batch_request/`,
                 { batch_code: batchCode },
-            { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+            { headers: { 'Content-Type': 'application/json'}, 
                 withCredentials: true,
             },
         );
@@ -56,18 +56,18 @@ const RequestBatchProvider = ({ children }) => {
     // HANDLE REQUEST OF STUDENT BY BATCH ID TO ADD IN A BATCH (STUDENT SEND BATCH CODE TO BACKEND)
     const handleRequestBatchById = async (batchCode) => {
         
-        const token = localStorage.getItem("token");
-        if (!token) {
-          // console.error("No token found, user might be logged out.");
-          return;
-        }
+        // const token = localStorage.getItem("token");
+        // if (!token) {
+        //   // console.error("No token found, user might be logged out.");
+        //   return;
+        // }
       
         try {
           setLoading(true);
           
           const response = await axios.post(`${BASE_URL}/Student_login/student_batch_request/`,
             { batch_code: batchCode },  // Assuming your backend expects `batch_id`
-            { headers: { "Content-Type": "application/json", 'Authorization': `Bearer ${token}` },
+            { headers: { "Content-Type": "application/json"},
               withCredentials: true,
             }
           );

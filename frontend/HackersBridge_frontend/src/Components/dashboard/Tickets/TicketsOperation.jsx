@@ -193,7 +193,7 @@ const TicketOperation = () => {
                   {
                     icon: <IdcardOutlined style={{ fontSize: "15px" }} />,
                     label: "Ticket ID",
-                    value: `#${selectedTicket.ticket_id}`,
+                    value: `#${selectedTicket.ticket_id || "N/A"}`,
                   },
                   {
                     icon: <UserOutlined style={{ fontSize: "15px" }} />,
@@ -208,16 +208,12 @@ const TicketOperation = () => {
                   {
                     icon: <CalendarOutlined style={{ fontSize: "15px" }} />,
                     label: "Created At",
-                    value: selectedTicket.created_at
-                      ? dayjs(selectedTicket.created_at).format("DD/MM/YYYY | hh:mm A")
-                      : "N/A",
+                    value: selectedTicket.created_at ? dayjs(selectedTicket.created_at).format("DD/MM/YYYY | hh:mm A") : "N/A",
                   },
                   {
                     icon: <ClockCircleOutlined style={{ fontSize: "15px" }} />,
                     label: "Last Updated",
-                    value: update.updated_at
-                      ? dayjs(update.updated_at).format("DD/MM/YYYY | hh:mm A")
-                      : "N/A",
+                    value: update.updated_at ? dayjs(update.updated_at).format("DD/MM/YYYY | hh:mm A") : "N/A",
                   },
                 ].map((item, idx) => (
                   <div
@@ -285,7 +281,7 @@ const TicketOperation = () => {
                             key={idx}
                             className={`max-w-[53%] px-2 py-2 mt-1 rounded-md shadow-sm ${
                               msg.sender === "admin"
-                                ? "ml-auto bg-darkBlue6 text-white text-right"
+                                ? "ml-auto bg-darkBlue6 text-white text-left"
                                 : "mr-auto bg-white text-black text-left"
                             }`}
                             style={{ width: 'fit-content' }}

@@ -7,17 +7,39 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [role, setRole] = useState(localStorage.getItem('role' || ''));
-  const [token, setToken] = useState(localStorage.getItem('token' || ''));
-  const [loading, setLoading] = useState(true);
-  const [username, setUsername] = useState('')
+  // const [token, setToken] = useState(localStorage.getItem('token' || ''));
+  const [loading, setLoading] = useState(false);
+  const [username, setUsername] = useState('');
 
-  // useEffect(() => {
-  //   const storedUser = localStorage.getItem("role");
-  //   if (token && storedUser) {
-  //     setUser(JSON.parse(storedUser));
-  //   }
-  //   setLoading(false);
-  // }, [token]);
+  
+
+useEffect(() => {
+  const checkSession = async () => {
+
+    setLoading(true);
+    try {
+      const res = await axios.get(`${BASE_URL}/api/user-info/`, {
+        withCredentials: true, 
+      });
+
+      const role = res?.data?.user_info?.role;
+      const user_name = res?.data?.user_info?.first_name ?? res?.data?.user_info?.user_name;
+
+      setUsername(user_name);
+      setRole(role);
+    } catch (err) {
+      console.warn("Not logged in or session expired");
+      setUsername(null);
+      setRole(null);
+      
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  checkSession();
+}, []);
+
 
 
   const register = async (userData) => {
@@ -26,15 +48,15 @@ export const AuthProvider = ({ children }) => {
     //     return;
     // };
 
-    try {
-      await axios.post(`${BASE_URL}/api/register/`, 
-        userData,
-        // { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
-      );
-      message.success("Registration successful");
-    } catch (error) {
-      message.error(error.response?.data?.error || "Registration failed");
-    }
+    // try {
+    //   await axios.post(`${BASE_URL}/api/register/`, 
+    //     userData,
+    //     { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
+    //   );
+    //   message.success("Registration successful");
+    // } catch (error) {
+    //   message.error(error.response?.data?.error || "Registration failed");
+    // }
   };
 
 
@@ -67,27 +89,23 @@ export const AuthProvider = ({ children }) => {
 
 
 
-  const universalLogin = async (username, password) => {
+  const universalLogin = async (username, password, recaptchaToken) => {
     if(!username && !password) return;
 
+    setLoading(true)
     try {
-      const response = await axios.post(
-        `${BASE_URL}/api/login/`,
-        { username, password },
+      const response = await axios.post(`${BASE_URL}/api/login/`,
+        { username, password, recaptcha_token: recaptchaToken, },
         { withCredentials: true }
       );
-      console.log(response); // Check the response format
+      // console.log(response); // Check the response format
       
       const role = response?.data?.user_info?.role;
-      const token = response?.data?.user_info?.token;
       const user_name = response?.data?.user_info?.first_name ?? response?.data?.user_info?.user_name;
       
       setUsername(user_name)
       setRole(role);
-      setToken(token);
-      localStorage.setItem('role', role)
-      localStorage.setItem('token', token)
-      localStorage.setItem('name', user_name)
+
   
       if (!role) throw new Error("Role not found in response");
   
@@ -106,6 +124,8 @@ export const AuthProvider = ({ children }) => {
       } else {
         message.error("Something went wrong");
       }
+    } finally {
+      setLoading(false)
     }
   };
   
@@ -113,24 +133,31 @@ export const AuthProvider = ({ children }) => {
 
 
 
-  const logout = (redirect = true) => {
 
-    setRole("");
-    setToken("");
 
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
-    delete axios.defaults.headers.common["Authorization"];
+  const logout = async (redirect = true) => {
+    try {
+      // Send logout request to backend to clear cookies
+      await axios.post(`${BASE_URL}/api/logout/`, {}, { withCredentials: true });
 
-    if (redirect) {
-        window.location.href = ""; // Redirect only when necessary
+      // Clear frontend context/state if any
+      setUsername(null);
+      setRole(null);
+
+      // Redirect after logout (optional)
+      if (redirect) {
+        window.location.href = "/"; // or navigate("/")
+      }
+    } catch (err) {
+      console.warn("Logout error:", err?.response?.data || err.message);
     }
   };
 
 
 
+
   return (
-    <AuthContext.Provider value={{ role, token, username, universalLogin, logout, register }}>
+    <AuthContext.Provider value={{ role, username, loading, universalLogin, logout, register }}>
       {children}
     </AuthContext.Provider>
   );

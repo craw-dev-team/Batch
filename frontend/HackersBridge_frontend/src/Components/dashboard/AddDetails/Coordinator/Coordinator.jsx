@@ -8,7 +8,7 @@ import { useCoordinatorForm } from "./CoordinatorContext";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../AuthContext/AuthContext";
 import { handleCoordinatorClick } from "../../../Navigations/Navigations";
-import Tags from "../../../Tags/Tags";
+import Tags from "../../Tags/Tags";
 
 
 
@@ -22,7 +22,6 @@ const Coordinators = () => {
     const [coordinatorStatuses, setCoordinatorStatuses] = useState({}); // Store status per trainer
 
     const { coordinatorData, loading, setLoading, setCoordinatorData, fetchCoordinators } = useCoordinatorForm();
-    const { token } = useAuth();
     
     const navigate = useNavigate();
 
@@ -67,7 +66,7 @@ const Coordinators = () => {
 
         try {
             const response = await axios.delete(`${BASE_URL}/api/coordinators/delete/${coordinatorId}/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                { headers: { 'Content-Type': 'application/json' },
                 withCredentials : true
             }
             );
@@ -124,7 +123,7 @@ const Coordinators = () => {
         try {
             await axios.put(`${BASE_URL}/api/coordinators/edit/${coordinatorId}/`, 
                 { status: newStatus, email: coordinatorEmail },
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                { headers: { 'Content-Type': 'application/json' },
                 withCredentials : true
             }
             );

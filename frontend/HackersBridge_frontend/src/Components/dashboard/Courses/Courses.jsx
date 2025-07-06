@@ -16,7 +16,6 @@ const Courses = () => {
     const [selectedCourse, setSelectedCourse] = useState();
     const [isDeleted, setIsDeleted] = useState(false)
     const { coursesData, loading, setCoursesData, fetchCourses } = useCourseForm();
-    const { token } = useAuth();
     
     const navigate = useNavigate();
 
@@ -46,7 +45,7 @@ const Courses = () => {
 
         try {
             const response = await axios.delete(`${BASE_URL}/api/courses/delete/${courseId}/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                { headers: { 'Content-Type': 'application/json'}, 
                 withCredentials : true
             }
             );

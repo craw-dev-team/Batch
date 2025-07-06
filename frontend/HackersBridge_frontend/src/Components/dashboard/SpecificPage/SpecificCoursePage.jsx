@@ -53,7 +53,7 @@ const SpecificCoursePage = () => {
         };
 
 
-console.log(specificCourse);
+console.log(specificCourse?.course_info?.Student_take_by);
 
     return (
         <>

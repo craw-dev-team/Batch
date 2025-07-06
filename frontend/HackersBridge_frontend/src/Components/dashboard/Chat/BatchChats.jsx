@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { SendOutlined, LinkOutlined, DeleteOutlined, SearchOutlined } from "@ant-design/icons";
-import { Popover, Button } from "antd";
+import { Popover, Button, Empty } from "antd";
 import { useBatchChats } from "./BatchChatsContext";
 import dayjs from "dayjs";
 
@@ -49,7 +49,7 @@ const BatchChats = () => {
     fetchChats({ search: searchTerm, batch__status: chatTab });
   }, [searchTerm, chatTab]);
 
-     // HANDLE SEARCH INPUT AND DEBOUNCE 
+    // HANDLE SEARCH INPUT AND DEBOUNCE 
     useEffect(() => {        
         const handler = setTimeout(() => {
             setSearchTerm(inputValue.trimStart());
@@ -249,7 +249,7 @@ const BatchChats = () => {
   };
   
   const groupedMessages = groupMessagesByDate(combinedMessages);
-  console.log(combinedMessages);
+  // console.log(combinedMessages);
 
 
 
@@ -277,17 +277,6 @@ const BatchChats = () => {
     </div>
   );
 
-  // Filter batches based on search query (batch_id or batch_code, case-insensitive)
-  // const filteredBatches = Array.isArray(chat?.all_batch_chats) && chat?.all_batch_chats.filter((batch) => {
-  //   if (!searchQuery) return true;
-  //   const query = searchQuery.toLowerCase();
-  //   return (
-  //     batch.batch_id.toString().includes(query) ||
-  //     batch.batch_code.toLowerCase().includes(query) ||
-  //     batch.batch_name.toLowerCase().includes(query) 
-  //   );
-  // }) || [];
-
 
   return (
     <div className="sticky top-0 left-0 shadow-md border h-fit w-full overflow-hidden">
@@ -297,7 +286,7 @@ const BatchChats = () => {
           {/* Search Input */}
           <div className="px-1 py-2">
             <div className="relative">
-              <input value={inputValue} type="text" id="table-search" placeholder="Search for student"
+              <input value={inputValue} type="text" id="table-search" placeholder="Search Batch"
                   onChange={(e) => setInputValue(e.target.value)}
                   className="w-full h-8 block p-2 pr-10 text-xs text-gray-600 font-normal border border-gray-300 rounded-lg bg-gray-50 focus:ring-0 focus:border-blue-500" 
               />
@@ -351,34 +340,34 @@ const BatchChats = () => {
             {chat?.all_batch_chats.length > 0 ? (
               chat?.all_batch_chats.map((batch) => (
                 <div
-            key={batch?.id}
-            onClick={() => handleBatchClick(batch)}
-            className={`p-4 pl-6 cursor-pointer relative ${
-                selectedBatch?.batch_id === batch?.batch_id
-                ? "bg-blue-200"
-                : "hover:bg-blue-50"
-            }`}
-            >
-            <div className="flex items-center justify-between">
-                <div className="w-full">
-                  <div className="flex justify-between mb-0.5">
-                    <p className="text-xs font-semibold text-gray-500">{batch?.batch_code}</p>
-                    <p className="text-xs text-gray-500"> {batch?.last_message?.time}</p>
-                  </div>
-                 {/* <div className="flex items-center space-x-2"> 
-                 <div className="rounded-full bg-blue-500 text-white text-xs flex items-center justify-center font-bold">
-                    {batch.batch_name.charAt(0).toUpperCase()}
-                </div>  */}
-                 {/* </div>  */}
-                <p className="text-sm font-semibold text-black">{batch?.batch_name}</p>
-                <p className="text-sm text-gray-600 relative top-2 truncate"><span>{batch?.last_message?.send_by}</span> : {batch?.last_message?.message}</p>
+                  key={batch?.id}
+                  onClick={() => handleBatchClick(batch)}
+                  className={`p-4 pl-6 cursor-pointer relative ${
+                      selectedBatch?.batch_id === batch?.batch_id
+                      ? "bg-blue-200"
+                      : "hover:bg-blue-50"
+                  }`}
+                >
+                <div className="flex items-center justify-between">
+                    <div className="w-full">
+                      <div className="flex justify-between mb-0.5">
+                        <p className="text-xs font-semibold text-gray-500">{batch?.batch_code}</p>
+                        <p className="text-xs text-gray-500"> {batch?.last_message?.time}</p>
+                      </div>
+                    {/* <div className="flex items-center space-x-2"> 
+                    <div className="rounded-full bg-blue-500 text-white text-xs flex items-center justify-center font-bold">
+                        {batch.batch_name.charAt(0).toUpperCase()}
+                    </div>  */}
+                    {/* </div>  */}
+                    <p className="text-sm font-semibold text-black">{batch?.batch_name}</p>
+                    <p className="text-sm text-gray-600 relative top-2 truncate"><span>{batch?.last_message?.send_by}</span> : {batch?.last_message?.message}</p>
+                    </div>
                 </div>
-            </div>
                 {unreadCounts[batch.batch_id] > 0 && (
-            <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5 ml-2">
-              +{unreadCounts[batch.batch_id]}
-            </span>
-          )}
+                  <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5 ml-2">
+                    +{unreadCounts[batch.batch_id]}
+                  </span>
+                )}
 
             {/* Status Dot */}
             <span
@@ -393,11 +382,10 @@ const BatchChats = () => {
                 }`}
             />
             </div>
-
-              ))
+            ))
             ) : (
               <div className="p-4 text-gray-500 text-center">
-                No Batches Found
+                <Empty description="No Batches found" />
               </div>
             )}
           </div>
@@ -425,7 +413,7 @@ const BatchChats = () => {
                           className={`flex mb-3 ${msg.isSelf ? "justify-end" : "justify-start"}`}
                         >
                           <div
-                            className={`relative rounded-xl px-4 py-2 max-w-xs shadow cursor-pointer ${
+                            className={`max-w-[70%] relative rounded-xl px-4 py-2 shadow cursor-pointer ${
                               msg.isSelf ? "bg-sky-500 text-white" : "bg-[#f8f9fa] text-black"
                             }`}
                             onClick={(e) => {

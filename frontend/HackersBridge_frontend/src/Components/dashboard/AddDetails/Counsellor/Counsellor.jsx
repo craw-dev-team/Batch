@@ -18,7 +18,6 @@ const Counsellor = () => {
     const [counsellorStatuses, setCounsellorStatuses] = useState({}); // Store status per trainer
 
     const { counsellorData, loading, setCounsellorData, fetchCounsellors } = useCounsellorForm();
-    const { token } = useAuth();
 
     // Fetch batches afer deletion or modal open
     useEffect(() => {
@@ -61,7 +60,7 @@ const Counsellor = () => {
 
         try {
             const response = await axios.delete(`${BASE_URL}/api/counsellors/delete/${counsellorId}/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                { headers: { 'Content-Type': 'application/json' },
                 withCredentials : true
             }
             );
@@ -101,7 +100,7 @@ const Counsellor = () => {
         try {
             await axios.put(`${BASE_URL}/api/counsellors/edit/${counsellorId}/`, 
                 { status: newStatus, email: counsellorEmail },
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` },
+                { headers: { 'Content-Type': 'application/json' },
                 withCredentials : true
             }
             );
