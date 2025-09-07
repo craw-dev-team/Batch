@@ -119,7 +119,7 @@ class TrainerAvailabilityAPIView(APIView):
         today = date.today()
 
         # Fetch trainers with their assigned timeslots
-        trainers = Trainer.objects.select_related('location').prefetch_related('course', 'timeslot')
+        trainers = Trainer.objects.select_related('location').prefetch_related('course', 'timeslot').filter(real_status=False)
         timeslots = Timeslot.objects.exclude(special_time_slot='Special')
 
         # Step 1: Initialize free trainers list (Filtered by trainer's assigned timeslot)
@@ -1118,7 +1118,7 @@ class TrainerLongLeaveMail(APIView):
                                     """
 
             
-            subject = f"Cancellation of Today’s Session: {session_topic} - {session_time}"
+            subject = f"Cancellation of Session: {session_topic} - {session_time}"
 
             html_message = f"""
             <!DOCTYPE html>

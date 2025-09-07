@@ -82,7 +82,7 @@ const Login = () => {
 
                   <div style={{ transform: "scale(0.8)", transformOrigin: "0 0" }}>
                     <ReCAPTCHA
-                      sitekey="6LdHF24rAAAAADYWk6V5GokFKLJvcv-vh_bhNqjw"  // 🔁 Replace with your real site key
+                      sitekey="6LfKEG4rAAAAAEcc-V6fK2sFTSRfW_dokumkhF7i"  // 🔁 Replace with your real site key
                       onChange={(token) => setRecaptchaToken(token)}
                     />
                   </div>

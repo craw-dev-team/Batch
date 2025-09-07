@@ -51,6 +51,8 @@ const EmailPopup = ({ open, onClose, checkStudentid, onSuccess = () => {}, train
 
 
     useEffect(() => {
+      const emailToRemove = ["ishika@craw.in", "anjali@craw.in", "shivambharti@craw.in"];
+
       if (open && checkStudentid?.length) {
         const uniqueEmails = [...new Set(checkStudentid.map(s => s.emails))];
         setBccEmails(uniqueEmails);
@@ -59,7 +61,8 @@ const EmailPopup = ({ open, onClose, checkStudentid, onSuccess = () => {}, train
         if (coordinatorData?.length > 0) {
           const emails = coordinatorData
             .filter(c => c.status !== 'Inactive')
-            .map(c => c.email);
+            .map(c => c.email)
+            .filter(email => !emailToRemove.includes(email)); 
 
           setToEmails(emails);
         }

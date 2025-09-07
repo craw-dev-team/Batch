@@ -746,88 +746,88 @@ class GenerateCertificateAPIView(APIView):
 
                 # pixel_url = f"http://192.168.1.18:8000/api/email-tracker/{student_course.id}/"  # ✅ Fixed the pixel URL
 
-#                 html_message = f"""
-#         <!DOCTYPE html>
-#         <html>
-#         <head>
-#         <meta charset="UTF-8">
-#         <title>Certificate Issued</title>
-#         </head>
-#         <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0; color: #000;">
-#         <div style="max-width: 600px; margin: 40px auto; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); overflow: hidden;">
+                html_message = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <meta charset="UTF-8">
+        <title>Certificate Issued</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0; color: #000;">
+        <div style="max-width: 600px; margin: 40px auto; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); overflow: hidden;">
             
-#             <!-- Header with Logo -->
-#             <div style="text-align: center; padding: 20px; border-bottom: 1px solid #ddd;">
-#             <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 60px;">
-#             </div>
+            <!-- Header with Logo -->
+            <div style="text-align: center; padding: 20px; border-bottom: 1px solid #ddd;">
+            <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 60px;">
+            </div>
 
-#             <!-- Body -->
-#             <div style="padding: 30px; color: #000;">
-#             <h2 style="text-align: center; font-size: 24px; margin-bottom: 20px;">🎓 Certificate of Achievement</h2>
+            <!-- Body -->
+            <div style="padding: 30px; color: #000;">
+            <h2 style="text-align: center; font-size: 24px; margin-bottom: 20px;">🎓 Certificate of Achievement</h2>
 
-#             <p style="font-size: 16px; line-height: 1.6;">
-#                 Dear <strong style="font-weight: bold;">{student.name}</strong>,
-#             </p>
+            <p style="font-size: 16px; line-height: 1.6;">
+                Dear <strong style="font-weight: bold;">{student.name}</strong>,
+            </p>
 
-#             <p style="font-size: 16px; line-height: 1.6;">
-#                 Congratulations on successfully completing the <strong style="font-weight: bold;">{course}</strong> course at <strong>Craw Cyber Security</strong>! 🎉
-#             </p>
+            <p style="font-size: 16px; line-height: 1.6;">
+                Congratulations on successfully completing the <strong style="font-weight: bold;">{course}</strong> course at <strong>Craw Cyber Security</strong>! 🎉
+            </p>
 
-#             <p style="font-size: 16px; line-height: 1.6;">
-#                 Your hard work and commitment have paid off, and we are excited to issue your official certificate.
-#             </p>
+            <p style="font-size: 16px; line-height: 1.6;">
+                Your hard work and commitment have paid off, and we are excited to issue your official certificate.
+            </p>
 
-#             <p style="font-size: 16px; line-height: 1.6;">
-#                 Share your achievement on LinkedIn and tag <strong>@Craw Cyber Security</strong> to inspire others! Don’t forget to use <strong>#crawsec</strong> and <strong>#lifeatcraw</strong> 🚀
-#             </p>
+            <p style="font-size: 16px; line-height: 1.6;">
+                Share your achievement on LinkedIn and tag <strong>@Craw Cyber Security</strong> to inspire others! Don’t forget to use <strong>#crawsec</strong> and <strong>#lifeatcraw</strong> 🚀
+            </p>
             
-#             <div style="background-color: #f1f1f1; padding: 15px; border-radius: 6px; margin: 20px 0;">
-#                 <p style="font-size: 15px; margin: 6px 0;"><strong>🏷️ Enrollment Number:</strong> {student.enrollment_no}</p>
-#                 <p style="font-size: 15px; margin: 6px 0;"><strong>📅 Date of Issue:</strong> {certificate_date}</p>
-#                 <p style="font-size: 15px; margin: 6px 0;"><strong>📎 Certificate:</strong> Attached as PDF</p>
-#                 <ifream src = "file_path" />
-#             </div>
+            <div style="background-color: #f1f1f1; padding: 15px; border-radius: 6px; margin: 20px 0;">
+                <p style="font-size: 15px; margin: 6px 0;"><strong>🏷️ Enrollment Number:</strong> {student.enrollment_no}</p>
+                <p style="font-size: 15px; margin: 6px 0;"><strong>📅 Date of Issue:</strong> {certificate_date}</p>
+                <p style="font-size: 15px; margin: 6px 0;"><strong>📎 Certificate:</strong> Attached as PDF</p>
+                <ifream src = "file_path" />
+            </div>
 
-#             <p style="font-size: 16px; line-height: 1.6;">
-#                 Your certificate is attached to this email. Feel free to showcase it in your portfolio, LinkedIn profile, or wherever you wish to highlight your accomplishments.
-#             </p>
+            <p style="font-size: 16px; line-height: 1.6;">
+                Your certificate is attached to this email. Feel free to showcase it in your portfolio, LinkedIn profile, or wherever you wish to highlight your accomplishments.
+            </p>
 
-#             <p style="font-size: 16px; line-height: 1.6;">
-#                 This is a great milestone in your cybersecurity journey, and we’re confident you’ll achieve even more in the future!
-#             </p>
+            <p style="font-size: 16px; line-height: 1.6;">
+                This is a great milestone in your cybersecurity journey, and we’re confident you’ll achieve even more in the future!
+            </p>
 
-#             <p style="font-size: 16px; line-height: 1.6;">
-#                 🔐 Stay passionate, stay curious, and keep securing the digital world!
-#             </p>
+            <p style="font-size: 16px; line-height: 1.6;">
+                🔐 Stay passionate, stay curious, and keep securing the digital world!
+            </p>
 
-#             <p style="font-size: 16px; line-height: 1.6;">
-#                 Warm regards,<br>
-#                 <strong style="font-weight: bold;">Craw Cyber Security Team</strong> 🚀<br>
-#                 📧 <a href="mailto:training@craw.in" style="text-decoration: underline;">training@craw.in</a><br>
-#                 📞 +91 9513805401<br>
-#                 🌐 <a href="https://www.craw.in/" style="text-decoration: underline;">www.craw.in</a>
-#             </p>
-#             </div>
+            <p style="font-size: 16px; line-height: 1.6;">
+                Warm regards,<br>
+                <strong style="font-weight: bold;">Craw Cyber Security Team</strong> 🚀<br>
+                📧 <a href="mailto:training@craw.in" style="text-decoration: underline;">training@craw.in</a><br>
+                📞 +91 9513805401<br>
+                🌐 <a href="https://www.craw.in/" style="text-decoration: underline;">www.craw.in</a>
+            </p>
+            </div>
 
-#             <!-- Footer -->
-#             <div style="background-color: #f0f0f0; padding: 18px 20px; text-align: center; font-size: 14px; color: #000; border-top: 1px solid #ddd;">
-#             <p style="margin: 0;">© 2025 <strong>Craw Cyber Security Pvt Ltd</strong>. All Rights Reserved.</p>
-#             <p style="margin: 5px 0 0;">This is an automated message. Please do not reply.</p>
-#             </div>
-#         </div>
-#         </body>
-#         </html>
+            <!-- Footer -->
+            <div style="background-color: #f0f0f0; padding: 18px 20px; text-align: center; font-size: 14px; color: #000; border-top: 1px solid #ddd;">
+            <p style="margin: 0;">© 2025 <strong>Craw Cyber Security Pvt Ltd</strong>. All Rights Reserved.</p>
+            <p style="margin: 5px 0 0;">This is an automated message. Please do not reply.</p>
+            </div>
+        </div>
+        </body>
+        </html>
 
-# """
+"""
 
-#                 from_email = "CRAW SECURITY CERTIFICATE <training@craw.in>"
-#                 try:
-#                     email = EmailMessage(subject, html_message, from_email, [student.email])
-#                     email.content_subtype = "html"  # ✅ Make it HTML email
-#                     email.attach_file(file_path)
-#                     email.send()
-#                 except Exception as e:
-#                     return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                from_email = "CRAW SECURITY CERTIFICATE <training@craw.in>"
+                try:
+                    email = EmailMessage(subject, html_message, from_email, [student.email])
+                    email.content_subtype = "html"  # ✅ Make it HTML email
+                    email.attach_file(file_path)
+                    email.send()
+                except Exception as e:
+                    return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
                 # ✅ Fix: Open file WITHOUT closing it prematurely
                 certificate_file = open(file_path, 'rb')
@@ -1212,51 +1212,51 @@ class StudentBookAllotmentAPIView(APIView):
                 book_names = [book.name for book in result.book.all()] if hasattr(result, "book") else []
                 action_description = f"Allotted books: {', '.join(book_names)}"
 
-                # # ✅ Only send email if it's NOT an old allotment
-                # if student_course.student_old_book_allotment is False:
-                #     subject = f"🎉 Congratulations, {student.name}! You've been allotted books for {student_course.course.name}"
-                #     html_message = f"""
-                #     <!DOCTYPE html>
-                #         <html>
-                #         <head>
-                #             <meta charset="UTF-8">
-                #             <title>Book Issued Email</title>
-                #         </head>
-                #         <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0;">
-                #             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #dddddd;">
-                #                 <tr>
-                #                     <td style="padding: 30px; text-align: center;">
-                #                         <!-- Optional logo -->
-                #                         <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 80px; margin-bottom: 20px;" />
-                #                         <h2 style="color: #007bff;">Thank you for visiting Admin Desk</h2>
-                #                     </td>
-                #                 </tr>
-                #                 <tr>
-                #                     <td style="padding: 0 30px 30px 30px;">
-                #                         <p>Hello {student.name},</p>
-                #                         <p>
-                #                             <strong>Books Issued Till Today:</strong>
-                #                             {''.join([f"<li>{name}</li>" for name in book_names])}
-                #                         </p>
-                #                         <p>
-                #                             Join Our WhatsApp Channel for Updates:
-                #                             <a href="https://www.whatsapp.com/channel/0029VaE4JsD29757yPAY9z32" target="_blank">
-                #                                 https://www.whatsapp.com/channel/0029VaE4JsD29757yPAY9z32
-                #                             </a>
-                #                         </p>
-                #                         <p style="margin-top: 40px;">Best regards,<br>
-                #                         <strong>Craw Cyber Security Pvt Ltd</strong></p>
-                #                     </td>
-                #                 </tr>
-                #                 <tr>
-                #                     <td style="padding: 20px; text-align: center; background-color: #f1f1f1; font-size: 12px; color: #888888;">
-                #                         Copyright © 2024 Craw Security. All Rights Reserved.
-                #                     </td>
-                #                 </tr>
-                #             </table>
-                #         </body>
-                #         </html>
-                #     """
+                # ✅ Only send email if it's NOT an old allotment
+                if student_course.student_old_book_allotment is False:
+                    subject = f"🎉 Congratulations, {student.name}! You've been allotted books for {student_course.course.name}"
+                    html_message = f"""
+                    <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <meta charset="UTF-8">
+                            <title>Book Issued Email</title>
+                        </head>
+                        <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0;">
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #dddddd;">
+                                <tr>
+                                    <td style="padding: 30px; text-align: center;">
+                                        <!-- Optional logo -->
+                                        <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 80px; margin-bottom: 20px;" />
+                                        <h2 style="color: #007bff;">Thank you for visiting Admin Desk</h2>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0 30px 30px 30px;">
+                                        <p>Hello {student.name},</p>
+                                        <p>
+                                            <strong>Books Issued Till Today:</strong>
+                                            {''.join([f"<li>{name}</li>" for name in book_names])}
+                                        </p>
+                                        <p>
+                                            Join Our WhatsApp Channel for Updates:
+                                            <a href="https://www.whatsapp.com/channel/0029VaE4JsD29757yPAY9z32" target="_blank">
+                                                https://www.whatsapp.com/channel/0029VaE4JsD29757yPAY9z32
+                                            </a>
+                                        </p>
+                                        <p style="margin-top: 40px;">Best regards,<br>
+                                        <strong>Craw Cyber Security Pvt Ltd</strong></p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 20px; text-align: center; background-color: #f1f1f1; font-size: 12px; color: #888888;">
+                                        Copyright © 2024 Craw Security. All Rights Reserved.
+                                    </td>
+                                </tr>
+                            </table>
+                        </body>
+                        </html>
+                    """
 
                     
                     # <!DOCTYPE html>
@@ -1276,13 +1276,13 @@ class StudentBookAllotmentAPIView(APIView):
                     # </body>
                     # </html>
 
-                    # from_email = "CRAW SECURITY BOOK <training@craw.in>"
-                    # try:
-                    #     email = EmailMessage(subject, html_message, from_email, [student.email])
-                    #     email.content_subtype = "html"
-                    #     email.send()
-                    # except Exception as e:
-                    #     return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    from_email = "CRAW SECURITY BOOK <training@craw.in>"
+                    try:
+                        email = EmailMessage(subject, html_message, from_email, [student.email])
+                        email.content_subtype = "html"
+                        email.send()
+                    except Exception as e:
+                        return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             else:
                 removed_books = result.get("removed_books", []) if isinstance(result, dict) else []
                 action_description = f"Removed books: {', '.join(removed_books)}" if removed_books else "No books found to remove."
@@ -1411,61 +1411,61 @@ class StudentAttendanceEdit(APIView):
 
             # Build the email message
             subject = f"Attendance Update for {course_name} on {date_str}"
-            # html_message = f"""
-            # <!DOCTYPE html>
-            # <html>
-            # <head>
-            #     <meta charset="UTF-8">
-            #     <title>Attendance Update</title>
-            # </head>
-            # <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0; color: #000;">
-            #     <div style="max-width: 600px; margin: 40px auto; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); overflow: hidden;">
-            #         <div style="text-align: center; padding: 20px; border-bottom: 1px solid #ddd;">
-            #             <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 60px;">
-            #         </div>
-            #         <div style="padding: 30px; color: #000;">
-            #             <h2 style="text-align: center; color: #000; font-size: 24px; margin-bottom: 20px;">📋 Attendance Notification</h2>
-            #             <p style="font-size: 16px; line-height: 1.6; color: #000;">Dear <strong>{escape(student_name)}</strong>,</p>
-            #             <p style="font-size: 16px; line-height: 1.6; color: #000;">Your attendance for today's session of <strong>{escape(str(course_name))}</strong> (Batch ID: {batch_id}) has been {status_text}.</p>
-            #             <div style="background-color: #f1f1f1; padding: 15px; border-radius: 6px; margin: 20px 0;">
-            #                 <p style="font-size: 15px; margin: 6px 0; color: #000;"><strong>📘 Batch ID:</strong> {batch_id}</p>
-            #                 <p style="font-size: 15px; margin: 6px 0; color: #000;"><strong>🕒 Timing:</strong> {start_time} - {end_time}</p>
-            #                 <p style="font-size: 15px; margin: 6px 0; color: #000;"><strong>👨‍🏫 Trainer:</strong> {trainer_name}</p>
-            #                 <p style="font-size: 15px; margin: 6px 0; color: #000;"><strong>📅 Date:</strong> {date_str}</p>
-            #             </div>
-            #             <p style="font-size: 16px; line-height: 1.6; color: #000;">If this information is incorrect, please contact your coordinator.</p>
-            #             <p style="font-size: 15px; margin-top: 30px; line-height: 1.6; color: #000;">
-            #                 📍 <strong>Our Address:</strong><br>
-            #                 1st Floor, Plot no. 4, Lane no. 2, Kehar Singh Estate, Westend Marg,<br>
-            #                 Behind Saket Metro Station, New Delhi 110030
-            #             </p>
-            #             <p style="font-size: 15px; line-height: 1.6; color: #000;">
-            #                 📞 <strong>Phone:</strong> 011-40394315 | +91-9650202445, +91-9650677445<br>
-            #                 📧 <strong>Email:</strong> training@craw.in<br>
-            #                 🌐 <strong>Website:</strong> 
-            #                 <a href="https://www.craw.in" style="text-decoration: underline;">www.craw.in</a>
-            #             </p>
-            #             <p style="font-size: 16px; line-height: 1.6; color: #000;">
-            #                 Regards,<br>
-            #                 <strong>Craw Cyber Security Pvt Ltd</strong> 🛡️
-            #             </p>
-            #         </div>
-            #         <div style="background-color: #f0f0f0; padding: 18px 20px; text-align: center; font-size: 14px; border-top: 1px solid #ddd; color: #000;">
-            #             <p style="margin: 0;">© 2025 <strong>Craw Cyber Security Pvt Ltd</strong>. All Rights Reserved.</p>
-            #             <p style="margin: 5px 0 0;">This is an automated message. Please do not reply.</p>
-            #         </div>
-            #     </div>
-            # </body>
-            # </html>
+            html_message = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Attendance Update</title>
+            </head>
+            <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0; color: #000;">
+                <div style="max-width: 600px; margin: 40px auto; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); overflow: hidden;">
+                    <div style="text-align: center; padding: 20px; border-bottom: 1px solid #ddd;">
+                        <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 60px;">
+                    </div>
+                    <div style="padding: 30px; color: #000;">
+                        <h2 style="text-align: center; color: #000; font-size: 24px; margin-bottom: 20px;">📋 Attendance Notification</h2>
+                        <p style="font-size: 16px; line-height: 1.6; color: #000;">Dear <strong>{escape(student_name)}</strong>,</p>
+                        <p style="font-size: 16px; line-height: 1.6; color: #000;">Your attendance for today's session of <strong>{escape(str(course_name))}</strong> (Batch ID: {batch_id}) has been {status_text}.</p>
+                        <div style="background-color: #f1f1f1; padding: 15px; border-radius: 6px; margin: 20px 0;">
+                            <p style="font-size: 15px; margin: 6px 0; color: #000;"><strong>📘 Batch ID:</strong> {batch_id}</p>
+                            <p style="font-size: 15px; margin: 6px 0; color: #000;"><strong>🕒 Timing:</strong> {start_time} - {end_time}</p>
+                            <p style="font-size: 15px; margin: 6px 0; color: #000;"><strong>👨‍🏫 Trainer:</strong> {trainer_name}</p>
+                            <p style="font-size: 15px; margin: 6px 0; color: #000;"><strong>📅 Date:</strong> {date_str}</p>
+                        </div>
+                        <p style="font-size: 16px; line-height: 1.6; color: #000;">If this information is incorrect, please contact your coordinator.</p>
+                        <p style="font-size: 15px; margin-top: 30px; line-height: 1.6; color: #000;">
+                            📍 <strong>Our Address:</strong><br>
+                            1st Floor, Plot no. 4, Lane no. 2, Kehar Singh Estate, Westend Marg,<br>
+                            Behind Saket Metro Station, New Delhi 110030
+                        </p>
+                        <p style="font-size: 15px; line-height: 1.6; color: #000;">
+                            📞 <strong>Phone:</strong> 011-40394315 | +91-9650202445, +91-9650677445<br>
+                            📧 <strong>Email:</strong> training@craw.in<br>
+                            🌐 <strong>Website:</strong> 
+                            <a href="https://www.craw.in" style="text-decoration: underline;">www.craw.in</a>
+                        </p>
+                        <p style="font-size: 16px; line-height: 1.6; color: #000;">
+                            Regards,<br>
+                            <strong>Craw Cyber Security Pvt Ltd</strong> 🛡️
+                        </p>
+                    </div>
+                    <div style="background-color: #f0f0f0; padding: 18px 20px; text-align: center; font-size: 14px; border-top: 1px solid #ddd; color: #000;">
+                        <p style="margin: 0;">© 2025 <strong>Craw Cyber Security Pvt Ltd</strong>. All Rights Reserved.</p>
+                        <p style="margin: 5px 0 0;">This is an automated message. Please do not reply.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
 
-            # """
+            """
 
-            # try:
-            #     email = EmailMessage(subject, html_message, "CRAW SECURITY BATCH <training@craw.in>", [student_email])
-            #     email.content_subtype = "html"
-            #     email.send()
-            # except Exception as e:
-            #     print(f"Failed to send attendance email to {student_email}: {str(e)}")
+            try:
+                email = EmailMessage(subject, html_message, "CRAW SECURITY BATCH <training@craw.in>", [student_email])
+                email.content_subtype = "html"
+                email.send()
+            except Exception as e:
+                print(f"Failed to send attendance email to {student_email}: {str(e)}")
 
             student_attendance.save()
 
@@ -1527,93 +1527,93 @@ class StudentMarksUpdateAPIView(APIView):
 
         from_email = "CRAW SECURITY BATCH <training@craw.in>"
 
-        # if marks/50*100 <= 50:
-        #     subject = "Exam Result Notification"
-        #     html_message = f"""<html>
-        #     <head>
-        #     <meta charset="UTF-8">
-        #     <title>Exam Result Notification</title>
-        #     </head>
-        #     <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0;">
-        #     <div style="max-width: 600px; margin: 40px auto; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); overflow: hidden; color: #000;">
-        #         <div style="text-align: center; padding: 20px; border-bottom: 1px solid #ddd;">
-        #             <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 60px;">
-        #         </div>
-        #         <div style="padding: 30px; font-size: 16px; color: #000;">
-        #             <h2 style="text-align: center; font-size: 22px; color: #000;">📢 Exam Result Notification</h2>
-        #             <p style="color: #000;">Dear <strong>{student_name}</strong>,</p>
-        #             <p style="color: #000;">You did not pass the <strong>{course_name}</strong> exam held on <strong>{exam_date}</strong>.</p>
-        #             <p style="color: #000;">You scored <strong>{marks/50*100} % </strong> marks. Please prepare and try again because our pass marks percentage needs to be above 55%.</p>
-        #             <p style="margin-top: 30px; color: #000;">
-        #                 📍 <strong>Our Address:</strong><br>
-        #                 1st Floor, Plot no. 4, Lane no. 2, Kehar Singh Estate, Westend Marg,<br>
-        #                 Behind Saket Metro Station, New Delhi 110030
-        #             </p>
-        #             <p style="color: #000;">
-        #                 📞 <strong>Phone:</strong> 011-40394315 | +91-9650202445, +91-9650677445<br>
-        #                 📧 <strong>Email:</strong> training@craw.in<br>
-        #                 🌐 <strong>Website:</strong> 
-        #                 <a href="https://www.craw.in" style="text-decoration: underline;">www.craw.in</a>
-        #             </p>
-        #             <p style="color: #000;">
-        #                 Warm regards,<br>
-        #                 <strong>Craw Cyber Security Pvt Ltd</strong> 🛡️
-        #             </p>
-        #         </div>
-        #         <div style="background-color: #f0f0f0; padding: 18px 20px; text-align: center; font-size: 14px; color: #000; border-top: 1px solid #ddd;">
-        #             <p style="margin: 0;">© 2025 <strong>Craw Cyber Security Pvt Ltd</strong>. All Rights Reserved.</p>
-        #             <p style="margin: 5px 0 0;">This is an automated message. Please do not reply.</p>
-        #         </div>
-        #     </div>
-        #     </body>
-        #     </html>"""
-        # else:
-        #     subject = "🎉 Congratulations on Passing the Exam!"
-        #     html_message = f"""<html>
-        #     <head>
-        #     <meta charset="UTF-8">
-        #     <title>Exam Success</title>
-        #     </head>
-        #     <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0;">
-        #     <div style="max-width: 600px; margin: 40px auto; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); overflow: hidden; color: #000;">
-        #         <div style="text-align: center; padding: 20px; border-bottom: 1px solid #ddd;">
-        #             <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 60px;">
-        #         </div>
-        #         <div style="padding: 30px; font-size: 16px; color: #000;">
-        #             <h2 style="text-align: center; font-size: 22px; color: #000;">🎉 Congratulations!</h2>
-        #             <p style="color: #000;">Dear <strong>{student_name}</strong>,</p>
-        #             <p style="color: #000;">Congratulations on passing your <strong>{course_name}</strong> exam held on <strong>{exam_date}</strong>!</p>
-        #             <p style="color: #000;">You scored <strong>{marks/50*100} %</strong> marks. Keep it up the great work!</p>
-        #             <p style="margin-top: 30px; color: #000;">
-        #                 📍 <strong>Our Address:</strong><br>
-        #                 1st Floor, Plot no. 4, Lane no. 2, Kehar Singh Estate, Westend Marg,<br>
-        #                 Behind Saket Metro Station, New Delhi 110030
-        #             </p>
-        #             <p style="color: #000;">
-        #                 📞 <strong>Phone:</strong> 011-40394315 | +91-9650202445, +91-9650677445<br>
-        #                 📧 <strong>Email:</strong> training@craw.in<br>
-        #                 🌐 <strong>Website:</strong> 
-        #                 <a href="https://www.craw.in" style="text-decoration: underline;">www.craw.in</a>
-        #             </p>
-        #             <p style="color: #000;">
-        #                 Warm regards,<br>
-        #                 <strong>Craw Cyber Security Pvt Ltd</strong> 🛡️
-        #             </p>
-        #         </div>
-        #         <div style="background-color: #f0f0f0; padding: 18px 20px; text-align: center; font-size: 14px; color: #000; border-top: 1px solid #ddd;">
-        #             <p style="margin: 0;">© 2025 <strong>Craw Cyber Security Pvt Ltd</strong>. All Rights Reserved.</p>
-        #             <p style="margin: 5px 0 0;">This is an automated message. Please do not reply.</p>
-        #         </div>
-        #     </div>
-        #     </body>
-        #     </html>"""
+        if marks/50*100 <= 50:
+            subject = "Exam Result Notification"
+            html_message = f"""<html>
+            <head>
+            <meta charset="UTF-8">
+            <title>Exam Result Notification</title>
+            </head>
+            <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0;">
+            <div style="max-width: 600px; margin: 40px auto; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); overflow: hidden; color: #000;">
+                <div style="text-align: center; padding: 20px; border-bottom: 1px solid #ddd;">
+                    <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 60px;">
+                </div>
+                <div style="padding: 30px; font-size: 16px; color: #000;">
+                    <h2 style="text-align: center; font-size: 22px; color: #000;">📢 Exam Result Notification</h2>
+                    <p style="color: #000;">Dear <strong>{student_name}</strong>,</p>
+                    <p style="color: #000;">You did not pass the <strong>{course_name}</strong> exam held on <strong>{exam_date}</strong>.</p>
+                    <p style="color: #000;">You scored <strong>{marks/50*100} % </strong> marks. Please prepare and try again because our pass marks percentage needs to be above 55%.</p>
+                    <p style="margin-top: 30px; color: #000;">
+                        📍 <strong>Our Address:</strong><br>
+                        1st Floor, Plot no. 4, Lane no. 2, Kehar Singh Estate, Westend Marg,<br>
+                        Behind Saket Metro Station, New Delhi 110030
+                    </p>
+                    <p style="color: #000;">
+                        📞 <strong>Phone:</strong> 011-40394315 | +91-9650202445, +91-9650677445<br>
+                        📧 <strong>Email:</strong> training@craw.in<br>
+                        🌐 <strong>Website:</strong> 
+                        <a href="https://www.craw.in" style="text-decoration: underline;">www.craw.in</a>
+                    </p>
+                    <p style="color: #000;">
+                        Warm regards,<br>
+                        <strong>Craw Cyber Security Pvt Ltd</strong> 🛡️
+                    </p>
+                </div>
+                <div style="background-color: #f0f0f0; padding: 18px 20px; text-align: center; font-size: 14px; color: #000; border-top: 1px solid #ddd;">
+                    <p style="margin: 0;">© 2025 <strong>Craw Cyber Security Pvt Ltd</strong>. All Rights Reserved.</p>
+                    <p style="margin: 5px 0 0;">This is an automated message. Please do not reply.</p>
+                </div>
+            </div>
+            </body>
+            </html>"""
+        else:
+            subject = "🎉 Congratulations on Passing the Exam!"
+            html_message = f"""<html>
+            <head>
+            <meta charset="UTF-8">
+            <title>Exam Success</title>
+            </head>
+            <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0;">
+            <div style="max-width: 600px; margin: 40px auto; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); overflow: hidden; color: #000;">
+                <div style="text-align: center; padding: 20px; border-bottom: 1px solid #ddd;">
+                    <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 60px;">
+                </div>
+                <div style="padding: 30px; font-size: 16px; color: #000;">
+                    <h2 style="text-align: center; font-size: 22px; color: #000;">🎉 Congratulations!</h2>
+                    <p style="color: #000;">Dear <strong>{student_name}</strong>,</p>
+                    <p style="color: #000;">Congratulations on passing your <strong>{course_name}</strong> exam held on <strong>{exam_date}</strong>!</p>
+                    <p style="color: #000;">You scored <strong>{marks/50*100} %</strong> marks. Keep it up the great work!</p>
+                    <p style="margin-top: 30px; color: #000;">
+                        📍 <strong>Our Address:</strong><br>
+                        1st Floor, Plot no. 4, Lane no. 2, Kehar Singh Estate, Westend Marg,<br>
+                        Behind Saket Metro Station, New Delhi 110030
+                    </p>
+                    <p style="color: #000;">
+                        📞 <strong>Phone:</strong> 011-40394315 | +91-9650202445, +91-9650677445<br>
+                        📧 <strong>Email:</strong> training@craw.in<br>
+                        🌐 <strong>Website:</strong> 
+                        <a href="https://www.craw.in" style="text-decoration: underline;">www.craw.in</a>
+                    </p>
+                    <p style="color: #000;">
+                        Warm regards,<br>
+                        <strong>Craw Cyber Security Pvt Ltd</strong> 🛡️
+                    </p>
+                </div>
+                <div style="background-color: #f0f0f0; padding: 18px 20px; text-align: center; font-size: 14px; color: #000; border-top: 1px solid #ddd;">
+                    <p style="margin: 0;">© 2025 <strong>Craw Cyber Security Pvt Ltd</strong>. All Rights Reserved.</p>
+                    <p style="margin: 5px 0 0;">This is an automated message. Please do not reply.</p>
+                </div>
+            </div>
+            </body>
+            </html>"""
 
-        # try:
-        #     email = EmailMessage(subject, html_message, from_email, [student_email])
-        #     email.content_subtype = "html"
-        #     email.send()
-        # except Exception as e:
-        #     print(f"Failed to send email to {student_email}: {e}")
+        try:
+            email = EmailMessage(subject, html_message, from_email, [student_email])
+            email.content_subtype = "html"
+            email.send()
+        except Exception as e:
+            print(f"Failed to send email to {student_email}: {e}")
 
         return Response({'message': 'Marks updated and email sent successfully.'}, status=status.HTTP_200_OK)
 

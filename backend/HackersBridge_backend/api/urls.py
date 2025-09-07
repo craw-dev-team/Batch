@@ -132,7 +132,17 @@ urlpatterns = [
     # >>>>>>>> UTILITIES <<<<<<<<
     path('emailsender/', EmailSenderAPIView.as_view(), name='email-sender'),
     path('all_chats/', AllChatsAPIView.as_view(), name='all-chats-batch-id'),
-    path('test_function/', TestAPIFake.as_view(), name="test_functions"),
+
+    path('batch_scheduled_email/', BatchEndingEmailAPiView.as_view(), name='batch-scheduled-email'),
+
+    # Tags-related URLs
+    path('tags/', TagsListAPIView.as_view(), name='tags-list'),
+    path('tags/create/', TagsCreateAPIView.as_view(), name='tags-create'),
+    path('tags/edit/<int:id>/', TagsUpdateAPIView.as_view(), name='tags-edit'),
+    path('tags/delete/<int:id>/', TagsDeleteAPIView.as_view(), name='tags-delete'),
+
+    # Assign Tags to Students
+    path('student/assign_tag/<int:id>/', AssignTagsToStudentAPIView.as_view(), name='assign-student-tag'),
 
     # >>>>>>>> TIMESLOTS <<<<<<<<
     # path('timeslots/', GetAllTimeslotsAPIView.as_view(), name='get-all-timeslots'),
