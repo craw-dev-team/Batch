@@ -4,11 +4,19 @@ from django.core.mail import send_mail
 from django.utils.crypto import get_random_string
 from django.contrib.auth import get_user_model
 from rest_framework.authtoken.models import Token
-from nexus.models import Course, Book
+from nexus.models import Course, Book, Attendance,Batch
 from datetime import date
 from functools import lru_cache
 from django.utils import timezone
 from django.utils.timezone import now
+from django.db import transaction
+from django.utils.timezone import now
+from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+
+from rest_framework import serializers
+from rest_framework.authtoken.models import Token
+
 
 User = get_user_model()  # ✅ Dynamically fetch the User model
 
@@ -26,7 +34,7 @@ class StudentNoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = StudentNotes
         fields = [
-            'id', 'note', 'last_update_datetime',
+            'id', 'note', 'status_note', 'last_update_datetime',
             'create_by', 'create_at',
             'student',
             'create_by_name', 'student_name'
@@ -228,13 +236,182 @@ class SimpleStudentSerializer(serializers.ModelSerializer):
 
 
 
+{
+# class StudentSerializer(serializers.ModelSerializer):
+#     courses = serializers.PrimaryKeyRelatedField(queryset=Course.objects.all(), many=True)
+#     course_counsellor_name = serializers.CharField(source='course_counsellor.name', read_only=True)
+#     support_coordinator_name = serializers.CharField(source='support_coordinator.name', read_only=True)
+
+#     complete_course_name = serializers.SerializerMethodField()
+#     tags_values = serializers.SerializerMethodField()  # Added for tags names
+#     complete_course_id = serializers.SerializerMethodField()
+
+#     complete_course = serializers.ListField(
+#         child=serializers.PrimaryKeyRelatedField(queryset=Course.objects.all()),
+#         write_only=True,
+#         required=False
+#     )
+
+#     notes = StudentNoteSerializer(many=True, read_only=True)
+
+#     tags = serializers.PrimaryKeyRelatedField(
+#         queryset=Tags.objects.all(),
+#         many=True,
+#         write_only=True,
+#         required=False
+#     )
+
+
+#     class Meta:
+#         model = Student
+#         fields = [
+#             'id', 'enrollment_no', 'date_of_joining', 'name', 'email',
+#             'phone', 'alternate_phone', 'address', 'language', 'guardian_name',
+#             'guardian_no', 'courses', 'mode', 'location', 'preferred_week',
+#             'status', 'course_counsellor', 'support_coordinator', 'dob',
+#             'last_update_user', 'student_assing_by', 'last_update_datetime',
+#             'course_counsellor_name', 'support_coordinator_name',
+#             'complete_course', 'complete_course_id', 'complete_course_name',
+#             'notes', 'tags', 'tags_values'
+#         ]
+
+#     def to_representation(self, instance):
+#         rep = super().to_representation(instance)
+
+#         # Inject fast courses_names here
+#         rep['courses_names'] = [course.name for course in instance.courses.all()]
+
+#         return rep
+
+#     def get_complete_course_name(self, obj):
+#         completed = StudentCourse.objects.filter(student=obj, status='Completed').select_related('course')
+#         return [sc.course.name for sc in completed]
+    
+#     def get_tags_values(self, obj):
+#         """Fetch Values of tags associated with the student."""
+#         tags = StudentTags.objects.filter(student=obj).select_related('tag')
+#         return [{
+#                 'id': tag.tag.id,
+#                 'tag_name' :tag.tag.tag_name ,
+#                 'tag_color': tag.tag.tag_color
+#                 } for tag in tags]
+
+#     def get_complete_course_id(self, obj):
+#         completed = StudentCourse.objects.filter(student=obj, status='Completed').select_related('course')
+#         return [sc.course.id for sc in completed]
+    
+#     def create(self, validated_data):
+#         temp_password = get_random_string(length=8)
+
+#         # ✅ Extract and remove fields that are not in the Student model
+#         courses = validated_data.pop('courses', [])
+#         completed_courses = validated_data.pop('complete_course', [])
+#         note_text = self.context['request'].data.get('note')  # Get note from raw request data
+        
+#         request_user = self.context['request'].user  # ✅ Get the logged-in user
+
+#         # ✅ Set additional fields before saving
+#         validated_data['last_update_user'] = request_user  # Assign logged-in user
+#         validated_data['student_assing_by'] = request_user  # Assign only if the user is a Coordinator
+#         # validated_data['last_update_datetime'] = timezone.now()
+
+#         # ✅ Create the Student instance
+#         student = Student.objects.create(**validated_data)
+
+#         # ✅ Assign ManyToMany courses
+#         if courses:
+#             student.courses.set(courses)
+
+#         # ✅ If complete_course is provided, update StudentCourse records
+#         if completed_courses:
+#             StudentCourse.objects.filter(student=student, course__in=completed_courses).update(status='Completed')
+
+
+#         # ✅ Save note in StudentNotes table
+#         if note_text:
+#             StudentNotes.objects.create(
+#                 student=student,
+#                 note=note_text,
+#                 create_by=request_user
+#             )
+
+#         email = validated_data.get('email')
+#         if email:
+#             try:
+#                 # ✅ Ensure `User` is created
+#                 user = User.objects.create_user(
+#                     username=student.enrollment_no,  # Use provided enrollment_no
+#                     email=email,
+#                     password=temp_password,
+#                     first_name=student.name,
+#                 )
+#                 user.role = 'student'  # Ensure role exists in `User` model
+#                 user.save()
+
+#                 # ✅ Create an authentication token for the user
+#                 Token.objects.create(user=user)
+
+#                 print(f"✅ User created: {user.username}, Email: {user.email}")
+
+#             except Exception as e:
+#                 print(f"❌ Error creating user: {e}")
+
+#         return student
+    
+#     def update(self, instance, validated_data):
+#         """Update an existing student record and handle courses & completed courses."""
+
+#         request_user = self.context['request'].user  # ✅ Get the logged-in user
+#         instance.last_update_user = request_user  # ✅ Assign last_update_user before saving
+#         note_text = self.context['request'].data.get('note')  # Get note from raw request data
+
+#         # ✅ Update instance fields except 'courses' and 'complete_course'
+#         for attr, value in validated_data.items():
+#             if attr not in ['courses', 'complete_course']:
+#                 setattr(instance, attr, value)
+
+#         # ✅ Update ManyToMany courses
+#         if 'courses' in validated_data:
+#             instance.courses.set(validated_data['courses'])
+
+#         # ✅ Handle complete_course logic
+#         if 'complete_course' in validated_data:
+#             new_completed_courses = set(validated_data['complete_course'])
+
+#             # Fetch current completed course entries
+#             current_completed_courses = set(
+#                 StudentCourse.objects.filter(student=instance, status='Completed').values_list('course', flat=True)
+#             )
+
+#             # Determine removed courses (were completed, now not)
+#             removed_courses = current_completed_courses - set(course.id for course in new_completed_courses)
+
+#             # ✅ Set status to 'Completed' for newly added completed courses
+#             StudentCourse.objects.filter(student=instance, course__in=new_completed_courses).update(status='Completed')
+
+#             # ✅ Set status to 'Not Started' for removed courses
+#             if removed_courses:
+#                 StudentCourse.objects.filter(student=instance, course__in=removed_courses).update(status='Not Started')
+
+#         # ✅ Save student note
+#         if note_text:
+#             StudentNotes.objects.create(
+#                 student=instance,
+#                 note=note_text,
+#                 create_by=request_user
+#             )
+
+#         instance.save()
+#         return instance
+}
+
 class StudentSerializer(serializers.ModelSerializer):
     courses = serializers.PrimaryKeyRelatedField(queryset=Course.objects.all(), many=True)
     course_counsellor_name = serializers.CharField(source='course_counsellor.name', read_only=True)
     support_coordinator_name = serializers.CharField(source='support_coordinator.name', read_only=True)
-
+    attendence_summary = serializers.SerializerMethodField()
     complete_course_name = serializers.SerializerMethodField()
-    tags_values = serializers.SerializerMethodField()  # Added for tags names
+    tags_values = serializers.SerializerMethodField()
     complete_course_id = serializers.SerializerMethodField()
 
     complete_course = serializers.ListField(
@@ -242,16 +419,13 @@ class StudentSerializer(serializers.ModelSerializer):
         write_only=True,
         required=False
     )
-
     notes = StudentNoteSerializer(many=True, read_only=True)
-
     tags = serializers.PrimaryKeyRelatedField(
         queryset=Tags.objects.all(),
         many=True,
         write_only=True,
         required=False
     )
-
 
     class Meta:
         model = Student
@@ -263,136 +437,166 @@ class StudentSerializer(serializers.ModelSerializer):
             'last_update_user', 'student_assing_by', 'last_update_datetime',
             'course_counsellor_name', 'support_coordinator_name',
             'complete_course', 'complete_course_id', 'complete_course_name',
-            'notes', 'tags', 'tags_values'
+            'notes', 'tags', 'tags_values', 'attendence_summary'
         ]
+
+    def get_attendence_summary(self, obj):
+        batches = Batch.objects.filter(student=obj).order_by('-id')
+        if not batches.exists():
+            return {"message": "No batch assigned to this student."}
+        summary_list = []
+        for batch in batches:
+            attendance_qs = Attendance.objects.filter(student=obj, batch=batch).order_by('date')
+            present_count = attendance_qs.filter(attendance='Present').count()
+            absent_count = attendance_qs.filter(attendance='Absent').count()
+            total = attendance_qs.exclude(attendance='Not Marked').count()
+            latest_attendance = attendance_qs.order_by('-date', '-id').first()
+            attendance_history = [
+                {
+                    "date": attendance.date,
+                    "status": attendance.attendance
+                }
+                for attendance in attendance_qs
+            ]
+            summary_list.append({
+                "batch_id": batch.id,
+                "present": present_count,
+                "absent": absent_count,
+                "total_no_attendence": total,
+                "present_percent": f"{(present_count / total * 100):.1f}%" if total > 0 else "0%",
+                "absent_percent": f"{(absent_count / total * 100):.1f}%" if total > 0 else "0%",
+                "latest_status": latest_attendance.attendance if latest_attendance else "Not Marked",
+                "latest_date": latest_attendance.date if latest_attendance else None,
+                "attendance_history": attendance_history
+            })
+        return {
+            "student_id": obj.id,
+            "name": obj.name,
+            "batch_wise_attendance": summary_list
+        }
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
-
-        # Inject fast courses_names here
         rep['courses_names'] = [course.name for course in instance.courses.all()]
-
         return rep
 
     def get_complete_course_name(self, obj):
         completed = StudentCourse.objects.filter(student=obj, status='Completed').select_related('course')
         return [sc.course.name for sc in completed]
-    
+
     def get_tags_values(self, obj):
-        """Fetch Values of tags associated with the student."""
         tags = StudentTags.objects.filter(student=obj).select_related('tag')
         return [{
-                'id': tag.tag.id,
-                'tag_name' :tag.tag.tag_name ,
-                'tag_color': tag.tag.tag_color
-                } for tag in tags]
+            'id': tag.tag.id,
+            'tag_name': tag.tag.tag_name,
+            'tag_color': tag.tag.tag_color
+        } for tag in tags]
 
     def get_complete_course_id(self, obj):
         completed = StudentCourse.objects.filter(student=obj, status='Completed').select_related('course')
         return [sc.course.id for sc in completed]
-    
+
     def create(self, validated_data):
         temp_password = get_random_string(length=8)
-
-        # ✅ Extract and remove fields that are not in the Student model
         courses = validated_data.pop('courses', [])
         completed_courses = validated_data.pop('complete_course', [])
-        note_text = self.context['request'].data.get('note')  # Get note from raw request data
-        
-        request_user = self.context['request'].user  # ✅ Get the logged-in user
+        note_text = self.context['request'].data.get('note')
+        status_note_text = self.context['request'].data.get('status_note')
+        tags = validated_data.pop('tags', [])
+        request_user = self.context['request'].user
 
-        # ✅ Set additional fields before saving
-        validated_data['last_update_user'] = request_user  # Assign logged-in user
-        validated_data['student_assing_by'] = request_user  # Assign only if the user is a Coordinator
-        # validated_data['last_update_datetime'] = timezone.now()
+        validated_data['last_update_user'] = request_user
+        validated_data['student_assing_by'] = request_user
 
-        # ✅ Create the Student instance
-        student = Student.objects.create(**validated_data)
-
-        # ✅ Assign ManyToMany courses
-        if courses:
-            student.courses.set(courses)
-
-        # ✅ If complete_course is provided, update StudentCourse records
-        if completed_courses:
-            StudentCourse.objects.filter(student=student, course__in=completed_courses).update(status='Completed')
-
-
-        # ✅ Save note in StudentNotes table
-        if note_text:
-            StudentNotes.objects.create(
-                student=student,
-                note=note_text,
-                create_by=request_user
-            )
-
-        email = validated_data.get('email')
-        if email:
-            try:
-                # ✅ Ensure `User` is created
-                user = User.objects.create_user(
-                    username=student.enrollment_no,  # Use provided enrollment_no
-                    email=email,
-                    password=temp_password,
-                    first_name=student.name,
+        with transaction.atomic():
+            student = Student.objects.create(**validated_data)
+            if courses:
+                student.courses.set(courses)
+            if tags:
+                valid_tags = Tags.objects.filter(id__in=[tag.id for tag in tags])
+                for tag in valid_tags:
+                    StudentTags.objects.create(student=student, tag=tag, created_at=now(), updated_at=now())
+            if completed_courses:
+                StudentCourse.objects.filter(student=student, course__in=completed_courses).update(status='Completed')
+            if note_text or status_note_text:
+                StudentNotes.objects.create(
+                    student=student,
+                    note=note_text if note_text else None,
+                    status_note=status_note_text if status_note_text else None,
+                    create_by=request_user
                 )
-                user.role = 'student'  # Ensure role exists in `User` model
-                user.save()
+            email = validated_data.get('email')
+            if email:
+                try:
+                    if User.objects.filter(email=email).exists():
+                        raise serializers.ValidationError({'email': 'This email is already taken by another user.'})
+                    user = User.objects.create_user(
+                        username=student.enrollment_no,
+                        email=email,
+                        password=temp_password,
+                        first_name=student.name,
+                    )
+                    user.role = 'student'
+                    user.save()
+                    Token.objects.create(user=user)
+                except Exception as e:
+                    raise serializers.ValidationError({'user': str(e)})
+            return student
 
-                # ✅ Create an authentication token for the user
-                Token.objects.create(user=user)
-
-                print(f"✅ User created: {user.username}, Email: {user.email}")
-
-            except Exception as e:
-                print(f"❌ Error creating user: {e}")
-
-        return student
-    
     def update(self, instance, validated_data):
-        """Update an existing student record and handle courses & completed courses."""
+        request_user = self.context['request'].user
+        instance.last_update_user = request_user
+        note_text = self.context['request'].data.get('note')
+        status_note_text = self.context['request'].data.get('status_note')
+        old_email = instance.email
+        new_email = validated_data.get('email', old_email)
 
-        request_user = self.context['request'].user  # ✅ Get the logged-in user
-        instance.last_update_user = request_user  # ✅ Assign last_update_user before saving
-        note_text = self.context['request'].data.get('note')  # Get note from raw request data
-
-        # ✅ Update instance fields except 'courses' and 'complete_course'
+        # Update fields except special relations
         for attr, value in validated_data.items():
-            if attr not in ['courses', 'complete_course']:
+            if attr not in ['courses', 'complete_course', 'tags']:
                 setattr(instance, attr, value)
 
-        # ✅ Update ManyToMany courses
+        # Handle ManyToMany (courses via through)
         if 'courses' in validated_data:
             instance.courses.set(validated_data['courses'])
 
-        # ✅ Handle complete_course logic
+        # Handle complete_course via StudentCourse
         if 'complete_course' in validated_data:
             new_completed_courses = set(validated_data['complete_course'])
-
-            # Fetch current completed course entries
             current_completed_courses = set(
-                StudentCourse.objects.filter(student=instance, status='Completed').values_list('course', flat=True)
+                StudentCourse.objects.filter(student=instance, status='Completed')
+                .values_list('course', flat=True)
             )
-
-            # Determine removed courses (were completed, now not)
-            removed_courses = current_completed_courses - set(course.id for course in new_completed_courses)
-
-            # ✅ Set status to 'Completed' for newly added completed courses
+            removed_courses = current_completed_courses - {course.id for course in new_completed_courses}
             StudentCourse.objects.filter(student=instance, course__in=new_completed_courses).update(status='Completed')
-
-            # ✅ Set status to 'Not Started' for removed courses
             if removed_courses:
                 StudentCourse.objects.filter(student=instance, course__in=removed_courses).update(status='Not Started')
 
-        # ✅ Save student note
-        if note_text:
+        # Handle tags via StudentTags through model
+        if 'tags' in validated_data:
+            StudentTags.objects.filter(student=instance).delete()
+            for tag in validated_data['tags']:
+                StudentTags.objects.create(student=instance, tag=tag, created_at=now(), updated_at=now())
+
+        # Handle notes
+        if note_text or status_note_text:
             StudentNotes.objects.create(
                 student=instance,
-                note=note_text,
+                note=note_text if note_text else None,
+                status_note=status_note_text if status_note_text else None,
                 create_by=request_user
             )
 
-        instance.save()
+        with transaction.atomic():
+            instance.save()
+            if old_email != new_email and new_email:
+                u = User.objects.filter(username=instance.enrollment_no).first() or \
+                    User.objects.filter(email=old_email).first()
+                if u:
+                    if User.objects.filter(email=new_email).exclude(pk=u.pk).exists():
+                        raise serializers.ValidationError({'email': 'This email is already taken by another user.'})
+                    u.email = new_email.strip().lower()
+                    u.save()
         return instance
 
 
@@ -498,6 +702,7 @@ class StudentBookAllotmentSerializer(serializers.ModelSerializer):
 
             return {'removed_books': removed_books}
 
+{
 
 # class StudentBookAllotmentSerialssizer(serializers.ModelSerializer):
 #     Book = serializers.BooleanField()
@@ -575,6 +780,7 @@ class StudentBookAllotmentSerializer(serializers.ModelSerializer):
 
 #             return {'removed_books': removed_books}
 
+}
 
 
 class TagsSerializer(serializers.ModelSerializer):
