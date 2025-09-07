@@ -1,8 +1,6 @@
-import axios from "axios";
 import React, { createContext, useState, useContext, useCallback } from "react";
-// import TicketRaiseForm from "./TicketRaiseForm";
-import BASE_URL from "../../../ip/Ip";
 import { message } from "antd";
+import axiosInstance from "../api/api";
 
 
 // Create the Context Object
@@ -17,20 +15,12 @@ const TicketsProvider = ({ children }) => {
     // FETCH DATA FROM SERVER OF ALL THE TICKETS RAISED BY THAT STUDENT
     const fetchTicketData = useCallback(async () => {
         if (loading) return; 
-        // const token = localStorage.getItem('token');
-        // if (!token) {
-        //     console.error("No token found, user might be logged out.");
-        //     return;
-        // };
+    
         setLoading(true);
         try {
-            const response = await axios.get(`${BASE_URL}/api/ticket/`,
-              { headers: { 'Content-Type': 'application/json' }, 
-              withCredentials: true,
-            }  
-            );
+            const response = await axiosInstance.get(`/api/ticket/`);
             const data = response?.data;
-            console.log(data);
+           
             setTicketData(prevData => {
               if(JSON.stringify(prevData) !== JSON.stringify(data)){
                 return data;
@@ -38,7 +28,6 @@ const TicketsProvider = ({ children }) => {
               return prevData;
             });
 
-            // console.log( data)
         } catch (error) {
           console.error('Error fetching Ticket Data', error);
         } finally {
@@ -50,15 +39,10 @@ const TicketsProvider = ({ children }) => {
     // Get Tickets Chats 
   const fetchChat = useCallback(async (id) => {
     if (!id) return;
-    // const token = localStorage.getItem('token');
-    // if (!token) return;
-
+  
     setLoading(true);
     try {
-      const response = await axios.get(`${BASE_URL}/api/ticket/chat/${id}/`, {
-        headers: { 'Content-Type': 'application/json' },
-        withCredentials: true,
-      });
+      const response = await axiosInstance.get(`/api/ticket/chat/${id}/` );
       const data = response?.data;
       setTicketChat(prevData => JSON.stringify(prevData) !== JSON.stringify(data) ? data : prevData);
     } catch (error) {
@@ -71,19 +55,10 @@ const TicketsProvider = ({ children }) => {
 
   // Post Request for send ticket messages
     const sendTicketMessage = async (ticketId, messageText) => {
-      // const token = localStorage.getItem("token");
-      // if (!token) {
-      //   message.error("Unauthorized. Please log in.");
-      //   return;
-      // }
   
       try {
-        const response = await axios.post(`${BASE_URL}/api/ticket/message/${ticketId}/`,
-          { message: messageText },
-          { headers: { "Content-Type": "application/json"},
-            withCredentials: true,
-          }
-        );
+        const response = await axiosInstance.post(`/api/ticket/message/${ticketId}/`,
+          { message: messageText } );
   
         if (response.status === 200 || response.status === 201) {
           message.success("Message Sent.");
@@ -97,8 +72,29 @@ const TicketsProvider = ({ children }) => {
       }
     };
 
+
+
+    const closeTicket = async (ticketId) => {
+     try {
+        const response = await axiosInstance.patch(`/api/ticket/status/${ticketId}/`,
+          {status: "Closed"} );
+  
+        if (response.status === 200 || response.status === 201) {
+          message.success("Ticket closed.");
+          fetchChat(ticketId);
+        } else {
+          message.error("Failed to close ticket.");
+        }
+      } catch (error) {
+        // console.error("Error sending message:", error);
+        message.error("Failed to close ticket.");
+      }
+    };
+
+
+
     return (
-      <TicketsContext.Provider value={{ loading, ticketData, setTicketData, fetchTicketData, fetchChat, ticketChat, sendTicketMessage  }}>
+      <TicketsContext.Provider value={{ loading, ticketData, setTicketData, fetchTicketData, fetchChat, ticketChat, sendTicketMessage, closeTicket  }}>
         {children}
       </TicketsContext.Provider>
     );

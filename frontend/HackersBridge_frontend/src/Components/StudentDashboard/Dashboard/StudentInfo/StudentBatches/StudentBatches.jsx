@@ -133,10 +133,10 @@ const StudentBatches = () => {
                               <FieldTimeOutlined className='text-gray-400 mr-1'/>
                               <div className='flex flex-col items-end'>
                                 <span className="text-xs text-gray-900">
-                                  {dayjs(batch.batch_time_data.start_time, "hh:mm:ss").format("hh:mm A")}
+                                  {batch.batch_time_data?.start_time ? batch.batch_time_data.start_time : "N/A"}
                                 </span>
                                 <span className="text-xs text-gray-900">
-                                  {dayjs(batch.batch_time_data.end_time, "hh:mm:ss").format("hh:mm A")}
+                                  {batch.batch_time_data?.end_time ? batch.batch_time_data.end_time : "N/A"}
                                 </span>
                               </div>
                             </div>
@@ -246,10 +246,10 @@ const StudentBatches = () => {
                               <FieldTimeOutlined className='text-gray-400 mr-1' />
                               <div className='flex flex-col items-end'>
                                 <span className="text-xs text-gray-900">
-                                  {dayjs(batch.batch_time_data.start_time, "HH:mm:ss").format("hh:mm A")}
+                                  {batch.batch_time_data?.start_time ? batch.batch_time_data.start_time : "N/A"}
                                 </span>
                                 <span className="text-xs text-gray-900">
-                                  {dayjs(batch.batch_time_data.end_time, "HH:mm:ss").format("hh:mm A")}
+                                  {batch.batch_time_data?.end_time ? batch.batch_time_data.end_time : "N/A"}
                                 </span>
                               </div>
                             </div>
@@ -344,10 +344,10 @@ const StudentBatches = () => {
                               <FieldTimeOutlined className='text-gray-400 mr-1' />
                               <div className='flex flex-col items-end'>
                                 <span className="text-xs text-gray-900">
-                                  {dayjs(batch.batch_time_data.start_time, "HH:mm:ss").format("hh:mm A")}
+                                  {batch.batch_time_data?.start_time ? batch.batch_time_data.start_time : "N/A"}
                                 </span>
                                 <span className="text-xs text-gray-900">
-                                  {dayjs(batch.batch_time_data.end_time, "HH:mm:ss").format("hh:mm A")}
+                                  {batch.batch_time_data?.end_time ? batch.batch_time_data.end_time : "N/A"}
                                 </span>
                               </div>
                             </div>

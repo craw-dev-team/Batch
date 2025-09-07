@@ -3,11 +3,16 @@ import { useNavigate, useSearchParams   } from 'react-router-dom';
 import { Card, Col, Row, DatePicker, Select, Popover, Empty } from 'antd';
 import dayjs from 'dayjs';
 import { useBookForm } from '../../../BooksContext/BookFormContext';
+import { useTheme } from '../../../../Themes/ThemeContext';
 
 const { RangePicker } = DatePicker;
 
 
 const BookCards = () => {
+    // for theme -------------------------
+    const { getTheme } = useTheme();
+    const theme = getTheme();
+    // ------------------------------------
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
     const { booksCountData, selectedOption, setSelectedOption, startDate, setStartDate, endDate, setEndDate, handleBookFilter  } = useBookForm();
@@ -138,7 +143,7 @@ const BookCards = () => {
                     <Select
                         placeholder="Filter By Date"
                         size='small'
-                        className="w-44 text-sm rounded border"
+                        className={`w-44 text-sm rounded-xl ${theme.bg}`}
                         value={selectedOption}
                         onChange={(value) => {
                             setSelectedOption(value);
@@ -185,7 +190,7 @@ const BookCards = () => {
                             handleBookFilter();
                         }}
 
-                        className="text-xs px-3 py-1 bg-gray-300 dark:bg-gray-700 text-black dark:text-white rounded"
+                        className="text-xs px-3 py-1 bg-gray-300 text-black dark:text-white rounded"
                     >
                         Cancel
                     </button>
@@ -200,20 +205,18 @@ const BookCards = () => {
         </div>
         ) : (
             <Row gutter={[14, 14]}>
-            {cards.map(({ key, label, count }) => (
+            {cards.map(({ key, label, count }, index) => (
                 <Col span={4} key={key}>
                 <Card
-                    title={<span style={{ fontSize: '18px' }}>{count}</span>}
+                    title={<span className={`text-${theme.cards[index % theme.cards.length]} text-2xl`}>{count}</span>}
                     variant="bordered"
-                    className={`!p-0 rounded-md shadow-sm font-semibold transition-all duration-150 ${
-                    key !== "all" ? "cursor-pointer" : "cursor-default"
-                    }
+                    className={`cursor-pointer rounded-xl border shadow-sm hover:shadow-md transition-all duration-200 font-bold opacity-80 ${theme.cards[index % theme.cards.length] || ""} 
                     `}
                     styles={{
                     header: {
                         padding: '2px 8px',
                         height: '28px',
-                        backgroundColor: '#ebf5ff',
+                        backgroundColor:  `${theme.cards[index % theme.cards.length] || ""}`,
                     },
                     body: {
                         padding: '4px 8px',
@@ -224,7 +227,7 @@ const BookCards = () => {
                         overflow: 'hidden',
                     }
                     }}
-                    {...(key !== "all" && { onClick: () => handleCardClick(label)})}
+                     onClick= {() => handleCardClick(label)}
                 >
                     <div className="truncate">{label}</div>
                 </Card>

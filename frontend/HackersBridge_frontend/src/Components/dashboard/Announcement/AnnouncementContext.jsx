@@ -1,7 +1,6 @@
-import axios from "axios";
 import React, { createContext, useContext, useCallback, useState } from "react";
 import { message } from "antd";
-import BASE_URL from "../../../ip/Ip";
+import axiosInstance from "../api/api";
 
 // Create the Context Object
 const AnnouncementContext = createContext();
@@ -33,11 +32,7 @@ const AnnouncementProvider = ({ children }) => {
 
     setLoading(true);
     try {
-      const response = await axios.get(`${BASE_URL}/api/announcement/`, 
-        { headers: { 'Content-Type': 'application/json'},
-        withCredentials: true
-      }
-      );
+      const response = await axiosInstance.get(`/api/announcement/`);
 
       const data = response.data;
       setAnnouncement(prevData => {
@@ -56,11 +51,6 @@ const AnnouncementProvider = ({ children }) => {
 
   // ✅ Create new announcement
   const handleFormSubmit = async (formData) => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      message.error("Unauthorized. Please log in.");
-      return;
-    }
   
     // ✅ Extract only batch IDs from cascader paths
     const batchIds = formData.to.map(path => path[path.length - 1]);
@@ -79,11 +69,7 @@ const AnnouncementProvider = ({ children }) => {
       formData.files.forEach(file => {
         Payload.append("file", file);
       });
-    }
-  
-    console.log("Submitting Payload:", [...Payload.entries()]);
-  
-    
+    }  
   };
   
 
@@ -99,7 +85,7 @@ const AnnouncementProvider = ({ children }) => {
 
     setLoading(true);
     try {
-      const response = await axios.get(`${BASE_URL}/api/announcement/trainer/`, 
+      const response = await axiosInstance.get(`/api/announcement/trainer/`, 
         { headers: { 'Content-Type': 'application/json' },
         withCredentials: true
       }

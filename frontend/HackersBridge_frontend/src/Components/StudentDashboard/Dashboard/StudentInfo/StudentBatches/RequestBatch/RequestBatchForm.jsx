@@ -1,13 +1,8 @@
-import { useState } from 'react';
-import BASE_URL from '../../../../../../ip/Ip';
 import { useRequestBatch } from './RequestBatchContext';
 
   const RequestBatchForm = ({ isOpen, onClose }) => { 
     if(!isOpen) return null;
-    const { batchCode, setBatchCode, handleRequestBatch } = useRequestBatch();
-
-
-
+    const { batchCode, loading, setBatchCode, handleRequestBatch } = useRequestBatch();
 
 
 
@@ -32,7 +27,7 @@ import { useRequestBatch } from './RequestBatchContext';
         </button>
       </div> 
 
-        <form className="" onSubmit={handleRequestBatch}>
+        <form className="" onSubmit={ handleRequestBatch}>
           <label className="block text-xs font-medium text-gray-700 mb-2">
             {/* Enter Code */}
           </label>
@@ -50,7 +45,8 @@ import { useRequestBatch } from './RequestBatchContext';
           <div>
             <button
               type="submit"
-              className="w-full bg-green-400 text-white py-2 rounded hover:bg-green-500 transition">Submit
+              className="w-full bg-green-400 text-white py-2 rounded hover:bg-green-500 transition">
+                {loading ? "Submitting" : "Submit"}
             </button>
           </div>
         </form>

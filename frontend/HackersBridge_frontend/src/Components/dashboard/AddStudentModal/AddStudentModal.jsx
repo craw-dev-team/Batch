@@ -1,12 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { DatePicker } from 'antd';
 import { Select, Input, Alert, Button, Spin, message, Tooltip   } from 'antd';
 import { SyncOutlined, CopyOutlined, RightOutlined } from '@ant-design/icons';
-import axios from 'axios';
-import BASE_URL from '../../../ip/Ip';
 import { useBatchForm } from '../Batchcontext/BatchFormContext';
 import { useParams } from 'react-router-dom';
 import { useSpecificBatch } from '../Contexts/SpecificBatch';
+import axiosInstance from '../api/api';
 
 
 
@@ -50,12 +48,8 @@ const AddStudentModal = ({ isOpen, onClose }) => {
         };
     
         try {
-            const response = await axios.post(`${BASE_URL}/api/batches/${batch_id}/add-students/`, 
-                { students: studentIds }, // Ensure correct payload format
-                { headers: { 'Content-Type': 'application/json'},
-                withCredentials : true
-            }
-            );
+            const response = await axiosInstance.post(`/api/batches/${batch_id}/add-students/`, 
+                { students: studentIds } );
     
             if (response.status >= 200 && response.status < 300) {
                 message.success("Students added successfully!");
@@ -82,13 +76,8 @@ const AddStudentModal = ({ isOpen, onClose }) => {
 
     const fetchAvailableStudents = useCallback(async (decodedBatchId) => {        
         try {
-            const response = await axios.get(`${BASE_URL}/api/batches/${decodedBatchId}/available-students/`, 
-                { headers: { 'Content-Type': 'application/json' },
-                withCredentials : true
-            }
-            );
+            const response = await axiosInstance.get(`/api/batches/${decodedBatchId}/available-students/` );
             const data = response.data;
-            // console.log(data);
             
             if (!data.available_students) {
                 throw new Error("Invalid response format");

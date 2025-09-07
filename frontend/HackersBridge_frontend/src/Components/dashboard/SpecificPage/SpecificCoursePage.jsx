@@ -7,11 +7,17 @@ import CreateCourseForm from "../Courses/CreateCourseForm";
 import { useCourseForm } from "../Coursecontext/CourseFormContext";
 import handleBatchClick, { handleStudentClick } from "../../Navigations/Navigations";
 import dayjs from "dayjs";
+import { useTheme } from "../../Themes/ThemeContext";
 
 
 
 
 const SpecificCoursePage = () => {
+    // for theme -------------------------
+    const { getTheme } = useTheme();
+    const theme = getTheme();
+    // ------------------------------------
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
     const [selectedCourse, setSelectedCourse] = useState();
@@ -53,28 +59,26 @@ const SpecificCoursePage = () => {
         };
 
 
-console.log(specificCourse?.course_info?.Student_take_by);
-
     return (
         <>
-        <div className="w-auto h-full pt-20 px-2 mt-0 ">
+        <div className={`w-auto h-full pt-16 px-4 mt-0 ${theme.bg}`}>
             <div className="grid">
                     {courseinfo ? (
                     <>
-                <div className="px-4 py-4 col-span-3 h-auto shadow-md sm:rounded-lg border border-gray-50 bg-white">
+                <div className={`px-4 py-4 col-span-3 h-auto shadow-md sm:rounded-lg ${theme.specificPageBg}`}>
                     
                     <div className="w-full h-auto px-1 py-3 text-lg font-semibold flex justify-between">
                         <p># {courseinfo.code}</p>
                         <Button 
                             color="secondary" 
                             variant="outlined" 
-                            className="rounded-lg"
+                            className={`rounded-xl ${theme.bg}`}
                             onClick={(e) => {
                                 e.stopPropagation(); // Prevent the click from bubbling to the <td> click handler
                                 handleEditClick(courseinfo);  // Open the form with selected course data
                                 setIsModalOpen(true);   // Open the modal
                             }}
-                        >
+                            >
                             <EditOutlined />
                         </Button>
                     </div>
@@ -106,235 +110,232 @@ console.log(specificCourse?.course_info?.Student_take_by);
             </div>
            
                     
-                <div className="px-4 py-4 h-auto shadow-md sm:rounded-lg border border-gray-50 bg-white">
+                <div className={`py-4 px-4 col-span-6 mt-2 h-auto shadow-md ${theme.specificPageBg}`}>
                     
-                    <div className="w-full h-auto px-1 py-3 text-lg font-semibold">
-                        <h1>{activeTab === "students" ? "Students Enrolled in Course" : "Batches of this Course"}</h1>
+                    <div className="w-full h-auto px-1 py-3 font-semibold">
+                        <h1>{activeTab === "students" ? `Students Enrolled in ${courseinfo?.name ?? ""} Course` : `Batches of ${courseinfo?.name ?? ""} Course`}</h1>
                     </div>
-                        <div className="flex gap-x-4 h-10 justify-between">
-                            <div className="tabs">
+                        <div className="flex gap-x-4 justify-between">
+                            <div className="bg-white/70 backdrop-blur-sm p-1.5 rounded-xl">
                                 <button
                                     onClick={() => handleTabClick("students")}
-                                    className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                                        ${activeTab === "students" ? 'bg-blue-300  text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                    className={`px-4 py-2 textrounded-lg font-medium text-xs transition-all duration-200 text-gray-600 hover:bg-white/50
+                                        ${activeTab === "students" ? `text-gray-600 shadow-md ${theme.activeTab}` : ' text-gray-600 hover:bg-white/50'}`}
                                 >
                                     Students
                                 </button>
 
                                 <button
                                     onClick={() => handleTabClick("batches")}
-                                    className={` px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                                    ${activeTab === "batches" ? 'bg-blue-300  text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                    className={` px-4 py-2 rounded-lg font-medium text-xs transition-all duration-200 text-gray-600 hover:bg-white/50
+                                    ${activeTab === "batches" ? `text-gray-600 shadow-md ${theme.activeTab}` : ' text-gray-600 hover:bg-white/50'}`}
                                 >
                                     Batches
                                 </button>
                                         
                             </div>
 
-                            <div>
+                            {/* <div>
                                 <Button onClick={() => setIsTransferModalOpen(true)}>Transfer</Button>
-                            </div>
+                            </div> */}
 
                         </div>
                         
                         {activeTab === "students" && ( 
-                            <div className="overflow-hidden pb-2 relative ">
-                            <div className="w-full h-[38rem] overflow-y-auto rounded-lg pb-2">
-                                    <>
-                                <table className="w-full text-xs text-left text-gray-500">
-                                        <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10">
-                                                <tr>
-                                                    <th scope="col" className="p-2">
-                                                        <div className="flex items-center">
-                                                            <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
-                                                            <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
-                                                        </div>
-                                                    </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-2">
-                                                        S.No
-                                                    </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
-                                                        Enrollment No
-                                                    </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
-                                                        Student Name
-                                                    </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
-                                                        Phone No
-                                                    </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
-                                                        Email
-                                                    </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
-                                                        Date of Joining
-                                                    </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
-                                                        course
-                                                    </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
-                                                        Mode
-                                                    </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
-                                                        Language
-                                                    </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
-                                                        Preferred Week
-                                                    </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
-                                                        Location
-                                                    </th>
-                                                    
-                                                </tr>
-                                        </thead>
-                                        <tbody>
-                                        {loading ? (
-                                            <tr>
-                                                <td colSpan="100%" className="text-center py-4">
-                                                    <Spin size="large" />
-                                                </td>
-                                            </tr>
-                                        ) : Array.isArray(specificCourse?.course_info?.Student_take_by) && specificCourse?.course_info?.Student_take_by?.length > 0 ? (
-                                                specificCourse?.course_info?.Student_take_by.map((item, index) => (
-                                                <tr key={index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 scroll-smooth">
-                                                    <td scope="col" className="p-2">
-                                                        <div className="flex items-center">
-                                                            <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
-                                                            <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
-                                                        </div>
-                                                    </td>
-                                                    <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
-                                                        {index + 1}
-                                                    </td>
-                                                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(navigate,item.id)}>
-                                                        {item.enrollment_no}
-                                                    </td>
-                                                    <td className="px-3 py-2 md:px-1">
-                                                        {item.name}
-                                                    </td>
-                                                    <td className="px-3 py-2 md:px-1">
-                                                        {item.phone}
-                                                    </td>
-                                                    <td className="px-3 py-2 md:px-1">
-                                                        {item.email}
-                                                    </td>
-                                                    <td className="px-3 py-2 md:px-1">
-                                                        {item.date_of_joining}
-                                                    </td>
-                                                
-                                                    <td className="px-3 py-2 md:px-1 font-semibold">
-                                                        <Avatar.Group
-                                                            max={{
-                                                                    count: 2,
-                                                                    style: {
-                                                                        color: "#f56a00",
-                                                                        backgroundColor: "#fde3cf",
-                                                                        height: "24px", // Match avatar size
-                                                                        width: "24px", // Match avatar size
-                                                                }
-                                                            }}
-                                                        >
-                                                            {item.courses_names?.map((name, index) => (
-                                                                <Tooltip key={index} title={name} placement="top">
-                                                                    <Avatar
-                                                                        size={24}
-                                                                        style={{ backgroundColor: "#87d068" }}
-                                                                    >
-                                                                        {name[0]}
-                                                                    </Avatar>
-                                                                </Tooltip>
-                                                            ))}
-                                                        </Avatar.Group>
-                                                    </td>
-                                                    <td className="px-3 py-2 md:px-1">
-                                                        <Tag bordered={false} color={item.mode == 'Offline'? 'green' : item.mode == 'online'? 'volcano' : 'geekblue'}>
-                                                            {item.mode}
-                                                        </Tag>
-                                                    </td>
-                                                    <td className="px-3 py-2 md:px-1">
-                                                        <Tag bordered={false} color={item.language === 'Hindi'? 'green' : item.language === 'English'? 'volcano' : 'blue'}>
-                                                            {item.language}
-                                                        </Tag>
-                                                    </td>
-                                                    <td className="px-3 py-2 md:px-1">
-                                                        <Tag bordered={false} color={item.preferred_week === "Weekdays" ? "cyan" : "gold" }>
-                                                            {item.preferred_week}
-                                                        </Tag>
-                                                    </td>
+                            <div className="overflow-hidden pb-2 relative bg-white/40 backdrop-blur-sm rounded-xl shadow-sm">
+                                <div className="w-full h-auto md:max-h-[22rem] 2xl:max-h-[25rem] overflow-y-auto rounded-xl pb-2">
+                                    <table className="w-full text-xs font-normal text-left text-gray-600">
+                                            <thead className="bg-white sticky top-0 z-10">
+                                                    <tr className="bg-gray-50/80">
+                                                        <th scope="col" className="p-2">
+                                                            <div className="flex items-center">
+                                                                <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
+                                                            </div>
+                                                        </th>
+                                                        <th scope="col" className="px-3 py-3 md:px-2 text-xs font-medium uppercase ">
+                                                            S.No
+                                                        </th>
+                                                        <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase ">
+                                                            Enrollment No
+                                                        </th>
+                                                        <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase ">
+                                                            Student Name
+                                                        </th>
+                                                        <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase ">
+                                                            Phone No
+                                                        </th>
+                                                        <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase ">
+                                                            Email
+                                                        </th>
+                                                        <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase ">
+                                                            Date of Joining
+                                                        </th>
+                                                        <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase ">
+                                                            course
+                                                        </th>
+                                                        <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase ">
+                                                            Mode
+                                                        </th>
+                                                        <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase ">
+                                                            Language
+                                                        </th>
+                                                        <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase ">
+                                                            Preferred Week
+                                                        </th>
+                                                        <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase ">
+                                                            Location
+                                                        </th>
                                                         
-                                                    <td className="px-3 py-2 md:px-1">
-                                                    {item.location == '1' ? <Tag color="blue">Saket</Tag> : item.location == "2" ? <Tag color="magenta">Laxmi Nagar</Tag> : <Tag color="geekblue">Both</Tag>}
+                                                    </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-100 font-light text-gray-700">
+                                            {loading ? (
+                                                <tr>
+                                                    <td colSpan="100%" className="text-center py-4">
+                                                        <Spin size="large" />
                                                     </td>
                                                 </tr>
-                                        ))
-                                        ) : (
-                                            <tr>
-                                                <td colSpan="100%" className="text-center py-4 text-gray-500">
-                                                    <Empty description="No Batches found" />
-                                                </td>
-                                            </tr>
-                                        )}
-                                        </tbody>
+                                            ) : Array.isArray(specificCourse?.course_info?.Student_take_by) && specificCourse?.course_info?.Student_take_by?.length > 0 ? (
+                                                    specificCourse?.course_info?.Student_take_by.map((item, index) => (
+                                                    <tr key={index} className="hover:bg-white transition-colors scroll-smooth">
+                                                        <td scope="col" className="p-2">
+                                                            <div className="flex items-center">
+                                                                <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
+                                                                <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
+                                                            </div>
+                                                        </td>
+                                                        <td scope="row" className="px-3 py-2 md:px-2">
+                                                            {index + 1}
+                                                        </td>
+                                                        <td className="px-3 py-2 md:px-1 font-medium cursor-pointer" onClick={() => handleStudentClick(navigate,item.id)}>
+                                                            {item.enrollment_no}
+                                                        </td>
+                                                        <td className="px-3 py-2 md:px-1">
+                                                            {item.name}
+                                                        </td>
+                                                        <td className="px-3 py-2 md:px-1">
+                                                            {item.phone}
+                                                        </td>
+                                                        <td className="px-3 py-2 md:px-1">
+                                                            {item.email}
+                                                        </td>
+                                                        <td className="px-3 py-2 md:px-1">
+                                                            {item.date_of_joining}
+                                                        </td>
+                                                    
+                                                        <td className="px-3 py-2 md:px-1">
+                                                            <Avatar.Group
+                                                                max={{
+                                                                        count: 2,
+                                                                        style: {
+                                                                            color: "#f56a00",
+                                                                            backgroundColor: "#fde3cf",
+                                                                            height: "24px", // Match avatar size
+                                                                            width: "24px", // Match avatar size
+                                                                    }
+                                                                }}
+                                                            >
+                                                                {item.courses?.map((name, index) => (
+                                                                    <Tooltip key={index} title={name} placement="top">
+                                                                        <Avatar
+                                                                            size={24}
+                                                                        className={`${theme.studentCount} text-white`}
+                                                                        >
+                                                                            {name[0]}
+                                                                        </Avatar>
+                                                                    </Tooltip>
+                                                                ))}
+                                                            </Avatar.Group>
+                                                        </td>
+                                                        <td className="px-3 py-2 md:px-1 font-normal">
+                                                            <Tag className="rounded-xl" bordered={false} color={item.mode == 'Offline'? 'green' : item.mode == 'online'? 'volcano' : 'geekblue'}>
+                                                                {item.mode}
+                                                            </Tag>
+                                                        </td>
+                                                        <td className="px-3 py-2 md:px-1 font-normal">
+                                                            <Tag className="rounded-xl" bordered={false} color={item.language === 'Hindi'? 'green' : item.language === 'English'? 'volcano' : 'blue'}>
+                                                                {item.language}
+                                                            </Tag>
+                                                        </td>
+                                                        <td className="px-3 py-2 md:px-1 font-normal">
+                                                            <Tag className="rounded-xl" bordered={false} color={item.preferred_week === "Weekdays" ? "cyan" : "gold" }>
+                                                                {item.preferred_week}
+                                                            </Tag>
+                                                        </td>
+                                                            
+                                                        <td className="px-3 py-2 md:px-1 font-normal">
+                                                        {item.location == '1' ? <Tag className="rounded-xl" bordered={false} color="blue">Saket</Tag> : item.location == "2" ? <Tag className="rounded-xl" bordered={false} color="magenta">Laxmi Nagar</Tag> : <Tag className="rounded-xl" bordered={false} color="geekblue">Both</Tag>}
+                                                        </td>
+                                                    </tr>
+                                            ))
+                                            ) : (
+                                                <tr>
+                                                    <td colSpan="100%" className="text-center py-4 text-gray-500">
+                                                        <Empty description="No Batches found" />
+                                                    </td>
+                                                </tr>
+                                            )}
+                                            </tbody>
                                     </table>
-                                    </>
-                            </div>
+                                </div>
 
                             </div>
                         )}
 
                         {activeTab === "batches" && (
-                            <div className="overflow-hidden pb-2 relative ">
-                            <div className="w-full h-[38rem] overflow-y-auto rounded-lg pb-2">
+                            <div className="overflow-hidden pb-2 relative bg-white/40 backdrop-blur-sm rounded-xl shadow-sm">
+                            <div className="w-full h-auto md:max-h-[22rem] 2xl:max-h-[25rem] overflow-y-auto rounded-xl pb-2">
                                     <>
-                                   <table className="w-full text-xs text-left text-gray-500">
-                                        <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10">
-                                                <tr>
+                                   <table className="w-full text-xs font-normal text-left text-gray-600">
+                                        <thead className="bg-white sticky top-0 z-10">
+                                                <tr className="bg-gray-50/80">
                                                     <th scope="col" className="p-2">
                                                         <div className="flex items-center">
                                                             <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
                                                             <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
                                                         </div>
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-2">
+                                                    <th scope="col" className="px-3 py-3 md:px-2 text-xs font-medium uppercase">
                                                         S.No
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Batch ID
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Start Time
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Start Date
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Course
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Trainer
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Students
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Mode
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Language
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Preferred Week
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Location
                                                     </th>
                                                     
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Status
                                                     </th>
                                                     
                                                 </tr>
                                         </thead>
-                                        <tbody>
+                                        <tbody className="divide-y divide-gray-100 font-light text-gray-700">
                                         {loading ? (
                                             <tr>
                                                 <td colSpan="100%" className="text-center py-4">
@@ -343,17 +344,17 @@ console.log(specificCourse?.course_info?.Student_take_by);
                                             </tr>
                                         ) : Array.isArray(specificCourse?.course_info?.Batch_take_by) && specificCourse?.course_info?.Batch_take_by?.length > 0 ? (
                                                 specificCourse?.course_info?.Batch_take_by.map((item, index) => (
-                                                <tr key={index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 scroll-smooth">
+                                                <tr key={index} className="hover:bg-white transition-colors scroll-smooth">
                                                     <td scope="col" className="p-2">
                                                         <div className="flex items-center">
                                                             <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
                                                             <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
                                                         </div>
                                                     </td>
-                                                    <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
+                                                    <td scope="row" className="px-3 py-2 md:px-2">
                                                         {index + 1}
                                                     </td>
-                                                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleBatchClick(navigate,item.id)}>
+                                                    <td className="px-3 py-2 md:px-1 font-medium cursor-pointer" onClick={() => handleBatchClick(navigate,item.id)}>
                                                         {item.batch_id}
                                                     </td>
                                                     <td className="px-3 py-2 md:px-1">
@@ -396,7 +397,7 @@ console.log(specificCourse?.course_info?.Student_take_by);
                                                             <Tooltip key={student.id} title={student.name} placement="top">
                                                             <Avatar
                                                                 size={24}
-                                                                style={{ backgroundColor: "#87d068" }}
+                                                                className={`${theme.studentCount} text-white`}
                                                             >
                                                                 {student.name?.charAt(0)}
                                                             </Avatar>
@@ -405,28 +406,28 @@ console.log(specificCourse?.course_info?.Student_take_by);
                                                     </Avatar.Group>
 
                                                     </td>
-                                                    <td className="px-3 py-2 md:px-1">
-                                                        <Tag bordered={false} color={item.mode == 'Offline'? 'green' : item.mode == 'online'? 'volcano' : 'geekblue'}>
+                                                    <td className="px-3 py-2 md:px-1 font-normal">
+                                                        <Tag className="rounded-xl" bordered={false} color={item.mode == 'Offline'? 'green' : item.mode == 'online'? 'volcano' : 'geekblue'}>
                                                             {item.mode}
                                                         </Tag>
                                                     </td>
-                                                    <td className="px-3 py-2 md:px-1">
-                                                        <Tag bordered={false} color={item.language === 'Hindi'? 'green' : item.language === 'English'? 'volcano' : 'blue'}>
+                                                    <td className="px-3 py-2 md:px-1 font-normal">
+                                                        <Tag className="rounded-xl" bordered={false} color={item.language === 'Hindi'? 'green' : item.language === 'English'? 'volcano' : 'blue'}>
                                                             {item.language}
                                                         </Tag>
                                                     </td>
-                                                    <td className="px-3 py-2 md:px-1">
-                                                        <Tag bordered={false} color={item.preferred_week === "Weekdays" ? "cyan" : "gold" }>
+                                                    <td className="px-3 py-2 md:px-1 font-normal">
+                                                        <Tag className="rounded-xl" bordered={false} color={item.preferred_week === "Weekdays" ? "cyan" : "gold" }>
                                                             {item.preferred_week}
                                                         </Tag>
                                                     </td>
                                                         
-                                                    <td className="px-3 py-2 md:px-1">
-                                                    {item.location == '1' ? <Tag color="blue">Saket</Tag> : item.location == "2" ? <Tag color="magenta">Laxmi Nagar</Tag> : <Tag color="geekblue">Both</Tag>}
+                                                    <td className="px-3 py-2 md:px-1 font-normal">
+                                                    {item.location == '1' ? <Tag className="rounded-xl" bordered={false} color="blue">Saket</Tag> : item.location == "2" ? <Tag className="rounded-xl" bordered={false} color="magenta">Laxmi Nagar</Tag> : <Tag className="rounded-xl" bordered={false} color="geekblue">Both</Tag>}
                                                     </td>
 
-                                                    <td className="px-3 py-2 md:px-1">
-                                                        <Tag bordered={false} color={item.status === "Running" ? "green" : item.status === "Scheduled" ? "lime" : item.status === "Hold" ? "volcano" : item.status === "Completed" ? "geekblue" : "red"  }>
+                                                    <td className="px-3 py-2 md:px-1 font-normal">
+                                                        <Tag className="rounded-xl" bordered={false} color={item.status === "Running" ? "green" : item.status === "Scheduled" ? "lime" : item.status === "Hold" ? "volcano" : item.status === "Completed" ? "geekblue" : "red"  }>
                                                             {item.status}
                                                         </Tag>
                                                     </td>

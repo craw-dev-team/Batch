@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import { Layout } from 'antd';
 import { Outlet } from 'react-router-dom';
-import StudentSidebar from './Components/StudentDashboard/Dashboard/Common/StudentSidebar';
-import StudentNavbar from './Components/StudentDashboard/Dashboard/Common/StudentNavbar';
+import StudentSidebar from './StudentSidebar';
+import StudentNavbar from './StudentNavbar';
 
 const { Content } = Layout;
 
@@ -22,11 +22,13 @@ const StudentLayout = () => {
         />
   
         {/* Main content */}
-        <Layout className="w-full">
+        <Layout className="flex-1 min-h-screen">
           {/* Show navbar only on mobile */}
           <StudentNavbar onMenuClick={() => setDrawerOpen(true)} />
   
-          <Content className="p-1 bg-gray-100 min-h-screen">
+          {/* <Content className="p-1 bg-gray-100 min-h-screen"> */}
+            <Content className="p-1 bg-gray-100 overflow-x-hidden overflow-y-hidden">
+
             <Outlet />
           </Content>
         </Layout>

@@ -4,13 +4,20 @@ import dayjs from "dayjs";
 import { useAllLogs } from "../AllLogsContext/AllLogsContext";
 import LogsCountCards from "./LogsCountCards";
 import SearchBar from "../../SearchInput/SearchInput";
+import { useTheme } from "../../Themes/ThemeContext";
 
 
 
 const AllLogs = () => {
+    // for theme -------------------------
+    const { getTheme } = useTheme();
+    const theme = getTheme();
+    // ------------------------------------
+
     const { allLogsData, loading, fetchAllLogs } = useAllLogs();
 
     const [searchTerm, setSearchTerm] = useState('');
+    const [inputValue, setInputValue] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 100;
 
@@ -19,21 +26,34 @@ const AllLogs = () => {
         useEffect(() => {
             fetchAllLogs({  page: currentPage, pageSize, search: searchTerm, });
         },[searchTerm, currentPage]);
+
+
+        // HANDLE SEARCH INPUT AND DEBOUNCE 
+        useEffect(() => {
+            const handler = setTimeout(() => {
+                setSearchTerm(inputValue.trimStart());
+                setCurrentPage(1)
+            }, 500); // debounce delay in ms
+          
+            return () => {
+              clearTimeout(handler); // clear previous timeout on re-typing
+            };
+          }, [inputValue]);
     
 
     return (
         <>
-            <div className="w-auto pt-4 px-2 mt-10 darkmode">
+            <div className={`w-auto pt-4 px-4 mt-10 ${theme.bg}`}>
                 <LogsCountCards />
-                <div className="relative w-full h-auto shadow-md sm:rounded-lg border border-gray-50 dark:border dark:border-gray-600">
-                    <div className="w-full px-4 py-3 text flex items-center justify-between font-semibold ">
+                {/* <div className="relative w-full h-auto shadow-md sm:rounded-lg border border-gray-50 dark:border dark:border-gray-600"> */}
+                    <div className={`w-full px-1 py-3 flex items-center justify-between font-semibold ${theme.text}`}>
                         <h1>All Logs</h1>
 
                         <label htmlFor="table-search" className="sr-only">Search</label>
-                            {/* <div className="relative">
-                                <input  value={inputValue} type="text" id="table-search" placeholder="Search for items"
+                            <div className="relative">
+                                <input  value={inputValue} type="text" id="table-search" placeholder="Search for log"
                                     onChange={(e) => setInputValue(e.target.value)}
-                                    className=" w-96 h-8 block p-2 pr-10 text-xs text-gray-600 font-normal border border-gray-300 rounded-lg bg-gray-50 focus:ring-0 focus:border-blue-500" 
+                                    className={`w-96 h-8 block p-2 pr-10 text-xs text-gray-600 font-medium ${theme.searchBg}`}
                                 />
                                 <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                                 <button onClick={() => {setInputValue(""); setSearchTerm("");}}>
@@ -48,47 +68,41 @@ const AllLogs = () => {
                                     )}
                                 </button>
                                 </div>
-                            </div> */}
-                                <SearchBar placeholder="Search Logs"
-                                    inputClassName="w-96 h-8 block p-2 pr-10 text-xs text-gray-600 font-normal border border-gray-300 rounded-lg bg-gray-50 focus:ring-0 focus:border-blue-500"
-                                    onSearch={(value) => {
-                                        setSearchTerm(value);
-                                        setCurrentPage(1);
-                                    }}
-                                />
+                            </div>
 
                     </div>
 
-                    <div className={`overflow-hidden pb-2 relative `}>
-                        <div className="w-full h-[45rem] overflow-y-auto rounded-lg pb-2">
-                            <table className="w-full text-xs text-left text-gray-500">
-                            <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10">
-                                <tr>
-                                    <th scope="col" className="px-3 py-3 md:px-2">
+                    <div className={`overflow-hidden pb-2 relative bg-white/40 backdrop-blur-sm rounded-xl shadow-sm`}>
+                        <div className="w-full h-[40rem] md:max-h-[40rem] 2xl:max-h-[40rem] overflow-y-auto rounded-xl pb-2">
+                            <table className="w-full text-xs font-normal text-left text-gray-600">
+                            <thead className="text-xs bg-white sticky top-0 z-10">
+                                <tr className="bg-gray-50/80">
+                                    <th scope="col" className="px-3 py-3 md:px-2 text-xs font-medium uppercase">
                                         s.No
                                     </th>
-                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                         Username
                                     </th>
-                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                         Changes in
                                     </th>
-                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                         Changes
                                     </th>
-                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                         Description                       
                                     </th>
-                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                         Type                       
                                     </th>
-                                    <th scope="col" className="px-3 py-3 md:px-1 md:w-20">
+                                    <th scope="col" className="px-3 py-3 md:px-1 md:w-20 text-xs font-medium uppercase">
                                         Time                       
                                     </th>
                                     
                                 </tr>
                             </thead>
-                            <tbody>
+
+                            <tbody className="divide-y divide-gray-100 font-light text-gray-700">
                             {loading ? (
                                     <tr>
                                         <td colSpan="100%" className="text-center py-4">
@@ -98,19 +112,19 @@ const AllLogs = () => {
                             
                             ) : Array.isArray(allLogsData?.results) && allLogsData?.results.length > 0 ? (
                                 allLogsData?.results.map((item, index) => (
-                                <tr key={item.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 scroll-smooth">
-                                    <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
+                                <tr key={item.id} className="hover:bg-white transition-colors scroll-smooth">
+                                    <td scope="row" className="px-3 py-2 md:px-2">
                                         { (currentPage -1) * pageSize + index + 1}
                                     </td>
-                                    <td className="px-3 py-2 md:px-1">
+                                    <td className="px-3 py-2 md:px-1 font-medium">
                                         {item.actor_first_name || item.actor}
                                     </td>
 
-                                    <td className="px-3 py-2 md:px-1">
+                                    <td className="px-3 py-2 md:px-1 font-normal">
                                         {item.object_repr}
                                     </td>
 
-                                    <td className="px-3 py-2 md:px-1">
+                                    <td className="px-3 py-2 md:px-1 font-normal">
                                     {typeof item.changes === "object"
                                         ? Object.entries(item.changes).map(([key, value]) => {
                                             if (typeof value === "object" && value.old !== undefined && value.new !== undefined) {
@@ -121,33 +135,19 @@ const AllLogs = () => {
                                         }).join("")
                                         : item.changes}
                                     </td>
-                                    <td className="px-3 py-2 md:px-1">
+                                    <td className="px-3 py-2 md:px-1 font-normal">
                                         {item.changes_text}
                                     </td>
 
 
-                                    <td className="px-3 py-2 md:px-1">
+                                    <td className="px-3 py-2 md:px-1 font-normal">
                                         {item.content_type}
                                     </td>
 
-                                    <td className="px-3 py-2 md:px-1">
-                                        {dayjs(item.timestamp).format("DD/MM/YYYY | hh:mm A")}
+                                    <td className="px-3 py-2 md:px-1 font-normal">
+                                        {dayjs(item.timestamp).format("DD/MM/YYYY hh:mm A")}
                                     </td>
-                                    {/* <td className="px-3 py-2 md:px-1">
-
-                                    </td>
-                                    <td className="px-3 py-2 md:px-1">
                                     
-                                    </td>
-                                    <td className="px-3 py-2 md:px-1">
-
-                                    </td>
-                                    <td className="px-3 py-2 md:px-1">
-
-                                    </td>
-                                    <td className="px-3 py-2 md:px-1">
-
-                                    </td> */}
                                     {/* <td className="px-3 py-2 md:px-1">
                                         <Switch
                                             size="small"
@@ -203,7 +203,7 @@ const AllLogs = () => {
                             </table>
                         </div>
             
-            <div className="flex justify-center items-center py-2 bg-blue-50">
+            <div className="flex justify-center items-center mt-0 py-2 bg-gray-200/20">
                 <Pagination
                     size="small"
                     current={currentPage}
@@ -217,7 +217,7 @@ const AllLogs = () => {
 
 
                     </div>
-                </div>
+                {/* </div> */}
             </div>
         </>
     )

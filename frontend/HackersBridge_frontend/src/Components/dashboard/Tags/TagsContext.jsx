@@ -1,8 +1,7 @@
-import axios from "axios";
 import React, { createContext, useContext, useState, useCallback } from "react";
 import { message } from "antd";
-import BASE_URL from "../../../ip/Ip";
 import { useSpecificStudent } from "../Contexts/SpecificStudent";
+import axiosInstance from "../api/api";
 
 
 
@@ -32,10 +31,7 @@ const TagProvider = ({ children }) => {
 
     setLoading(true);
     try {
-      const response = await axios.get(`${BASE_URL}/api/tags/`, 
-        { headers: { "Content-Type": "application/json"},
-        withCredentials: true,
-      });
+      const response = await axiosInstance.get(`/api/tags/` );
 
       const data = response.data;
 
@@ -54,7 +50,7 @@ const TagProvider = ({ children }) => {
 
 
   // Handle Tag form submit (POST)
-  const handleTagSubmit = async (formData, color) => {
+  const handleTagSubmit = async (formData ) => {
   
     const payload = {
       tag_name: formData.name, 
@@ -63,17 +59,13 @@ const TagProvider = ({ children }) => {
     };
   
     try {
-      const response = await axios.post(`${BASE_URL}/api/tags/create/`, 
-        payload, 
-        { headers: { "Content-Type": "application/json"},
-        withCredentials: true
-      });
+      const response = await axiosInstance.post(`/api/tags/create/`, payload );
   
       if (response.status === 201 || response.status === 200) {
-        message.success("Tag added successfully!");
+        message.success("Tag created successfully!");
         fetchTagData(); // optionally refresh tags
       } else {
-        message.error("Failed to add tag.");
+        message.error("Failed to create tag.");
       }
     } catch (error) {
       console.error("Error creating tag:", error);
@@ -85,10 +77,7 @@ const TagProvider = ({ children }) => {
   const deleteTag = async (tagId) => {
   
     try {
-      const response = await axios.delete(`${BASE_URL}/api/tags/delete/${tagId}/`, 
-        { headers: { "Content-Type": "application/json"},
-        withCredentials: true
-      });
+      const response = await axiosInstance.delete(`/api/tags/delete/${tagId}/` );
   
       if (response.status === 204 || response.status === 200) {
         message.success("Tag deleted successfully!");
@@ -109,19 +98,12 @@ const TagProvider = ({ children }) => {
       tag_ids: tagIds,
       action: "unassign"
     };
-  
-    // console.log("Payload being sent to backend:", payload);
-  
+    
     try {
-      const response = await axios.post(`${BASE_URL}/api/student/assign_tag/${studentId}/`,
-        payload, 
-        { headers: { "Content-Type": "application/json" },
-          withCredentials: true
-        }
-      );
+      const response = await axiosInstance.post(`/api/student/assign_tag/${studentId}/`, payload );
   
       if (response.status === 200 || response.status === 201) {
-        message.success("Tags remove successfully!");
+        message.success("Tag removed!");
         fetchSpecificStudent(studentId);
       } else {
         message.error("Failed to remove tags.");
@@ -132,7 +114,7 @@ const TagProvider = ({ children }) => {
   };
 
   return (
-    <TagContext.Provider value={{ tagData, loading, handleTagSubmit, fetchTagData, deleteTag, handleRemoveTag }}>
+    <TagContext.Provider value={{ tagData, setTagData, loading, handleTagSubmit, fetchTagData, deleteTag, handleRemoveTag }}>
       {children}
     </TagContext.Provider>
   );

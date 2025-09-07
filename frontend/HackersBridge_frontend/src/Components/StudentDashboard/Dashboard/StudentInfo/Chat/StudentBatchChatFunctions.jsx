@@ -1,6 +1,7 @@
 import { useCallback, useState, useEffect, useRef } from "react";
-import BASE_URL, { WEBSOCKET_URL } from "../../../../../ip/Ip";
-import axios from "axios";
+import { WEBSOCKET_URL } from "../../../../../ip/Ip";
+import axiosInstance from "../../../../dashboard/api/api";
+
 
 
 
@@ -93,7 +94,6 @@ const useStudentBatchChat = () => {
 
         ws.current.onmessage = (event) => {
             const data = JSON.parse(event.data);
-            console.log("WebSocket received:", data);
 
             if (data.type === "history") {
                 setbatchChatMessage(data); // full history
@@ -166,9 +166,8 @@ const useStudentBatchChat = () => {
 
         setloading(true);
         try {
-            const response = await axios.get(`${BASE_URL}/Student_login/student/all/batch/chats/`,
-                {headers: {'Content-Type': 'application/json'},
-                withCredentials: true,
+            const response = await axiosInstance.get(`/Student_login/student/all/batch/chats/`,
+                {
                 params: {
                     search,
                     batch__status
@@ -183,8 +182,6 @@ const useStudentBatchChat = () => {
             }
             return prevData;
           });
-
-        //   console.log('student Batches List ', data)
 
         } catch (error) {
             console.error('Error fetching Chat Data', error);

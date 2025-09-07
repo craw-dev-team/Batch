@@ -2,16 +2,20 @@ import { useState, useEffect } from 'react';
 import { DatePicker } from 'antd';
 import { Select, Input, Alert, Button, Spin, message   } from 'antd';
 import { SyncOutlined } from '@ant-design/icons';
-import axios from 'axios';
 import { useCourseForm } from '../Coursecontext/CourseFormContext';
-import BASE_URL from '../../../ip/Ip';
-import { useAuth } from '../AuthContext/AuthContext';
+import axiosInstance from '../api/api';
+import { useTheme } from '../../Themes/ThemeContext';
 
 
 
 
 const CreateCourseForm = ({ isOpen, onClose, selectedCourseData }) => {
     if(!isOpen) return null;
+
+    // for theme -------------------------
+    const { getTheme } = useTheme();
+    const theme = getTheme();
+    // ------------------------------------
     
     const isEditing = Boolean(selectedCourseData?.id); 
 
@@ -31,7 +35,6 @@ const CreateCourseForm = ({ isOpen, onClose, selectedCourseData }) => {
             resetCourseForm();
         }
     }, []);
-
 
     const handleChange = (name, value) => {
         setCourseFormData((prev) => ({ ...prev, [name]: value }));
@@ -73,19 +76,11 @@ const CreateCourseForm = ({ isOpen, onClose, selectedCourseData }) => {
                 let successMessage = "";
                 if (selectedCourseData && selectedCourseData.id) {
                 // Update existing course (PUT)
-                response = await axios.put(`${BASE_URL}/api/courses/edit/${selectedCourseData.id}/`, payload, {
-                    headers: { 'Content-Type': 'application/json' },
-                    withCredentials : true
-                }
-                );
+                response = await axiosInstance.put(`/api/courses/edit/${selectedCourseData.id}/`, payload );
                     successMessage = "Course updated successfully!";
                 } else {
                     // Add new course (POST)
-                    response = await axios.post(`${BASE_URL}/api/courses/add/`, payload, {
-                        headers: { 'Content-Type': 'application/json' },
-                        withCredentials : true
-                    }
-                    );
+                    response = await axiosInstance.post(`/api/courses/add/`, payload );
                     successMessage = "Course added successfully!";
                 }
 
@@ -117,11 +112,11 @@ const CreateCourseForm = ({ isOpen, onClose, selectedCourseData }) => {
     return (
         <>
             <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 z-50">
-            <div className="relative p-2 w-3/6 bg-white rounded-lg shadow-lg dark:bg-gray-700">
+            <div className={`relative p-2 w-3/6 rounded-xl shadow-lg ${theme.specificPageBg}`}>
                 
                 {/* Modal Header */}
-                <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600 border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t border-gray-300">
+                    <h3 className={`text-lg font-semibold ${theme.text}`}>
                          {isEditing ? "Edit Course" : "Add New Course"}
                     </h3>
                     <button
@@ -141,26 +136,26 @@ const CreateCourseForm = ({ isOpen, onClose, selectedCourseData }) => {
                     <form className="p-4 md:p-5" onSubmit={handleFormSubmit}>
                     <div className="grid gap-4 mb-4 grid-cols-3">
                         <div className="col-span-1">
-                            <label htmlFor="courseName" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Course Name</label>
+                            <label htmlFor="courseName" className={`block mb-2 text-sm font-medium ${theme.text}`}>Course Name</label>
                             <Input name="courseName" value={courseFormData.courseName}  onChange={(e) => handleChange("courseName", e.target.value)}  className='rounded-lg border-gray-300' placeholder="Enter Course Name" />
                             {errors.courseName && <p className="text-red-500 text-sm">{errors.courseName}</p>}
                         </div>
                         
                         {/*  Course Code Selection  */}
                         <div className="col-span-1">
-                            <label htmlFor="courseCode" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Course Code</label>
+                            <label htmlFor="courseCode" className={`block mb-2 text-sm font-medium ${theme.text}`}>Course Code</label>
                             <Input name="courseCode" value={courseFormData.courseCode}  className='rounded-lg border-gray-300' placeholder="Enter Course Code" onChange={(e) => handleChange("courseCode", e.target.value)} />
                             {errors.courseCode && <p className="text-red-500 text-sm">{errors.courseCode}</p>}
                         </div>
                         <div className="col-span-1">
-                            <label htmlFor="courseDuration" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Course Duration in Days</label>
+                            <label htmlFor="courseDuration" className={`block mb-2 text-sm font-medium ${theme.text}`}>Course Duration in Days</label>
                             <Input name="courseDuration" value={courseFormData.courseDuration} className='rounded-lg border-gray-300' placeholder="Enter Course Duration" onChange={(e) => handleChange("courseDuration", e.target.value)} />
                             {errors.courseDuration && <p className="text-red-500 text-sm">{errors.courseDuration}</p>}
                         </div>
     
                         {/* Dropdown for Course Duration Selection */}
                         {/* <div className="col-span-1 sm:col-span-1">
-                                <label htmlFor="courseDuration" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Duration</label>
+                                <label htmlFor="courseDuration" className={`block mb-2 text-sm font-medium ${theme.text}`}>Duration</label>
                                 <Select name="courseDuration"  onChange={(value) => handleChange("courseDuration", value)} className='w-full border-gray-300' size='large' placeholder="select Course Duration" 
                                         options={[
                                                     { value: '3months', label: '3 Months' },
@@ -173,7 +168,7 @@ const CreateCourseForm = ({ isOpen, onClose, selectedCourseData }) => {
 
                             {/* Dropdown for Course Certification Selection */}
                             <div className="col-span-1 sm:col-span-2">
-                            <label htmlFor="courseCertification" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Certification</label>
+                            <label htmlFor="courseCertification" className={`block mb-2 text-sm font-medium ${theme.text}`}>Certification</label>
                             <Input name="courseCertification" value={courseFormData.courseCertification} className='rounded-lg border-gray-300' placeholder="Enter Course Certification" onChange={(e) => handleChange("courseCertification", e.target.value)} />
 
                             {/* <Select name="courseCertification" value={formData.courseCertification}  onChange={(value) => handleChange("courseCertification", value)} className='w-full border-gray-300' size='large' placeholder="select Course Duration"
@@ -191,8 +186,8 @@ const CreateCourseForm = ({ isOpen, onClose, selectedCourseData }) => {
                     <button
                         type="submit"
                         disabled={loading} // Disable button when loading
-                        className={`text-white inline-flex items-center font-medium rounded-lg text-sm px-5 py-2.5 text-center focus:ring-4 focus:outline-none
-                            ${loading ? "bg-gray-400 cursor-not-allowed" : "bg-green-500 hover:bg-green-600 focus:ring-green-300"}
+                        className={`text-white inline-flex items-center font-medium rounded-lg text-sm px-4 py-2 text-center focus:ring-4 focus:outline-none shadow-lg hover:shadow-xl transition-all duration-200 
+                            ${loading ? "bg-gray-400 cursor-not-allowed" : `${theme.createBtn}`}
                             `}
                     >
                         {loading ? (

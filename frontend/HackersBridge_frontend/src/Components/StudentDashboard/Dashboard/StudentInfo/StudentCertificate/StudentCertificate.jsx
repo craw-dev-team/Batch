@@ -2,7 +2,6 @@ import React, { useEffect } from "react";
 import { Card, Button, Empty, Tag } from "antd";
 import { DownloadOutlined, FileDoneOutlined } from "@ant-design/icons";
 import { useStudentCertificate } from "./StudentCertificateContext";
-import axios from "axios";
 
 const StudentCertificate = () => {
   const { studentCertificate, fetchStudentCertificate, loading } = useStudentCertificate();
@@ -16,11 +15,7 @@ const StudentCertificate = () => {
 
   // HANDLE DOWNLOAD CERTIFICATE 
   const handleDownload = async (url, filename) => {
-    // const token = localStorage.getItem("token");
-    // if (!token) {
-    //   console.error("No token found.");
-    //   return;
-    // }
+
   
     try {
       const response = await axios.get(url, {

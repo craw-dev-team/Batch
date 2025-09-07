@@ -1,13 +1,19 @@
 import Counsellor from "../../Components/dashboard/AddDetails/Counsellor/Counsellor";
+import { useTheme } from "../../Components/Themes/ThemeContext";
 
 
 
 
 
 const CounsellorsHome = () => {
+    // for theme -------------------------
+        const { getTheme } = useTheme();
+        const theme = getTheme();
+    // -----------------------------------
+
     return (
         <>
-        <div className={'w-full h-full overflow-hidden pt-1 darkmode'}>
+    <div className={`w-full h-full overflow-hidden ${theme.bg}`}>
             <Counsellor />
             {/* <Table1 /> */}
         </div>

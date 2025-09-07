@@ -5,13 +5,11 @@ import { useBatchForm } from "../Batchcontext/BatchFormContext";
 import { useCourseForm } from "../Coursecontext/CourseFormContext";
 import { useTrainerForm } from "../Trainercontext/TrainerFormContext";
 import { useStudentForm } from "../Studentcontext/StudentFormContext";
-import axios from "axios";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
-
-import BASE_URL from "../../../ip/Ip";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../AuthContext/AuthContext";
+import axiosInstance from "../api/api";
+import { useTimeSlotForm } from "../AddDetails/TimeSlot/TimeSlotContext";
+import { useTheme } from "../../Themes/ThemeContext";
 
 
 const { RangePicker } = DatePicker;
@@ -22,9 +20,16 @@ dayjs.extend(customParseFormat);
 const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
     if (!isOpen) return null; // Prevent rendering when not open
 
+    // for theme -------------------------
+    const { getTheme } = useTheme();
+    const theme = getTheme();
+    // ------------------------------------
+
+
     const isEditing = Boolean(selectedBatchData?.id);
     const { batchFormData, setBatchFormData, errors, setErrors, resetBatchForm, fetchBatches } = useBatchForm();
     const { coursesData, fetchCourses } = useCourseForm();
+        const {timeSlotData, fetchTimeSlotData} = useTimeSlotForm();
     const { trainerData, fetchTrainers } = useTrainerForm();
     const { fetchStudents, allStudentData, fetchAllStudent } = useStudentForm();
     const [ loading, setLoading ] = useState(false);
@@ -36,11 +41,12 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
         fetchTrainers();
         fetchStudents();
         fetchAllStudent();        
+        fetchTimeSlotData();
         
         if (selectedBatchData) {            
             setBatchFormData({
                 batchId: selectedBatchData.batch_id || "",
-                batchTime: selectedBatchData?.batch_time_data?.id || null, 
+                batchTime: selectedBatchData?.batch_time_data?.id || null,
                 startTime: selectedBatchData?.batch_time_data?.start_time || "",
                 endTime: selectedBatchData?.batch_time_data?.end_time || "",
                 startDate: selectedBatchData.start_date || "",  
@@ -121,7 +127,6 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
                         // profile_picture: studentFormData.studentProfilePicture,
                     };
         
-                    // console.log("Final Payload:", JSON.stringify(payload, null, 2));
         
         try {
             setLoading(true); // Start loading
@@ -131,19 +136,11 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
             
             if (selectedBatchData && selectedBatchData.id) {
                 // Update existing course (PUT)
-                response = await axios.put(`${BASE_URL}/api/batches/edit/${selectedBatchData.id}/`, payload, {
-                    headers: { 'Content-Type': 'application/json'},
-                    withCredentials : true
-                }
-                );
+                response = await axiosInstance.put(`/api/batches/edit/${selectedBatchData.id}/`, payload );
                 successMessage = "Batch updated successfully!";
                 } else {
                     // Add new course (POST)
-                    response = await axios.post(`${BASE_URL}/api/batches/add/`, payload, {
-                        headers: { 'Content-Type': 'application/json'},
-                        withCredentials : true
-                    }
-                    );
+                    response = await axiosInstance.post(`/api/batches/add/`, payload);
                     successMessage = "Batch added successfully!";
                 }
 
@@ -240,11 +237,11 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
    
      return (
          <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 z-50">
-             <div className="relative p-2 w-4/6 bg-white rounded-lg shadow-lg dark:bg-gray-700">
+             <div className={`relative p-2 w-4/6 rounded-xl shadow-lg ${theme.specificPageBg}`}>
                  
                  {/* Modal Header */}
-                 <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600 border-gray-200">
-                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                 <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t border-gray-300">
+                     <h3 className={`text-lg font-semibold ${theme.text}`}>
                      {isEditing ? "Edit Batch" : "Create New Batch"}
                      </h3>
                      <button
@@ -264,14 +261,14 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
                     <form className="p-4 md:p-5" onSubmit={handleFormSubmit}>
                         <div className="grid gap-4 mb-4 grid-cols-6">
                             <div className="col-span-2">
-                                <label htmlFor="batchId" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Batch Id</label>
+                                <label htmlFor="batchId" className={`block mb-2 text-sm font-medium ${theme.text}`}>Batch Id</label>
                                 <Input name="batchId" disabled value={batchFormData.batchId} onChange={(e) => handleChange("batchId", e.target.value)} className='rounded-lg border-gray-300' placeholder="Batch Id"/>
                                 {/* {errors.batchId && <p className="text-red-500 text-sm">{errors.batchId}</p>} */}
                             </div>
                             
                             {/* batch Time  */}
                             <div className="col-span-2">
-                            <label htmlFor="batchTime" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Batch Timing</label>
+                            <label htmlFor="batchTime" className={`block mb-2 text-sm font-medium ${theme.text}`}>Batch Timing</label>
                             {/* <TimePicker.RangePicker use12Hours  format="h:mm a" size={"large"} required
                                 value={[
                                     batchFormData?.startTime ? dayjs(batchFormData?.startTime, "HH:mm:ss") : null,
@@ -279,31 +276,38 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
                                 ]}
                                 onChange={(value) => handleChange('batchTime', value)}
                             /> */}
-                            <Select name="batchTime" value={batchFormData.batchTime ? String(batchFormData.batchTime) : null} onChange={(value) => handleChange("batchTime", value)} className='w-full border-gray-300' size='large' placeholder='Select Batch Timing' 
-                                 dropdownRender={menu => <div>{menu}</div>} // required to ensure styling applies properly
-                                 options={[
-                                    { value: '1', label: '10:00 - 12:00' },
-                                    { value: '2', label: '12:00 - 02:00' },
-                                    { value: '3', label: '03:00 - 05:00' },
-                                    { value: '4', label: '05:00 - 06:30' },
-                                    { value: '9', label: '06:00 - 07:00' },
-                                    { value: '7', label: '07:00 - 09:00' },
-                                    { value: '8', label: '10:00 - 05:00' },
-                           
-                                    // Weekends
-                                    { value: '5', label: <div style={{ backgroundColor: '#fffbe6' }}>10:00 - 02:00 - Weekends</div> },
-                                    { value: '6', label: <div style={{ backgroundColor: '#fffbe6' }}>03:00 - 06:30 - Weekends</div> },
-                                    { value: '16', label: <div style={{ backgroundColor: '#fffbe6' }}>12:00 - 02:00 - Weekends</div> },
-                                    
-                                    // Weekdays
-                                    { value: '17', label: <div style={{ backgroundColor: '#c3f3fa' }}>10:30 - 12:00 - Weekdays</div> },
-                                    { value: '10', label: <div style={{ backgroundColor: '#c3f3fa' }}>12:30 - 02:30 - Weekdays</div> },
-                                    { value: '11', label: <div style={{ backgroundColor: '#c3f3fa' }}>07:00 - 08:30 - Weekdays</div> },
-                                    { value: '12', label: <div style={{ backgroundColor: '#c3f3fa' }}>05:00 - 07:00 - Weekdays</div> },
-                                    { value: '13', label: <div style={{ backgroundColor: '#c3f3fa' }}>08:00 - 09:00 - Weekdays</div> },
-                                    { value: '14', label: <div style={{ backgroundColor: '#c3f3fa' }}>03:00 - 07:00 - Weekdays</div> },
-                                    { value: '15', label: <div style={{ backgroundColor: '#c3f3fa' }}>06:00 - 07:30 - Weekdays</div> },
-                                ]}
+                            <Select name="batchTime" value={batchFormData.batchTime }  className='w-full border-gray-300' size='large' placeholder='Select Batch Timing' 
+                                dropdownRender={menu => <div>{menu}</div>} // required to ensure styling applies properly
+                                showSearch 
+
+                                options={(timeSlotData || []).map((slot) => {
+                                    let bgColor = "bg-gray-100"; // default
+
+                                    if (slot.week_type === "Weekends") bgColor = "bg-yellow-100";
+                                    else if (slot.week_type === "Weekdays") bgColor = "bg-blue-100";
+                                    else if (slot.week_type === "Both") bgColor = "bg-green-100";
+
+                                    return {
+                                        value: slot.id,
+                                        label: (
+                                        <div className={`rounded p-0 ${bgColor}`}>
+                                            <span className="text-gray-800">
+                                            {`${dayjs(slot.start_time, "HH:mm").format("hh:mm A")} - ${dayjs(
+                                                slot.end_time,
+                                                "HH:mm"
+                                            ).format("hh:mm A")} `}
+                                            </span>
+                                            <span className="text-xs text-gray-500">({slot.week_type})</span>
+                                        </div>
+                                        ),
+                                    };
+                                })}
+
+                                 onChange={(val) => setBatchFormData(prev => ({
+                                    ...prev,
+                                    batchTime: val // val is just ID
+                                }))}
+
                                  filterOption={(input, option) => {
                                     const labelText = typeof option.label === 'string'
                                       ? option.label
@@ -311,8 +315,8 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
                                       
                                     return labelText.toLowerCase().includes(input.toLowerCase());
                                   }}
-                                showSearch
-                                //    options={[
+
+                                //  options={[
                                 //     { value: '1', label: '10:00 - 12:00' },
                                 //     { value: '2', label: '12:00 - 02:00' },
                                 //     { value: '3', label: '03:00 - 05:00' },
@@ -320,14 +324,22 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
                                 //     { value: '9', label: '06:00 - 07:00' },
                                 //     { value: '7', label: '07:00 - 09:00' },
                                 //     { value: '8', label: '10:00 - 05:00' },
-                                //     { value: '5', label: '10:00 - 02:00 - Weekends' },
-                                //     { value: '10', label: '12:30 - 02:30 - Weekdays' },
-                                //     { value: '11', label: '07:00 - 08:30 - Weekdays' },
-                                //     { value: '12', label: '05:00 - 07:00 - Weekdays' },
-                                //     { value: '13', label: '08:00 - 09:00 - Weekdays' },
-                                //     { value: '14', label: '12:00 - 02:00 - Weekends' },
-                                //     { value: '15', label: '07:00 - 08:30 - Weekdays' },
+                           
+                                //     // Weekends
+                                //     { value: '5', label: <div style={{ backgroundColor: '#fffbe6' }}>10:00 - 02:00 - Weekends</div> },
+                                //     { value: '6', label: <div style={{ backgroundColor: '#fffbe6' }}>03:00 - 06:30 - Weekends</div> },
+                                //     { value: '16', label: <div style={{ backgroundColor: '#fffbe6' }}>12:00 - 02:00 - Weekends</div> },
+                                    
+                                //     // Weekdays
+                                //     { value: '17', label: <div style={{ backgroundColor: '#c3f3fa' }}>10:30 - 12:00 - Weekdays</div> },
+                                //     { value: '10', label: <div style={{ backgroundColor: '#c3f3fa' }}>12:30 - 02:30 - Weekdays</div> },
+                                //     { value: '11', label: <div style={{ backgroundColor: '#c3f3fa' }}>07:00 - 08:30 - Weekdays</div> },
+                                //     { value: '12', label: <div style={{ backgroundColor: '#c3f3fa' }}>05:00 - 07:00 - Weekdays</div> },
+                                //     { value: '13', label: <div style={{ backgroundColor: '#c3f3fa' }}>08:00 - 09:00 - Weekdays</div> },
+                                //     { value: '14', label: <div style={{ backgroundColor: '#c3f3fa' }}>03:00 - 07:00 - Weekdays</div> },
+                                //     { value: '15', label: <div style={{ backgroundColor: '#c3f3fa' }}>06:00 - 07:30 - Weekdays</div> },
                                 // ]}
+                                
                             />
                                 {errors.batchTime && <p className="text-red-500 text-sm">{errors.batchTime}</p>}
                             </div>
@@ -335,7 +347,7 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
 
                             {/* Batch Start And End Date  */}
                             <div className="col-span-2">
-                            <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Batch Start and End Date</label>
+                            <label className={`block mb-2 text-sm font-medium ${theme.text}`}>Batch Start and End Date</label>
                             {/* <Datepicker title="Batch start Date" />
                             <Datepicker title="Batch End Date" /> */}
                             <RangePicker size={"large"} required
@@ -354,7 +366,7 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
 
                             {/* Dropdown for Course Selection */}
                             <div className="col-span-2 sm:col-span-2">
-                                <label htmlFor="course" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Course</label>
+                                <label htmlFor="course" className={`block mb-2 text-sm font-medium ${theme.text}`}>Course</label>
                                 <Select name="course" className='w-full border-gray-300' size='large' placeholder='Select Course' 
                                     showSearch  // This enables search functionality
                                         
@@ -373,7 +385,7 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
     
                             {/* Dropdown for Preferred Week Selection */}
                             <div className="col-span-2 sm:col-span-2">
-                                <label htmlFor="preferredWeek" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Preferred Week</label>
+                                <label htmlFor="preferredWeek" className={`block mb-2 text-sm font-medium ${theme.text}`}>Preferred Week</label>
                                 <Select name="preferredWeek"  value={batchFormData.preferredWeek.length > 0 ? batchFormData.preferredWeek : null} onChange={(value) => handleChange("preferredWeek", value)} className='w-full border-gray-300' size='large' placeholder='Select Preferred Week' 
                                 options={[
                                             { value: 'Weekdays', label: 'Week Days' },
@@ -385,7 +397,7 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
 
                             {/* Dropdown for Mode Selection */}
                             <div className="col-span-2 sm:col-span-2">
-                                <label htmlFor="mode" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Mode</label>
+                                <label htmlFor="mode" className={`block mb-2 text-sm font-medium ${theme.text}`}>Mode</label>
                                 <Select name="mode" value={batchFormData.mode.length > 0 ? batchFormData.mode : null} onChange={(value) => handleChange("mode", value)} className='w-full border-gray-300' size='large' placeholder='Select Mode' 
                                     options={[
                                                 { value: 'Offline', label: 'Offline' },
@@ -398,7 +410,7 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
 
                             {/* Dropdown for Language Selection */}
                             <div className="col-span-2 sm:col-span-2">
-                                <label htmlFor="language" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Language</label>
+                                <label htmlFor="language" className={`block mb-2 text-sm font-medium ${theme.text}`}>Language</label>
                                 <Select name="language" value={batchFormData.language.length > 0 ? batchFormData.language : null} onChange={(value) => handleChange("language", value)} className='w-full border-gray-300' size='large' placeholder='Select Language' 
                                 options={[
                                             { value: 'Hindi', label: 'Hindi', },
@@ -411,7 +423,7 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
 
                             {/* Dropdown for Location Selection */}
                             <div className="col-span-2 sm:col-span-2">
-                                <label htmlFor="location" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Location</label>
+                                <label htmlFor="location" className={`block mb-2 text-sm font-medium ${theme.text}`}>Location</label>
                                 <Select name="location" value={batchFormData.location ? String(batchFormData.location) : null} onChange={(value) => handleChange("location", value)} className='w-full border-gray-300' size='large' placeholder='Select Location' 
                                 options={[
                                             { value: '1', label: 'Saket' },
@@ -423,7 +435,7 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
 
                             {/* Dropdown for Trainer Selection */}
                             <div className="col-span-2 sm:col-span-2">
-                                <label htmlFor="trainer" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Trainer</label>
+                                <label htmlFor="trainer" className={`block mb-2 text-sm font-medium ${theme.text}`}>Trainer</label>
                                 <Select name="trainer" className='w-full border-gray-300' size='large' placeholder="Select Trainer" 
                                 showSearch  // This enables search functionality
                                         
@@ -447,7 +459,7 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
 
                             {/* Dropdown for Student Selection */}
                             <div className="col-span-5 sm:col-span-5">
-                                <label htmlFor="student" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Add Students</label>
+                                <label htmlFor="student" className={`block mb-2 text-sm font-medium ${theme.text}`}>Add Students</label>
                                 <Select name="student" mode="multiple" className='w-full border-gray-300' size='large' placeholder='Select Students' 
                                 showSearch  // This enables search functionality
                                         
@@ -502,8 +514,8 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
                     <button
                         type="submit"
                         disabled={loading} // Disable button when loading
-                        className={`text-white inline-flex items-center font-medium rounded-lg text-sm px-5 py-2.5 text-center focus:ring-4 focus:outline-none
-                            ${loading ? "bg-gray-400 cursor-not-allowed" : "bg-green-500 hover:bg-green-600 focus:ring-green-300"}
+                        className={`text-white inline-flex items-center font-medium rounded-lg text-sm px-4 py-2 text-center focus:ring-4 focus:outline-none shadow-lg hover:shadow-xl transition-all duration-200 
+                            ${loading ? "bg-gray-400 cursor-not-allowed" : `${theme.createBtn}`}
                             `}
                     >
                         {loading ? (

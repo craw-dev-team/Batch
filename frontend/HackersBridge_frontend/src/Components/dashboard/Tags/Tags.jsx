@@ -1,12 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { Modal, Form, Input, message, Button, Popconfirm, Empty, Typography } from "antd";
 import { useTagContext } from "./TagsContext"; 
-import { TagOutlined, DeleteOutlined } from "@ant-design/icons"
+import { DeleteOutlined } from "@ant-design/icons"
+import { useTheme } from "../../Themes/ThemeContext";
 
 const { Title } = Typography;
 
 
 const Tags = () => {
+    // for theme -------------------------
+    const { getTheme } = useTheme();
+    const theme = getTheme();
+    // ------------------------------------
+
   const { handleTagSubmit, fetchTagData, tagData, deleteTag } = useTagContext();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
@@ -29,36 +35,37 @@ const Tags = () => {
 
   return (
     <>
-      <div className="relative w-full h-full mt-5 shadow-md sm:rounded-lg border border-gray-50 dark:border-gray-600">
-        <div className="w-full px-4 py-3 text flex justify-between font-semibold">
+      <div className={`relative w-full h-full shadow-md rounded-xl p-4 mt-1 ${theme.specificPageBg}`}>
+        <div className={`w-full px-1 py-3 flex justify-between items-center font-semibold ${theme.text}`}>
           <h1>All Tags</h1>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="focus:outline-none text-white bg-green-500 hover:bg-green-600 font-medium rounded-lg text-sm px-4 py-1.5"
+            className={`focus:outline-none text-white bg-green-500 hover:bg-green-600 font-medium rounded-lg text-sm px-4 py-1.5 shadow-lg hover:shadow-xl transition-all duration-200 ${theme.createBtn}`}
           >
-            Add Tag <TagOutlined />
+            Add Tag +
           </button>
         </div>
 
-        <div className="overflow-hidden pb-2 relative">
-          <div className="w-full h-[30rem] overflow-y-auto rounded-lg pb-2">
-            <table className="w-full text-xs text-left text-gray-500">
-              <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10">
-                <tr>
-                  <th className="px-3 py-3">S.No</th>
-                  <th className="px-3 py-3">Tag Name</th>
-                  <th className="px-0 py-3 w-[450px]">Description</th>
-                  <th className="px-7 py-3">Created By</th>
-                  <th className="px-3 py-3">Action</th>
+        {/* <div className="overflow-hidden pb-2 relative bg-white/40 backdrop-blur-sm rounded-xl shadow-sm"> */}
+          <div className="overflow-y-auto h-[37rem] md:max-h-[36rem] 2xl:max-h-[37rem] bg-white/40 backdrop-blur-sm rounded-xl shadow-sm pb-2">
+            <table className="w-full text-xs font-normal text-left text-gray-600">
+              <thead className="bg-white sticky top-0 z-10">
+                <tr className="bg-gray-50/80">
+                  <th className="px-3 py-2 md:px-1 text-xs font-medium uppercase">S.No</th>
+                  <th className="px-3 py-2 md:px-1 text-xs font-medium uppercase">Tag Name</th>
+                  <th className="px-3 py-2 md:px-1 w-[400px] max-w-[500px] text-xs font-medium uppercase">Description</th>
+                  <th className="px-3 py-2 md:px-1 text-xs font-medium uppercase">Created By</th>
+                  <th className="px-3 py-2 md:px-1 text-xs font-medium uppercase">Action</th>
                 </tr>
               </thead>
-              <tbody>
+
+              <tbody className="divide-y divide-gray-100 font-light text-gray-700">
               {tagData?.data && tagData?.data.length > 0 ? (
                   tagData?.data.map((tag, index) => (
-                    <tr key={tag.id} className="bg-white border-b">
-                      <td className="px-3 py-2 font-medium text-gray-900 ">{index + 1}</td>
-                      <td className="px-3 py-2 font-medium text-sm">
-                      <span className="relative inline-block text-white font-semibold">
+                    <tr key={tag.id} className="hover:bg-gray-50 transition-colors scroll-smooth">
+                      <td className="px-3 py-2 md:px-2">{index + 1}</td>
+                      <td className="px-3 py-2 md:px-1">
+                      <span className="relative inline-block text-white font-medium">
                         {/* Tag Shape */}
                         <span
                             className="inline-block px-4 py-1 pl-6 rounded-r-md"
@@ -75,11 +82,11 @@ const Tags = () => {
                         <span className="absolute top-1/2 left-2 -translate-y-1/2 w-2 h-2 bg-white rounded-full shadow-inner" />
                         </span>
                         </td>
-                        <td className="px-0 py-2 font-medium w-[300px] max-w-[300px] break-words">
+                        <td className="px-3 py-2 md:px-1 font-normal w-[300px] max-w-[300px] break-words">
                             {tag.tag_description}
                         </td>
-                      <td className="px-7 py-2 font-medium">{tag.created_by || "N/A"}</td>
-                      <td className="px-3 py-2">
+                      <td className="px-3 py-2 md:px-1 font-normal">{tag.created_by || "N/A"}</td>
+                      <td className="px-3 py-2 md:px-1">
                         <Popconfirm
                             title="Are you sure to delete this tag?"
                             onConfirm={() => deleteTag(tag.id)}
@@ -89,7 +96,7 @@ const Tags = () => {
                         <Button 
                             color="danger" 
                             variant="filled" 
-                            className="rounded-lg w-auto px-3"
+                            className="rounded-xl w-auto px-3"
                         >
                         <DeleteOutlined />
                         </Button>
@@ -107,7 +114,7 @@ const Tags = () => {
               </tbody>
             </table>
           </div>
-        </div>
+        {/* </div> */}
       </div>
 
       <Modal

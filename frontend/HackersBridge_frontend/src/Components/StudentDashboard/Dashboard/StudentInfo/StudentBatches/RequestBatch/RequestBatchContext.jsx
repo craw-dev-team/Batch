@@ -1,9 +1,7 @@
-import axios from "axios";
 import { createContext, useContext, useState } from "react";
-import BASE_URL from "../../../../../../ip/Ip";
 import { useStudentBatch } from "../StudentBatchContext";
 import { message } from "antd";
-import { resolvePath } from "react-router-dom";
+import axiosInstance from "../../../../../dashboard/api/api";
 
 
 
@@ -24,53 +22,33 @@ const RequestBatchProvider = ({ children }) => {
     const handleRequestBatch = async (e) => {
         
         e.preventDefault();
-        // const token = localStorage.getItem('token');
-        // if (!token) {
-        //     console.error("No token found, user might be logged out.");
-        //     return;
-        // };
 
         try {
-            const response = await axios.post(`${BASE_URL}/Student_login/student_batch_request/`,
-                { batch_code: batchCode },
-            { headers: { 'Content-Type': 'application/json'}, 
-                withCredentials: true,
-            },
-        );
+            const response = await axiosInstance.post(`/Student_login/student_batch_request/`,
+                { batch_code: batchCode } );
 
         if (response.status >= 200 && response.status <= 209) {
           message.success(response?.data?.message)
+            onClose();
+            setBatchCode('');
         } else {
           message.error(response?.data?.message)
         }
-          // setRequestBatchData(response.data)
-          console.log(response);
-        
-        } catch (error) {
+
+      } catch (error) {
           message.error(error?.response?.data?.message)
-          console.log("Error sending code to server", error);
         }
     }; 
 
 
     // HANDLE REQUEST OF STUDENT BY BATCH ID TO ADD IN A BATCH (STUDENT SEND BATCH CODE TO BACKEND)
     const handleRequestBatchById = async (batchCode) => {
-        
-        // const token = localStorage.getItem("token");
-        // if (!token) {
-        //   // console.error("No token found, user might be logged out.");
-        //   return;
-        // }
       
         try {
           setLoading(true);
           
-          const response = await axios.post(`${BASE_URL}/Student_login/student_batch_request/`,
-            { batch_code: batchCode },  // Assuming your backend expects `batch_id`
-            { headers: { "Content-Type": "application/json"},
-              withCredentials: true,
-            }
-          );
+          const response = await axiosInstance.post(`/Student_login/student_batch_request/`,
+            { batch_code: batchCode } );
 
           if (response.status === 200 || response.status === 201) {
             
@@ -83,7 +61,6 @@ const RequestBatchProvider = ({ children }) => {
             console.error("Error in batch request:", response?.data);
           }
 
-          // console.log("Batch ID request success:", response);
         } catch (error) {
           // console.error("Error sending batch ID to server", error);
           setLoading(false);

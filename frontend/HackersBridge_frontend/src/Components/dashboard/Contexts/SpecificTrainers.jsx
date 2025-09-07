@@ -1,7 +1,6 @@
-import axios from "axios";
 import { createContext, useContext, useState } from "react";
-import BASE_URL from "../../../ip/Ip";
 import { message } from "antd";
+import axiosInstance from "../api/api";
 
 
 const SpecificTrainerContext = createContext();
@@ -22,22 +21,11 @@ const SpecificTrainerProvider = ({ children }) => {
     const fetchSpecificTrainer = async (trainerId) => {
         if (loading) return;
 
-        // const token = localStorage.getItem('token');
-        // if (!token) {
-        //     console.error("No token found, user might be logged out.");
-        //     return;
-        // };
-
         setLoading(true)
 
         try {
-            const response = await axios.get(`${BASE_URL}/api/trainers/info/${trainerId}/`, 
-                { headers: { 'Content-Type': 'application/json' },
-                withCredentials: true
-              }
-            );
+            const response = await axiosInstance.get(`/api/trainers/info/${trainerId}/`);
             const data = response?.data
-            // console.log(data);
             
             setSpecificTrainer(prevData => {
                 if (JSON.stringify(prevData) !== JSON.stringify(data)) {
@@ -57,13 +45,6 @@ const SpecificTrainerProvider = ({ children }) => {
     // change trainer status based on leave 
     const handleTrainerStatusChange = async (trainerId, selectedBatchIds = [], onSuccess = () => {}) => {
       if (loading) return;
-    
-      // const token = localStorage.getItem("token");
-      // if (!token) {
-      //   console.error("No token found, user might be logged out.");
-      //   return;
-      // }
-    
       
       try {
         setLoading(true);
@@ -72,7 +53,7 @@ const SpecificTrainerProvider = ({ children }) => {
     
         if (selectedOption === "custom" && startDate && endDate) {
           // Send to custom date API
-          apiUrl = `${BASE_URL}/api/trainers/leave_long_mail/${trainerId}/`;
+          apiUrl = `/api/trainers/leave_long_mail/${trainerId}/`;
           payload = {
             trainer_id: specificTrainer?.Trainer_All?.trainer?.id,
             start_date: startDate,
@@ -82,23 +63,16 @@ const SpecificTrainerProvider = ({ children }) => {
           };
         } else {
           // Send to regular leave status API
-          apiUrl = `${BASE_URL}/api/trainers/leave_mail/${trainerId}/`;
+          apiUrl = `/api/trainers/leave_mail/${trainerId}/`;
           payload = {
             trainer_id: specificTrainer?.Trainer_All?.trainer?.id,
             leave_status: selectedOption,
             batch_list: selectedBatchIds 
           };
         }
-        console.log(payload);
         
     
-        const response = await axios.post(apiUrl, payload, {
-          headers: { "Content-Type": "application/json" },
-          withCredentials : true
-        }
-        );
-        console.log(response);
-        
+        const response = await axiosInstance.post(apiUrl, payload );        
     
         if (response.status === 200) {
           message.success("All done! Trainer leave updated and email sent");

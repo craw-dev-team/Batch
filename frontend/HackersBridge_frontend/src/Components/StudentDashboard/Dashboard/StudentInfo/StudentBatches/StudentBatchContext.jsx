@@ -1,6 +1,6 @@
-import axios from "axios";
 import React, { createContext, useState, useContext, useCallback } from "react";
-import BASE_URL from "../../../../../ip/Ip";
+import axiosInstance from "../../../../dashboard/api/api";
+
 
 // Create the context object
 const StudentBatchContext = createContext();
@@ -17,22 +17,11 @@ const StudentBatchProvider = ({ children }) => {
     // FETCH ALL THE BATCHES OF STUDENT
     const fetchStudentBatches = useCallback (async () => {
         if (loading) return;
-       
-        // const token = localStorage.getItem('token');
-        // if (!token) {
-        //     console.error("No token found, user might be logged out.");
-        //     return;
-        // };
 
         setLoading(true);
         try {
-            const response = await axios.get(`${BASE_URL}/Student_login/student_batch/`,
-              { headers: { 'Content-Type': 'application/json'}, 
-              withCredentials: true,
-            }  
-            );
+            const response = await axiosInstance.get(`/Student_login/student_batch/` );
             const data = response.data;
-            // console.log(data);
             
             setStudentBatch(prevData => {
               if(JSON.stringify(prevData) !== JSON.stringify(data)){
@@ -41,7 +30,6 @@ const StudentBatchProvider = ({ children }) => {
               return prevData;
             });
 
-            // console.log('Batches Data ', data)
         } catch (error) {
           console.error('Error fetching Batches Data', error);
         } finally {
@@ -53,22 +41,11 @@ const StudentBatchProvider = ({ children }) => {
     // FETCH BATCH INFO OF SPEIFIC BATCH 
     const fetchStudentBatcheInfo = useCallback (async (batchId) => {
       if (!batchId) return;
-            
-      // const token = localStorage.getItem('token');
-      // if (!token) {
-      //     console.error("No token found, user might be logged out.");
-      //     return;
-      // };
 
       setLoading(true);
       try {
-          const response = await axios.get(`${BASE_URL}/Student_login/student_batch_info/${batchId}/`,
-            { headers: { 'Content-Type': 'application/json'}, 
-            withCredentials: true,
-          }  
-          );
+          const response = await axiosInstance.get(`/Student_login/student_batch_info/${batchId}/` );
           const data = response.data;
-          // console.log(data);
           
           setStudentBatchInfo(prevData => {
             if(JSON.stringify(prevData) !== JSON.stringify(data)){
@@ -77,7 +54,6 @@ const StudentBatchProvider = ({ children }) => {
             return prevData;
           });
 
-          // console.log('Batches Data ', data)
       } catch (error) {
         console.error('Error fetching Batches Data', error);
       } finally {
@@ -89,22 +65,11 @@ const StudentBatchProvider = ({ children }) => {
     // FETCH RECOMMENDED BATCH OF THAT STUDENT
     const fetchStudentRecommendedBatches = useCallback(async () => {
         if (loading) return;
-         
-        // const token = localStorage.getItem('token');
-        // if (!token) {
-        //     console.error("No token found, user might be logged out.");
-        //     return;
-        // };
   
         setLoading(true);
         try {
-            const response = await axios.get(`${BASE_URL}/Student_login/student_batch_upcoming/`,
-              { headers: { 'Content-Type': 'application/json' }, 
-              withCredentials: true,
-            }  
-            );
+            const response = await axiosInstance.get(`/Student_login/student_batch_upcoming/`);
             const data = response.data;
-            // console.log(data);
             
             setStudentRecommendedBatch(prevData => {
               if(JSON.stringify(prevData) !== JSON.stringify(data)){
@@ -113,7 +78,6 @@ const StudentBatchProvider = ({ children }) => {
               return prevData;
             });
   
-            // console.log('Batches Data ', data)
         } catch (error) {
           console.error('Error fetching Batches Data', error);
         } finally {

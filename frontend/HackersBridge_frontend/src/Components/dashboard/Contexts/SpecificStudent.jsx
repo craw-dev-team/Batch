@@ -1,7 +1,6 @@
-import axios from "axios";
 import { createContext, useContext, useState } from "react";
-import BASE_URL from "../../../ip/Ip";
 import { message } from "antd";
+import axiosInstance from "../api/api";
 
 
 const SpecificStudentContext = createContext();
@@ -14,20 +13,10 @@ const SpecificStudentProvider = ({ children }) => {
     const fetchSpecificStudent = async (studentId) => {
         if (loading) return;
 
-        // const token = localStorage.getItem('token');
-        // if (!token) {
-        //     console.error("No token found, user might be logged out.");
-        //     return;
-        // };
-        
         setLoading(true)
 
         try {
-            const response = await axios.get(`${BASE_URL}/api/students/info/${studentId}/`, 
-                { headers: { 'Content-Type': 'application/json' }, 
-                withCredentials : true
-            }
-            );
+            const response = await axiosInstance.get(`/api/students/info/${studentId}/` );
             const data = response?.data
             
             setSpecificStudent(prevData => {
@@ -50,21 +39,9 @@ const SpecificStudentProvider = ({ children }) => {
             message.error("Course ID is missing.");
             return;
         }
-
-        // const token = localStorage.getItem("token");
-        // if (!token) {
-        //     message.error("Unauthorized. Please log in.");
-        //     return;
-        // }
-
         try {
-            const response = await axios.patch(
-                `${BASE_URL}/api/student-course/marks/${courseId}/`,
-                { exam_date, marks },
-                { headers: { "Content-Type": "application/json"},
-                withCredentials: true,
-            }
-            );
+            const response = await axiosInstance.patch(`/api/student-course/marks/${courseId}/`,
+                { exam_date, marks } );
 
             if (response.status === 200 || response.status === 201) {
                 message.success("Marks updated successfully.");

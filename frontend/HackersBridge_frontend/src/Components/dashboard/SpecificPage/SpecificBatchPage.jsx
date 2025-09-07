@@ -1,174 +1,29 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom"
 import { useSpecificBatch } from "../Contexts/SpecificBatch";
-import { DatePicker, Empty, Spin, Avatar, Tooltip, Tag, Button, Popconfirm, message, Input, Badge, Switch  } from 'antd';
-import { CheckCircleOutlined, CloseCircleOutlined, EditOutlined, SendOutlined, ClearOutlined, CheckOutlined, CloseOutlined  } from "@ant-design/icons";
+import { DatePicker, Empty, Spin, Avatar, Tooltip, Tag, Button, Popconfirm, message, Input, Badge, Switch, Dropdown  } from 'antd';
+import { CheckCircleOutlined, CloseCircleOutlined, EditOutlined, SendOutlined, ClearOutlined, CheckOutlined, CloseOutlined, MoreOutlined  } from "@ant-design/icons";
 import dayjs from "dayjs";
-import axios from 'axios';
-import BASE_URL from "../../../ip/Ip";
 import AddStudentModal from "../AddStudentModal/AddStudentModal";
 import CreateStudentForm from "../Students/CreateStudentForm";
 import CreateBatchForm from "../Batches/CreateBatchForm";
-import { useAuth } from "../AuthContext/AuthContext";
 import { useBatchForm } from "../Batchcontext/BatchFormContext";
-import { useSpecificStudent } from "../Contexts/SpecificStudent";
 import EmailPopup from "../../Emails/EmailPopup";
 import BatchInfoLoading from "../../../Pages/SkeletonLoading.jsx/BatchINfoLoading";
 import { handleStudentClick } from "../../Navigations/Navigations";
-
-
-// const SpecificBatchPage = () => {
-//     const { batchId } = useParams();
-//     const { specificBatch, fetchSpecificBatch } = useSpecificBatch();
- 
-
-
-//     useEffect(() => {
-//         if (batchId) {
-//             fetchSpecificBatch(batchId);
-//         }
-//     },[batchId]);
-    
-//     const batchDetails = specificBatch?.batch;
-//     console.log(batchDetails);
-
-  
-
-//     // const filteredStudentData = specificStudent?.All_in_One
-//     //     ? activeTab === 'running'
-//     //     ? specificStudent?.All_in_One?.student_batch_ongoing
-//     //     : activeTab === 'scheduled'
-//     //     ? specificStudent?.All_in_One?.student_batch_upcoming
-//     //     : activeTab === 'completed'
-//     //     ? specificStudent?.All_in_One?.student_batch_completed
-//     //     : activeTab === 'allupcomingbatches'
-//     //     ? specificStudent?.All_in_One?.all_upcoming_batch
-//     //     : []
-//     // :[];
-
-
-//     return (
-//         <>
-//         <div className="w-auto h-full pt-20 px-2 mt-0 darkmode">
-//             <div className="grid grid-cols-6 gap-x-6">
-//                     {batchDetails ? (
-//                     <>
-//                 <div className="px-4 py-4 col-span-6 h-auto shadow-md sm:rounded-lg border border-gray-50 dark:border">
-                    
-//                     <div className="w-full h-auto px-1 py-3 text-lg font-semibold">
-//                         <p key={batchDetails.id}># {batchDetails.batch_id}</p>
-//                     </div>
-//                         <div className="grid 2xl:grid-cols-6 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-2 px-4 py-4 gap-4">
-
-                        
-//                         <div className="col-span-1 px-1 py-1 lg:mt-0 sm:mt-6">
-//                             <h1>Trainer</h1>
-//                             <p className="font-semibold">{batchDetails.trainer_name}</p>
-//                         </div>
-
-//                         <div className="col-span-1 px-1 py-1">
-//                             <h1>Course</h1>
-//                             <p className="font-semibold">{batchDetails.course_name}</p>
-//                         </div>
-                        
-//                         <div className="col-span-1 px-1 py-1">
-//                             <h1 >Start Time</h1>
-//                             <p className="font-semibold">{batchDetails.batch_time_data?.start_time}</p>
-//                         </div>
-
-//                         <div className="col-span-1 px-1 py-1">
-//                             <h1 >End Time</h1>
-//                             <p className="font-semibold">{batchDetails.batch_time_data?.end_time}</p>
-//                         </div>
-
-//                         <div className="col-span-1 px-1 py-1 lg:mt-0 sm:mt-6">
-//                             <h1>Preferred Week</h1>
-//                             <p className="font-semibold">{batchDetails.preferred_week}</p>
-//                         </div>
-                        
-//                         <div className="col-span-1 px-1 py-1 lg:mt-0 sm:mt-6">
-//                             <h1>Location</h1>
-//                             <p className="font-semibold">{batchDetails.batch_location}</p>
-//                         </div>
-
-//                         <div className="col-span-1 px-1 py-1 lg:mt-0 sm:mt-6">
-//                             <h1>Language</h1>
-//                             <p className="font-semibold">{batchDetails.language}</p>
-//                         </div>
-
-//                         <div className="col-span-1 px-1 py-1 lg:mt-0 sm:mt-6">
-//                             <h1>Mode</h1>
-//                             <p className="font-semibold">{batchDetails.mode}</p>
-//                         </div>
-
-//                         <div className="col-span-1 px-1 py-1 lg:mt-0 md:mt-0 sm:mt-6">
-//                             <h1>Start Date</h1>
-//                             <p className="font-semibold">{batchDetails.start_date}</p>
-//                         </div>
-
-//                         <div className="col-span-1 px-1 py-1 lg:mt-0 md:mt-0 sm:mt-6">
-//                             <h1>End Date</h1>
-//                             <p className="font-semibold">{batchDetails.end_date}</p>
-//                         </div>
-
-//                         <div className="col-span-1 px-1 py-1 lg:mt-0 sm:mt-6">
-//                             <h1>Status</h1>
-//                             <p className="font-semibold">{batchDetails.status}</p>
-//                         </div>
-
-//                         </div>
-//                 </div>
-
-//                 <div className="px-4 py-4 col-span-5 mt-6 h-auto shadow-md sm:rounded-lg border border-gray-50 dark:border dark:border-gray-600">
-//                     <div className="w-full font-semibold">
-                        
-//                         <div className="col-span-1 text-lg px-4 py-4">
-//                             <h1>Students</h1>
-//                         </div>
-
-//                         <div className="col-span-1 px-4 py-2 leading-8">
-//                             <ul>
-//                             {specificBatch?.students.map((student, index) => (
-//                               <>
-//                                 <li className="" key={index}><span className="mr-4">{index + 1} :</span>{student.name}</li>
-//                               </>
-//                             ))}
-
-
-//                             </ul>
-//                         </div>
-
-//                     </div>
-//                 </div>
-
-                
-//                     </>
-//                     ) : (
-//                         <p>Loading student data...</p>
-//                     )}
-//             </div>
-
-
-           
-                    
-                
-                   
-//         </div>  
-//         </>
-//     )
-
-// }
-
-// export default SpecificBatchPage;
-
-
-
+import axiosInstance from "../api/api";
+import { useTheme } from "../../Themes/ThemeContext";
 
 
 
 
 
 const SpecificBatchPage = () => {
+    // for theme -------------------------
+    const { getTheme } = useTheme();
+    const theme = getTheme();
+    // ------------------------------------
+
     const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false); 
     const [isModalOpen, setIsModalOpen] = useState(false) 
     const [activeTab, setActiveTab] = useState('students')
@@ -207,7 +62,7 @@ const SpecificBatchPage = () => {
     // store student status in a batch 
     const [studentStatuses, setStudentStatuses] = useState({}); // Store status per trainer
 
-    const trainer_email = specificBatch?.batch?.trainer_email || ''
+
 
     const navigate = useNavigate();
     
@@ -219,13 +74,8 @@ const SpecificBatchPage = () => {
         // HANDLE FETCH PREFFERED AVAILABLE STUDNETS FOR THAT SPECIFIC BATCH
         const fetchAvailableStudents = useCallback(async (batchId) => {              
             try {
-                const response = await axios.get(`${BASE_URL}/api/batches/${batchId}/available-students/`, 
-                    { headers: { 'Content-Type': 'application/json'}, 
-                    withCredentials : true
-                }
-                );
+                const response = await axiosInstance.get(`/api/batches/${batchId}/available-students/`);
                 const data = response.data;
-                // console.log(data);
                 
                 if (!data.available_students) {
                     throw new Error("Invalid response format");
@@ -274,11 +124,8 @@ const SpecificBatchPage = () => {
             }
         
             try {
-                const response = await axios.post(`${BASE_URL}/api/batches/${batch_id}/add-students/`, 
-                    { students: [studentId] }, // Ensure correct payload format
-                    { headers: { 'Content-Type': 'application/json'}, 
-                    withCredentials : true
-                }
+                const response = await axiosInstance.post(`/api/batches/${batch_id}/add-students/`, 
+                    { students: [studentId] }
                 );
         
                 if (response.status >= 200 && response.status < 300) {
@@ -349,6 +196,9 @@ const SpecificBatchPage = () => {
 
     }, [specificBatch]);
 
+    const trainer_email = specificBatch?.batch?.trainer_email || ''
+
+
     if (!updatedValues) {
         return <p>Loading batch data...</p>;
     }
@@ -373,15 +223,9 @@ const SpecificBatchPage = () => {
             const decodedBatchId = atob(batchId);       
             const payload = { students: [studentId] }; // Wrap studentId in an array
 
-            const response = await axios.post(`${BASE_URL}/api/batch/remove-student/${decodedBatchId}/`,  
-                payload,  // Student IDs in the body
-                { headers: { 'Content-Type': 'application/json' }, 
-                withCredentials : true
-            }
-            );
+            const response = await axiosInstance.post(`/api/batch/remove-student/${decodedBatchId}/`, payload );
 
                 if (response.status >= 200 && response.status < 300) {   
-                    // console.log(specificBatch);
                                  
                     fetchSpecificBatch(decodedBatchId);
                     // fetchAvailableStudents(decodedBatchId)                     
@@ -438,12 +282,7 @@ const SpecificBatchPage = () => {
             
 
             try {
-                const response = await axios.post(`${BASE_URL}/api/batch-generate-certificate/${batch_id}/`, 
-                    payload,
-                    { headers: { 'Content-Type': 'application/json' }, 
-                    withCredentials : true
-                }
-                );
+                const response = await axiosInstance.post(`/api/batch-generate-certificate/${batch_id}/`, payload );
                 
                 if (response.status >= 200 && response.status < 300) {
                     message.success("Certificate issued to students successfully");
@@ -454,7 +293,6 @@ const SpecificBatchPage = () => {
                     setIsCertificateIssued(true);
                 };
             } catch (error) {
-                console.log("Error issuing crtificate", error);
                 message.error("Failed to issue Certificate")
             };
         };
@@ -480,8 +318,7 @@ const SpecificBatchPage = () => {
               setCheckStudentid([]);
             }
         };
-          
-          
+                
         
         const toggleStudent = (id, email) => {
             setCheckStudentid((prev) => {
@@ -499,12 +336,8 @@ const SpecificBatchPage = () => {
         const handleSaveClassLink = async () => {
             const batch_id = atob(batchId)
             try {
-                const response = await axios.patch(`${BASE_URL}/api/batch-link/${batch_id}/`,
-                    {batch_link: classLink }, 
-                    { headers: { 'Content-Type': 'application/json' }, 
-                    withCredentials : true
-                }
-                );
+                const response = await axiosInstance.patch(`/api/batch-link/${batch_id}/`,
+                    {batch_link: classLink } );
 
                 if (response.status === 200) {     
                     message.success("Batch Link Added")
@@ -529,12 +362,8 @@ const SpecificBatchPage = () => {
             }
         
             try {
-                const response = await axios.patch(`${BASE_URL}/api/batches/${batch_id}/reject-request/`, 
-                    { students: [studentId] },
-                    { headers: { 'Content-Type': 'application/json' }, 
-                    withCredentials : true
-                }
-                );
+                const response = await axiosInstance.patch(`/api/batches/${batch_id}/reject-request/`, 
+                    { students: [studentId] } );
             } catch (error) {
                 console.error("Error sending Add student request:", error);
                 
@@ -563,12 +392,8 @@ const SpecificBatchPage = () => {
         setStudentStatuses((prev) => ({ ...prev, [studentId]: checked }));
     
         try {
-            await axios.patch(`${BASE_URL}/api/batches/student-status/${studentId}/`, 
-                { status: newStatus },
-                { headers: { 'Content-Type': 'application/json' }, 
-                withCredentials : true
-            }
-            );
+            await axiosInstance.patch(`/api/batches/student-status/${studentId}/`, 
+                { status: newStatus } );
             message.success(`Student status updated to ${newStatus}`);
         } catch (error) {
             message.error("Failed to update status");            
@@ -578,23 +403,25 @@ const SpecificBatchPage = () => {
     };
 
 
+
+
     return (
         <>
-            <div className="w-auto h-full pt-14 px-2 mt-0">
+            <div className={`w-auto h-full pt-14 px-4 mt-0 ${theme.bg}`}>
                 <div className="grid grid-cols-6 gap-x-6">
                     {loading ? (
                         <>
                             <BatchInfoLoading/>
                         </>
                         ) : (
-                        <div className="px-4 py-4 col-span-6 h-auto shadow-md sm:rounded-lg border border-gray-50 bg-white">
+                        <div className={`px-4 py-4 col-span-6 h-auto shadow-md rounded-xl ${theme.specificPageBg}`}>
                             <div className="w-full h-auto px-1 py-3 text-lg font-semibold flex justify-between">
                             <p># {updatedValues.batch_id}</p>
 
                             <Button
                                 color="secondary"
                                 variant="outlined"
-                                className="rounded-lg"
+                                className={`rounded-xl ${theme.bg}`}
                                 onClick={(e) => {
                                 e.stopPropagation();
                                 handleBatchEditClick(updatedValues);
@@ -628,11 +455,13 @@ const SpecificBatchPage = () => {
                                 if (value) {
                                 if (["start_date", "end_date"].includes(key)) {
                                     displayValue = dayjs(value).format("DD/MM/YYYY");
-                                } else if (
-                                    ["batch_time_data.start_time", "batch_time_data.end_time"].includes(key)
-                                ) {
-                                    displayValue = dayjs(value, "HH:mm:ss").format("hh:mm A");
-                                } else if (key === "last_update_datetime" || key === "batch_create_datetime") {
+                                } 
+                                // else if (
+                                //     ["batch_time_data.start_time", "batch_time_data.end_time"].includes(key)
+                                // ) {
+                                //     displayValue = dayjs(value, "HH:mm:ss").format("hh:mm A");
+                                // }
+                                 else if (key === "last_update_datetime" || key === "batch_create_datetime") {
                                     displayValue = dayjs(value).format("DD/MM/YYYY | hh:mm A");
                                 } else {
                                     displayValue = value;
@@ -654,7 +483,7 @@ const SpecificBatchPage = () => {
                                     value={classLink}
                                     onChange={(e) => setClassLink(e.target.value)}
                                     placeholder="Class Link"
-                                    className="px-2 rounded-md h-7 mr-2 border-1 border-gray-300 focus:ring-0"
+                                    className={`px-2 rounded-xl h-7 mr-2 border border-gray-300 focus:ring-0 ${theme.bg}`}
                                 />
                                 <CheckCircleOutlined
                                     onClick={handleSaveClassLink}
@@ -670,9 +499,9 @@ const SpecificBatchPage = () => {
 
 
                     {/* Students List Table */}
-                    <div className="py-4 col-span-6 mt-3 h-auto shadow-md sm:rounded-lg border border-gray-50  bg-white">
+                    <div className={`py-0 col-span-6 mt-3 h-auto shadow-md sm:rounded-lg ${theme.specificPageBg}`}>
                         <div className="w-full font-semibold">
-                            <div className="col-span-1 text-lg px-4 py-4 flex justify-between">
+                            <div className="col-span-1 text-lg px-4 pt-4 pb-2 flex justify-between items-center">
                                 {/* <h1>Students</h1> */}
 
                                 <div className="relative">
@@ -690,27 +519,27 @@ const SpecificBatchPage = () => {
                                     </div>
       
                                     {/* Tab buttons for medium and up screens */}
-                                    <div className="hidden lg:flex">
+                                    <div className="hidden lg:flex bg-white/70 backdrop-blur-sm p-1.5 rounded-xl">
                                         <button
                                             onClick={() => handleTabClick("students")}
-                                            className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200  
-                                                ${activeTab === "students" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                            className={`px-4 py-2 rounded-lg font-medium text-xs transition-all duration-200 text-gray-600 hover:bg-white/50
+                                                ${activeTab === "students" ? `text-gray-600 shadow-md ${theme.activeTab}` : ' text-gray-600 hover:bg-white/50'}`}
                                         >
                                             Students
                                         </button>
 
                                         <button
                                             onClick={() => handleTabClick("recommended_students")}
-                                            className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200  
-                                                ${activeTab === "recommended_students" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
-                                        >
+                                            className={`px-4 py-2 rounded-lg font-medium text-xs transition-all duration-200 text-gray-600 hover:bg-white/50 
+                                                ${activeTab === "recommended_students" ? `text-gray-600 shadow-md ${theme.activeTab}` : ' text-gray-600 hover:bg-white/50'}`}
+                                            >
                                             Recommended Students
                                         </button>
                                         
                                         {(specificBatch?.batch_requests || []).some(
                                             item => item.batch_requests !== "Approved" && item.batch_requests !== "Rejected"
                                         ) && (
-                                            <Badge overflowCount={999} size="small"
+                                            <Badge overflowCount={999} size="small" offset={[-1, 1]}
                                                 count={
                                                         specificBatch?.batch_requests?.filter(
                                                             item => item.request_status !== "Approved" && item.request_status !== "Rejected"
@@ -718,8 +547,8 @@ const SpecificBatchPage = () => {
                                                     } >
                                                 <button
                                                     onClick={() => handleTabClick("batch_request")}
-                                                    className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200  
-                                                        ${activeTab === "batch_request" ? 'bg-blue-300 text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                                    className={`px-4 py-2 rounded-lg font-medium text-xs transition-all duration-200 text-gray-600 hover:bg-white/50 
+                                                        ${activeTab === "batch_request" ? `text-gray-600 shadow-md ${theme.activeTab}` : ' text-gray-600 hover:bg-white/50'}`}
                                                         >
                                                     Requests
                                                 </button>
@@ -728,11 +557,11 @@ const SpecificBatchPage = () => {
                                     </div>
                                 </div>
 
-                                <div className="2xl:w-96 lg:w-96 mx-3 mt-0.5">
+                                <div className="2xl:w-96 lg:w-96 mx-3 mt-1">
                                     <label htmlFor="table-search" className="sr-only">Search</label>
                                     <div className="relative">
                                         <input onChange={(e) => setSearchTerm(e.target.value.replace(/^\s+/, ''))} value={searchTerm} type="text" id="table-search" placeholder="Search for student"
-                                            className="block p-2 pr-10 text-xs text-gray-600 font-normal border border-gray-300 rounded-lg w-full h-7 bg-gray-50 focus:ring-0 focus:border-blue-500" 
+                                            className={`block w-full h-7 p-2 pr-10 text-xs font-medium  ${theme.searchBg}`}
                                         />
                                         <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                                         <button onClick={() => setSearchTerm("")}>
@@ -756,7 +585,7 @@ const SpecificBatchPage = () => {
                                     <div className="flex">
                                             {!dateFieldIssueCertificate && (
                                                 <Button
-                                                className="px-2 py-1"
+                                                className="px-2 py-1 rounded-xl"
                                                 onClick={handleIssueClick}
                                                 variant="outlined"
                                                 color={isCertificateIssued ? "blue" : "green"}
@@ -808,7 +637,7 @@ const SpecificBatchPage = () => {
                                                 type="button"
                                                 color="success" 
                                                 variant="outlined" 
-                                                className="rounded-lg mx-4 py-1 px-2"
+                                                className="rounded-xl mx-4 py-1 px-2"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     setShowPopup(true);
@@ -817,67 +646,67 @@ const SpecificBatchPage = () => {
                                                 Send email <SendOutlined size="small"/>
                                             </Button>
 
-                                        <button onClick={() => { setIsAddStudentModalOpen(true) }} type="button" className="h-8 focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5">Add +</button>
+                                        <button onClick={() => { setIsAddStudentModalOpen(true) }} type="button" className={`h-8 focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5 shadow-lg hover:shadow-xl transition-all duration-200 ${theme.createBtn}`}>Add +</button>
                                     </div>
                                     
                                 </div>
                             </div>
 
-                                <div className={`overflow-hidden pb-2 relative `}>
-                                    <div className="w-full h-[38rem] overflow-y-auto dark:border-gray-700 rounded-lg pb-2">
-                                        <div className="col-span-1py-2 leading-8">
-                                        <table className="w-full text-xs text-left text-gray-500">
+                                <div className={`overflow-hidden pb-2 px-4 relative backdrop-blur-sm rounded-xl shadow-sm`}>
+                                    <div className="w-full bg-white/40 h-auto md:max-h-[27rem] 2xl:max-h-[30rem] overflow-y-auto rounded-xl pb-2">
+                                        <div className="col-span-1 py-0 leading-0">
+                                        <table className="w-full text-xs font-normal text-left text-gray-600">
                                             {(activeTab === "students" || activeTab === "recommended_students") && (
-                                            <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10">
-                                                <tr>
+                                            <thead className="bg-white sticky top-0 z-10">
+                                                <tr className="bg-gray-50/80">
                                                     <th scope="col" className="p-2">
                                                         <div className="flex items-center">
                                                             <input id="checkbox-all-search" type="checkbox" onChange={(e) => toggleSelectAll(e.target.checked)} checked={checkAll} ref={(el) => {if (el) {el.indeterminate = indeterminate}}} className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 focus:ring-1"></input>
                                                             <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
                                                         </div>
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-2">
+                                                    <th scope="col" className="px-3 py-3 md:px-2 text-xs font-medium uppercase">
                                                         s.No
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Enrollment No
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Name
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Phone No
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Email
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Courses
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Mode
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Language
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Preferred Week
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Location
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         course Counsellor
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         support Coordinator
                                                     </th>
                                                     {activeTab === "students" && (
-                                                        <th scope="col" className="px-3 py-3 md:px-1">
+                                                        <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                             Status
                                                         </th>
                                                     )}
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Action
                                                     </th>
                                                 
@@ -887,42 +716,42 @@ const SpecificBatchPage = () => {
 
                                             {/* Separate Table Head to show Batch Requests Tab  */}
                                             {activeTab === "batch_request" && (
-                                            <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10">
+                                            <thead className="bg-white sticky top-0 z-10">
                                                 <tr>
-                                                    <th scope="col" className="px-3 py-3 md:px-2">
+                                                    <th scope="col" className="px-3 py-3 md:px-2 text-xs font-medium uppercase">
                                                         s.No
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Enrollment No
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Name
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Phone No
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Email
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Courses
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Mode
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Language
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Preferred Week
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Location
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         support Coordinator
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Action
                                                     </th>
                                                 
@@ -931,7 +760,7 @@ const SpecificBatchPage = () => {
                                             )}
 
                                             {activeTab === "students" && (
-                                                    <tbody>
+                                                    <tbody className="divide-y divide-gray-100 font-light text-gray-700">
                                                 {loading ? (
                                                         <tr>
                                                             <td colSpan="100%" className="text-center py-4">
@@ -941,14 +770,14 @@ const SpecificBatchPage = () => {
                                                 
                                                 ) : filteredBatchStudents.length > 0 ? (
                                                     filteredBatchStudents.map((item, index) => (
-                                                    <tr key={item.id} className="bg-white font-normal border-b border-gray-200 hover:bg-gray-50 scroll-smooth">
+                                                    <tr key={item.id} className="hover:bg-white transition-colors scroll-smooth">
                                                         <td scope="col" className="p-2">
                                                             <div className="flex items-center">
                                                                 <input id="checkbox-all-search" type="checkbox" checked={checkStudentid.some((s) => s.students === item?.student?.id)} onChange={() => toggleStudent(item?.student?.id, item?.student?.email)} className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 focus:ring-1"></input>
                                                                 <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
                                                             </div>
                                                         </td>
-                                                        <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900">
+                                                        <td scope="row" className="px-3 py-2 md:px-2">
                                                         {index + 1}
                                                         </td>
                                                         {/* <td className="px-3 py-2 md:px-1">
@@ -956,11 +785,11 @@ const SpecificBatchPage = () => {
                                                         </td> */}
                                                         {/* <td> {isCertificateIssued ? <CheckCircleOutlined className="text-green-500 text-md"/> : ''} </td> */}
                                                         
-                                                        <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(navigate,item.student.id)}>
+                                                        <td className="px-3 py-2 md:px-1 font-medium cursor-pointer" onClick={() => handleStudentClick(navigate,item.student.id)}>
                                                             {item.student.enrollment_no}
                                                         </td>
 
-                                                        <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(navigate,item.student.id)}>
+                                                        <td className="px-3 py-2 md:px-1 font-medium cursor-pointer" onClick={() => handleStudentClick(navigate,item.student.id)}>
                                                             {item.student.name}
                                                         </td>
                                                         <td className="px-3 py-2 md:px-1">
@@ -994,25 +823,25 @@ const SpecificBatchPage = () => {
                                                                 </Avatar.Group>
                                                         </td>
 
-                                                        <td className="px-3 py-2 md:px-1">
-                                                            <Tag bordered={false} color={item.student.mode === "Offline" ? "green" : item.student.mode === "Online" ? "red" : "geekblue"}>
+                                                        <td className="px-3 py-2 md:px-1 font-normal">
+                                                            <Tag className="rounded-xl" bordered={false} color={item.student.mode === "Offline" ? "green" : item.student.mode === "Online" ? "red" : "geekblue"}>
                                                                 {item.student.mode}
                                                             </Tag>
                                                         </td>
 
-                                                        <td className="px-3 py-2 md:px-1">
-                                                            <Tag bordered={false} color={item.student.language === 'Hindi'? 'green' : item.student.language === 'English'? 'volcano' : 'blue'}>
+                                                        <td className="px-3 py-2 md:px-1 font-normal">
+                                                            <Tag className="rounded-xl" bordered={false} color={item.student.language === 'Hindi'? 'green' : item.student.language === 'English'? 'volcano' : 'blue'}>
                                                                 {item.student.language}
                                                             </Tag>
                                                         </td>
 
-                                                        <td className="px-3 py-2 md:px-1">
-                                                            <Tag bordered={false} color={item.student.preferred_week === "Weekdays" ? "cyan" : item.student.preferred_week === "Weekends" ? "gold" : "geekblue" }>
+                                                        <td className="px-3 py-2 md:px-1 font-normal">
+                                                            <Tag className="rounded-xl" bordered={false} color={item.student.preferred_week === "Weekdays" ? "cyan" : item.student.preferred_week === "Weekends" ? "gold" : "geekblue" }>
                                                                 {item.student.preferred_week}
                                                             </Tag>
                                                         </td>
-                                                        <td className="px-3 py-2 md:px-1">
-                                                            {item.student.location == '1' ? <Tag bordered={false} color="blue">Saket</Tag> : item.student.location == "2" ? <Tag bordered={false} color="magenta">Laxmi Nagar</Tag> : <Tag bordered={false} color="blue">Both</Tag>}
+                                                        <td className="px-3 py-2 md:px-1 font-normal">
+                                                            {item.student.location == '1' ? <Tag className="rounded-xl" bordered={false} color="blue">Saket</Tag> : item.student.location == "2" ? <Tag className="rounded-xl" bordered={false} color="magenta">Laxmi Nagar</Tag> : <Tag className="rounded-xl" bordered={false} color="geekblue">Both</Tag>}
                                                         </td>
                                                         <td className="px-3 py-2 md:px-1">
                                                             {item.student.course_counsellor_name}
@@ -1034,35 +863,52 @@ const SpecificBatchPage = () => {
                                                             />   
                                                         </td>
 
-                                                        <td > <Button 
-                                                                color="primary" 
-                                                                variant="filled" 
-                                                                className="rounded-lg w-auto pl-3 pr-3 py-0 my-1 mr-1"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation(); // Prevent the click from bubbling to the <td> click handler
-                                                                    handleEditClick(item.student);  // Open the form with selected course data
-                                                                    setIsModalOpen(true);   // Open the modal
+                                                        <td> 
+                                                            <Dropdown
+                                                                trigger={["click"]}
+                                                                placement="bottomRight"
+                                                                menu={{
+                                                                items: [
+                                                                    {
+                                                                    key: "edit",
+                                                                    label: (
+                                                                        <div
+                                                                        className="flex items-center gap-2 px-2 py-1 cursor-pointer hover:bg-gray-100 rounded-md"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            handleEditClick(item.student);  // Open edit form
+                                                                            setIsModalOpen(true);           // Open modal
+                                                                        }}
+                                                                        >
+                                                                        <EditOutlined /> Edit
+                                                                        </div>
+                                                                    ),
+                                                                    },
+                                                                    {
+                                                                    key: "remove",
+                                                                    label: (
+                                                                        <Popconfirm
+                                                                        title={`Remove ${item.student.name}`}
+                                                                        description="Are you sure you want to remove this Student?"
+                                                                        onConfirm={() => confirm(item.student.id, item.student.name)}
+                                                                        onCancel={cancel}
+                                                                        okText="Yes"
+                                                                        cancelText="No"
+                                                                        >
+                                                                        <div
+                                                                            className="flex items-center gap-2 px-2 py-1 cursor-pointer hover:bg-gray-100 rounded-md text-red-500"
+                                                                            onClick={(e) => e.stopPropagation()}
+                                                                        >
+                                                                            <ClearOutlined /> Remove
+                                                                        </div>
+                                                                        </Popconfirm>
+                                                                    ),
+                                                                    },
+                                                                ],
                                                                 }}
-                                                            >
-                                                                <EditOutlined />
-                                                            </Button>
-                                                            <Popconfirm
-                                                                title={`Remove ${item.student.name}`}
-                                                                description="Are you sure you want to Remove this Student?"
-                                                                onConfirm={() => confirm(item.student.id, item.student.name)}
-                                                                onCancel={cancel}
-                                                                okText="Yes"
-                                                                cancelText="No"
-                                                            >
-                                                                <Button 
-                                                                    color="danger" 
-                                                                    variant="filled" 
-                                                                    className="rounded-lg w-auto px-3"
-                                                                    onClick={(e) => e.stopPropagation()} // Prevent the click from triggering the Edit button
                                                                 >
-                                                                    <ClearOutlined />
-                                                                </Button>
-                                                        </Popconfirm>
+                                                                <MoreOutlined className="cursor-pointer text-lg p-2 rounded-full hover:bg-gray-200" />
+                                                            </Dropdown>
                                                         </td>
                                                     </tr>
                                                 ))
@@ -1077,7 +923,7 @@ const SpecificBatchPage = () => {
                                             )}
 
                                             {activeTab === "recommended_students" && (
-                                                    <tbody>
+                                                    <tbody className="divide-y divide-gray-100 font-light text-gray-700">
                                                     {loading ? (
                                                             <tr>
                                                                 <td colSpan="100%" className="text-center py-4">
@@ -1087,18 +933,18 @@ const SpecificBatchPage = () => {
                                                     
                                                     ) : filteredAvailableStudents.length > 0 ? (
                                                         filteredAvailableStudents.map((item, index) => (
-                                                        <tr key={item.id} className="bg-white font-normal border-b border-gray-200 hover:bg-gray-50 scroll-smooth">
+                                                        <tr key={item.id} className="hover:bg-gray-50 transition-colors scroll-smooth">
                                                             <td scope="col" className="p-2">
                                                                 <div className="flex items-center">
                                                                     <input id="checkbox-all-search" type="checkbox" checked={checkStudentid.some((s) => s.students === item?.id)} onChange={() => toggleStudent(item?.id, item?.email)} className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 focus:ring-1"></input>
                                                                     <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
                                                                 </div>
                                                             </td>
-                                                            <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
+                                                            <td scope="row" className="px-3 py-2 md:px-2">
                                                                 {index + 1}
                                                             </td> 
 
-                                                            <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(navigate,item.id)}>
+                                                            <td className="px-3 py-2 md:px-1 font-medium cursor-pointer" onClick={() => handleStudentClick(navigate,item.id)}>
                                                                 <Tooltip 
                                                                     color="white"
                                                                     title={
@@ -1119,7 +965,7 @@ const SpecificBatchPage = () => {
 
                                                             </td>
                 
-                                                            <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(navigate,item.id)}> 
+                                                            <td className="px-3 py-2 md:px-1 font-medium cursor-pointer" onClick={() => handleStudentClick(navigate,item.id)}> 
                                                                 <Tooltip 
                                                                     color="white"
                                                                     title={
@@ -1172,25 +1018,25 @@ const SpecificBatchPage = () => {
                                                                     </Avatar.Group>
                                                             </td>
                 
-                                                            <td className="px-3 py-2 md:px-1">
-                                                                <Tag bordered={false} color={item.mode === "Offline" ? "green" : item.mode === "Online" ? "red" : "geekblue"}>
+                                                            <td className="px-3 py-2 md:px-1 font-normal">
+                                                                <Tag className="rounded-xl" bordered={false} color={item.mode === "Offline" ? "green" : item.mode === "Online" ? "red" : "geekblue"}>
                                                                     {item.mode}
                                                                 </Tag>
                                                             </td>
                 
-                                                            <td className="px-3 py-2 md:px-1">
-                                                                <Tag bordered={false} color={item.language === 'Hindi'? 'green' : item.language === 'English'? 'volcano' : 'blue'}>
+                                                            <td className="px-3 py-2 md:px-1 font-normal">
+                                                                <Tag className="rounded-xl" bordered={false} color={item.language === 'Hindi'? 'green' : item.language === 'English'? 'volcano' : 'blue'}>
                                                                     {item.language}
                                                                 </Tag>
                                                             </td>
                 
-                                                            <td className="px-3 py-2 md:px-1">
-                                                                <Tag bordered={false} color={item.preferred_week === "Weekdays" ? "cyan" : item.preferred_week === "Weekends" ? "gold" : "geekblue" }>
+                                                            <td className="px-3 py-2 md:px-1 font-normal">
+                                                                <Tag className="rounded-xl" bordered={false} color={item.preferred_week === "Weekdays" ? "cyan" : item.preferred_week === "Weekends" ? "gold" : "geekblue" }>
                                                                     {item.preferred_week}
                                                                 </Tag>
                                                             </td>
-                                                            <td className="px-3 py-2 md:px-1">
-                                                                {item.location == '1' ? <Tag bordered={false} color="blue">Saket</Tag> : item.location == "2" ? <Tag bordered={false} color="magenta">Laxmi Nagar</Tag> : <Tag bordered={false} color="blue">Both</Tag>}
+                                                            <td className="px-3 py-2 md:px-1 font-normal">
+                                                                {item.location == '1' ? <Tag className="rounded-xl" bordered={false} color="blue">Saket</Tag> : item.location == "2" ? <Tag className="rounded-xl" bordered={false} color="magenta">Laxmi Nagar</Tag> : <Tag className="rounded-xl" bordered={false} color="blue">Both</Tag>}
                                                             </td>
                                                             <td className="px-3 py-2 md:px-1">
                                                                 {item.course_counsellor_name}
@@ -1198,7 +1044,7 @@ const SpecificBatchPage = () => {
                                                             <td className="px-3 py-2 md:px-1">
                                                                 {item.support_coordinator_name}
                                                             </td>
-                                                            <td > 
+                                                            <td> 
                                                                 <Popconfirm
                                                                     title={`Add ${item.name} in this Batch`}
                                                                     description="Are you sure you want to Add this Student?"
@@ -1206,14 +1052,12 @@ const SpecificBatchPage = () => {
                                                                     okText="Yes"
                                                                     cancelText="No"
                                                                 >
-                                                                    <Button 
-                                                                        color="primary" 
-                                                                        variant="filled" 
-                                                                        className="rounded-lg w-auto pl-3 pr-3 py-0 my-1 mr-1"
+                                                                    <button 
+                                                                        className={`rounded-xl w-auto px-4 py-1 my-1 mr-1 text-lg text-white ${theme.createBtn}`}
                                                                         onClick={(e) => e.stopPropagation() }
                                                                     >
                                                                     +
-                                                                    </Button>
+                                                                    </button>
                                                                 </Popconfirm>
                                                             </td>
                                                         </tr>
@@ -1316,7 +1160,7 @@ const SpecificBatchPage = () => {
                                                                 <Button 
                                                                     color="danger" 
                                                                     variant="outlined" 
-                                                                    className="rounded-md w-auto h-auto p-1 text-xs"
+                                                                    className="rounded-xl w-auto h-auto p-1 text-xs"
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
                                                                         RequestToBatchCancel(item.id) 
