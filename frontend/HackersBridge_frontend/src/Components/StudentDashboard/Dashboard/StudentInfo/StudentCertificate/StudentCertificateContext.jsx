@@ -1,6 +1,5 @@
-import axios from "axios";
 import React, { createContext, useState, useContext, useCallback } from "react";
-import BASE_URL from "../../../../../ip/Ip";
+import axiosInstance from "../../../../dashboard/api/api";
 
 
 // Create the Context Object
@@ -13,21 +12,15 @@ const StudentCertificateProvider = ({ children }) => {
   
       const fetchStudentCertificate = useCallback (async () => {
           if (loading) return; 
-          // const token = localStorage.getItem('token');
-          // if (!token) {
-          //     console.error("No token found, user might be logged out.");
-          //     return;
-          // };
   
           setLoading(true);
           try {
-              const response = await axios.get(`${BASE_URL}/Student_login/student_certificates/`,
+              const response = await axiosInstance.get(`/Student_login/student_certificates/`,
                 { headers: { 'Content-Type': 'application/json'}, 
                 withCredentials: true,
               }  
               );
               const data = response.data;
-              // console.log(response);
               
               setStudentCertificate(prevData => {
                 if(JSON.stringify(prevData) !== JSON.stringify(data)){
@@ -36,7 +29,6 @@ const StudentCertificateProvider = ({ children }) => {
                 return prevData;
               });
   
-              // console.log('Batches Data ', data)
           } catch (error) {
             console.error('Error fetching Attendance Data', error);
           } finally {

@@ -1,15 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import { DatePicker, Select, Input, Checkbox, message } from 'antd';
 import { SyncOutlined, PlusCircleOutlined, MinusCircleOutlined } from '@ant-design/icons';
-import axios from 'axios';
 import { useCourseForm } from '../Coursecontext/CourseFormContext';
 import dayjs from "dayjs";
-import BASE_URL from '../../../ip/Ip';
 import { useCoordinatorForm } from '../AddDetails/Coordinator/CoordinatorContext';
 import { useCounsellorForm } from '../AddDetails/Counsellor/CounsellorContext';
-import { useAuth } from '../AuthContext/AuthContext';
 import { useStudentForm } from '../Studentcontext/StudentFormContext';
 import { useTagContext } from '../Tags/TagsContext';
+import axiosInstance from '../api/api';
+import { useTheme } from '../../Themes/ThemeContext';
 
 
 const { TextArea } = Input;
@@ -19,6 +18,11 @@ const { TextArea } = Input;
 
 const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
     if(!isOpen) return null;
+
+    // for theme -------------------------
+    const { getTheme } = useTheme();
+    const theme = getTheme();
+    // ------------------------------------
 
     const isEditing = Boolean(selectedStudentData?.id); 
 
@@ -42,10 +46,8 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
         fetchCoordinators();
         fetchCounsellors();
         fetchTagData();
-        // console.log(selectedStudentData);
         
         if (selectedStudentData) {
-            // console.log("Editing Student Data:", selectedStudentData)
             setStudentFormData({
                 enrollmentNumber: selectedStudentData.enrollment_no || "",
                 studentName: selectedStudentData.name || "",
@@ -69,6 +71,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
                 courseCounsellor: selectedStudentData.course_counsellor || "",
                 supportCoordinator: selectedStudentData.support_coordinator || "",
                 note: selectedStudentData.note || "",
+                tags: selectedStudentData.tags || null,
 
             });
             
@@ -162,32 +165,20 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
             note: formattedData.note,
             tags:formattedData.tags,
         };
-        // console.log("Final Payload:", JSON.stringify(payload, null, 2));
 
         try {
             setLoading(true); // Start loading
 
-                //const token = localStorage.getItem("token")            
-                // , 'Authorization': `token ${token}`
-                
             let response;
             let successMessage = "";
 
             if (selectedStudentData && selectedStudentData.id) {
                 // Update existing course (PUT)
-                response = await axios.put(`${BASE_URL}/api/students/edit/${selectedStudentData.id}/`, payload, {
-                    headers: { 'Content-Type': 'application/json' },
-                    withCredentials : true
-                }
-                );
+                response = await axiosInstance.put(`/api/students/edit/${selectedStudentData.id}/`, payload );
                     successMessage = "Student updated successfully!";
                 } else {
                     // Add new course (POST)
-                    response = await axios.post(`${BASE_URL}/api/students/add/`, payload, {
-                        headers: { 'Content-Type': 'application/json' },
-                        withCredentials : true
-                    }
-                    );
+                    response = await axiosInstance.post(`/api/students/add/`, payload );
                         successMessage = "Student added successfully!";
                 };
 
@@ -205,21 +196,26 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
             setLoading(false);
         
             if (error.response) {
-                console.error("Server Error Response:", error.response);
-        
-                // Extract error messages and show each one separately
-                Object.entries(error.response.data).forEach(([key, value]) => {
-                    value.forEach((msg) => {
-                        message.error(`${msg}`);
-                    });
-                });
-            } else if (error.request) {
-                console.error("No Response from Server:", error.request);
-                message.error("No response from server. Please check your internet connection.");
+        console.error("Server Error Response:", error.response);
+
+        // Extract and handle error messages
+        Object.entries(error.response.data).forEach(([key, value]) => {
+            if (Array.isArray(value)) {
+            value.forEach((msg) => {
+                message.error(`${msg}`);
+            });
             } else {
-                console.error("Error Message:", error.message);
-                message.error("An unexpected error occurred.");
+            message.error(`${value}`);
             }
+        });
+        } else if (error.request) {
+        console.error("No Response from Server:", error.request);
+        message.error("No response from server. Please check your internet connection.");
+        } else {
+        console.error("Error Message:", error.message);
+        message.error("An unexpected error occurred.");
+        }
+
         }        
         
     };
@@ -252,11 +248,11 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
 
     return (
         <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 z-50 overflow-y-scroll">
-            <div className="relative p-2 w-4/6 bg-white rounded-lg shadow-lg dark:bg-gray-700">
+            <div className={`relative p-2 w-4/6 rounded-xl shadow-lg ${theme.specificPageBg}`}>
                 
                 {/* Modal Header */}
-                <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600 border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t border-gray-300">
+                    <h3 className={`text-lg font-semibold ${theme.text}`}>
                         {isEditing ? "Edit Student" : "Add New Student"}
                     </h3>
                     <button
@@ -274,16 +270,16 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
                 {/* Modal Form */}
                 <div className="max-h-[700px] overflow-y-auto p-4 md:p-5">
                     <form className="p-4 md:p-5" onSubmit={handleFormSubmit}>
-                    <div className="grid gap-4 mb-4 grid-cols-4">
+                    <div className="grid gap-4 mb-0 grid-cols-4">
                         <div className="col-span-1">
-                            <label htmlFor="enrollmentNumber" className="block mb-2 text-sm font-medium text-gray-900">Enrollment Number</label>
+                            <label htmlFor="enrollmentNumber" className={`block mb-2 text-sm font-medium ${theme.text}`}>Enrollment Number</label>
                             <Input name="enrollmentNumber" value={studentFormData.enrollmentNumber} onChange={(e) => handleChange("enrollmentNumber", e.target.value)} disabled={isEditing} className='rounded-lg border-gray-300' placeholder="Enter Enrollment Number" />
                             {errors.enrollmentNumber && <p className="text-red-500 text-sm">{errors.enrollmentNumber}</p>}
                         </div>
                         
                         {/*  Student Name  */}
                         <div className="col-span-1">
-                            <label htmlFor="studentName" className="block mb-2 text-sm font-medium text-gray-900">Student Name</label>
+                            <label htmlFor="studentName" className={`block mb-2 text-sm font-medium ${theme.text}`}>Student Name</label>
                             <Input name="studentName" value={studentFormData.studentName} className='rounded-lg border-gray-300' placeholder="Enter Student Name" 
                                     onChange={(e) => {
                                         const inputValue = e.target.value.replace(/[^a-zA-Z\s]/g, ""); // Remove non-alphabetic characters
@@ -295,7 +291,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
 
                         {/* Student Date of Birth  */}
                         <div className="col-span-1">
-                            <label htmlFor="dateOfBirth" className="block mb-2 text-sm font-medium text-gray-900">Student's Date of Birth</label>
+                            <label htmlFor="dateOfBirth" className={`block mb-2 text-sm font-medium ${theme.text}`}>Student's Date of Birth</label>
                             <DatePicker name='dateOfBirth' value={studentFormData.dateOfBirth ? dayjs(studentFormData.dateOfBirth, "YYYY-MM-DD") : null}  onChange={(date, dateString) => setStudentFormData({ ...studentFormData, dateOfBirth: dateString })} className='w-full border-gray-300' size='large'  placeholder="Select Date of Birth"/>                       
                             {errors.dateOfBirth && <p className="text-red-500 text-sm">{errors.dateOfBirth}</p>}
                         </div>
@@ -303,7 +299,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
                         {/* Phone Number */}
                         <div className="col-span-1 flex gap-2">
                             <div>
-                                <label htmlFor="phoneNumber" className="block mb-2 text-sm font-medium text-gray-900">Phone Number</label>
+                                <label htmlFor="phoneNumber" className={`block mb-2 text-sm font-medium ${theme.text}`}>Phone Number</label>
                                 <Input name="phoneNumber"  value={studentFormData.phoneNumber} className='rounded-lg border-gray-300'  placeholder='Enter Phone Number' 
                                     onChange={(e) => {
                                         const inputValue = e.target.value.replace(/\D/g, ""); // Remove non-numeric values
@@ -315,7 +311,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
                                 
                                 {showAltPhone && (
                                     <>
-                                        <label htmlFor="alternatePhoneNumber" className="block mt-2 mb-2 text-sm font-medium text-gray-900">
+                                        <label htmlFor="alternatePhoneNumber" className={`block mb-2 text-sm font-medium ${theme.text}`}>
                                             Alternate Phone Number
                                         </label>
                                         <Input
@@ -351,7 +347,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
 
                             {/* Email Address */}
                             <div className="col-span-1">
-                                <label htmlFor="emailAddress" className="block mb-2 text-sm font-medium text-gray-900">Email Address</label>
+                                <label htmlFor="emailAddress" className={`block mb-2 text-sm font-medium ${theme.text}`}>Email Address</label>
                                 <Input name="emailAddress" value={studentFormData.emailAddress} className='rounded-lg border-gray-300' placeholder="Enter Email Address" 
                                         onChange={(e) => {
                                             const inputValue = e.target.value.replace(/[^a-zA-Z0-9@._-]/g, ""); // Allow email characters
@@ -363,7 +359,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
 
                             {/* Text Area Adding Address */}
                             <div className="col-span-1 sm:col-span-1">
-                                <label htmlFor="studentAddress" className="block mb-2 text-sm font-medium text-gray-900">Student Address</label>
+                                <label htmlFor="studentAddress" className={`block mb-2 text-sm font-medium ${theme.text}`}>Student Address</label>
                                 <TextArea name="studentAddress" value={studentFormData.studentAddress} onChange={(e) => handleChange("studentAddress", e.target.value)} placeholder="Add Address Here" autoSize size='large' />
                                     <div
                                         style={{
@@ -375,7 +371,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
 
                         {/* Enrollment Date  */}
                         <div className="col-span-1">
-                            <label htmlFor="dateOfJoining" className="block mb-2 text-sm font-medium text-gray-900">Enrollment Date</label>
+                            <label htmlFor="dateOfJoining" className={`block mb-2 text-sm font-medium ${theme.text}`}>Enrollment Date</label>
                             <DatePicker name='dateOfJoining' value={studentFormData.dateOfJoining ? dayjs(studentFormData.dateOfJoining, "DD/MM/YYYY") : null}  className='w-full border-gray-300' size='large'  placeholder="Select Enrollment Date"
                                     format="DD/MM/YYYY"
                                     onChange={(date, dateString) =>
@@ -390,7 +386,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
 
                             {/* Dropdown for Language Selection */}
                             <div className="col-span-1 sm:col-span-1">
-                                <label htmlFor="language" className="block mb-2 text-sm font-medium text-gray-900">Language</label>
+                                <label htmlFor="language" className={`block mb-2 text-sm font-medium ${theme.text}`}>Language</label>
                                 <Select name="language" value={studentFormData.language.length > 0 ? studentFormData.language : null } onChange={(value) => handleChange("language", value)} className='w-full border-gray-300' size='large' placeholder='Select Language'
                                     options={[
                                                 { value: 'Hindi', label: 'Hindi' },
@@ -404,7 +400,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
     
                         {/* Dropdown for Courses Selection */}
                         <div className="col-span-1 sm:col-span-2">
-                            <label htmlFor="course" className="block mb-2 text-sm font-medium text-gray-900">Enrolled Courses</label>
+                            <label htmlFor="course" className={`block mb-2 text-sm font-medium ${theme.text}`}>Enrolled Courses</label>
                             <Select name="course" mode="multiple" className='w-full border-gray-300' size='large' placeholder="select Courses" 
                                 showSearch  
                                 
@@ -424,7 +420,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
 
                         {/* Dropdown for Completed Courses Selection */}
                         <div className="col-span-1 sm:col-span-2">
-                            <label htmlFor="completedCourse" className="block mb-2 text-sm font-medium text-gray-900">Completed Courses</label>
+                            <label htmlFor="completedCourse" className={`block mb-2 text-sm font-medium ${theme.text}`}>Completed Courses</label>
                             <Select name="completedCourse" mode="multiple" className='w-full border-gray-300' size='large' placeholder="select Completed Courses" 
                                 showSearch 
                                 
@@ -448,7 +444,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
 
                             {/* Dropdown for Mode Selection */}
                             <div className="col-span-1 sm:col-span-1">
-                            <label htmlFor="mode" className="block mb-2 text-sm font-medium text-gray-900">Mode</label>
+                            <label htmlFor="mode" className={`block mb-2 text-sm font-medium ${theme.text}`}>Mode</label>
                             <Select name="mode" value={studentFormData.mode.length > 0 ? studentFormData.mode : null } onChange={(value) => handleChange("mode", value)} className='w-full border-gray-300' size='large' placeholder='Select Mode' 
                                     options={[
                                                     { value: 'Offline', label: 'Offline' },
@@ -461,7 +457,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
 
                             {/* Dropdown for Preferres Week Selection */}
                             <div className="col-span-1 sm:col-span-1">
-                            <label htmlFor="preferredWeek" className="block mb-2 text-sm font-medium text-gray-900">Preferred Week</label>
+                            <label htmlFor="preferredWeek" className={`block mb-2 text-sm font-medium ${theme.text}`}>Preferred Week</label>
                             <Select name="preferredWeek" value={studentFormData.preferredWeek.length > 0 ? studentFormData.preferredWeek : null } onChange={(value) => handleChange("preferredWeek", value)} className='w-full border-gray-300' size='large' placeholder='Select Preferred Week' 
                                     options={[
                                                     { value: 'Weekdays', label: 'Weekdays' },
@@ -474,7 +470,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
 
                             {/* Dropdown for Location Selection */}
                             <div className="col-span-1 sm:col-span-1">
-                            <label htmlFor="location" className="block mb-2 text-sm font-medium text-gray-900">Location</label>
+                            <label htmlFor="location" className={`block mb-2 text-sm font-medium ${theme.text}`}>Location</label>
                             <Select name="location" value={studentFormData.location ? String(studentFormData.location) : null}  onChange={(value) => handleChange("location", value)} className='w-full border-gray-300' size='large' placeholder='Select Location' 
                                     options={[
                                                 { value: '1', label: 'Saket' },
@@ -487,7 +483,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
 
                         {/*  Student's Guardian Name  */}
                         <div className="col-span-1">
-                            <label htmlFor="guardianName" className="block mb-2 text-sm font-medium text-gray-900">Guardian Name</label>
+                            <label htmlFor="guardianName" className={`block mb-2 text-sm font-medium ${theme.text}`}>Guardian Name</label>
                             <Input name="guardianName" value={studentFormData.guardianName} className='rounded-lg border-gray-300' placeholder="Enter Guardian Name" 
                                     onChange={(e) => {
                                         const inputValue = e.target.value.replace(/[^a-zA-Z\s]/g, ""); // Remove non-alphabetic characters
@@ -500,7 +496,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
 
                             {/* Guardian Phone Number */}
                             <div className="col-span-1">
-                            <label htmlFor="guardianPhoneNumber" className="block mb-2 text-sm font-medium text-gray-900">Guardian Phone Number</label>
+                            <label htmlFor="guardianPhoneNumber" className={`block mb-2 text-sm font-medium ${theme.text}`}>Guardian Phone Number</label>
                             <Input name="guardianPhoneNumber"  value={studentFormData.guardianPhoneNumber} className='rounded-lg border-gray-300'  size='large' placeholder='Enter Phone Number' 
                                     onChange={(e) => {
                                         const inputValue = e.target.value.replace(/\D/g, ""); // Remove non-numeric values
@@ -514,7 +510,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
 
                         {/* Dropdown for Course Counseller Selection */}
                         <div className="col-span-1 sm:col-span-1">
-                            <label htmlFor="courseCounsellor" className="block mb-2 text-sm font-medium text-gray-900 ">Course Counsellor</label>
+                            <label htmlFor="courseCounsellor" className={`block mb-2 text-sm font-medium ${theme.text}`}>Course Counsellor</label>
                             <Select name="courseCounsellor" className='w-full border-gray-300' size='large' placeholder='Select Course Counsellor' 
                                     showSearch  // This enables search functionality
                                         
@@ -533,7 +529,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
 
                         {/* Dropdown for Support Coordinator Selection */}
                         <div className="col-span-1 sm:col-span-1">
-                            <label htmlFor="supportCoordinator" className="block mb-2 text-sm font-medium text-gray-900 ">Support Coordinator</label>
+                            <label htmlFor="supportCoordinator" className={`block mb-2 text-sm font-medium ${theme.text}`}>Support Coordinator</label>
                             <Select name="supportCoordinator" className='w-full border-gray-300' size='large' placeholder='Select Support Coordinator' 
                                 showSearch  // This enables search functionality
                                         
@@ -553,7 +549,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
                         
                         {/* Text Area for Adding Note */}
                         <div className="col-span-1 sm:col-span-1">
-                            <label htmlFor="note" className="block mb-2 text-sm font-medium text-gray-900">Add Note</label>
+                            <label htmlFor="note" className={`block mb-2 text-sm font-medium ${theme.text}`}>Add Note</label>
                             <TextArea maxLength={1500} showCount name="note" value={studentFormData.note} onChange={(e) => handleChange("note", e.target.value)} placeholder="Add Note Here" autoSize size='large' />
                                 <div
                                     style={{
@@ -565,7 +561,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
 
                         {/* Dropdown for Adding Tags */}
                         <div className="col-span-1 sm:col-span-1">
-                            <label htmlFor="tags" className="block mb-2 text-sm font-medium text-gray-900">Add Tags</label>
+                            <label htmlFor="tags" className={`block mb-2 text-sm font-medium ${theme.text}`}>Add Tags</label>
                             <Select size='large'
                                 mode="multiple"
                                 showSearch
@@ -586,7 +582,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
                                 }))}
                                 optionRender={(option) => (
                                 <div
-                                    className="w-full px-2 py-2 rounded"
+                                    className="w-full px-1 py-1 rounded"
                                     style={{
                                     backgroundColor: `${option.data.tag_color}`, // light background using transparency
                                     // clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 0 100%)',
@@ -625,8 +621,8 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
                     <button
                         type="submit"
                         disabled={loading} // Disable button when loading
-                        className={`text-white inline-flex items-center font-medium rounded-lg text-sm px-5 py-2.5 text-center focus:ring-4 focus:outline-none
-                            ${loading ? "bg-gray-400 cursor-not-allowed" : "bg-green-500 hover:bg-green-600 focus:ring-green-300"}
+                        className={`text-white inline-flex items-center font-medium rounded-lg text-sm px-4 py-2 text-center focus:ring-4 focus:outline-none shadow-lg hover:shadow-xl transition-all duration-200 
+                            ${loading ? "bg-gray-400 cursor-not-allowed" : `${theme.createBtn}`}
                             `}
                     >
                         {loading ? (

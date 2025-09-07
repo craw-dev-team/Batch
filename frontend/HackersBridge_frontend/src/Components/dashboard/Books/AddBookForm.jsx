@@ -2,17 +2,21 @@ import { useState, useEffect } from 'react';
 import { DatePicker } from 'antd';
 import { Select, Input, Alert, Button, Spin, message   } from 'antd';
 import { SyncOutlined } from '@ant-design/icons';
-import axios from 'axios';
-import BASE_URL from '../../../ip/Ip';
 import { useBookForm } from '../BooksContext/BookFormContext';
-import { useAuth } from '../AuthContext/AuthContext';
 import { useCourseForm } from '../Coursecontext/CourseFormContext';
+import axiosInstance from '../api/api';
+import { useTheme } from '../../Themes/ThemeContext';
 
 
 
 
 const AddBookForm = ({ isOpen, onClose, selectedBookData }) => {
     if(!isOpen) return null;
+
+    // for theme -------------------------
+    const { getTheme } = useTheme();
+    const theme = getTheme();
+    // ------------------------------------
     
     const isEditing = Boolean(selectedBookData?.id); 
 
@@ -56,7 +60,6 @@ const AddBookForm = ({ isOpen, onClose, selectedBookData }) => {
                 course: parseInt(bookFormData.course),
                 stock: parseInt(bookFormData.bookStock),
             };
-            // console.log("Final Payload:", JSON.stringify(payload, null, 2));
 
             try {
                 setLoading(true); // Start loading
@@ -65,22 +68,12 @@ const AddBookForm = ({ isOpen, onClose, selectedBookData }) => {
                 let successMessage = "";
                 if (selectedBookData && selectedBookData.id) {
                 // Update existing course (PUT)
-                response = await axios.put(`${BASE_URL}/api/books/edit/${selectedBookData.id}/`, 
-                    payload, 
-                    { headers: { 'Content-Type': 'application/json' }, 
-                    withCredentials : true
-                }
-                );
+                response = await axiosInstance.put(`/api/books/edit/${selectedBookData.id}/`, payload );
                 successMessage = "Book updated successfully!";
                 
                 } else {
                     // Add new course (POST)
-                    response = await axios.post(`${BASE_URL}/api/books/add/`, 
-                        payload, 
-                        { headers: { 'Content-Type': 'application/json' }, 
-                        withCredentials : true
-                    }
-                    );
+                    response = await axiosInstance.post(`/api/books/add/`, payload );
                     successMessage = "Book added successfully!";
                 }
 
@@ -92,9 +85,7 @@ const AddBookForm = ({ isOpen, onClose, selectedBookData }) => {
                         resetBookForm();
                     }, 1000);
                 }
-            } catch (error) {
-                console.log(error);
-                
+            } catch (error) {                
                 message.error("Failed to submit the form.");
                 setLoading(false);
             }
@@ -114,11 +105,11 @@ const AddBookForm = ({ isOpen, onClose, selectedBookData }) => {
     return (
         <>
          <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 z-50">
-            <div className="relative p-2 w-3/6 bg-white rounded-lg shadow-lg">
+            <div className={`relative p-2 w-3/6 rounded-xl shadow-lg ${theme.specificPageBg}`}>
                 
                 {/* Modal Header */}
-                <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900">
+                <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t border-gray-300">
+                    <h3 className={`text-lg font-semibold ${theme.text}`}>
                          {isEditing ? "Edit Book" : "Add New Book"}
                     </h3>
                     <button
@@ -138,26 +129,26 @@ const AddBookForm = ({ isOpen, onClose, selectedBookData }) => {
                     <form className="p-4 md:p-5" onSubmit={handleFormSubmit}>
                     <div className="grid gap-4 mb-4 grid-cols-3">
                         <div className="col-span-1">
-                            <label htmlFor="bookCode" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Book Code</label>
+                            <label htmlFor="bookCode" className={`block mb-2 text-sm font-medium ${theme.text}`}>Book Code</label>
                             <Input name="bookCode" value={bookFormData.bookCode} onChange={(e) => handleChange("bookCode", e.target.value)}  className='rounded-lg border-gray-300' placeholder="Enter Course Name" />
                             {/* {errors.courseName && <p className="text-red-500 text-sm">{errors.courseName}</p>} */}
                         </div>
                         
                         {/*  Course Code Selection  */}
                         <div className="col-span-1">
-                            <label htmlFor="bookName" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Book Name</label>
+                            <label htmlFor="bookName" className={`block mb-2 text-sm font-medium ${theme.text}`}>Book Name</label>
                             <Input name="bookName" value={bookFormData.bookName} onChange={(e) => handleChange("bookName", e.target.value)} className='rounded-lg border-gray-300' placeholder="Enter Course Code" />
                             {/* {errors.courseCode && <p className="text-red-500 text-sm">{errors.courseCode}</p>} */}
                         </div>
 
                         <div className="col-span-1">
-                            <label htmlFor="bookVersion" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Book Version</label>
+                            <label htmlFor="bookVersion" className={`block mb-2 text-sm font-medium ${theme.text}`}>Book Version</label>
                             <Input name="bookVersion" value={bookFormData.bookVersion} onChange={(e) => handleChange("bookVersion", e.target.value)} className='rounded-lg border-gray-300' placeholder="Enter Course Duration" />
                             {/* {errors.courseDuration && <p className="text-red-500 text-sm">{errors.courseDuration}</p>} */}
                         </div>
 
                         <div className="col-span-1">
-                            <label htmlFor="course" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Book Course</label>
+                            <label htmlFor="course" className={`block mb-2 text-sm font-medium ${theme.text}`}>Book Course</label>
                             <Select name="course" className='w-full border-gray-300' size='large' placeholder='Select Course' 
                                     showSearch  // This enables search functionality
                                         
@@ -174,7 +165,7 @@ const AddBookForm = ({ isOpen, onClose, selectedBookData }) => {
                         </div>
 
                         <div className="col-span-1">
-                            <label htmlFor="bookStock" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Book Quantity</label>
+                            <label htmlFor="bookStock" className={`block mb-2 text-sm font-medium ${theme.text}`}>Book Quantity</label>
                             <Input name="bookStock" value={bookFormData.bookStock} onChange={(e) => handleChange("bookStock", e.target.value)} className='rounded-lg border-gray-300' placeholder="Enter Course Duration" />
                             {/* {errors.courseDuration && <p className="text-red-500 text-sm">{errors.courseDuration}</p>} */}
                         </div>
@@ -185,8 +176,8 @@ const AddBookForm = ({ isOpen, onClose, selectedBookData }) => {
                     <button
                         type="submit"
                         disabled={loading} // Disable button when loading
-                        className={`text-white inline-flex items-center font-medium rounded-lg text-sm px-5 py-2.5 text-center focus:ring-4 focus:outline-none
-                            ${loading ? "bg-gray-400 cursor-not-allowed" : "bg-green-500 hover:bg-green-600 focus:ring-green-300"}
+                        className={`text-white inline-flex items-center font-medium rounded-lg text-sm px-4 py-2 text-center focus:ring-4 focus:outline-none shadow-lg hover:shadow-xl transition-all duration-200 
+                            ${loading ? "bg-gray-400 cursor-not-allowed" : `${theme.createBtn}`}
                             `}
                     >
                         {loading ? (

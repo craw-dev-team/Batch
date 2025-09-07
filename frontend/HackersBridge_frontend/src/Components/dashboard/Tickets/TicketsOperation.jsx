@@ -11,6 +11,7 @@ import {
 } from "@ant-design/icons";
 import { BsCheck2All } from "react-icons/bs";
 import dayjs from "dayjs";
+import { useTheme } from "../../Themes/ThemeContext";
 
 const { Title } = Typography;
 
@@ -18,12 +19,16 @@ const { Title } = Typography;
 
 
 const TicketOperation = () => {
+    // for theme -------------------------
+    const { getTheme } = useTheme();
+    const theme = getTheme();
+    // ------------------------------------
   const [chatModalVisible, setChatModalVisible] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [newMessage, setNewMessage] = useState("");
   const [update, setUpdate] = useState({});
 
-  const { ticketData, fetchTicketData, fetchChat, ticketChat, sendTicketMessage  } = useTickets();
+  const { ticketData, fetchTicketData, fetchChat, ticketChat, sendTicketMessage, closeTicket  } = useTickets();
 
   // ref to make the chat scroll to end by default 
   const chatContainerRef = useRef(null);
@@ -64,8 +69,8 @@ const TicketOperation = () => {
   };
 
   const handleCloseTicket = (ticketId) => {
-    // your ticket closing logic here
-    console.log("Closing ticket:", ticketId);
+   closeTicket(ticketId)
+   
   };
 
   const renderStatusTag = (status) => {
@@ -115,34 +120,34 @@ const TicketOperation = () => {
 
   return (
       <>
-        <div className="w-auto  px-2 pt-10 h-full overflow-y-hidden darkmode">
+        <div className={`w-auto px-2 pt-10 h-full overflow-y-hidden ${theme.bg}`}>
 
-          <Card style={{ margin: "0px" }}>
-            <div className="flex justify-between items-center mb-4">
-              <Title level={5} className="!mb-0">
-                All Tickets
-              </Title>
+          <Card style={{ margin: "0px" }} className={`${theme.activeTab}`}>
+            <div className={`flex justify-between items-center px-1 mb-4 font-semibold ${theme.text}`}>
+              {/* <Title level={5} className="!mb-0"> */}
+                <h1>All Tickets</h1>
+              {/* </Title> */}
             </div>
 
-            <div className="overflow-auto rounded-md border border-gray-200">
+            <div className={`overflow-auto ${theme.bg}`}>
               <table className="min-w-full text-sm text-left text-gray-700">
-                <thead className="bg-blue-50 uppercase text-gray-600 text-xs font-semibold tracking-wider">
-                  <tr>
-                    <th className="px-4 py-3 border-b border-gray-200">S.No</th>
-                    <th className="px-4 py-3 border-b border-gray-200">Ticket ID</th>
-                    <th className="px-4 py-3 border-b border-gray-200">Issue Type</th>
-                    <th className="px-4 py-3 border-b border-gray-200">Subject</th>
-                    <th className="px-4 py-3 border-b border-gray-200">Created At</th>
-                    <th className="px-4 py-3 border-b border-gray-200">Status</th>
+                <thead className="bg-white sticky top-0 z-10">
+                  <tr className="bg-gray-50/80">
+                    <th className="px-4 py-3 border-b border-gray-200 text-xs font-medium uppercase">S.No</th>
+                    <th className="px-4 py-3 border-b border-gray-200 text-xs font-medium uppercase">Ticket ID</th>
+                    <th className="px-4 py-3 border-b border-gray-200 text-xs font-medium uppercase">Issue Type</th>
+                    <th className="px-4 py-3 border-b border-gray-200 text-xs font-medium uppercase">Subject</th>
+                    <th className="px-4 py-3 border-b border-gray-200 text-xs font-medium uppercase">Created At</th>
+                    <th className="px-4 py-3 border-b border-gray-200 text-xs font-medium uppercase">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-gray-100 font-light text-gray-700">
                   {tickets.length > 0 ? (
                     tickets.map((ticket, index) => (
                       <tr
                         key={ticket.id}
                         onClick={() => handleView(ticket)}
-                        className="hover:bg-gray-50 cursor-pointer"
+                        className={`hover:${theme.bgDark} cursor-pointer`}
                       >
                         <td className="px-4 py-3">{index + 1}</td>
                         <td className="px-4 py-3 font-semibold">{ticket.ticket_id}</td>

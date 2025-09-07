@@ -1,12 +1,17 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSpecificBook } from "../Contexts/SpecificBook";
-import { Pagination, Empty, Spin } from 'antd';
+import { Pagination, Empty, Spin, theme } from 'antd';
 import dayjs from "dayjs";
 import { handleStudentClick } from "../../Navigations/Navigations";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "../../Themes/ThemeContext";
 
 
 const AllBooks = () => {
+    // for theme -------------------------
+    const { getTheme } = useTheme();
+    const theme = getTheme();
+    // ------------------------------------
 
     const [searchTerm, setSearchTerm] = useState('');
     const [inputValue, setInputValue] = useState('');
@@ -37,18 +42,18 @@ const AllBooks = () => {
 
     return (
         <>
-            <div className="px-4 py-4 h-auto shadow-md sm:rounded-lg border border-gray-50 bg-white">
-                <div className="flex gap-x-4 h-10 justify-between">
+            <div className={`px-0 pt-2 h-auto shadow-md ${theme.specificPageBg}`}>
+                <div className="flex gap-x-4 px-4 py-2 justify-between items-center">
 
-                    <h1 className="text-lg font-semibold">List of Students Who Have Received Books</h1>
+                    <h1 className={`text-lg font-semibold ${theme.text}`}>List of Students Who Have Received Books</h1>
                     
-                        <div className="grid col-span-1 justify-items-end">
+                        <div className="grid col-span-1 justify-items-end items-center">
                             <div className="flex gap-x-6">
                                 <label htmlFor="table-search" className="sr-only">Search</label>
                                 <div className="relative h-auto">
                                     <input value={inputValue} type="text" id="table-search" placeholder="Search for student"
                                         onChange={(e) => setInputValue(e.target.value)}
-                                        className="2xl:w-96 lg:w-96 md:w-72 h-8 block p-2 pr-10 text-xs text-gray-600 font-normal border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500" 
+                                        className={`2xl:w-96 lg:w-96 md:w-72 h-8 block p-2 pr-10 text-xs text-gray-600 font-normal border border-gray-300 rounded-xl focus:ring-0 ${theme.bg}`} 
                                         />
                                     <div className="absolute inset-y-0 right-0 h-8 flex items-center pr-3">
                                     <button onClick={() => {setInputValue(""); setSearchTerm("");}}>
@@ -70,44 +75,44 @@ const AllBooks = () => {
                 </div>
 
                         
-                <div className="overflow-hidden pb-2 relative ">
-                    <div className="w-full h-[39rem] overflow-y-auto rounded-lg pb-2">
+                <div className="overflow-hidden pb-0 px-4 relative backdrop-blur-sm rounded-xl shadow-sm">
+                    <div className="w-full h-auto md:max-h-[33rem] 2xl:max-h-[37rem] overflow-y-auto rounded-xl pb-2">
                     
-                            <table className="w-full text-xs text-left text-gray-500">
-                                <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10">
-                                        <tr>
+                            <table className="w-full text-xs font-normal text-left text-gray-600">
+                                <thead className="bg-white sticky top-0 z-10">
+                                        <tr className="bg-gray-50/80">
                                             {/* <th scope="col" className="p-2">
                                                 <div className="flex items-center">
                                                     <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
                                                     <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
                                                 </div>
                                             </th> */}
-                                            <th scope="col" className="px-3 py-3 md:px-2">
+                                            <th scope="col" className="px-3 py-3 md:px-2 text-xs font-medium uppercase">
                                                 S.No
                                             </th>
-                                            <th scope="col" className="px-3 py-3 md:px-1">
+                                            <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                 Enrollment No
                                             </th>
-                                            <th scope="col" className="px-3 py-3 md:px-1">
+                                            <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                 Student Name
                                             </th>
-                                            <th scope="col" className="px-3 py-3 md:px-1">
+                                            <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                 Course
                                             </th>
-                                            <th scope="col" className="px-3 py-3 md:px-1">
+                                            <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                 Issued Time
                                             </th>
-                                            <th scope="col" className="px-3 py-3 md:px-1">
+                                            <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                 Book Status
                                             </th>
-                                            <th scope="col" className="px-3 py-3 md:px-1">
+                                            <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                 Issued By
                                             </th>
                                             
                                         </tr>
                                 </thead>
                             
-                                <tbody>
+                                <tbody className="divide-y divide-gray-100 font-light text-gray-700">
                                     {loading ? (
                                         <tr>
                                             <td colSpan="100%" className="text-center py-4">
@@ -116,12 +121,12 @@ const AllBooks = () => {
                                         </tr>
                                     ) : studentReceivedBooks?.results.length > 0 || 0 ? (
                                         studentReceivedBooks?.results.map((item, index) => (
-                                            <tr key={ index} className="bg-white border-b hover:bg-gray-50">
+                                            <tr key={ index} className="bg-white/40 hover:bg-gray-50 transition-colors scroll-smooth">
                                                 {/* <td className="p-2">
                                                     <input type="checkbox" className="w-3 h-3" />
                                                 </td> */}
                                                 <td className="px-3 py-2">{index + 1}</td>
-                                                <td className="px-3 py-2 font-bold cursor-pointer" onClick={() => handleStudentClick(navigate,item.student_id)}>
+                                                <td className="px-3 py-2 font-medium cursor-pointer" onClick={() => handleStudentClick(navigate,item.student_id)}>
                                                     {item.enrollment_no}
                                                 </td>
                                                 <td className="px-3 py-2">{item.name}</td>
@@ -146,7 +151,7 @@ const AllBooks = () => {
                     
                     </div>
 
-                    <div className="flex justify-center items-center mt-0 py-2 bg-blue-50">
+                    <div className="flex justify-center items-center mt-0 py-1 bg-gray-200/20">
                         <Pagination
                         size="small"
                             current={currentPage}

@@ -1,6 +1,6 @@
 import { createContext, useContext, useState } from "react";
-import BASE_URL from "../../../ip/Ip";
-import axios from "axios";
+import axiosInstance from "../api/api";
+
 
 
 
@@ -15,23 +15,11 @@ const SpecificBookProvider = ({ children }) => {
 
     const fetchSpecificBook = async (bookId) => {
         if (loading) return;
-
-        // const token = localStorage.getItem('token');
-        // if (!token) {
-        //     console.error("No token found, user might be logged out.");
-        //     return;
-        // };
-
         setLoading(true);
 
         try {
-            const response = await axios.get(`${BASE_URL}/api/books/info/${bookId}/`, 
-                { headers: { 'Content-Type': 'application/json'},
-                withCredentials : true
-            }
-            )
+            const response = await axiosInstance.get(`/api/books/info/${bookId}/`)
             const data = response?.data
-            // console.log(data);
             
             setSpecificBook(data);
 
@@ -47,18 +35,11 @@ const SpecificBookProvider = ({ children }) => {
     const fetchStudentReceivedBooks = async ({ page = 1, pageSize = 50, search = '' }) => {
         if (loading) return;
 
-        // const token = localStorage.getItem('token');
-        // if (!token) {
-        //     console.error("No token found, user might be logged out.");
-        //     return;
-        // };
-
         setLoading(true);
 
         try {
-            const response = await axios.get(`${BASE_URL}/api/books/issued/`, 
-                { headers: { 'Content-Type': 'application/json' },
-                withCredentials : true,
+            const response = await axiosInstance.get(`/api/books/issued/`, 
+                {
                 params: {
                     page,
                     page_size: pageSize,
@@ -67,7 +48,6 @@ const SpecificBookProvider = ({ children }) => {
             },
             )
             const data = response?.data
-            // console.log(data);
             
             setStudentReceivedBooks(data);
 

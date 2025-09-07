@@ -1,6 +1,6 @@
-import axios from "axios";
+
 import React, { createContext, useState, useContext, useCallback, useMemo } from "react";
-import BASE_URL from "../../../ip/Ip";
+import axiosInstance from "../api/api";
 
 // Create the context object
 const BatchFormContext = createContext();
@@ -36,18 +36,11 @@ const BatchFormProvider = ({ children }) => {
 
     const fetchBatches = async ({ page = 1, pageSize = 30, search = '', mode = '', language = '', preferred_week = '', location = '', status = ''  }) => {
         if (loading) return;
-       
-        // const token = localStorage.getItem('token');
-        // if (!token) {
-        //     console.error("No token found, user might be logged out.");
-        //     return;
-        // };
 
         setLoading(true);
         try {
-            const response = await axios.get(`${BASE_URL}/api/batches/`,
-              { headers: { 'Content-Type': 'application/json'},
-              withCredentials : true,
+            const response = await axiosInstance.get(`/api/batches/`,
+              {
               params: {
                 page,
                 page_size: pageSize,
@@ -61,7 +54,6 @@ const BatchFormProvider = ({ children }) => {
             }
             );
             const data = response.data;
-            // console.log(data);
             
             setBatchData(prevData => {
               if(JSON.stringify(prevData) !== JSON.stringify(data)){
@@ -70,7 +62,6 @@ const BatchFormProvider = ({ children }) => {
               return prevData;
             });
 
-            // console.log('Batches Data ', data)
         } catch (error) {
           console.error('Error fetching Batches Data', error);
         } finally {

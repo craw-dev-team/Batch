@@ -1,13 +1,22 @@
 import React, { useEffect, useRef, useState } from "react";
 import { SendOutlined, LinkOutlined, DeleteOutlined, SearchOutlined } from "@ant-design/icons";
-import { Popover, Button, Empty } from "antd";
+import { Popover, Button, Empty, message } from "antd";
 import { useBatchChats } from "./BatchChatsContext";
 import dayjs from "dayjs";
+import { useTheme } from "../../Themes/ThemeContext";
+
+
+
 
 const BatchChats = () => {
+    // for theme -------------------------
+    const { getTheme } = useTheme();
+    const theme = getTheme();
+    // ------------------------------------
+
   const { fetchChats, chat, wsMessages, allChats, ws, sendMessage, connectWebSocket, unreadCounts, setUnreadCounts } = useBatchChats();
   const [selectedBatch, setSelectedBatch] = useState(null);
-  const [message, setMessage] = useState("");
+  const [msg, setMsg] = useState("");
   const [combinedMessages, setCombinedMessages] = useState([]);
   const [selectedMsgId, setSelectedMsgId] = useState(null);
   const [visiblePopover, setVisiblePopover] = useState(null);
@@ -166,15 +175,15 @@ const BatchChats = () => {
 
 
  const handleSend = () => {
-  if (!message.trim() || !selectedBatch || !ws.current) return;
+  if (!msg.trim() || !selectedBatch || !ws.current) return;
 
   if (ws.current.readyState !== WebSocket.OPEN) {
     message.error("Connection lost. Please wait for reconnection.");
     return;
   }
 
-  const trimmedMessage = message.trim();
-  setMessage(""); // Clear input
+  const trimmedMessage = msg.trim();
+  setMsg(""); // Clear input
   sendMessage(selectedBatch.batch_id, trimmedMessage); // Fire and let history update UI
 };
 
@@ -279,16 +288,16 @@ const BatchChats = () => {
 
 
   return (
-    <div className="sticky top-0 left-0 shadow-md border h-fit w-full overflow-hidden">
-      <div className="pt-10 w-full h-[50rem] flex mx-2 my-4 rounded-sm">
-        <div className="w-[30rem] border-r bg-white flex flex-col p-1">
-          <h2 className="text-base font-semibold p-4 border-b bg-blue-100">All Batch Chats</h2>
+    <div className={`sticky top-0 left-0 border h-fit w-full overflow-hidden backdrop-blur-sm rounded-xl shadow-sm ${theme.bg} `}>
+      <div className="pt-8 w-full min-h-[20rem] md:min-h-[30rem] lg:min-h-[40rem] h-[calc(100vh-6rem)] max-h-[60rem] flex mx-4 my-3 rounded-sm">
+        <div className={`w-[30rem] border-r flex flex-col py-1 ${theme.activeTab}`}>
+          <h2 className={`text-base font-semibold p-4 border-b ${theme.text}`}>All Batch Chats</h2>
           {/* Search Input */}
           <div className="px-1 py-2">
             <div className="relative">
               <input value={inputValue} type="text" id="table-search" placeholder="Search Batch"
                   onChange={(e) => setInputValue(e.target.value)}
-                  className="w-full h-8 block p-2 pr-10 text-xs text-gray-600 font-normal border border-gray-300 rounded-lg bg-gray-50 focus:ring-0 focus:border-blue-500" 
+                  className={`w-full h-8 block p-2 pr-10 text-xs font-medium ${theme.searchBg}`}
               />
               <div className="absolute inset-y-0 right-0 flex items-center pr-3">
               <button onClick={() => {setInputValue(""); setSearchTerm("");}}>
@@ -308,27 +317,27 @@ const BatchChats = () => {
             
             <div className="px-4 py-1 text-md font-semibold border-b border-gray-300 flex justify-between items-center">
                 <p>Messages</p>
-                  <div className="relative z-10">
+                  <div className="relative z-10 bg-white/70 backdrop-blur-sm p-1 rounded-xl">
                     <button
                         onClick={() => handleChatTab("")}
-                        className={`px-2 py-1 text-xs font-semibold rounded-sm transition-colors duration-200  
-                            ${chatTab === "" ? 'border-b-2 border-blue-500 text-black bg-white' : ' text-gray-700 hover:border-b-2 hover:border-blue-400'}`}
+                        className={`px-2 py-1 rounded-lg font-medium text-xs transition-all duration-200 text-gray-600 hover:bg-white/50 
+                            ${chatTab === "" ? `text-gray-600 shadow-md ${theme.activeTab}` : ' text-gray-600 hover:bg-white/50'}`}
                     >
                     All
                     </button> 
 
                     <button
                         onClick={() => handleChatTab("Running")}
-                        className={`px-2 py-1 text-xs font-semibold rounded-sm transition-colors duration-200 
-                            ${chatTab === "Running" ? 'border-b-2 border-blue-500 text-black bg-white' : ' text-gray-700 hover:border-b-2 hover:border-blue-400'}`}
+                        className={`px-2 py-1 rounded-lg font-medium text-xs transition-all duration-200 text-gray-600 hover:bg-white/50 
+                            ${chatTab === "Running" ? `text-gray-600 shadow-md ${theme.activeTab}` : ' text-gray-600 hover:bg-white/50'}`}
                     >
                     Ongoing
                     </button>
                     
                     <button
                         onClick={() => handleChatTab("Completed")}
-                        className={`px-2 py-1 text-xs font-semibold rounded-sm transition-colors duration-200 
-                            ${chatTab === "Completed" ? 'border-b-2 border-blue-500 text-black bg-white' : ' text-gray-700 hover:border-b-2 hover:border-blue-400'}`}
+                        className={`px-2 py-1 rounded-lg font-medium text-xs transition-all duration-200 text-gray-600 hover:bg-white/50 
+                            ${chatTab === "Completed" ? `text-gray-600 shadow-md ${theme.activeTab}` : ' text-gray-600 hover:bg-white/50'}`}
                     >
                     Archieved
                     </button>
@@ -344,14 +353,14 @@ const BatchChats = () => {
                   onClick={() => handleBatchClick(batch)}
                   className={`p-4 pl-6 cursor-pointer relative ${
                       selectedBatch?.batch_id === batch?.batch_id
-                      ? "bg-blue-200"
-                      : "hover:bg-blue-50"
+                      ? `${theme.bgDark}` 
+                      : "text-gray-600 hover:bg-white/50"
                   }`}
                 >
                 <div className="flex items-center justify-between">
                     <div className="w-full">
                       <div className="flex justify-between mb-0.5">
-                        <p className="text-xs font-semibold text-gray-500">{batch?.batch_code}</p>
+                        <p className="text-xs font-meduim text-gray-600">{batch?.batch_code}</p>
                         <p className="text-xs text-gray-500"> {batch?.last_message?.time}</p>
                       </div>
                     {/* <div className="flex items-center space-x-2"> 
@@ -359,7 +368,7 @@ const BatchChats = () => {
                         {batch.batch_name.charAt(0).toUpperCase()}
                     </div>  */}
                     {/* </div>  */}
-                    <p className="text-sm font-semibold text-black">{batch?.batch_name}</p>
+                    <p className="text-sm font-semibold text-gray-800">{batch?.batch_name}</p>
                     <p className="text-sm text-gray-600 relative top-2 truncate"><span>{batch?.last_message?.send_by}</span> : {batch?.last_message?.message}</p>
                     </div>
                 </div>
@@ -391,16 +400,16 @@ const BatchChats = () => {
           </div>
         </div>
 
-        <div className="w-[80%] flex flex-col overflow-hidden p-1">
+        <div className={`w-[80%] flex flex-col overflow-hidden px-1 mr-6 ${theme.activeTab}`}>
           {selectedBatch ? (
             <>
-              <div className="w-auto flex items-center justify-between p-4 border-b bg-blue-100">
+              <div className={`w-auto flex items-center justify-between p-4 border-b`}>
                 <h3 className="text-base font-semibold text-black">
                   {selectedBatch.batch_name}
                 </h3>
               </div>
 
-              <div className="flex-1 p-4 overflow-y-auto space-y-6 bg-white">
+              <div className={`flex-1 p-4 overflow-y-auto space-y-6 ${theme.bg}`}>
                 {Object.keys(groupedMessages).length > 0 ? (
                   Object.entries(groupedMessages).map(([dateLabel, msgs], i) => (
                     <div key={i}>
@@ -414,7 +423,7 @@ const BatchChats = () => {
                         >
                           <div
                             className={`max-w-[70%] relative rounded-xl px-4 py-2 shadow cursor-pointer ${
-                              msg.isSelf ? "bg-sky-500 text-white" : "bg-[#f8f9fa] text-black"
+                              msg.isSelf ? `${theme.chatDiv} text-white` : "bg-[#f8f9fa] text-black"
                             }`}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -482,14 +491,14 @@ const BatchChats = () => {
                 <div ref={messagesEndRef} />
               </div>
 
-              <div className="p-4 border-t bg-white flex items-center gap-2">
+              <div className={`p-4 border-t flex items-center gap-2 ${theme.activeTab}`}>
                 <div className="relative flex-1">
                   <input
                     type="text"
-                    className="flex-1 border border-gray-400 rounded-full w-full px-10 py-2 text-sm focus:ring-0 focus:outline-none"
+                    className={`flex-1 border border-gray-400 rounded-full w-full px-10 py-2 text-sm focus:ring-0 focus:outline-none ${theme.bg}`}
                     placeholder="Type a message..."
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
+                    value={msg}
+                    onChange={(e) => setMsg(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         e.preventDefault();
@@ -509,7 +518,7 @@ const BatchChats = () => {
                   />
                 </div>
                 <button
-                  className="shrink-0 bg-sky-500 text-white px-3 py-2 rounded-full"
+                  className={`shrink-0 text-white px-3 py-2 rounded-full ${theme.createBtn}`}
                   onClick={handleSend}
                 >
                   <SendOutlined />

@@ -1,6 +1,5 @@
-import axios from "axios";
 import React, { createContext, useState, useContext } from "react";
-import BASE_URL from "../../../../ip/Ip";
+import axiosInstance from "../../api/api";
 
 // Create the context object
 const CoordinatorFormContext = createContext();
@@ -37,11 +36,7 @@ const CoordinatorFormProvider = ({ children }) => {
         
         setLoading(true);
         try {
-            const response = await axios.get(`${BASE_URL}/api/coordinators/`, 
-              { headers: { 'Content-Type': 'application/json'},
-              withCredentials : true
-            }
-            );
+            const response = await axiosInstance.get(`/api/coordinators/`);
             const data = response?.data;
            
             setCoordinatorData(prevData => {
@@ -51,7 +46,6 @@ const CoordinatorFormProvider = ({ children }) => {
               return prevData;
             });
 
-            // console.log('Coordinator Data ', data)
         } catch (error) {
           console.error('Error fetching Coordinator Data', error);
         } finally {

@@ -1,6 +1,5 @@
 import { createContext, useContext, useState } from "react";
-import BASE_URL from "../../../ip/Ip";
-import axios from "axios";
+import axiosInstance from "../api/api";
 
 
 
@@ -17,22 +16,11 @@ const SpecificCourseProvider = ({ children }) => {
     const fetchSpecificCourse = async (courseId) => {
         if (loading) return;
 
-        // const token = localStorage.getItem('token');
-        // if (!token) {
-        //     console.error("No token found, user might be logged out.");
-        //     return;
-        // };
-
         setLoading(true)
 
         try {
-            const response = await axios.get(`${BASE_URL}/api/course/info/${courseId}/`, 
-                { headers: { 'Content-Type': 'application/json'},
-                withCredentials : true
-            }
-            )
+            const response = await axiosInstance.get(`/api/course/info/${courseId}/` )
             const data = response?.data
-            // console.log(data);
             
             setSpecificCourse(data);
 

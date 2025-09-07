@@ -9,7 +9,6 @@ import {
 } from "@ant-design/icons";
 import { Dropdown, Empty, Menu } from "antd";
 import useStudentBatchChat from "./StudentBatchChatFunctions";
-import { useAuth } from "../../../../dashboard/AuthContext/AuthContext";
 import dayjs from "dayjs";
 
 
@@ -238,7 +237,7 @@ const StudentBatchChat = () => {
                       <button
                           onClick={() => handleChatTab("")}
                           className={`px-2 py-1 text-xs font-semibold rounded-sm transition-colors duration-200  
-                              ${chatListTab === "" ? 'border-b-2 border-green-400 text-green-600 bg-white' : ' text-gray-700 hover:border-b-2 hover:border-blue-400'}`}
+                              ${chatListTab === "" ? 'border-b-2 border-green-400 text-green-600 bg-white' : ' text-gray-700 hover:border-b-2 hover:border-green-400'}`}
                       >
                       All
                       </button> 
@@ -246,7 +245,7 @@ const StudentBatchChat = () => {
                       <button
                           onClick={() => handleChatTab("Running")}
                           className={`px-2 py-1 text-xs font-semibold rounded-sm transition-colors duration-200 
-                              ${chatListTab === "Running" ? 'border-b-2 border-green-400 text-green-600 bg-white' : ' text-gray-700 hover:border-b-2 hover:border-blue-400'}`}
+                              ${chatListTab === "Running" ? 'border-b-2 border-green-400 text-green-600 bg-white' : ' text-gray-700 hover:border-b-2 hover:border-green-400'}`}
                       >
                       Ongoing
                       </button>
@@ -254,7 +253,7 @@ const StudentBatchChat = () => {
                       <button
                           onClick={() => handleChatTab("Completed")}
                           className={`px-2 py-1 text-xs font-semibold rounded-sm transition-colors duration-200 
-                              ${chatListTab === "Completed" ? 'border-b-2 border-green-400 text-green-600 bg-white' : ' text-gray-700 hover:border-b-2 hover:border-blue-400'}`}
+                              ${chatListTab === "Completed" ? 'border-b-2 border-green-400 text-green-600 bg-white' : ' text-gray-700 hover:border-b-2 hover:border-green-400'}`}
                       >
                       Archieved
                       </button>
@@ -300,11 +299,11 @@ const StudentBatchChat = () => {
 
                   <span
                     className={`h-2 w-2 rounded-full absolute top-6 left-2 inline-block ${
-                    batch?.batch_status.toLowerCase() == "green"
+                    batch?.batch_status?.toLowerCase() == "green"
                         ? "bg-green-500"
-                        : batch?.batch_status.toLowerCase() == "yellow"
+                        : batch?.batch_status?.toLowerCase() == "yellow"
                         ? "bg-yellow-300"
-                        : batch?.batch_status.toLowerCase() == "red"
+                        : batch?.batch_status?.toLowerCase() == "red"
                         ? "bg-red-600"
                         : "bg-gray-400"
                     }`}

@@ -4,7 +4,7 @@
 const CustomTemplate = () => `
 
     <div style="padding: 30px; font-size: 16px; color: #000;">
-        <h2 style="text-align: center; font-size: 22px; color: #000;">{ heading }</h2>
+        <h2 style="text-align: center; font-size: 22px; color: #000;"> Create Your Own Template </h2>
         <p style="color: #000;">Dear <strong>Student</strong>,</p>
         <p style="color: #000;">{ body_paragraph_1 }</p>
         <p style="color: #000;">{ body_paragraph_2 }</p>

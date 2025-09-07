@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import axios from "axios";
-import BASE_URL from "../../../ip/Ip";
+import axiosInstance from "../api/api";
+
 
 
 const CourseFormContext = createContext();
@@ -27,20 +27,9 @@ export const CourseFormProvider = ({ children }) => {
     const fetchCourses = async () => {
         if (loading) return;  // Prevent multiple fetches at the same time
 
-        // const token = localStorage.getItem('token');
-        // if (!token) {
-        //     console.error("No token found, user might be logged out.");
-        //     return;
-        // };
-
-
         setLoading(true);  // Set loading state
         try {
-            const response = await axios.get(`${BASE_URL}/api/courses/`, 
-                { headers: { 'Content-Type': 'application/json' }, 
-                withCredentials : true
-            }
-            );
+            const response = await axiosInstance.get(`/api/courses/` );
             const data = response?.data;
             
             // Update state only if data has changed
@@ -51,7 +40,6 @@ export const CourseFormProvider = ({ children }) => {
                 return prevData;
             });
 
-            // console.log('Courses Data Updated:', data); // Log new data here
         } catch (error) {
             console.error('Error fetching Courses Data', error);
         } finally {

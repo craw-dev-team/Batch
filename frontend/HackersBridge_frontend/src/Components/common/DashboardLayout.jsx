@@ -8,6 +8,7 @@ import SearchBar from "./Searchbar";
 const { Header, Content } = Layout;
 
 const DashboardLayout = ({ collapsed, setCollapsed }) => {
+
   return (
     <Layout>
       <Sidebarnew collapsed={collapsed} />

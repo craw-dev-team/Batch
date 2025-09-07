@@ -4,14 +4,12 @@ import { useSpecificBatch } from "../Contexts/SpecificBatch";
 import { DatePicker, Empty, Spin, Avatar, Tooltip, Tag, Button, Popconfirm, message   } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined, EditOutlined, DeleteOutlined, ClearOutlined    } from "@ant-design/icons";
 import dayjs from "dayjs";
-import axios from 'axios';
-import BASE_URL from "../../../ip/Ip";
 import AddStudentModal from "../AddStudentModal/AddStudentModal";
 import CreateStudentForm from "../Students/CreateStudentForm";
 import CreateBatchForm from "../Batches/CreateBatchForm";
 import { useAuth } from "../AuthContext/AuthContext";
 import { useBatchForm } from "../Batchcontext/BatchFormContext";
-import { useSpecificStudent } from "../Contexts/SpecificStudent";
+import axiosInstance from "../api/api";
 
 
 // const SpecificBatchPage = () => {
@@ -209,9 +207,7 @@ const SpecificBatchPage = () => {
         // HANDLE FETCH PREFFERED AVAILABLE STUDNETS FOR THAT SPECIFIC BATCH
         const fetchAvailableStudents = useCallback(async (batchId) => {              
             try {
-                const response = await axios.get(`${BASE_URL}/api/batches/${batchId}/available-students/`, 
-                    { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
-                );
+                const response = await axiosInstance.get(`/api/batches/${batchId}/available-students/` );
                 const data = response.data;
                 // console.log(data);
                 
@@ -263,10 +259,8 @@ const SpecificBatchPage = () => {
             }
         
             try {
-                const response = await axios.post(`${BASE_URL}/api/batches/${batch_id}/add-students/`, 
-                    { students: [studentId] }, // Ensure correct payload format
-                    { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
-                );
+                const response = await axiosInstance.post(`/api/batches/${batch_id}/add-students/`, 
+                    { students: [studentId] } );
         
                 if (response.status >= 200 && response.status < 300) {
                     message.success("Students added successfully!");
@@ -374,10 +368,7 @@ const SpecificBatchPage = () => {
             // console.log("Decoded Batch ID:", decodedBatchId);
             // console.log("Payload:", updatePayload);
     
-            await axios.put(`${BASE_URL}/api/batches/edit/${decodedBatchId}`, 
-                updatePayload, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
-            );
+            await axiosInstance.put(`/api/batches/edit/${decodedBatchId}`, updatePayload );
     
             console.log(`${field} updated successfully`);
         } catch (error) {
@@ -393,10 +384,7 @@ const SpecificBatchPage = () => {
             const decodedBatchId = atob(batchId);       
             const payload = { students: [studentId] }; // Wrap studentId in an array
 
-            const response = await axios.post(`${BASE_URL}/api/batch/remove-student/${decodedBatchId}/`,  
-                payload,  // Student IDs in the body
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
-            );
+            const response = await axiosInstance.post(`/api/batch/remove-student/${decodedBatchId}/`, payload );
 
                 if (response.status >= 200 && response.status < 300) {   
                     // console.log(specificBatch);
@@ -470,10 +458,7 @@ const SpecificBatchPage = () => {
             
 
             try {
-                const response = await axios.post(`${BASE_URL}/api/batch-generate-certificate/${batch_id}/`, 
-                    payload,
-                    { headers: { 'Content-Type': 'application/json', 'Authorization': `token ${token}` } }
-                );
+                const response = await axiosInstance.post(`/api/batch-generate-certificate/${batch_id}/`, payload );
                 
                 if (response.status >= 200 && response.status < 300) {
                     message.success("Certificate issued to students successfully");
@@ -489,7 +474,6 @@ const SpecificBatchPage = () => {
             };
         };
 
-console.log(updatedValues);
 
      
     return (

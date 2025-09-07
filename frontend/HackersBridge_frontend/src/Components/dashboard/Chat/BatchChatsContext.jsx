@@ -3,6 +3,7 @@ import React, {createContext, useState, useContext, useCallback, children, useRe
 import BASE_URL, { WEBSOCKET_URL } from "../../../ip/Ip";
 import { message } from "antd";
 import dayjs from "dayjs";
+import axiosInstance from "../api/api";
 
 
 // Create the Context Object
@@ -21,7 +22,7 @@ const BatchChatsProvider = ({children}) => {
 
     const connectWebSocket = (batchId) => {
       // const token = localStorage.getItem("token");
-      // if (!token || !batchId) return;
+      if (!batchId) return;
 
       // Close existing WebSocket if open
       if (ws.current) {
@@ -92,7 +93,6 @@ const BatchChatsProvider = ({children}) => {
         type: "send_message",
         message: messageText,
       };
-      console.log('payload',payload );
       
       ws.current.send(JSON.stringify(payload));
     } else {
@@ -117,17 +117,10 @@ const BatchChatsProvider = ({children}) => {
     const fetchChats = useCallback( async ({ search = '', batch__status = '' }) => {
       if (loading) return;
 
-        //   const token = localStorage.getItem('token');
-        //   if(!token) {
-        //       console.log("No token found, user might be logged out");
-        //     return;
-        // }
-
         setloading(true);
         try {
-            const response = await axios.get(`${BASE_URL}/api/all_chats/`,
-                {headers: {'Content-Type': 'application/json'},
-                withCredentials: true,
+            const response = await axiosInstance.get(`/api/all_chats/`,
+                {
                 params: {
                     search,
                     batch__status
@@ -142,8 +135,6 @@ const BatchChatsProvider = ({children}) => {
             }
             return prevData;
           });
-
-          // console.log('Batches Data ', data)
 
         } catch (error) {
             console.error('Error fetching Chat Data', error);
@@ -245,12 +236,8 @@ const deleteMessage = async(id) => {
     //     return;
     // }
     try {
-        const response = await axios.post(`${BASE_URL}//${id}`,
-            { message: messageText },
-            {
-                headers:{"Content-Type": "application/json"},
-                withCredentials: true,
-            }
+        const response = await axiosInstance.post(`/${id}`,
+            { message: messageText }
         );
 
         if (response.status === 200 || response.status === 201 ){
@@ -260,7 +247,6 @@ const deleteMessage = async(id) => {
             message.error("Failed to delete message.");
         }
     } catch (error) {
-        console.log("Error deleting message:", error);
         message.error("Failed to delete message");
     }
 }
