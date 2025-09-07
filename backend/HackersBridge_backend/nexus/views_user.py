@@ -20,9 +20,18 @@ from django.db.models import Q
 from HackersBridge.reCAPTCHA import verify_recaptcha
 from .JWTCookie import JWTAuthFromCookie
 from Trainer.models import Trainer
+from rest_framework import status, permissions
+import logging
+from nexus.utils import (
+    generate_otp, store_otp, send_otp_email,
+    generate_reset_token, decode_reset_token,
+    is_verified, mark_otp_verified, clear_otp,
+    increment_otp_attempt, validate_otp,generate_verified_token,decode_verified_token
+)
 User = get_user_model()
 
-
+logger = logging.getLogger(__name__)
+User = get_user_model()
 
 # **User Registration API**
 class UserRegistrationAPIView(APIView):
@@ -204,64 +213,159 @@ class FirstTimeResetPasswordAPIView(APIView):
 
 
 
+{
 
 # ** This is for Forgot Password **
+# class ForgotPasswordView(APIView):
+#     def post(self, request):
+#         serializer = ForgotPasswordSerializer(data=request.data)
+#         if serializer.is_valid():
+#             email = serializer.validated_data['email']
+
+#             try:
+#                 user = User.objects.get(email=email)
+#             except User.DoesNotExist:
+#                 return Response({"error": "User with this email does not exist."}, status=status.HTTP_404_NOT_FOUND)
+
+#             # ✅ Log the forgot password request
+#             LogEntry.objects.create(
+#                 content_type=ContentType.objects.get_for_model(User),
+#                 cid=str(uuid.uuid4()),
+#                 object_pk=user.id,
+#                 object_id=user.id,
+#                 object_repr=f"User: {user.username}",
+#                 action=LogEntry.Action.UPDATE,  # Ensure this action exists in your LogEntry model
+#                 changes=f"Password reset OTP sent to {user.email}.",
+#                 serialized_data=json.dumps({
+#                     'username': user.username,
+#                     'email': user.email,
+#                 }, default=str),
+#                 changes_text=f"Password reset initiated for user '{user.username}'.",
+#                 additional_data="Forgot Password Request",
+#                 actor=user,
+#                 timestamp=now()
+#             )
+
+#             return Response({"message": "OTP sent to your email."}, status=status.HTTP_200_OK)
+
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+
+# # ** This is for OTP Verification **
+# class VerifyOTPView(APIView):
+#     def post(self, request):
+#         serializer = VerifyOTPSerializer(data=request.data)
+#         if serializer.is_valid():
+#             return Response({"message": "OTP verified successfully. Proceed to reset password."}, status=status.HTTP_200_OK)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+# # ** This is for Reset Password **
+# class ResetPasswordView(APIView):
+#     def post(self, request):
+#         serializer = ResetPasswordSerializer(data=request.data)
+#         if serializer.is_valid():
+#             return Response({"message": "Password reset successful."}, status=status.HTTP_200_OK)
+
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+}
+
 class ForgotPasswordView(APIView):
+    permission_classes = [permissions.AllowAny]
+
     def post(self, request):
         serializer = ForgotPasswordSerializer(data=request.data)
         if serializer.is_valid():
             email = serializer.validated_data['email']
+            logger.info(f"[ForgotPassword] Request received for email: {email}")
 
             try:
                 user = User.objects.get(email=email)
             except User.DoesNotExist:
-                return Response({"error": "User with this email does not exist."}, status=status.HTTP_404_NOT_FOUND)
+                logger.warning(f"[ForgotPassword] Email not found: {email}")
+                return Response({"message": "If the email exists, OTP will be sent."}, status=status.HTTP_200_OK)
 
-            # ✅ Log the forgot password request
-            LogEntry.objects.create(
-                content_type=ContentType.objects.get_for_model(User),
-                cid=str(uuid.uuid4()),
-                object_pk=user.id,
-                object_id=user.id,
-                object_repr=f"User: {user.username}",
-                action=LogEntry.Action.UPDATE,  # Ensure this action exists in your LogEntry model
-                changes=f"Password reset OTP sent to {user.email}.",
-                serialized_data=json.dumps({
-                    'username': user.username,
-                    'email': user.email,
-                }, default=str),
-                changes_text=f"Password reset initiated for user '{user.username}'.",
-                additional_data="Forgot Password Request",
-                actor=user,
-                timestamp=now()
-            )
+            otp = generate_otp()
+            store_otp(email, otp)
+            send_otp_email(email, otp)
+            reset_token = generate_reset_token(email)
 
-            return Response({"message": "OTP sent to your email."}, status=status.HTTP_200_OK)
+            logger.info(f"[ForgotPassword] OTP sent to {email}, reset token generated")
+            return Response({
+                "reset_token": reset_token,
+                "message": "OTP sent to your email."
+            }, status=status.HTTP_200_OK)
 
+        logger.error(f"[ForgotPassword] Invalid data: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
 
 
-# ** This is for OTP Verification **
 class VerifyOTPView(APIView):
+    permission_classes = [permissions.AllowAny]
+
     def post(self, request):
         serializer = VerifyOTPSerializer(data=request.data)
         if serializer.is_valid():
-            return Response({"message": "OTP verified successfully. Proceed to reset password."}, status=status.HTTP_200_OK)
+            reset_token = serializer.validated_data['reset_token']
+            otp = serializer.validated_data['otp']
+
+            email = decode_reset_token(reset_token)
+            if not email:
+                logger.warning("[VerifyOTP] Invalid or expired reset token")
+                return Response({"error": "Invalid or expired reset token"}, status=status.HTTP_400_BAD_REQUEST)
+
+            logger.info(f"[VerifyOTP] Verifying OTP for {email}")
+            if not increment_otp_attempt(email):
+                logger.warning(f"[VerifyOTP] Too many OTP attempts for {email}")
+                return Response({"error": "Too many incorrect attempts"}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+
+            if validate_otp(email, otp):
+                mark_otp_verified(email)
+                verified_token = generate_verified_token(email)
+                logger.info(f"[VerifyOTP] OTP verified for {email}, verified token issued")
+                return Response({
+                    "verified_token": verified_token,
+                    "message": "OTP verified successfully."
+                }, status=status.HTTP_200_OK)
+
+            logger.warning(f"[VerifyOTP] Invalid OTP for {email}")
+            return Response({"error": "Invalid OTP"}, status=status.HTTP_400_BAD_REQUEST)
+
+        logger.error(f"[VerifyOTP] Invalid request: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
-
-# ** This is for Reset Password **
 class ResetPasswordView(APIView):
+    permission_classes = [permissions.AllowAny]
+
     def post(self, request):
         serializer = ResetPasswordSerializer(data=request.data)
         if serializer.is_valid():
-            return Response({"message": "Password reset successful."}, status=status.HTTP_200_OK)
+            verified_token = serializer.validated_data['verified_token']
+            new_password = serializer.validated_data['new_password']
 
+            email = decode_verified_token(verified_token)
+            if not email:
+                logger.warning("[ResetPassword] Invalid or expired verified token")
+                return Response({"error": "Invalid or expired verified token"}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                user = User.objects.get(email=email)
+                user.set_password(new_password)   # ✅ CORRECT way to hash and save the password!
+                user.save()                       # ✅ Save to DB
+                clear_otp(email)
+                logger.info(f"[ResetPassword] Password reset successful for {email}")
+                return Response({"message": "Password reset successful."}, status=status.HTTP_200_OK)
+            except User.DoesNotExist:
+                logger.error(f"[ResetPassword] User not found for {email}")
+                return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        logger.error(f"[ResetPassword] Invalid request: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 
 

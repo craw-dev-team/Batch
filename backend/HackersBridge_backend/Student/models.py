@@ -41,6 +41,9 @@ class Student(models.Model):
     guardian_name = models.CharField(max_length=100, null=True, blank=True)
     guardian_no = models.CharField(max_length=15, null=True, blank=True, db_index=True)
     courses  = models.ManyToManyField("nexus.Course", through='StudentCourse') # ✅ Through Model
+    
+    tags = models.ManyToManyField("Tags", through='StudentTags', related_name='student_tags') # ✅ Through Model from student_tags
+    
     mode = models.CharField(max_length=10, choices=PREFERRED_MODE_CHOICES)
     location = models.ForeignKey("nexus.Location", null=True, blank=True, default=None, on_delete=models.SET_NULL)
     preferred_week = models.CharField(max_length=10, choices=PREFERRED_WEEK_CHOICES)
@@ -148,6 +151,7 @@ class StudentCourse(models.Model):  # ✅ Through Model
 class StudentNotes(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="notes")
     note = models.TextField(null=True, blank=True)
+    status_note = models.CharField(max_length=255, null=True, blank=True)  # ✅ Add this line
     create_at = models.DateTimeField(auto_now_add=True, null=True)
     last_update_datetime = models.DateTimeField(default=timezone.now)
     create_by = models.ForeignKey("nexus.CustomUser", on_delete=models.SET_NULL, related_name='student_note', null=True, blank=True)
@@ -157,8 +161,7 @@ class StudentNotes(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"Note for {self.student.name}"
-    
+        return f"Note for {self.student.name} - {self.status_note if self.status_note else 'No Status'}"    
 
 
 class BookAllotment(models.Model):
