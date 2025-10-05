@@ -123,80 +123,13 @@ import { Spin } from "antd";
 
 // NEW
 
-const PublicRoute = () => {
-  const { role, loading } = useAuth();
-
-  if (loading) return null;
-  
-  if (role === "coordinator" || role === "admin") return <Navigate to="/batches" replace />;
-  if (role === "student") return <Navigate to="/student-info" replace />;
-
-  return <Outlet />;
-};
-
-export { PublicRoute };
-
-
-  
-const ProtectedRoute = () => {
-  const { role, loading } = useAuth();
-
-  if (loading) return null;
-
-  if (!role || (role !== "admin" && role !== "coordinator")) {
-    return <Navigate to="/" replace />;
-  }
-
-  return <Outlet />;
-};
-
-export default ProtectedRoute
-
-
-const StudentRoute = () => {
-  const { role, loading } = useAuth();
-
-  if (loading) return null;
-
-  if (!role || role !== "student") {
-    return <Navigate to="/" replace />;
-  }
-
-  return <Outlet />;
-};
-
-export {StudentRoute};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // const PublicRoute = () => {
 //   const { role, loading } = useAuth();
 
-//   if (loading) {
-//     return (
-//       <div className="h-screen flex items-center justify-center">
-//         <Spin size="large" tip="Checking session..." />
-//       </div>
-//     );
-//   }
-
-//   if (role === "admin" || role === "coordinator") return <Navigate to="/batches" replace />;
+//   if (loading) return null;
+  
+//   if (role === "coordinator" || role === "admin") return <Navigate to="/batches" replace />;
 //   if (role === "student") return <Navigate to="/student-info" replace />;
-//   if (role === "trainer") return <Navigate to="/trainer-info" replace />;
 
 //   return <Outlet />;
 // };
@@ -204,17 +137,11 @@ export {StudentRoute};
 // export { PublicRoute };
 
 
-
+  
 // const ProtectedRoute = () => {
 //   const { role, loading } = useAuth();
 
-//   if (loading) {
-//     return (
-//       <div className="h-screen flex items-center justify-center">
-//         <Spin size="large" tip="Authenticating..." />
-//       </div>
-//     );
-//   }
+//   if (loading) return null;
 
 //   if (!role || (role !== "admin" && role !== "coordinator")) {
 //     return <Navigate to="/" replace />;
@@ -223,19 +150,13 @@ export {StudentRoute};
 //   return <Outlet />;
 // };
 
-// export default ProtectedRoute;
+// export default ProtectedRoute
 
 
 // const StudentRoute = () => {
 //   const { role, loading } = useAuth();
 
-//   if (loading) {
-//     return (
-//       <div className="h-screen flex items-center justify-center">
-//         <Spin size="large" tip="Authenticating student..." />
-//       </div>
-//     );
-//   }
+//   if (loading) return null;
 
 //   if (!role || role !== "student") {
 //     return <Navigate to="/" replace />;
@@ -244,26 +165,105 @@ export {StudentRoute};
 //   return <Outlet />;
 // };
 
-// export { StudentRoute };
+// export {StudentRoute};
 
 
 
-// const TrainerRoute = () => {
-//   const { role, loading } = useAuth();
 
-//   if (loading) {
-//     return (
-//       <div className="h-screen flex items-center justify-center">
-//         <Spin size="large" tip="Authenticating trainer..." />
-//       </div>
-//     );
-//   }
 
-//   if (!role || role !== "trainer") {
-//     return <Navigate to="/" replace />;
-//   }
 
-//   return <Outlet />;
-// };
 
-// export { TrainerRoute };
+
+
+
+
+
+
+
+
+
+
+const PublicRoute = () => {
+  const { role, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <Spin size="large" tip="Checking session..." />
+      </div>
+    );
+  }
+
+  if (role === "admin" || role === "coordinator") return <Navigate to="/batches" replace />;
+  if (role === "student") return <Navigate to="/student-info" replace />;
+  if (role === "trainer") return <Navigate to="/trainer-info" replace />;
+
+  return <Outlet />;
+};
+
+export { PublicRoute };
+
+
+
+const ProtectedRoute = () => {
+  const { role, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <Spin size="large" tip="Authenticating..." />
+      </div>
+    );
+  }
+
+  if (!role || (role !== "admin" && role !== "coordinator")) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <Outlet />;
+};
+
+export default ProtectedRoute;
+
+
+const StudentRoute = () => {
+  const { role, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <Spin size="large" tip="Authenticating student..." />
+      </div>
+    );
+  }
+
+  if (!role || role !== "student") {
+    return <Navigate to="/" replace />;
+  }
+
+  return <Outlet />;
+};
+
+export { StudentRoute };
+
+
+
+const TrainerRoute = () => {
+  const { role, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <Spin size="large" tip="Authenticating trainer..." />
+      </div>
+    );
+  }
+
+  if (!role || role !== "Trainer") {
+    return <Navigate to="/" replace />;
+  }
+
+  return <Outlet />;
+};
+
+export { TrainerRoute };

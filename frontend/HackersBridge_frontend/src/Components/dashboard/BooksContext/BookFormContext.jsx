@@ -1,8 +1,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import axios from "axios";
-import BASE_URL from "../../../ip/Ip";
-import { message } from "antd";
 import dayjs from "dayjs";
+import axiosInstance from "../api/api";
+import { message } from "antd";
 
 
 const BookFormContext = createContext();
@@ -34,20 +33,9 @@ export const BookFormProvider = ({ children }) => {
         const fetchBooks = async () => {
             if (loading) return;  // Prevent multiple fetches at the same time
 
-            // const token = localStorage.getItem('token');
-            // if (!token) {
-            //     console.error("No token found, user might be logged out.");
-            //     return;
-            // };
-
-
             setLoading(true);  // Set loading state
             try {
-                const response = await axios.get(`${BASE_URL}/api/books/`, 
-                    { headers: { 'Content-Type': 'application/json'}, 
-                    withCredentials : true
-                }
-                );
+                const response = await axiosInstance.get(`/api/books/`);
                 const data = response?.data;
                 
                 // Update state only if data has changed
@@ -57,10 +45,8 @@ export const BookFormProvider = ({ children }) => {
                     }
                     return prevData;
                 });
-
-                // console.log('Books Data Updated:', data); // Log new data here
             } catch (error) {
-                console.error('Error fetching Books Data', error);
+                message.error('Error fetching Books Data');
             } finally {
                 setLoading(false);  // Reset loading state after fetch
             }
@@ -79,7 +65,7 @@ export const BookFormProvider = ({ children }) => {
 
         //     setLoading(true)
         //     try {
-        //         const response = await axios.get(`${BASE_URL}/api/books/students/`, 
+        //         const response = await axiosInstance.get(`/api/books/students/`, 
         //             { headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         //             withCredentials: true
         //         }
@@ -117,11 +103,11 @@ export const BookFormProvider = ({ children }) => {
 
             setLoading(true);
             try {
-                    let url = `${BASE_URL}/api/books/students/`;
+                    let url = `/api/books/students/`;
 
                     // If a specific filter is selected
                     if (filter && filter !== "") {
-                        url = `${BASE_URL}/api/books/students/on_date/`;
+                        url = `/api/books/students/on_date/`;
 
                         const params = new URLSearchParams();
 
@@ -136,7 +122,7 @@ export const BookFormProvider = ({ children }) => {
                         url += `?${params.toString()}`;
                     }
 
-                    const response = await axios.get(url, 
+                    const response = await axiosInstance.get(url, 
                         { headers: { "Content-Type": "application/json"},
                         withCredentials: true,
                     });

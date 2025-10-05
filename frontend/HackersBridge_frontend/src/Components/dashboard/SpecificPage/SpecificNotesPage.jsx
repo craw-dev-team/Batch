@@ -10,6 +10,7 @@ import {
 import dayjs from "dayjs";
 import { useParams } from "react-router-dom";
 import { useSpecificStudent } from "../Contexts/SpecificStudent";
+import { useTheme } from "../../Themes/ThemeContext";
 
 // Custom icon for alumni
 const GraduationIcon = () => (
@@ -59,6 +60,12 @@ export const groupNotesByMonth = (notes) => {
 
 // Main Component
 const SpecificStudentNotes = () => {
+    // for theme -------------------------
+    const { getTheme } = useTheme();
+    const theme = getTheme();
+    // ------------------------------------
+
+
   const { specificStudent, loading, fetchSpecificStudent } = useSpecificStudent();
   const { studentId } = useParams();
 
@@ -82,9 +89,9 @@ const SpecificStudentNotes = () => {
   const groupedNotes = groupNotesByMonth(student_notes);
 
   return (
-    <div className="w-auto mt-0 bg-white">
-        <div className="relative w-full h-auto shadow-md sm:rounded-lg border border-gray-50 dark:border dark:border-gray-600">
-            <div className="w-full px-4 py-3 text flex justify-between font-semibold ">
+    <div className={`w-auto mt-1 ${theme.specificPageBg}`}>
+        <div className="relative w-full h-auto shadow-md">
+            <div className={`w-full px-4 py-2 flex justify-between font-semibold ${theme.text}`}>
                 <h1>Notes</h1>
             </div>
             
@@ -98,8 +105,8 @@ const SpecificStudentNotes = () => {
               </div>
             ) : (
               Object.entries(groupedNotes).map(([monthLabel, notes]) => (
-                <div key={monthLabel} className="mb-8">
-                  <h3 className="px-4 mt-4 text-lg font-semibold text-gray-700 mb-4">
+                <div key={monthLabel} className={`mb-8 bg-white/40`}>
+                  <h3 className="px-4 py-2 text-lg font-semibold text-gray-700">
                     {monthLabel}
                   </h3>
                   <Timeline
@@ -115,9 +122,9 @@ const SpecificStudentNotes = () => {
                         </div>
                       ),
                       children: (
-                        <Card size="small" bordered className="bg-white shadow-sm mr-5">
+                        <Card size="small" bordered className="bg-white/70 shadow-sm mr-5">
                           <div className="mb-1 flex items-center gap-2">
-                            {note.label && <Tag color="blue">{note.label}</Tag>}
+                            {note.label && <Tag className="rounded-xl" bordered={false} color="blue">{note.label}</Tag>}
                             {note.username && (
                               <span className="text-xs text-gray-500 italic">
                                 by {note.username}

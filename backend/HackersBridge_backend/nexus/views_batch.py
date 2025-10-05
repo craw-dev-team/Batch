@@ -1559,7 +1559,7 @@ class EmailSenderAPIView(APIView):
 
 
 def BatchEndingEmail(request=None):
-    today = now().date() +  timedelta(days=1)
+    today = now().date() + timedelta(days=1)
     five_days_later = today + timedelta(days=5)
 
     print("Today:", today)
@@ -1567,6 +1567,9 @@ def BatchEndingEmail(request=None):
 
     batches = Batch.objects.filter(status='Running', end_date__range=(today, five_days_later))
     coordinators = list(Coordinator.objects.values_list('email', flat=True))
+
+    # Excluded emails (same as frontend useEffect)
+    EXCLUDED_EMAILS = ["ishika@craw.in", "anjali@craw.in", "shivambharti@craw.in"]
 
     for batch in batches:
         trainer = batch.trainer
@@ -1654,10 +1657,13 @@ def BatchEndingEmail(request=None):
             email_log.trainers.add(trainer)
             email_log.batch.add(batch)
 
-            # Prepare CCs
+            # Prepare CCs (filter excluded)
             cc_email = coordinators + ['mohit@craw.in']
             if hasattr(trainer, 'teamleader') and trainer.teamleader and trainer.teamleader.email:
                 cc_email.append(trainer.teamleader.email)
+
+            # Remove excluded emails
+            cc_email = [e for e in cc_email if e not in EXCLUDED_EMAILS]
 
             # Send email
             email = EmailMessage(

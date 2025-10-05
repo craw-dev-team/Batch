@@ -13,12 +13,8 @@ const StudentBatchInfo = () => {
     
     useEffect(() => {
       if (batchId) {
-        try {
-            const OriginalbatchId = atob(batchId);
-            fetchStudentBatcheInfo(OriginalbatchId);
-        } catch (error) {
-          console.log("Error Decoding Batch Id", error)
-        }
+          const OriginalbatchId = atob(batchId);
+          fetchStudentBatcheInfo(OriginalbatchId);
       }
     }, []);
 

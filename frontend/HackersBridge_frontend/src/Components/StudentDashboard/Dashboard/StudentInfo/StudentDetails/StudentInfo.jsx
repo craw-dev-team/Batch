@@ -1,44 +1,54 @@
-import { Tag  } from 'antd';
+import { useState } from 'react';
+import { Tag, Modal } from 'antd';
 import { CheckCircleOutlined } from '@ant-design/icons';
 import dayjs from "dayjs";
 import InfoPageLoading from '../../../../../Pages/SkeletonLoading.jsx/StudentInfoLoading';
 import { useStudentInfo } from './StudentInfoContext';
+import { useNavigate } from 'react-router-dom';
 
 const StudentInfo = () => {
-    const { studentDetails } = useStudentInfo();
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedCourse, setSelectedCourse] = useState(null);
+    const { studentDetails, courseInfo, fetchCourseInfo } = useStudentInfo();
+
+    const navigate = useNavigate();
+
+
+    const handleCourseClick = (course) => {
+            if (!course?.id) {
+                console.error("Course ID is missing", course);
+                return;
+            }
+
+            fetchCourseInfo(course.id);
+            setSelectedCourse(course);
+            setIsModalOpen(true);
+        };
+
+        const handleCloseModal = () => {
+            setIsModalOpen(false);
+            setSelectedCourse(null);
+        };
+
+        const handleBatchClick = (batchId) => {            
+            if (batchId) {
+                const encodedId = btoa(batchId);
+                navigate(`/student-info/student-batches/${encodedId}`);
+                handleCloseModal();
+            }
+        };
+
 
 
 
     return (
         <>
             <div className="w-full h-full pt-0 px-0">
-                {/* <div className="relative z-10">
-                    <button
-                        onClick={() => handleTopTabClick("Info")}
-                        className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200  
-                            ${topTab === "Info" ? 'border-b-2 border-blue-500 text-black bg-white' : ' text-gray-700 hover:border-b-2 hover:border-blue-400'}`}
-                    >
-                    Info
-                    </button>
-
-                    <button
-                        onClick={() => handleTopTabClick("Logs")}
-                        className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                            ${topTab === "Logs" ? 'border-b-2 border-blue-500 text-black bg-white' : ' text-gray-700 hover:border-b-2 hover:border-blue-400'}`}
-                    >
-                    Logs
-                    </button>
-                                 
-                </div> */}
-                
-                    {/* {topTab === 'Info' && ( */}
-                        <>
-                        <div className="grid grid-cols-6 gap-x-6">
-                            {studentDetails?.studentinfo ? ( 
-                                <>
-                                    <div className="px-2 py-2 col-span-6 w-full h-auto shadow-md sm:rounded-lg border border-gray-50 bg-white">
-                    
-                                    
+                <>
+                    <div className="grid grid-cols-6 gap-x-6">
+                        {studentDetails?.studentinfo ? ( 
+                            <>
+                                <div className="px-2 py-2 col-span-6 w-full h-auto shadow-md sm:rounded-lg border border-gray-50 bg-white">
                                     <div className="w-full h-auto px-1 py-2 text-lg font-semibold flex justify-between">
                                         <p className='ml-0'># {studentDetails?.studentinfo?.enrollment_no}</p>
                                     </div>
@@ -112,11 +122,6 @@ const StudentInfo = () => {
                                                 {studentDetails?.studentinfo?.address || 'Not Available'}
                                             </p>
                                         </div>
-                                        
-                                        {/* <div className="col-span-1 px-1 py-1 mt-6">
-                                            <h1>Courses</h1>
-                                            {student.courses}
-                                        </div> */}
     
                                     </div>
                             
@@ -148,15 +153,12 @@ const StudentInfo = () => {
                                                         <th scope="col" className="px-1 py-2 md:px-1">
                                                             Books
                                                         </th>
-                                                        {/* <th scope="col" className="px-1 py-2 md:px-1 md:w-40">
-                                                            Certificate Date
-                                                        </th> */}
                                                     </tr>
                                                 </thead>
                                                 <tbody>
         
                                                     {studentDetails.studentcourse.map((item,index)=>(
-                                                        <tr key={item.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 scroll-smooth">
+                                                        <tr key={item.id} className="bg-white border-b border-gray-200 hover:bg-gray-50 scroll-smooth cursor-pointer"  onClick={() => handleCourseClick(item)}>
                                                             <td scope="row" className="px-3 py-2 md:px-3 font-medium text-gray-900">
                                                                 {index+1}
                                                             </td>
@@ -191,14 +193,6 @@ const StudentInfo = () => {
                                                                 "-"
                                                                 )}
                                                             </td>
-
-                                                            {/* <td className="px-3 py-2 md:px-1 flex">
-                                                                { item.course_certificate }
-                                                            </td> */}
-                                                            {/* <td className="px-3 py-2 md:px-1 flex items-center ">
-                                                                { item.certificate_issued_at || "N/A"  }
-                                                            </td> */}
-    
                                                         </tr>
                                                     ))}
                                                         
@@ -212,25 +206,94 @@ const StudentInfo = () => {
                                     </div>
                                 </div>
     
+
+                                    {/* Modal for Course Info */}
+                                    <Modal
+                                        title={<h3 className="text-md font-semibold">Course Details</h3>}
+                                        open={isModalOpen}
+                                        onCancel={handleCloseModal}
+                                        footer={null}
+                                        width={800}
+                                    >
+                                        {courseInfo?.course_info && (
+                                            <div className="space-y-2">
+                                                {/* Course Info */}
+                                                <div className="rounded-lg border shadow-sm p-3 bg-white space-y-2">
+                                                    <h2 className="text-md font-sans font-bold">{courseInfo.course_info.course_name}</h2>
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-sm">
+                                                        <div><span className="text-gray-600">Course Status: </span><span className="font-semibold">{courseInfo.course_info.status || "N/A"}</span></div>
+                                                        <div><span className="text-gray-600">Exam Date: </span><span className="font-semibold">{courseInfo.course_info.student_exam_date || "Not Set"}</span></div>
+                                                        <div><span className="text-gray-600">Certificate Issued: </span><span className="font-semibold">{courseInfo.course_info.certificate_issued_at ? "Yes" : "No"}</span></div>
+                                                        <div><span className="text-gray-600">Marks: </span><span className="font-semibold">{courseInfo.course_info.marks ?? "Not Available"}</span></div>
+                                                    </div>
+                                                    <div className="flex gap-1 flex-wrap">
+                                                        <span className="px-1 py-0 text-sm bg-green-100 text-green-700 rounded border border-green-300">
+                                                            Book Allotted: {courseInfo.course_info.student_book_allotment ? "Yes" : "No"}
+                                                        </span>
+                                                        <span className="px-1 py-0 text-sm bg-yellow-100 text-yellow-700 rounded border border-yellow-300">
+                                                            Old Book: {courseInfo.course_info.student_old_book_allotment ? "Yes" : "No"}
+                                                        </span>
+                                                    </div>
+                                                </div>
+            
+                                                {/* Batch Info Table */}
+                                                {courseInfo?.batches?.length > 0 && (
+                                                    <div className="mt-0">
+                                                        <h3 className="text-md font-semibold mb-1">Batch Details</h3>
+                                                        <div className="overflow-x-auto rounded-lg border">
+                                                            <div className="max-h-72 overflow-y-auto">
+                                                                <table className="min-w-full text-sm text-center text-gray-700">
+                                                                    <thead className="bg-green-100 text-gray-900 text-sm uppercase">
+                                                                        <tr>
+                                                                            <th className="px-0 py-0 font-medium border">S.NO</th>
+                                                                            <th className="px-0 py-0 font-medium border">Batch ID</th>
+                                                                            <th className="px-0 py-0 font-medium border">Status</th>
+                                                                            <th className="px-0 py-0 font-medium border">Start Date</th>
+                                                                            <th className="px-0 py-0 font-medium border">End Date</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                        {courseInfo.batches.map((batch, index) => (
+                                                                            <tr key={index} onClick={() => handleBatchClick(batch.id)} className="bg-white hover:bg-gray-100 cursor-pointer transition duration-150 ease-in-out">
+                                                                                <td className="px-1 py-1 border">{index + 1}</td>
+                                                                                <td className="px-1 py-1 border font-medium">{batch.batch_id}</td>
+                                                                                <td className="px-1 py-1 border">
+                                                                                    <span className={`px-1 py-1 rounded text-xs ${
+                                                                                        batch.status === 'Running'
+                                                                                            ? 'bg-green-100 text-green-700'
+                                                                                            : batch.status === 'Upcoming'
+                                                                                            ? 'bg-lime-100 text-lime-700'
+                                                                                            : batch.status === "Hold"
+                                                                                            ? "bg-yellow-100 text-yellow-700"
+                                                                                            : batch.status === "Completed"
+                                                                                            ? "bg-blue-100 text-blue-700"
+                                                                                            : 'bg-red-100 text-red-700'
+                                                                                    }`}>
+                                                                                        {batch.status}
+                                                                                    </span>
+                                                                                </td>
+                                                                                <td className="px-1 py-1 border text-green-700">{batch.start_date}</td>
+                                                                                <td className="px-1 py-1 border text-green-700">{batch.end_date}</td>
+                                                                            </tr>
+                                                                        ))}
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </Modal>
                                 
-                                    </>
-                             ) : (
+                            </>
+                            ) : (
                                 <>
                                     <InfoPageLoading/>
                                 </>
-                            )} 
-                        </div>
-                
-
-                    
-                                
-                         
-                            </>
-     
-
-                    
-                 
-
+                        )} 
+                    </div>
+                </>
             </div>  
         </>
     )

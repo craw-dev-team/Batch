@@ -4,12 +4,11 @@ import { Modal, List, message, Input } from 'antd';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import templates from '../../EmailTemplates';
-import axios from 'axios';
-import BASE_URL from '../../ip/Ip';
-
 import Quill from 'quill';
 import { useSpecificBatch } from '../dashboard/Contexts/SpecificBatch';
 import { useCoordinatorForm } from '../dashboard/AddDetails/Coordinator/CoordinatorContext';
+import axiosInstance from '../dashboard/api/api';
+import dayjs from 'dayjs';
 
 
 
@@ -52,7 +51,6 @@ const EmailPopup = ({ open, onClose, checkStudentid, onSuccess = () => {}, train
 
     useEffect(() => {
       const emailToRemove = ["ishika@craw.in", "anjali@craw.in", "shivambharti@craw.in"];
-
       if (open && checkStudentid?.length) {
         const uniqueEmails = [...new Set(checkStudentid.map(s => s.emails))];
         setBccEmails(uniqueEmails);
@@ -118,7 +116,7 @@ const EmailPopup = ({ open, onClose, checkStudentid, onSuccess = () => {}, train
         });
       
         return doc.body.innerHTML;
-      };
+    };
 
       
     const cleanedHtml = convertQuillClassesToInlineStyles(editorContent);
@@ -170,12 +168,7 @@ const EmailPopup = ({ open, onClose, checkStudentid, onSuccess = () => {}, train
           }
           
         try {
-            const response = await axios.post(`${BASE_URL}/api/emailsender/`,
-              payload,
-              { headers: { 'Content-Type': 'application/json' }, 
-              withCredentials: true,
-            }  
-            );
+            const response = await axiosInstance.post(`/api/emailsender/`, payload );
             
             if (response.status >= 200 && response.status <= 299) {
                 message.success("Email sent successfully");
@@ -189,7 +182,7 @@ const EmailPopup = ({ open, onClose, checkStudentid, onSuccess = () => {}, train
           } finally {
               setLoading(false);
           }
-        };
+    };
 
 
 

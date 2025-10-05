@@ -11,6 +11,7 @@ from Student.views import *
 from Coordinator.views import *
 from Counsellor.views import *
 from Trainer.views import *
+from nexus.views_timeslot import *
 
 urlpatterns = [
 
@@ -145,10 +146,10 @@ urlpatterns = [
     path('student/assign_tag/<int:id>/', AssignTagsToStudentAPIView.as_view(), name='assign-student-tag'),
 
     # >>>>>>>> TIMESLOTS <<<<<<<<
-    # path('timeslots/', GetAllTimeslotsAPIView.as_view(), name='get-all-timeslots'),
-    # path('timeslots/create/', CreateTimeslotAPIView.as_view(), name='create-timeslot'),
-    # path('timeslots/update/<int:id>/', UpdateTimeslotAPIView.as_view(), name='update-timeslot'),
-    # path('timeslots/delete/<int:pk>/', DeleteTimeslotAPIView.as_view(), name='delete-timeslot'),
+    path('timeslots/', GetAllTimeslotsAPIView.as_view(), name='get-all-timeslots'),
+    path('timeslots/create/', CreateTimeslotAPIView.as_view(), name='create-timeslot'),
+    path('timeslots/update/<int:id>/', UpdateTimeslotAPIView.as_view(), name='update-timeslot'),
+    path('timeslots/delete/<int:pk>/', DeleteTimeslotAPIView.as_view(), name='delete-timeslot'),
 ]
 
 

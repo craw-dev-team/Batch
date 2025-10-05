@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import {
   Upload,
   Button,
@@ -13,12 +12,19 @@ import {
 } from 'antd';
 import { UploadOutlined, LinkOutlined } from '@ant-design/icons';
 import { useAnnouncement } from './AnnouncementContext';
-import BASE_URL from '../../../ip/Ip';
+import axiosInstance from '../api/api';
+import { useTheme } from '../../Themes/ThemeContext';
 
 const { Title } = Typography;
 const { SHOW_CHILD } = Cascader;
 
 const CreateAnnouncementForm = ({ onCancel, selectedAnnouncement }) => {
+
+    // for theme -------------------------
+    const { getTheme } = useTheme();
+    const theme = getTheme();
+    // ------------------------------------
+
   const [form] = Form.useForm();
   const [fileList, setFileList] = useState([]);
   const [cascaderOptions, setCascaderOptions] = useState([]);
@@ -129,26 +135,18 @@ const CreateAnnouncementForm = ({ onCancel, selectedAnnouncement }) => {
         formData.append('file', file.originFileObj);
       }
     });
-    for (let [key, value] of formData.entries()) {
-      console.log(`${key}:`, value);
-    }
+    // for (let [key, value] of formData.entries()) {
+    //   console.log(`${key}:`, value);
+    // }
     
     try {
       let response;
       if (selectedAnnouncement && selectedAnnouncement.id) {
-        response = await axios.put(`${BASE_URL}/api/announcement/edit/${selectedAnnouncement.id}/`, 
-          formData, 
-          { headers: { 'Content-Type': 'application/json'},
-          withCredentials: true
-        }
-        );
+        response = await axiosInstance.put(`/api/announcement/edit/${selectedAnnouncement.id}/`, formData);
         
         message.success('Announcement Updated Successfully!');
       } else {
-        response = await axios.post(`${BASE_URL}/api/announcement/create/`, formData, {
-          headers: {'Content-Type': 'application/json'},
-          withCredentials: true
-        });
+        response = await axiosInstance.post(`/api/announcement/create/`, formData );
         message.success('Announcement Added Successfully!');
       }
       form.resetFields();
@@ -161,6 +159,8 @@ const CreateAnnouncementForm = ({ onCancel, selectedAnnouncement }) => {
     }
   };
 
+
+  
   return (
     <Form
       form={form}
@@ -298,7 +298,7 @@ const CreateAnnouncementForm = ({ onCancel, selectedAnnouncement }) => {
       </Form.Item>
 
       <Form.Item>
-        <div className='flex gap-10'>
+        <div className='flex justify-end gap-10'>
 
         {/* <Button
           danger
@@ -310,14 +310,14 @@ const CreateAnnouncementForm = ({ onCancel, selectedAnnouncement }) => {
           >
           Cancel
         </Button> */}
-        <Button
-          htmlType="submit"
-          type="primary"
-          block
-          style={{ backgroundColor: '#16a34a', marginBottom: 8 }}
+        <button
+          className={`text-white inline-flex items-center font-medium rounded-lg text-sm px-4 py-2 text-center focus:ring-4 focus:outline-none shadow-lg hover:shadow-xl transition-all duration-200 
+                      ${theme.createBtn}
+                  `}
+          
           >
-          {isEditing ? "Save Changes" : "Submit Announcement"}
-        </Button>
+          {isEditing ? "Save Changes" : "Create Announcement"}
+        </button>
           </div>
       </Form.Item>
     </Form>

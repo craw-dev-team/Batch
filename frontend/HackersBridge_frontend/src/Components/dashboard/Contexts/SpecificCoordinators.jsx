@@ -1,8 +1,5 @@
 import { createContext, useContext, useState } from "react";
-import BASE_URL from "../../../ip/Ip";
-import axios from "axios";
-import { triggerFocus } from "antd/es/input/Input";
-
+import axiosInstance from "../api/api";
 
 
 
@@ -19,22 +16,12 @@ const SpecificCoordinatorProvider = ({ children }) => {
     const fetchSpecificCoordinator = async (coordinatorId) => {
         if (loading) return;
 
-        // const token = localStorage.getItem('token');
-        // if (!token) {
-        //     console.error("No token found, user might be logged out.");
-        //     return;
-        // };
 
         setLoading(true)
 
         try {
-            const response = await axios.get(`${BASE_URL}/api/coordinators/info/${coordinatorId}/`, 
-                { headers: { 'Content-Type': 'application/json' },
-                withCredentials : true
-            }
-            )
+            const response = await axiosInstance.get(`/api/coordinators/info/${coordinatorId}/`)
             const data = response?.data
-            // console.log(data);
             
             setSpecificCoordinator(data);
 
@@ -50,23 +37,11 @@ const SpecificCoordinatorProvider = ({ children }) => {
     const fetchSpecificCoordinatorStudents = async (coordinatorId) => {
         if (loading) return;
 
-        // const token = localStorage.getItem('token');
-        // if (!token) {
-        //     console.error("No token found, user might be logged out.");
-        //     return;
-        // };
-
         setLoading(true)
 
         try {
-            const response = await axios.get(`${BASE_URL}/api/coordinators/${coordinatorId}/students/`, 
-                { headers: { 'Content-Type': 'application/json' }, 
-                withCredentials : true
-            }
-            )
-            const data = response?.data
-            // console.log(data);
-            
+            const response = await axiosInstance.get(`/api/coordinators/${coordinatorId}/students/` )
+            const data = response?.data            
 
             setSpecificCoordinatorStudents(prevData => {
                 if (JSON.stringify(prevData) !== JSON.stringify(data)) {
@@ -87,23 +62,11 @@ const SpecificCoordinatorProvider = ({ children }) => {
     const fetchSpecificCoordinatorTrainers = async (coordinatorId) => {
         if (loading) return;
 
-        // const token = localStorage.getItem('token');
-        // if (!token) {
-        //     console.error("No token found, user might be logged out.");
-        //     return;
-        // };
-
         setLoading(true)
 
         try {
-            const response = await axios.get(`${BASE_URL}/api/coordinators/${coordinatorId}/trainer/`, 
-                { headers: { 'Content-Type': 'application/json' }, 
-                withCredentials : true
-            }
-            )
-            const data = response?.data
-            // console.log(data);
-            
+            const response = await axiosInstance.get(`/api/coordinators/${coordinatorId}/trainer/`, )
+            const data = response?.data            
 
             setSpecificCoordinatorTrainers(prevData => {
                 if (JSON.stringify(prevData) !== JSON.stringify(data)) {
@@ -124,28 +87,20 @@ const SpecificCoordinatorProvider = ({ children }) => {
     const fetchSpecificCoordinatorActivityLogs = async (coordinatorId, { page = 1, pageSize = 50, search = '', type } = {}) => {
         if (loading) return;
 
-        // const token = localStorage.getItem('token');
-        // if (!token) {
-        //     console.error("No token found, user might be logged out.");
-        //     return;
-        // };
-
         setLoading(true)
 
         try {
-            const response = await axios.get(`${BASE_URL}/api/coordinators/info/${coordinatorId}/`, 
-                { headers: { 'Content-Type': 'application/json' },
+            const response = await axiosInstance.get(`/api/coordinators/info/${coordinatorId}/`, 
+                { 
                 params: {
                     page,
                     page_size: pageSize,
                     search,
                     type
-                },
-                withCredentials : true
+                }
             }
             )
             const data = response?.data
-            // console.log(data);
             
             setActivityLogs(data);
 

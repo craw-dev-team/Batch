@@ -6,9 +6,15 @@ import { Button, Empty, Spin } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 import dayjs from "dayjs";
 import { handleStudentClick } from "../../Navigations/Navigations";
+import { useTheme } from "../../Themes/ThemeContext";
 
 
 const SpecificBookPage = () => {
+    // for theme -------------------------
+    const { getTheme } = useTheme();
+    const theme = getTheme();
+    // ------------------------------------
+
     const [activeTab, setActiveTab] = useState("issued_book");
     const [isModalOpen, setIsModalOpen] = useState(false) 
     const [selectedBook, setSelectedBook] = useState();
@@ -28,14 +34,9 @@ const SpecificBookPage = () => {
 
     useEffect(() => {
         if (bookId) {
-            try {
-                const originalBookId = atob(bookId)
-                fetchSpecificBook(originalBookId)
-            } catch (error) {
-                console.log(error);
-                
-            }
-        }
+            const originalBookId = atob(bookId)
+            fetchSpecificBook(originalBookId)
+           }
     },[])
 
     
@@ -69,18 +70,18 @@ const SpecificBookPage = () => {
     
     return (
         <>
-            <div className="w-auto h-full pt-20 px-2 mt-0 ">
-                <div className="grid">
+            <div className={`w-auto h-full pt-16 px-4 mt-0 ${theme.bg}`}>
+                <div className="grid grid-cols-3 gap-x-6 mt-1">
                         {book_info ? (
                         <>
-                    <div className="px-4 py-4 col-span-3 h-auto shadow-md sm:rounded-lg border border-gray-50 bg-white">
+                    <div className={`px-4 py-4 col-span-3 h-auto shadow-md sm:rounded-lg ${theme.specificPageBg}`}>
                         
                         <div className="w-full h-auto px-1 py-3 text-lg font-semibold flex justify-between">
                             <p># {book_info.book_id}</p>
                             <Button 
                                 color="secondary" 
                                 variant="outlined" 
-                                className="rounded-lg"
+                                className={`rounded-xl ${theme.bg}`}
                                 onClick={(e) => {
                                     e.stopPropagation(); // Prevent the click from bubbling to the <td> click handler
                                     handleBookEditClick(book_info);  // Open the form with selected course data
@@ -127,17 +128,17 @@ const SpecificBookPage = () => {
                 </div>
            
                     
-                <div className="px-4 py-4 h-auto shadow-md sm:rounded-lg border border-gray-50 bg-white">
+                <div className={`px-4 py-4 mt-2 h-auto shadow-md sm:rounded-lg ${theme.specificPageBg}`}>
                     
-                    <div className="w-full h-auto px-1 py-3 text-lg font-semibold">
-                        <h1>{activeTab === "issued_book" ? "List of Students Who Have Received Books" : "Students Yet to Receive Their Books"}</h1>
+                    <div className={`full h-auto px-1 py-3 font-semibold ${theme.text}`}>
+                        <h1>{activeTab === "issued_book" ? "Students Who Have Received Books" : "Students Yet to Receive Their Books"}</h1>
                     </div>
                         <div className="flex gap-x-4 h-10 justify-between">
-                            <div className="tabs">
+                            <div className="w-auto inline-block bg-white/70 backdrop-blur-sm p-1.5 rounded-xl">
                                 <button
                                     onClick={() => handleTabClick("issued_book")}
-                                    className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                                        ${activeTab === "issued_book" ? 'bg-blue-300  text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                    className={`px-4 py-2 rounded-lg font-medium text-xs transition-all duration-200 text-gray-600 hover:bg-white/50
+                                        ${activeTab === "issued_book" ? `text-gray-600 shadow-md ${theme.activeTab}` : ' text-gray-600 hover:bg-white/50'}`}
                                 >
                                     Issued Book
                                 </button>
@@ -145,7 +146,7 @@ const SpecificBookPage = () => {
                                 <button
                                     onClick={() => handleTabClick("not_issued_book")}
                                     className={` px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                                    ${activeTab === "not_issued_book" ? 'bg-blue-300  text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                    ${activeTab === "not_issued_book" ? `text-gray-600 shadow-md ${theme.activeTab}` : ' text-gray-600 hover:bg-white/50'}`}
                                 >
                                     Not Issued Book
                                 </button>
@@ -162,7 +163,7 @@ const SpecificBookPage = () => {
                                                 setSearchTerm(value);
                                                 // setCurrentPage(1);
                                             }}
-                                            className="2xl:w-96 lg:w-96 md:w-72 h-8 block p-2 pr-10 text-xs text-gray-600 font-normal border border-gray-300 rounded-lg bg-gray-50 focus:ring-0 focus:border-blue-500" 
+                                            className={`2xl:w-96 lg:w-96 md:w-72 h-8 block p-2 pr-10 text-xs font-medium ${theme.searchBg}`} 
                                             />
                                         <div className="absolute inset-y-0 right-0 h-8 flex items-center pr-3">
                                         <button onClick={() => setSearchTerm("")}>
@@ -183,44 +184,44 @@ const SpecificBookPage = () => {
 
                         </div>
                         
-                        <div className="overflow-hidden pb-2 relative ">
-                            <div className="w-full h-[38rem] overflow-y-auto rounded-lg pb-2">
+                        <div className="overflow-hidden pb-0 mx-0 relative bg-white/40 backdrop-blur-sm rounded-xl shadow-sm">
+                            <div className="w-full h-auto md:max-h-[30rem] 2xl:max-h-[34rem] overflow-y-auto rounded-xl pb-2">
                                 <>
-                                    <table className="w-full text-xs text-left text-gray-500">
-                                        <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10">
-                                                <tr>
+                                    <table className="w-full text-xs font-normal text-left text-gray-600">
+                                        <thead className="bg-white sticky top-0 z-10">
+                                                <tr className="bg-gray-50/80">
                                                     <th scope="col" className="p-2">
                                                         <div className="flex items-center">
                                                             <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"></input>
                                                             <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
                                                         </div>
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-2">
+                                                    <th scope="col" className="px-3 py-3 md:px-2 text-xs font-medium uppercase">
                                                         S.No
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Enrollment No
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Student Name
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Course
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Issued Time
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Book Status
                                                     </th>
-                                                    <th scope="col" className="px-3 py-3 md:px-1">
+                                                    <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                         Issued By
                                                     </th>
                                                     
                                                 </tr>
                                         </thead>
                                    
-                                        <tbody>
+                                        <tbody className="divide-y divide-gray-100 font-normal text-gray-700">
                                             {loading ? (
                                                 <tr>
                                                     <td colSpan="100%" className="text-center py-4">
@@ -229,12 +230,12 @@ const SpecificBookPage = () => {
                                                 </tr>
                                             ) : searchFilteredBooks.length > 0 ? (
                                                 searchFilteredBooks.map((item, index) => (
-                                                    <tr key={item.student_id || index} className="bg-white border-b hover:bg-gray-50">
+                                                    <tr key={item.student_id || index} className="hover:bg-white transition-colors scroll-smooth">
                                                         <td className="p-2">
                                                             <input type="checkbox" className="w-3 h-3" />
                                                         </td>
                                                         <td className="px-3 py-2">{index + 1}</td>
-                                                        <td className="px-3 py-2 font-bold cursor-pointer" onClick={() => handleStudentClick(navigate,item.student_id)}>
+                                                        <td className="px-3 py-2 font-medium cursor-pointer" onClick={() => handleStudentClick(navigate,item.student_id)}>
                                                             {item.enrollment_no}
                                                         </td>
                                                         <td className="px-3 py-2">{item.name}</td>
@@ -243,7 +244,7 @@ const SpecificBookPage = () => {
                                                             {item.allotment_datetime ? dayjs(item.allotment_datetime).format("DD/MM/YYYY | hh:mm A") : "Not Available"}
                                                         </td>
                                                         <td className="px-3 py-2">{item.book_status || "-"}</td>
-                                                        <td className="px-3 py-2">{item.issue_by || "Not Available"}</td>
+                                                        <td className="px-3 py-2">{item.issue_by || "-"}</td>
                                                     </tr>
                                                 ))
                                             ) : (

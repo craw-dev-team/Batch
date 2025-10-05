@@ -1,28 +1,61 @@
 import { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { Avatar, Tag, Tooltip, Dropdown, message, Empty } from 'antd';
+import { Avatar, Tag, Tooltip, Dropdown, Pagination, Empty, Spin } from 'antd';
 import { CheckOutlined, DownOutlined  } from '@ant-design/icons';
 import StudentCards from "./StudentCard";
-import axios from "axios";
-import BASE_URL from "../../../../../ip/Ip";
 import { useAuth } from "../../../AuthContext/AuthContext";
 import { handleStudentClick } from "../../../../Navigations/Navigations";
 import useStudentStatusChange, { statusDescription } from "../../../../Functions/StudentStatusChange";
+import { useStudentForm } from "../../../Studentcontext/StudentFormContext";
+import { useTheme } from "../../../../Themes/ThemeContext";
+import StudentStatusDropdown from "../../../../Functions/StudentStatusDropdown";
 
 
 const StudentsList = () => {
+    // for theme -------------------------
+    const { getTheme } = useTheme();
+    const theme = getTheme();
+    // ------------------------------------
+
     const { type } = useParams(); // Get type from URL
-    const location = useLocation();
-    const { data } = location.state || { data: "No data available", type: "Unknown" };
-    // To store students status and set active and inactive 
-    // const [studentStatuses, setStudentStatuses] = useState({}); // Store status per trainer
-    const { token } = useAuth();
-    const [searchTerm, setSearchTerm] = useState('');
-    const { studentStatuses, setStudentStatuses, handleStudentStatusChange } = useStudentStatusChange(token);
+    const { loading, studentsCounts, fetchStudentCount } = useStudentForm();
+
+    const { studentStatuses, setStudentStatuses, handleStudentStatusChange } = useStudentStatusChange();
     const navigate = useNavigate();
 
-    const filteredStudents = Array.isArray(data) ? data : [];
+        // for Pagination 
+    const [searchTerm, setSearchTerm] = useState('');
+    const [inputValue, setInputValue] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 50;
 
+    
+    useEffect(() => {
+        setCurrentPage(1)
+    },[])
+
+    useEffect(() => {
+        if (type) {
+            fetchStudentCount(type, currentPage, pageSize);
+        }
+    }, [type, currentPage]);
+
+    const currentStudentData = studentsCounts?.[type] || {};
+    const filteredStudents = currentStudentData?.results || [];
+
+  // HANDLE SEARCH INPUT AND DEBOUNCE 
+        useEffect(() => {
+            const handler = setTimeout(() => {
+                setSearchTerm(inputValue.trimStart());
+                setCurrentPage(1)
+            }, 500); // debounce delay in ms
+          
+            return () => {
+              clearTimeout(handler); // clear previous timeout on re-typing
+            };
+          }, [inputValue]);
+    
+    
     useEffect(() => {
         if (Array.isArray(filteredStudents) && filteredStudents.length > 0) {
             
@@ -43,8 +76,8 @@ const StudentsList = () => {
 
 
     // Handle Toggle of trainer active and inactive 
-    const onChangeStatus = (studentId, newStatus) => {
-        handleStudentStatusChange({ studentId, newStatus });
+    const onChangeStatus = (studentId, newStatus, status_note) => {
+        handleStudentStatusChange({ studentId, newStatus, status_note });
     };
 
 
@@ -59,7 +92,7 @@ const StudentsList = () => {
                 (student.name?.toLowerCase() || "").includes(term) ||
                 (student.email?.toLowerCase() || "").includes(term) ||
                 (student.phone?.toLowerCase() || "").includes(term) ||
-                (student.support_coordinator_name?.toLowerCase() || "").includes(term)              );
+                (student.support_coordinator_name?.toLowerCase() || "").includes(term));
             });
           }, [filteredStudents, searchTerm]);
           
@@ -69,21 +102,21 @@ const StudentsList = () => {
 
     return (
         <>
-        <div className="w-auto pt-4 px-2 mt-10 darkmode">
-            <div className="relative w-full h-full shadow-md sm:rounded-lg border border-gray-50">
-                <div className={`pb-2 relative`}>
+        <div className={`w-auto pt-4 px-4 mt-10 ${theme.bg}`}>
+            {/* <div className="relative w-full h-full shadow-md sm:rounded-lg border border-gray-50"> */}
+                {/* <div className={`pb-2 relative`}> */}
                     <StudentCards/>
 
                     <div className="flex justify-between items-center">
-                        <h3 className="text-lg font-semibold my-4 px-4"> {type === "enrolled_students"? "Students Enrolled In Batches": type === "today_added_students" ? "Today Added Students" : type === "not_enrolled_students" ? "Students Not Enrolled In Batches Yet" : type === "active_students" ? "Active Students" : "Inactive Students"}</h3>
+                        <h3 className={`font-semibold px-1 my-4 ${theme.text}`}> {type === "enrolled_students"? "Students Enrolled In Batches": type === "today_added_students" ? "Today Added Students" : type === "not_enrolled_students" ? "Students Not Enrolled In Batches Yet" : type === "active_students" ? "Active Students" : "Inactive Students"}</h3>
                         <label htmlFor="table-search" className="sr-only">Search</label>
                         <div className="relative h-auto">
-                            <input onChange={(e) => setSearchTerm(e.target.value.replace(/^\s+/, ''))} value={searchTerm} type="text" id="table-search" placeholder="Search for items"
-                                className="2xl:w-96 lg:w-96 md:w-72 h-8 block p-2 pr-10 text-xs text-gray-600 font-normal border border-gray-300 rounded-lg bg-gray-50 focus:ring-0 focus:border-blue-500" 
+                            <input onChange={(e) => setInputValue(e.target.value.replace(/^\s+/, ''))} value={inputValue} type="text" id="table-search" placeholder="Search for items"
+                                className={`2xl:w-96 lg:w-96 md:w-72 h-8 block p-2 pr-10 text-xs font-medium ${theme.searchBg}`}
                                 />
                             <div className="absolute inset-y-0 right-0 h-auto flex items-center pr-3">
-                            <button onClick={() => setSearchTerm("")}>
-                            {searchTerm ? (
+                            <button onClick={() => setInputValue("")}>
+                            {inputValue ? (
                                 <svg className="w-4 h-4 text-gray-500" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M6.293 6.293a1 1 0 011.414 0L10 8.586l2.293-2.293a1 1 0 111.414 1.414L11.414 10l2.293 2.293a1 1 0 01-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 01-1.414-1.414L8.586 10 6.293 7.707a1 1 0 010-1.414z" clipRule="evenodd"></path>
                                     </svg>
@@ -97,71 +130,77 @@ const StudentsList = () => {
                         </div>
                     </div>
 
-                    <div className="w-full h-[39rem] overflow-y-auto rounded-lg pb-2">
-                        <table className="w-full text-xs text-left text-gray-500">
-                        <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10">
+                    <div className="w-full h-auto md:max-h-[33rem] 2xl:max-h-[34rem] overflow-y-auto rounded-xl pb-2 bg-white/40 backdrop-blur-sm shadow-sm">
+                        <table className="w-full text-xs font-normal text-left text-gray-600">
+                        <thead className="bg-white sticky top-0 z-10">
                             {["not_enrolled_students", "today_added_students", "enrolled_students", "active_students", "inactive_students"].includes(type) && (
-                                <>
-                                <tr>
-                                <th scope="col" className="px-3 py-3 md:px-2">
+
+                            <tr className="bg-gray-50/80">
+                                <th scope="col" className="px-3 py-3 md:px-2 text-xs font-medium uppercase">
                                     s.No
                                 </th>
-                                <th scope="col" className="px-3 py-3 md:px-1">
+                                <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                     Enrollment No
                                 </th>
-                                <th scope="col" className="px-3 py-3 md:px-1">
+                                <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                     Name
                                 </th>
-                                <th scope="col" className="px-3 py-3 md:px-1">
+                                <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                     Phone No
                                 </th>
-                                <th scope="col" className="px-3 py-3 md:px-1 truncate">
+                                <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase truncate">
                                     Email
                                 </th>
-                                <th scope="col" className="px-3 py-3 md:px-1">
+                                <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                     Date of Joining
                                 </th>
-                                <th scope="col" className="px-3 py-3 md:px-1">
+                                <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                     Courses
                                 </th>
-                                <th scope="col" className="px-3 py-3 md:px-1">
+                                <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                     Language
                                 </th>
-                                <th scope="col" className="px-3 py-3 md:px-1">
+                                <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                     Mode
                                 </th>
-                                <th scope="col" className="px-3 py-3 md:px-1">
+                                <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                     Preferred Week
                                 </th>
-                                <th scope="col" className="px-3 py-3 md:px-1">
+                                <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                     Location
                                 </th>
-                                <th scope="col" className="px-3 py-3 md:px-1">
+                                <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                     course Counsellor
                                 </th>
-                                <th scope="col" className="px-3 py-3 md:px-1">
+                                <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                     support Coordinator
                                 </th>
-                                <th scope="col" className="px-3 py-3 md:px-1">
+                                <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                     Status
                                 </th>
                                 
                             </tr>
-                                </>
                             )}
                         
                         </thead>
-                        <tbody>
-                        {searchFilteredStudents.length > 0 ? (
-                            searchFilteredStudents.map((item, index) => (
-                                <tr key={item.id} className="bg-white border-b border-gray-200 hover:bg-gray-50">
-                                    <td className="px-3 py-2 md:px-2 font-medium text-gray-900 ">
-                                        {index + 1}
+                        <tbody className="divide-y divide-gray-100 font-light text-gray-700">
+                        { loading ? (
+                                <tr>
+                                    <td colSpan="100%" className="text-center py-4">
+                                        <Spin size="large" />
                                     </td>
-                                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(navigate, item.id)}>
+                                </tr>
+
+                        ) : searchFilteredStudents.length > 0 ? (
+                            searchFilteredStudents.map((item, index) => (
+                                <tr key={item.id} className="hover:bg-white transition-colors scroll-smooth">
+                                    <td className="px-3 py-2 md:px-2">
+                                        {(currentPage - 1) * pageSize + index + 1}
+                                    </td>
+                                    <td className="px-3 py-2 md:px-1 font-medium cursor-pointer" onClick={() => handleStudentClick(navigate, item.id)}>
                                         {item.enrollment_no}
                                     </td>
-                                    <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(navigate, item.id)}>
+                                    <td className="px-3 py-2 md:px-1 font-medium cursor-pointer" onClick={() => handleStudentClick(navigate, item.id)}>
                                         {item.name}
                                     </td>
                                     <td className="px-3 py-2 md:px-1">
@@ -191,7 +230,7 @@ const StudentsList = () => {
                                                     <Tooltip key={index} title={name} placement="top">
                                                         <Avatar
                                                             size={24}
-                                                            style={{ backgroundColor: "#87d068" }}
+                                                            className={`${theme.studentCount} text-white`}
                                                         >
                                                             {name[0]}
                                                         </Avatar>
@@ -200,22 +239,22 @@ const StudentsList = () => {
                                         </Avatar.Group>
                                     </td>
 
-                                    <td className="px-3 py-2 md:px-1">
-                                        <Tag bordered={false} color={item.mode == 'Offline'? 'green' : item.mode == 'Online'? 'volcano' : 'geekblue'}>{item.mode}</Tag>
+                                    <td className="px-3 py-2 md:px-1 font-normal">
+                                        <Tag className="rounded-xl" bordered={false} color={item.mode == 'Offline'? 'green' : item.mode == 'Online'? 'volcano' : 'geekblue'}>{item.mode}</Tag>
                                     </td>
 
-                                    <td className="px-3 py-2 md:px-1">
-                                        <Tag bordered={false} color={item.language == 'Hindi'? 'green' : item.language == 'English'? 'volcano' : 'blue'}>{item.language}</Tag>
+                                    <td className="px-3 py-2 md:px-1 font-normal">
+                                        <Tag className="rounded-xl" bordered={false} color={item.language == 'Hindi'? 'green' : item.language == 'English'? 'volcano' : 'blue'}>{item.language}</Tag>
                                     </td>
 
-                                    <td className="px-3 py-2 md:px-1">
-                                        <Tag bordered={false} color={item.preferred_week === "Weekdays" ? "cyan" : item.preferred_week === "Weekends" ? "gold" : "geekblue" }>
+                                    <td className="px-3 py-2 md:px-1 font-normal">
+                                        <Tag className="rounded-xl" bordered={false} color={item.preferred_week === "Weekdays" ? "cyan" : item.preferred_week === "Weekends" ? "gold" : "geekblue" }>
                                             {item.preferred_week}
                                         </Tag>
                                     </td>
 
-                                    <td className="px-3 py-2 md:px-1">
-                                        {item.location == '1' ? <Tag bordered={false} color="blue">Saket</Tag> : item.location == "2" ? <Tag bordered={false} color="magenta">Laxmi Nagar</Tag> : <Tag bordered={false} color="geekblue">Both</Tag>}
+                                    <td className="px-3 py-2 md:px-1 font-normal">
+                                        {item.location == '1' ? <Tag className="rounded-xl" bordered={false} color="blue">Saket</Tag> : item.location == "2" ? <Tag className="rounded-xl" bordered={false} color="magenta">Laxmi Nagar</Tag> : <Tag className="rounded-xl" bordered={false} color="geekblue">Both</Tag>}
                                     </td>
 
                                     <td className="px-3 py-2 md:px-1">
@@ -226,32 +265,12 @@ const StudentsList = () => {
                                         {item.support_coordinator_name}
                                     </td>
 
-                                    <td className="px-3 py-2 md:px-1">
-                                        <Dropdown
-                                            menu={{
-                                                items: ["Active", "Inactive", "Temp Block", "Restricted"]
-                                                    .map((status) => ({
-                                                        key: status,
-                                                        label:(
-                                                        <Tooltip title={statusDescription[status]} placement="left">
-                                                            <span>{status}</span>
-                                                        </Tooltip>
-                                                    ),
-                                                    })),
-                                                onClick: ({ key }) => onChangeStatus(item.id, key),
-                                            }}
-                                            >
-                                                <a onClick={(e) => e.preventDefault()}>
-                                                <Tag color={
-                                                    (studentStatuses[item.id] || item.status) === "Active" ? "#28a745" :
-                                                    (studentStatuses[item.id] || item.status) === "Inactive" ? "#6c757d" :
-                                                    (studentStatuses[item.id] || item.status) === "Temp Block" ? "#ff9100" :
-                                                    "#ef233c"
-                                                }>
-                                                    {studentStatuses[item.id || item.status]} <span><DownOutlined /></span>
-                                                </Tag>
-                                            </a>
-                                        </Dropdown>
+                                    <td className="px-3 py-2 md:px-1 font-normal">
+                                        <StudentStatusDropdown
+                                            item={item}
+                                            studentStatuses={studentStatuses}
+                                            onChangeStatus={onChangeStatus}
+                                        />
                                     </td>
                                 </tr>
                             ))
@@ -266,8 +285,20 @@ const StudentsList = () => {
                         </table>
                     </div>
 
-                </div>
-            </div>
+                     <div className="flex justify-center items-center mt-0 py-2 bg-gray-200/20">
+                        <Pagination
+                            size="small"
+                            current={currentPage}
+                            total={currentStudentData?.total || 0}
+                            pageSize={pageSize}
+                            onChange={(page) => setCurrentPage(page)}
+                            showSizeChanger={false}
+                            showQuickJumper={false}
+                        />
+                    </div>
+
+                {/* </div> */}
+            {/* </div> */}
         </div>
         </>
     )

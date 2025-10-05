@@ -26,7 +26,7 @@ const AttendanceWarning = (data) => {
             <p style="margin: 5px 0; font-size: 16px; line-height: 1.6; color: #000;"><br>
                         For any further assistance, feel free to reach out to your batch coordinator:<br>
                         👤 Name: <strong>${data?.batch?.batch_coordinator_name}</strong><br>
-                        📱 Phone: <strong>${data?.batch?.batch_coordinator_phone}</strong>
+                        📞 Phone: <strong>${data?.batch?.batch_coordinator_phone}</strong>
             </p> 
 
             <p style="font-size: 15px; margin-top: 30px; line-height: 1.6; color: #000;"><br>

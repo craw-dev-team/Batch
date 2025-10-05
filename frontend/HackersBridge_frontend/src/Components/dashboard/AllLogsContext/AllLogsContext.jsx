@@ -1,6 +1,5 @@
-import axios from "axios";
 import React, { createContext, useState, useContext, useCallback, useMemo } from "react";
-import BASE_URL from "../../../ip/Ip";
+import axiosInstance from "../api/api";
 
 // Create the context object
 const AllLogsContext = createContext();
@@ -22,8 +21,8 @@ const AllLogsProvider = ({ children }) => {
 
         setLoading(true);
         try {
-            const response = await axios.get(`${BASE_URL}/api/logs/`,
-            { headers: { 'Content-Type': 'application/json'},
+            const response = await axiosInstance.get(`/api/logs/`,
+            {
             params: {
               page,
               page_size: pageSize,
@@ -33,7 +32,6 @@ const AllLogsProvider = ({ children }) => {
           }
             );
             const data = response.data;
-            // console.log(data);
             
             setAllLogsData(prevData => {
               if(JSON.stringify(prevData) !== JSON.stringify(data)){
@@ -42,7 +40,6 @@ const AllLogsProvider = ({ children }) => {
               return prevData;
             });
 
-            // console.log('Batches Data ', data)
         } catch (error) {
           console.error('Error fetching All Logs Data', error);
         } finally {

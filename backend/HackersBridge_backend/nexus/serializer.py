@@ -103,57 +103,60 @@ class FirstTimeResetPasswordSerializer(serializers.Serializer):
         )
 
 
+{
 
 # This is for Forgot Password
-class ForgotPasswordSerializer(serializers.Serializer):
-    email = serializers.EmailField()
+# class ForgotPasswordSerializer(serializers.Serializer):
+#     email = serializers.EmailField()
 
-    def validate(self, data):
-        email = data.get('email')
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            raise serializers.ValidationError("User with this email does not exist.")
+#     def validate(self, data):
+#         email = data.get('email')
+#         try:
+#             user = User.objects.get(email=email)
+#         except User.DoesNotExist:
+#             raise serializers.ValidationError("User with this email does not exist.")
 
-        # Generate and store OTP
-        otp = get_random_string(length=6, allowed_chars='1234567890')
-        OTPVerification.objects.create(user=user, otp=otp)
+#         # Generate and store OTP
+#         otp = get_random_string(length=6, allowed_chars='1234567890')
+#         OTPVerification.objects.create(user=user, otp=otp)
 
-        # Send OTP via email
-        send_mail(
-            subject="Your Password Reset OTP",
-            message=f"Your OTP for password reset is: {otp}.",
-            from_email="noreply@yourdomain.com",
-            recipient_list=[email],
-            fail_silently=False,
-        )
+#         # Send OTP via email
+#         send_mail(
+#             subject="Your Password Reset OTP",
+#             message=f"Your OTP for password reset is: {otp}.",
+#             from_email="noreply@yourdomain.com",
+#             recipient_list=[email],
+#             fail_silently=False,
+#         )
 
-        return data
+#         return data
+}
     
+{
 
-# This is For OTP Varification
-class VerifyOTPSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    otp = serializers.CharField(max_length=6)
+# # This is For OTP Varification
+# class VerifyOTPSerializer(serializers.Serializer):
+#     email = serializers.EmailField()
+#     otp = serializers.CharField(max_length=6)
 
-    def validate(self, data):
-        email = data.get('email')
-        otp = data.get('otp')
+#     def validate(self, data):
+#         email = data.get('email')
+#         otp = data.get('otp')
 
-        try:
-            user = User.objects.get(email=email)
-            otp_record = OTPVerification.objects.filter(user=user, otp=otp).first()
-            if not otp_record:
-                raise serializers.ValidationError("Invalid OTP or OTP expired.")
+#         try:
+#             user = User.objects.get(email=email)
+#             otp_record = OTPVerification.objects.filter(user=user, otp=otp).first()
+#             if not otp_record:
+#                 raise serializers.ValidationError("Invalid OTP or OTP expired.")
             
-            # OTP is valid, delete it
-            otp_record.delete()
-        except User.DoesNotExist:
-            raise serializers.ValidationError("User not found.")
+#             # OTP is valid, delete it
+#             otp_record.delete()
+#         except User.DoesNotExist:
+#             raise serializers.ValidationError("User not found.")
 
-        return data
+#         return data
     
-
+}
 
 {
 
@@ -186,35 +189,47 @@ class VerifyOTPSerializer(serializers.Serializer):
 #         return data
 }
 
+{
 
+
+# class ResetPasswordSerializer(serializers.Serializer):
+#     email = serializers.EmailField()
+#     new_password = serializers.CharField(write_only=True)
+
+#     def validate(self, data):
+#         email = data.get('email')
+#         new_password = data.get('new_password')
+
+#         try:
+#             user = User.objects.get(email=email)
+#             user.set_password(new_password)
+#             user.save()
+
+#             # Send confirmation email
+#             send_mail(
+#                 subject="Password Reset Successful",
+#                 message="Your password has been successfully reset.",
+#                 from_email="noreply@yourdomain.com",
+#                 recipient_list=[email],
+#                 fail_silently=False,
+#             )
+#         except User.DoesNotExist:
+#             raise serializers.ValidationError("User not found.")
+
+#         return data
+
+}
+
+class ForgotPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+class VerifyOTPSerializer(serializers.Serializer):
+    reset_token = serializers.CharField()
+    otp = serializers.CharField(max_length=6)
 
 class ResetPasswordSerializer(serializers.Serializer):
-    email = serializers.EmailField()
+    verified_token = serializers.CharField()
     new_password = serializers.CharField(write_only=True)
-
-    def validate(self, data):
-        email = data.get('email')
-        new_password = data.get('new_password')
-
-        try:
-            user = User.objects.get(email=email)
-            user.set_password(new_password)
-            user.save()
-
-            # Send confirmation email
-            send_mail(
-                subject="Password Reset Successful",
-                message="Your password has been successfully reset.",
-                from_email="noreply@yourdomain.com",
-                recipient_list=[email],
-                fail_silently=False,
-            )
-        except User.DoesNotExist:
-            raise serializers.ValidationError("User not found.")
-
-        return data
-
-
 
 class CourseSerializer(serializers.ModelSerializer):
     class Meta:
@@ -226,7 +241,11 @@ class CourseSerializer(serializers.ModelSerializer):
 class TimeslotSerializer(serializers.ModelSerializer):
     class Meta:
         model = Timeslot
-        fields = '__all__'
+        fields = '__all__'  
+
+    def get_generated_by(self, obj):
+        return obj.generated_by.username if obj.generated_by else "craw"
+
 
 
 
@@ -686,55 +705,55 @@ class BatchCreateSerializer(serializers.ModelSerializer):
             elif status == 'Upcoming':
                 StudentCourse.objects.filter(student__in=removed_students, course=instance.course).update(status='Not Started')
 
-            # Send removal email to removed students
-            for student in removed_students:
-                subject = f"You have been removed from {instance.course} ({instance.batch_id})"
-                html_message = f"""<html>
-        <head>
-        <meta charset="UTF-8">
-        <title>Removed from Batch</title>
-        </head>
-        <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0;">
-        <div style="max-width: 600px; margin: 40px auto; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); overflow: hidden; color: #000;">
-            <div style="text-align: center; padding: 20px; border-bottom: 1px solid #ddd;">
-                <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 60px;">
-            </div>
-            <div style="padding: 30px; font-size: 16px; color: #000;">
-                <h2 style="text-align: center; font-size: 22px; color: #000;">📢 Batch Update Notice</h2>
-                <p style="color: #000;">Dear <strong>{ student.name }</strong>,</p>
-                <p style="color: #000;">We would like to inform you that you have been removed from the <strong>{ instance.course }</strong> course batch <strong>{ instance.batch_id }</strong>.</p>
-                <p style="color: #000;">If this was unexpected or if you believe this was a mistake, please contact your trainer or Craw Security support immediately.</p>
-                <p style="margin-top: 30px; color: #000;">
-                    📍 <strong>Our Address:</strong><br>
-                    1st Floor, Plot no. 4, Lane no. 2, Kehar Singh Estate, Westend Marg,<br>
-                    Behind Saket Metro Station, New Delhi 110030
-                </p>
-                <p style="color: #000;">
-                    📞 <strong>Phone:</strong> 011-40394315 | +91-9650202445, +91-9650677445<br>
-                    📧 <strong>Email:</strong> training@craw.in<br>
-                    🌐 <strong>Website:</strong> 
-                    <a href="https://www.craw.in" style="text-decoration: underline;">www.craw.in</a>
-                </p>
-                <p style="color: #000;">
-                    Warm regards,<br>
-                    <strong>Craw Cyber Security Pvt Ltd</strong> 🛡️
-                </p>
-            </div>
-            <!-- Footer -->
-            <div style="background-color: #f0f0f0; padding: 18px 20px; text-align: center; font-size: 14px; color: #000; border-top: 1px solid #ddd;">
-                <p style="margin: 0;">© 2025 <strong>Craw Cyber Security Pvt Ltd</strong>. All Rights Reserved.</p>
-                <p style="margin: 5px 0 0;">This is an automated message. Please do not reply.</p>
-            </div>
-        </div>
-        </body>
-        </html>"""
-                from_email = "CRAW SECURITY BATCH <training@craw.in>"
-                try:
-                    email = EmailMessage(subject, html_message, from_email, [student.email])
-                    email.content_subtype = "html"
-                    email.send()
-                except Exception as e:
-                    print(f"Failed to send removal email to {student.email}: {str(e)}")
+        #     # Send removal email to removed students
+        #     for student in removed_students:
+        #         subject = f"You have been removed from {instance.course} ({instance.batch_id})"
+        #         html_message = f"""<html>
+        # <head>
+        # <meta charset="UTF-8">
+        # <title>Removed from Batch</title>
+        # </head>
+        # <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0;">
+        # <div style="max-width: 600px; margin: 40px auto; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); overflow: hidden; color: #000;">
+        #     <div style="text-align: center; padding: 20px; border-bottom: 1px solid #ddd;">
+        #         <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 60px;">
+        #     </div>
+        #     <div style="padding: 30px; font-size: 16px; color: #000;">
+        #         <h2 style="text-align: center; font-size: 22px; color: #000;">📢 Batch Update Notice</h2>
+        #         <p style="color: #000;">Dear <strong>{ student.name }</strong>,</p>
+        #         <p style="color: #000;">We would like to inform you that you have been removed from the <strong>{ instance.course }</strong> course batch <strong>{ instance.batch_id }</strong>.</p>
+        #         <p style="color: #000;">If this was unexpected or if you believe this was a mistake, please contact your trainer or Craw Security support immediately.</p>
+        #         <p style="margin-top: 30px; color: #000;">
+        #             📍 <strong>Our Address:</strong><br>
+        #             1st Floor, Plot no. 4, Lane no. 2, Kehar Singh Estate, Westend Marg,<br>
+        #             Behind Saket Metro Station, New Delhi 110030
+        #         </p>
+        #         <p style="color: #000;">
+        #             📞 <strong>Phone:</strong> 011-40394315 | +91-9650202445, +91-9650677445<br>
+        #             📧 <strong>Email:</strong> training@craw.in<br>
+        #             🌐 <strong>Website:</strong> 
+        #             <a href="https://www.craw.in" style="text-decoration: underline;">www.craw.in</a>
+        #         </p>
+        #         <p style="color: #000;">
+        #             Warm regards,<br>
+        #             <strong>Craw Cyber Security Pvt Ltd</strong> 🛡️
+        #         </p>
+        #     </div>
+        #     <!-- Footer -->
+        #     <div style="background-color: #f0f0f0; padding: 18px 20px; text-align: center; font-size: 14px; color: #000; border-top: 1px solid #ddd;">
+        #         <p style="margin: 0;">© 2025 <strong>Craw Cyber Security Pvt Ltd</strong>. All Rights Reserved.</p>
+        #         <p style="margin: 5px 0 0;">This is an automated message. Please do not reply.</p>
+        #     </div>
+        # </div>
+        # </body>
+        # </html>"""
+        #         from_email = "CRAW SECURITY BATCH <training@craw.in>"
+        #         try:
+        #             email = EmailMessage(subject, html_message, from_email, [student.email])
+        #             email.content_subtype = "html"
+        #             email.send()
+        #         except Exception as e:
+        #             print(f"Failed to send removal email to {student.email}: {str(e)}")
             
         return instance
 

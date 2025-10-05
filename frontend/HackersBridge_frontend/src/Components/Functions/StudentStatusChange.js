@@ -1,7 +1,6 @@
 import { message } from "antd";
-import axios from "axios";
-import BASE_URL from "../../ip/Ip";
 import { useState } from "react";
+import axiosInstance from "../dashboard/api/api";
 
 
     const statusDescription = {
@@ -22,18 +21,16 @@ import { useState } from "react";
     const useStudentStatusChange = () => {
         const [studentStatuses, setStudentStatuses] = useState({});
 
-        const handleStudentStatusChange = async ({studentId, newStatus}) => {
+        const handleStudentStatusChange = async ({studentId, newStatus, status_note}) => {
+            
             const previousStatus = studentStatuses[studentId]; // store current before update
-            //  Optimistically update UI before API call
+           
             setStudentStatuses((prev) => ({ ...prev, [studentId]: newStatus }));
 
             try {
-                await axios.put(`${BASE_URL}/api/students/edit/${studentId}/`, 
-                    { status: newStatus },
-                    { headers: { 'Content-Type': 'application/json'}, 
-                    withCredentials : true
-                }
-                );
+                await axiosInstance.put(`/api/students/edit/${studentId}/`, 
+                    { status: newStatus, status_note } );
+
                 message.success(`Student status updated to ${newStatus}`);
             } catch (error) {            
                 message.error("Failed to update status");

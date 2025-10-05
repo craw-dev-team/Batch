@@ -1,6 +1,5 @@
-import axios from "axios";
 import { createContext, useContext, useState } from "react";
-import BASE_URL from "../../../ip/Ip";
+import axiosInstance from "../api/api";
 
 
 const SpecificBatchContext = createContext();
@@ -12,23 +11,12 @@ const SpecificBatchProvider = ({ children }) => {
 
     const fetchSpecificBatch = async (batchId) => {
         if (loading) return;
-
-        // const token = localStorage.getItem('token');
-        // if (!token) {
-        //     console.error("No token found, user might be logged out.");
-        //     return;
-        // };
         
         setLoading(true)
 
         try {
-            const response = await axios.get(`${BASE_URL}/api/batches/info/${batchId}/`, 
-                { headers: { 'Content-Type': 'application/json' }, 
-                withCredentials : true
-            }
-            );
+            const response = await axiosInstance.get(`/api/batches/info/${batchId}/` );
             const data = response?.data
-            // console.log(data);
             
             setSpecificBatch(prevData => {
                 if (JSON.stringify(prevData) !== JSON.stringify(data)) {
@@ -36,7 +24,6 @@ const SpecificBatchProvider = ({ children }) => {
                 }
                 return prevData;
             });
-            // console.log(data);
             
         } catch (error) {
             console.error('Error fetching SpecificBatch Data', error);

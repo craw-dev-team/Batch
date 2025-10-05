@@ -9,11 +9,17 @@ import { Routes, Route, useNavigate, useLocation  } from "react-router-dom";
 import * as route from '../../routes/Slugs';
 import crawlogo from '../../assets/images/crawlogo.png';
 import { useAuth } from '../dashboard/AuthContext/AuthContext';
+import { useTheme } from '../Themes/ThemeContext';
+
 
 
 const Sidebarnew = ({ collapsed }) => {
+  // for theme -------------------------
+    const { getTheme } = useTheme();
+    const theme = getTheme();
+  // ------------------------------------
 
-  const [theme] = useThemeMode(); // Get the theme from contex
+  // const [theme] = useThemeMode(); // Get the theme from contex
   const navigate = useNavigate(); // Hook to navigate programmatically
   const location = useLocation();
   const { logout } = useAuth();
@@ -31,15 +37,16 @@ const Sidebarnew = ({ collapsed }) => {
 
 
   return (
-    <Sider trigger={null} collapsible collapsed={collapsed} theme={theme} className="h-screen sticky left-0 top-0 overflow-hidden z-50">
-    <div className="darkmode relative top-0 h-28 flex justify-center items-center border border-r-gray-100 ">
+    <Sider trigger={null} collapsible collapsed={collapsed} className={`h-screen sticky left-0 top-0 overflow-hidden z-50`}>
+    <div className={`relative top-0 h-28 flex justify-center items-center ${theme.bg}`}>
       <div className="w-12 h-12">
         <img src={crawlogo} alt="Logo" />
       </div>
     </div>
 
+
     <Menu
-      className="darkmode h-full z-50 pt-6"
+      className={`h-full z-50 pt-6 ${theme.bg} `}
       onClick={({ key }) => navigate(key)}
       mode="inline"
       selectedKeys={[location.pathname]}
@@ -47,80 +54,80 @@ const Sidebarnew = ({ collapsed }) => {
       items={[
         {
           key: route.BATCHES_PATH,
-          icon: <ProductOutlined />,
-          label: "Batches",
-          className: "rounded-md dark:text-gray-100 dark:hover:text-red-500",
+          icon: <ProductOutlined style={{ color: theme.textColor }} />,
+          label: collapsed ? "Batches" : <span className={theme.text}>Batches</span>,
+          className: location.pathname === route.BATCHES_PATH ? theme.sideBarTab : ""
         },
 
         {
           key: route.STUDENTS_PATH,
-          icon: <UsergroupAddOutlined />,
-          label: "Students",
-          className: "rounded-md hover:bg-gray-300 dark:hover:bg-[#344c6b] dark:text-gray-300",
+          icon: <UsergroupAddOutlined style={{ color: theme.textColor }} />,
+          label: collapsed ? "Students" : <span className={theme.text}>Students</span>,
+          className: location.pathname === route.STUDENTS_PATH ? theme.sideBarTab : ""
         },
 
         {
           key: route.TRAINERS_PATH,
-          icon: <UserOutlined />,
-          label: "Trainers",
-          className: "rounded-md hover:bg-gray-300 dark:hover:bg-[#344c6b] dark:text-gray-300",
+          icon: <UserOutlined style={{ color: theme.textColor }} />,
+          label: collapsed ? "Trainers" : <span className={theme.text}>Trainers</span>,
+          className: location.pathname === route.TRAINERS_PATH ? theme.sideBarTab : ""
         },
         
         {
           key: route.BATCH_CHAT_PATH,
-          icon: <WechatWorkOutlined />,
-          label: "Batch Chats",
-          className: "rounded-md hover:bg-gray-300 dark:hover:bg-[#344c6b] dark:text-gray-300",
+          icon: <WechatWorkOutlined style={{ color: theme.textColor }} />,
+          label: collapsed ? "Batch Chats" : <span className={theme.text}>Batch Chats</span>,
+          className: location.pathname === route.BATCH_CHAT_PATH ? theme.sideBarTab : ""
         },
 
         {
           key: route.COURSES_PATH,
-          icon:<ProfileOutlined />,
-          label: "Courses",
-          className: "rounded-md hover:bg-gray-300 dark:hover:bg-[#344c6b] dark:text-gray-300",
+          icon:<ProfileOutlined style={{ color: theme.textColor }} />,
+          label: collapsed ? "Courses" : <span className={theme.text}>Courses</span>,
+          className: location.pathname === route.COURSES_PATH ? theme.sideBarTab : ""
         },
 
         {
           key: route.BOOKS_PATH,
-          icon: <BookOutlined />,
-          label: "Books",
-          className: "rounded-md hover:bg-gray-300 dark:hover:bg-[#344c6b] dark:text-gray-300",
+          icon: <BookOutlined style={{ color: theme.textColor }} />,
+          label: collapsed ? "Books" : <span className={theme.text}>Books</span>,
+          className: location.pathname === route.BOOKS_PATH ? theme.sideBarTab : ""
           
         },
 
         {
           key: route.ANNOUNCEMENTS_PATH,
-          icon: <NotificationOutlined />,
-          label: "Announcements",
-          className: "rounded-md hover:bg-gray-300 dark:hover:bg-[#344c6b] dark:text-gray-300",
+          icon: <NotificationOutlined style={{ color: theme.textColor }} />,
+          label: collapsed ? "Announcements" : <span className={theme.text}>Announcements</span>,
+          className: location.pathname === route.ANNOUNCEMENTS_PATH ? theme.sideBarTab : ""
           
         },
 
         {
           key: route.TICKETS_PATH,
-          icon: <TagsOutlined />,
-          label: "Tickets",
-          className: "rounded-md hover:bg-gray-300 dark:hover:bg-[#344c6b] dark:text-gray-300",
+          icon: <TagsOutlined style={{ color: theme.textColor }} />,
+          label: collapsed ? "Tickets" : <span className={theme.text}>Tickets</span>,
+          className: location.pathname === route.TICKETS_PATH ? theme.sideBarTab : ""
         },
 
         {
           // key: route.ADD_DETAILS_PATH,
-          icon:<UnorderedListOutlined />,
-          label: "Add Details",
+          icon:<UnorderedListOutlined style={{ color: theme.textColor }} />,
+          label: collapsed ? "Add Details" : <span className={theme.text}>Add Details</span>,
           // className: "rounded-md hover:bg-gray-300 dark:hover:bg-[#344c6b] dark:text-gray-300",
           children: [
             {
               key: route.ADD_DETAILS_COORDINATORS_PATH,
-              icon:<UserSwitchOutlined />,
-              label: "Coordinators",
-              className: "rounded-md hover:bg-gray-300 dark:hover:bg-[#344c6b] dark:text-gray-300",
+              icon:<UserSwitchOutlined style={{ color: theme.textColor }} />,
+              label: collapsed ? "Coordinators" : <span className={theme.text}>Coordinators</span>,
+              className: location.pathname === route.ADD_DETAILS_COORDINATORS_PATH ? theme.sideBarTab : ""
 
             },
             {
               key: route.ADD_DETAILS_COUNSELLORS_PATH,
-              icon:<UserSwitchOutlined />,
-              label: "Counsellors",
-              className: "rounded-md hover:bg-gray-300 dark:hover:bg-[#344c6b] dark:text-gray-300",
+              icon:<UserSwitchOutlined style={{ color: theme.textColor }} />,
+              label: collapsed ? "Counsellors" : <span className={theme.text}>Counsellors</span>,
+              className: location.pathname === route.ADD_DETAILS_COUNSELLORS_PATH ? theme.sideBarTab : ""
 
             },
           ],
@@ -128,9 +135,9 @@ const Sidebarnew = ({ collapsed }) => {
 
         {
           key: route.ALL_LOGS_PATH,
-          icon:<AuditOutlined />,
-          label: "All Logs",
-          className: "rounded-md hover:bg-gray-300 dark:hover:bg-[#344c6b] dark:text-gray-300",
+          icon:<AuditOutlined style={{ color: theme.textColor }} />,
+          label: collapsed ? "All Logs" : <span className={theme.text}>All Logs</span>,
+          className: location.pathname === route.ALL_LOGS_PATH ? theme.sideBarTab : ""
 
         },
         

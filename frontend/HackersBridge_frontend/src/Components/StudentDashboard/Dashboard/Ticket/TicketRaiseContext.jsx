@@ -1,7 +1,6 @@
-import axios from "axios";
 import React, { createContext, useState, useContext, useCallback } from "react";
 import { message } from "antd";
-import BASE_URL from "../../../../ip/Ip";
+import axiosInstance from "../../../dashboard/api/api";
 
 const AllTicketsContext = createContext();
 
@@ -13,15 +12,10 @@ const AllTicketsProvider = ({ children }) => {
   // Get Tickets Data 
   const fetchTicketData = useCallback(async () => {
     if (loading) return;
-    // const token = localStorage.getItem("token");
-    // if (!token) return;
 
     setLoading(true);
     try {
-      const response = await axios.get(`${BASE_URL}/Student_login/student_ticket/`, {
-        headers: { 'Content-Type': 'application/json'},
-        withCredentials: true,
-      });
+      const response = await axiosInstance.get(`/Student_login/student_ticket/`);
       const data = response?.data;      
       setTicketData(prevData => JSON.stringify(prevData) !== JSON.stringify(data) ? data : prevData);
     } catch (error) {
@@ -35,17 +29,11 @@ const AllTicketsProvider = ({ children }) => {
 // Get Tickets Chats 
   const fetchTicketChat = useCallback(async (id) => {
     if (!id) return;
-    // const token = localStorage.getItem('token');
-    // if (!token) return;
 
     setLoading(true);
     try {
-      const response = await axios.get(`${BASE_URL}/Student_login/student_ticket/chats/${id}/`, {
-        headers: { 'Content-Type': 'application/json'},
-        withCredentials: true,
-      });
+      const response = await axiosInstance.get(`/Student_login/student_ticket/chats/${id}/` );
       const data = response?.data;
-      console.log(data);
       
       setTicketChat(prevData => JSON.stringify(prevData) !== JSON.stringify(data) ? data : prevData);
     } catch (error) {
@@ -57,23 +45,10 @@ const AllTicketsProvider = ({ children }) => {
 
   // Post Request for send ticket messages
   const sendTicketMessage = async (ticketId, messageText) => {
-    // const token = localStorage.getItem("token");
-    // if (!token) {
-    //   message.error("Unauthorized. Please log in.");
-    //   return;
-    // }
 
     try {
-      const response = await axios.post(
-        `${BASE_URL}/Student_login/student_ticket/chats/message/${ticketId}/`,
-        { message: messageText },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        }
-      );
+      const response = await axiosInstance.post(`/Student_login/student_ticket/chats/message/${ticketId}/`,
+        { message: messageText } );
 
       if (response.status === 200 || response.status === 201) {
         message.success("Message sent ");
@@ -89,12 +64,6 @@ const AllTicketsProvider = ({ children }) => {
 
   // Post Request for Ticket Submission
   const handleFormSubmit = async (formData, recaptchaToken) => {
-    
-    // const token = localStorage.getItem("token");
-    // if (!token) {
-    //   message.error("Unauthorized. Please log in.");
-    //   return;
-    // }
 
     const payload = {
       issue_type: formData.issue_type,
@@ -105,10 +74,7 @@ const AllTicketsProvider = ({ children }) => {
     };
 
     try {
-      const response = await axios.post(`${BASE_URL}/Student_login/student_ticket_create/`, payload, {
-        headers: { "Content-Type": "application/json"},
-        withCredentials: true
-      });
+      const response = await axiosInstance.post(`/Student_login/student_ticket_create/`, payload );
 
       if (response.status >= 200 && response.status <= 201) {
         message.success("Ticket Raised Successfully.");
@@ -128,14 +94,8 @@ const AllTicketsProvider = ({ children }) => {
   const handleCloseTicket = async (ticketId)=>{
     if(!ticketId) return;
 
-    // const token = localStorage.getItem("token");
-    // if (!token) {
-    //   message.error("Unauthorized. Please log in.");
-    //   return;
-    // }
-
     try {
-      const response = await axios.post(`${BASE_URL}/Student_login/student_ticket/status/${ticketId}/`,null, {
+      const response = await axiosInstance.post(`/Student_login/student_ticket/status/${ticketId}/`,null, {
         headers: { "Content-Type": "application/json"},
         withCredentials : true
       });

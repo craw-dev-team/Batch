@@ -2,11 +2,15 @@ import React from 'react';
 import { Card, Col, Row } from 'antd';
 import { useBatchForm } from '../../../Batchcontext/BatchFormContext';
 
+import { useTheme } from "../../../../Themes/ThemeContext.jsx";
 
 
 const BatchCards = ({ handleTabClick, activeTab }) => {
+  const { getTheme } = useTheme();
+  const theme = getTheme();
 
     const { batchData } = useBatchForm();
+
     
     return (
         <Row gutter={[14, 14]}>
@@ -17,21 +21,22 @@ const BatchCards = ({ handleTabClick, activeTab }) => {
             { key: "Hold", label: "Hold Batches", count: batchData?.results?.hold_batch_count || '0' },
             { key: "Completed", label: "Completed Batches", count: batchData?.results?.completed_batch_count || '0' },
             { key: "Cancelled", label: "Cancelled Batches", count: batchData?.results?.cancelled_batch_count || '0' },
-          ].map(({ key, label, count }) => (
+          ].map(({ key, label, count }, index) => (
             <Col span={4} key={key}>
               <Card
-                title={<span style={{ fontSize: '18px' }}>{count}</span>}
+                title={<span className={`text-${theme.cards[index]} text-2xl`}>{count}</span>}
                 variant="bordered"
-                className={`!p-0 rounded-md shadow-sm font-semibold transition-all duration-150 ${
+                className={`rounded-xl border shadow-sm hover:shadow-md transition-all duration-200 font-bold opacity-80 ${theme.cards[index] || ""} ${
                   key !== "all" ? "cursor-pointer" : "cursor-default"
                 }
-                  ${activeTab === key && key !== "all" ? "bg-blue-50 text-blue-600 border-blue-400" : "text-gray-800 border-gray-200"
+                  ${activeTab === key && key !== "all" ? `${theme.cards[index]} border-2 opacity-100` : ""
                   }`}
                 styles={{
                   header: {
                     padding: '2px 8px',
                     height: '28px',
-                    backgroundColor: '#ebf5ff',
+                    // backgroundColor: '#ebf5ff',
+                    backgroundColor: `${theme.cards[key] || ''}`,
                   },
                   body: {
                     padding: '4px 8px',

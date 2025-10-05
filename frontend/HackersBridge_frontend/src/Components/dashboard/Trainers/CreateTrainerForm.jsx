@@ -4,14 +4,19 @@ import { SyncOutlined } from '@ant-design/icons';
 import { useTrainerForm } from '../Trainercontext/TrainerFormContext';
 import { useCourseForm } from '../Coursecontext/CourseFormContext';
 import { useCoordinatorForm } from '../AddDetails/Coordinator/CoordinatorContext';
-import axios from 'axios';
-import BASE_URL from '../../../ip/Ip';
 import dayjs from 'dayjs';
 import { useAuth } from '../AuthContext/AuthContext';
+import axiosInstance from '../api/api';
+import { useTheme } from '../../Themes/ThemeContext';
 
 
 const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
     if(!isOpen) return null;
+
+    // for theme -------------------------
+    const { getTheme } = useTheme();
+    const theme = getTheme();
+    // ------------------------------------
 
     const isEditing = Boolean(selectedTrainerData?.id); 
     const { trainerFormData, setTrainerFormData, errors, setErrors, trainerData, fetchTrainers, resetTrainerForm } = useTrainerForm();
@@ -117,7 +122,7 @@ const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
                 // profile_picture: studentFormData.studentProfilePicture,
             };
 
-            console.log("Final Payload:", JSON.stringify(payload, null, 2));
+            // console.log("Final Payload:", JSON.stringify(payload, null, 2));
 
             try {
                 setLoading(true); // Start loading
@@ -127,19 +132,11 @@ const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
                 
                 if (selectedTrainerData && selectedTrainerData.id) {
                     // Update existing course (PUT)
-                    response = await axios.put(`${BASE_URL}/api/trainers/edit/${selectedTrainerData.id}/`, payload, {
-                        headers: { 'Content-Type': 'application/json' },
-                        withCredentials : true
-                    }
-                    );
+                    response = await axiosInstance.put(`/api/trainers/edit/${selectedTrainerData.id}/`, payload );
                         successMessage = "Trainer updated successfully!";
                     } else {
                         // Add new course (POST)
-                        response = await axios.post(`${BASE_URL}/api/trainers/add/`, payload, {
-                            headers: { 'Content-Type': 'application/json' },
-                            withCredentials : true
-                        }
-                        );
+                        response = await axiosInstance.post(`/api/trainers/add/`, payload );
                         successMessage = "Trainer added successfully!";
                     }
     
@@ -186,11 +183,11 @@ const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
 
     return (
         <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 z-50">
-            <div className="relative p-2 w-4/6 bg-white rounded-lg shadow-lg dark:bg-gray-700">
+            <div className={`relative p-2 w-4/6 rounded-lg shadow-xl ${theme.specificPageBg}`}>
                 
                 {/* Modal Header */}
-                <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600 border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t border-gray-300">
+                    <h3 className={`text-lg font-semibold ${theme.text}`}>
                     {isEditing ? "Edit Trainer" : "Add New Trainer"}
                     </h3>
                     <button
@@ -210,13 +207,13 @@ const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
                     <form className="p-4 md:p-5" onSubmit={handleFormSubmit}>
                    <div className="grid gap-4 mb-4 grid-cols-3">
                        <div className="col-span-1">
-                           <label htmlFor="trainerId" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Trainer Id</label>
+                           <label htmlFor="trainerId" className={`block mb-2 text-sm font-medium ${theme.text}`}>Trainer Id</label>
                             <Input name="trainerId" value={trainerFormData.trainerId}  onChange={(e) => handleChange("trainerId", e.target.value)} disabled={isEditing} className='rounded-lg border-gray-300' placeholder="Enter Trainer Id" />
                        </div>
                        
                        {/*  Trainer Name  */}
                        <div className="col-span-1">
-                            <label htmlFor="trainerName" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Trainer Name</label>
+                            <label htmlFor="trainerName" className={`block mb-2 text-sm font-medium ${theme.text}`}>Trainer Name</label>
                             <Input name="trainerName" value={trainerFormData.trainerName} className='rounded-lg border-gray-300' placeholder="Enter Trainer Name" 
                             onChange={(e) => {
                                 const inputValue = e.target.value.replace(/[^a-zA-Z\s]/g, ""); // Remove non-alphabetic characters
@@ -229,14 +226,14 @@ const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
 
                        {/* Trainer Date of Joining  */}
                        <div className="col-span-1">
-                            <label htmlFor="trainerDateOfJoining" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Trainer's Joining Date</label>
+                            <label htmlFor="trainerDateOfJoining" className={`block mb-2 text-sm font-medium ${theme.text}`}>Trainer's Joining Date</label>
                             <DatePicker name='trainerDateOfJoining' value={trainerFormData.trainerDateOfJoining ? dayjs(trainerFormData.trainerDateOfJoining, "YYYY-MM-DD") : null} onChange={(date, dateString) => setTrainerFormData({ ...trainerFormData, trainerDateOfJoining: dateString })} className='w-full border-gray-300' size='large'  placeholder="Select Joining Date"/>                       
                             {errors.trainerDateOfJoining && <p className="text-red-500 text-sm">{errors.trainerDateOfJoining}</p>}
                         </div>
 
                        {/* Trainer Phone Number */}
                        <div className="col-span-1">
-                            <label htmlFor="trainerPhoneNumber" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Trainer's Phone Number</label>
+                            <label htmlFor="trainerPhoneNumber" className={`block mb-2 text-sm font-medium ${theme.text}`}>Trainer's Phone Number</label>
                             <Input name="trainerPhoneNumber" value={trainerFormData.trainerPhoneNumber} className='rounded-lg border-gray-300'  size='large' placeholder='Enter Phone Number' 
                                 onChange={(e) => {
                                     const inputValue = e.target.value.replace(/\D/g, ""); // Remove non-numeric values
@@ -250,7 +247,7 @@ const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
 
                         {/* Trainer Email Address */}
                         <div className="col-span-1">
-                            <label htmlFor="trainerEmailAddress" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Trainer's Email Address</label>
+                            <label htmlFor="trainerEmailAddress" className={`block mb-2 text-sm font-medium ${theme.text}`}>Trainer's Email Address</label>
                             <Input name="trainerEmailAddress" value={trainerFormData.trainerEmailAddress} className='rounded-lg border-gray-300' placeholder="Enter Email Address" 
                                 onChange={(e) => {
                                     const inputValue = e.target.value.replace(/[^a-zA-Z0-9@._-]/g, ""); // Allow email characters
@@ -263,7 +260,7 @@ const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
                        
                        {/* Dropdown for Years of Experience Selection */}
                         <div className="col-span-1 sm:col-span-1">
-                            <label htmlFor="trainerExperience" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Trainer's Experience</label>
+                            <label htmlFor="trainerExperience" className={`block mb-2 text-sm font-medium ${theme.text}`}>Trainer's Experience</label>
                             <Select name="trainerExperience" value={trainerFormData.trainerExperience.length > 0 ? trainerFormData.trainerExperience : null } onChange={(value) => handleChange("trainerExperience", value)} className='w-full border-gray-300' size='large' placeholder="select trainer's Experience" 
                                 options={[
                                             { value: 'Fresher', label: 'Fresher' },
@@ -281,7 +278,7 @@ const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
 
                         {/* Dropdown for trainer course Selection */}
                         <div className="col-span-1 sm:col-span-1">
-                            <label htmlFor="trainerCourse" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Courses</label>
+                            <label htmlFor="trainerCourse" className={`block mb-2 text-sm font-medium ${theme.text}`}>Courses</label>
                             <Select name="trainerCourse" mode='multiple' className='w-full border-gray-300' size='large' placeholder='Select Courses' 
                                showSearch  // This enables search functionality
                                     
@@ -300,7 +297,7 @@ const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
 
                         {/* Dropdown for Trainer's Mode Selection */}
                         {/* <div className="col-span-1 sm:col-span-1">
-                            <label htmlFor="trainerMode" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Mode</label>
+                            <label htmlFor="trainerMode" className={`block mb-2 text-sm font-medium ${theme.text}`}>Mode</label>
                             <Select name="trainerMode" value={trainerFormData.trainerMode.length > 0 ? trainerFormData.trainerMode : null }  onChange={(value) => handleChange("trainerMode", value)} className='w-full border-gray-300' size='large' placeholder='Select Mode' 
                                 options={[
                                             { value: 'Offline', label: 'Offline' },
@@ -314,7 +311,7 @@ const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
 
                         {/* Dropdown for Trainer's Language Selection */}
                         <div className="col-span-1 sm:col-span-1">
-                           <label htmlFor="trainerLanguage" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Languages</label>
+                           <label htmlFor="trainerLanguage" className={`block mb-2 text-sm font-medium ${theme.text}`}>Languages</label>
                            <Select name="trainerLanguage" value={trainerFormData.trainerLanguage.length > 0 ? trainerFormData.trainerLanguage : null } onChange={(value) => handleChange("trainerLanguage", value)} className='w-full border-gray-300' size='large' placeholder='Select Languages' 
                                 options={[
                                             { value: 'Hindi', label: 'Hindi' },
@@ -327,7 +324,7 @@ const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
 
                        {/* Dropdown for Trainer's Preferred Week Selection */}
                        {/* <div className="col-span-1 sm:col-span-1">
-                           <label htmlFor="trainerPreferredWeek" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Preferred Week</label>
+                           <label htmlFor="trainerPreferredWeek" className={`block mb-2 text-sm font-medium ${theme.text}`}>Preferred Week</label>
                            <Select name="trainerPreferredWeek" value={trainerFormData.trainerPreferredWeek.length > 0 ? trainerFormData.trainerPreferredWeek : null } onChange={(value) => handleChange("trainerPreferredWeek", value)} className='w-full border-gray-300' size='large' placeholder='Select Preferred Week' 
                                 options={[
                                             { value: 'weekdays', label: 'Week Days' },
@@ -340,7 +337,7 @@ const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
 
                         {/* Dropdown for Trainer's Team Leader Selection */}
                         <div className="col-span-1 sm:col-span-1">
-                           <label htmlFor="trainerTeamLeader" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Trainer's Team Leader</label>
+                           <label htmlFor="trainerTeamLeader" className={`block mb-2 text-sm font-medium ${theme.text}`}>Trainer's Team Leader</label>
                             <div className='flex'>
                             <Checkbox  onChange={(e) => handleChange("isTeamLeader", e.target.checked)}></Checkbox>  
                             <Select name="trainerTeamLeader"  disabled={trainerFormData.isTeamLeader} className='ml-4 w-full border-gray-300' size='large' placeholder='Select Team Leader' 
@@ -365,7 +362,7 @@ const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
 
                         {/* Dropdown for trainer's Coordinator Selection */}
                         <div className="col-span-1 sm:col-span-1">
-                           <label htmlFor="trainerCoordinator" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Trainer's Coordinator</label>
+                           <label htmlFor="trainerCoordinator" className={`block mb-2 text-sm font-medium ${theme.text}`}>Trainer's Coordinator</label>
                            <Select name="trainerCoordinator" className='w-full border-gray-300' size='large' placeholder='Select Coordinator' 
                                 showSearch  // This enables search functionality
                                     
@@ -384,7 +381,7 @@ const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
 
                         {/* Dropdown for Location Selection */}
                         <div className="col-span-1 sm:col-span-1">
-                           <label htmlFor="location" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Location</label>
+                           <label htmlFor="location" className={`block mb-2 text-sm font-medium ${theme.text}`}>Location</label>
                            <Select name="location" value={trainerFormData.location ? String(trainerFormData.location) : null} onChange={(value) => handleChange("location", value)} className='w-full border-gray-300' size='large' placeholder='Select Location' 
                             options={[
                                         { value: '1', label: 'Saket' },
@@ -396,7 +393,7 @@ const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
 
                         {/* Dropdown for Trainer's Week Off Selection */}
                         <div className="col-span-1 sm:col-span-1">
-                           <label htmlFor="trainerWeekOff" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Trainer's Week Off</label>
+                           <label htmlFor="trainerWeekOff" className={`block mb-2 text-sm font-medium ${theme.text}`}>Trainer's Week Off</label>
                            <Select name="trainerWeekOff" value={trainerFormData.trainerWeekOff.length > 0 ? trainerFormData.trainerWeekOff : null } onChange={(value) => handleChange("trainerWeekOff", value)} className='w-full border-gray-300' size='large' placeholder='Select Week Off' 
                                 options={[
                                             { value: 'Monday', label: 'Monday' },
@@ -413,7 +410,7 @@ const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
                         
                          {/* Dropdown for Trainer's Time Slot Selection */}
                          <div className="col-span-1 sm:col-span-2">
-                           <label htmlFor="trainerTimeSlot" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Trainer's Time Slot</label>
+                           <label htmlFor="trainerTimeSlot" className={`block mb-2 text-sm font-medium ${theme.text}`}>Trainer's Time Slot</label>
                            <Select name="trainerTimeSlot" mode='multiple' className='w-full border-gray-300' size='large' placeholder='Select Trainer Time Slot' 
                                 value={Array.isArray(trainerFormData?.trainerTimeSlot) && trainerFormData?.trainerTimeSlot.length > 0
                                     ? trainerFormData.trainerTimeSlot.map(id => String(id))  // Convert IDs to strings
@@ -455,8 +452,8 @@ const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
                   <button
                     type="submit"
                     disabled={loading} // Disable button when loading
-                    className={`text-white inline-flex items-center font-medium rounded-lg text-sm px-5 py-2.5 text-center focus:ring-4 focus:outline-none
-                        ${loading ? "bg-gray-400 cursor-not-allowed" : "bg-green-500 hover:bg-green-600 focus:ring-green-300"}
+                    className={`text-white inline-flex items-center font-medium rounded-lg text-sm px-4 py-2 text-center focus:ring-4 focus:outline-none shadow-lg hover:shadow-xl transition-all duration-200 
+                            ${loading ? "bg-gray-400 cursor-not-allowed" : `${theme.createBtn}`}
                         `}
                 >
                     {loading ? (

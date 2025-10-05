@@ -1,13 +1,14 @@
 import { useState, useEffect,useMemo } from "react";
 import { DatePicker, Select, Input, message, Avatar, Tooltip, Empty, Spin, Tag } from 'antd';
+import { SyncOutlined, UpOutlined, DownOutlined } from "@ant-design/icons";
 import { useTrainerForm } from "../Trainercontext/TrainerFormContext";
-import { SyncOutlined } from "@ant-design/icons";
 import customParseFormat from "dayjs/plugin/customParseFormat";
-import axios from "axios";
 import dayjs from "dayjs";
-import BASE_URL from "../../../ip/Ip";
 import { useNavigate } from "react-router-dom";
 import handleBatchClick, { handleTrainerClick } from "../../Navigations/Navigations";
+import axiosInstance from "../api/api";
+import { useTheme } from "../../Themes/ThemeContext";
+import BASE_URL from "../../../ip/Ip";
 
 
 
@@ -16,6 +17,11 @@ dayjs.extend(customParseFormat);
 
 
 const AvailableBatches = () => {
+    // for theme -------------------------
+      const { getTheme } = useTheme();
+      const theme = getTheme();
+    // ------------------------------------
+
     const [isModalOpen, setIsModalOpen] = useState(false); 
     const [activeTab, setActiveTab] = useState("available_batches");
     const [searchTerm, setSearchTerm] = useState("");
@@ -23,7 +29,7 @@ const AvailableBatches = () => {
     const [sortByName, setSortByName] = useState(false);
     const [sortByStartTime, setSortByStartTime] = useState(false);
 
-    const { availableTrainers, loading, fetchTrainers } = useTrainerForm();
+    const { availableTrainersData, loading, fetchTrainers } = useTrainerForm();
 
     const navigate = useNavigate();
     
@@ -34,7 +40,7 @@ const AvailableBatches = () => {
     useEffect(()=>{
         fetchTrainers()
         
-    }, [availableTrainers])
+    }, [availableTrainersData])
 
     // THIS FUNCTION CREATE BATCH OF TRAINER'S FREE TIME 
     const handleCreateClick = (trainer) => {
@@ -45,8 +51,8 @@ const AvailableBatches = () => {
         setIsModalOpen(true);
     };
     
-    const freeTrainers = availableTrainers?.free_trainers ?? [];    
-    const futureAvailableTrainers = availableTrainers?.future_availability_trainers ?? [];
+    const freeTrainers = availableTrainersData?.free_trainers ?? [];    
+    const futureAvailableTrainers = availableTrainersData?.future_availability_trainers ?? [];
 
 
     const filteredTrainers = activeTab === "available_batches" ? freeTrainers : futureAvailableTrainers;
@@ -103,25 +109,41 @@ const AvailableBatches = () => {
 
     return (
     <>
-        <div className="w-auto pt-4 px-2 mt-3 mb-14 darkmode">
-        <div className="relative w-full h-full shadow-md sm:rounded-lg darkmode border border-gray-50 dark:border dark:border-gray-600">
-                <div className="w-full px-4 py-3 text flex justify-between font-semibold ">
-                    {/* <h1>All Batches</h1> */}
-                    {/* <div>
+        <div className={`w-auto pt-4 px-4 mt-3 mb-14 ${theme.bg}`}>
+        {/* <div className="relative w-full h-full shadow-md sm:rounded-lg darkmode border border-gray-50 "> */}
+                {/* <div className="w-full px-4 py-3 text flex justify-between font-semibold ">
+                    <h1>All Batches</h1>
+                    <div>
                         <button onClick={() =>  { setIsModalOpen(true); setSelectedBatch(null); }} type="button" className="focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Create Batch +</button>
-                    </div> */}
-                </div>
+                    </div>
+                </div> */}
 
-            <div className="w-full grid grid-cols-5 grid-flow-row space-y-4 sm:space-y-0 items-center justify-between gap-x-8 px-4 pb-4">
+            <div className="w-full grid grid-cols-5 grid-flow-row space-y-4 sm:space-y-0 items-center justify-between gap-x-8 px-0 pb-2">
                 <div className="grid col-span-5">
                     <div className="flex gap-x-4 h-auto flex-wrap justify-between">
-                        
-                    <div className="relative ">
+
+
+                    <div className="lg:hidden mb-2">
+                        <select
+                            value={activeTab}
+                            onChange={(e) => handleTabClick(e.target.value)}
+                            className="block w-auto px-4 py-1 text-sm border rounded-md bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                        >
+                        <option value="running">Active</option>
+                        <option value="scheduled">Scheduled</option>
+                        <option value="hold">Hold</option>
+                        <option value="endingsoon">Ending Soon</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+
+                    <div className="relative hidden lg:flex bg-white/70 backdrop-blur-sm p-1.5 rounded-xl">
                                 {/* <Badge count={countBatchesByType.availableBatches} size="small"> */}
                             <button
                                 onClick={() => handleTabClick("available_batches")}
-                                className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200  
-                                    ${activeTab === "available_batches" ? 'bg-blue-300 text-black dark:text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                className={`px-4 py-2 rounded-lg font-medium text-xs transition-all duration-200 text-gray-600 hover:bg-white/50 
+                                    ${activeTab === "available_batches" ? `text-gray-600 shadow-md ${theme.activeTab}` : ' text-gray-600 hover:bg-white/50'}`}
                                     >
                                 Available Batches
                             </button>
@@ -129,7 +151,7 @@ const AvailableBatches = () => {
                             <button
                                 onClick={() => handleTabClick("future_available_batches")}
                                 className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                                    ${activeTab === "future_available_batches" ? 'bg-blue-300 dark:bg-[#3D5A80] text-black' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
+                                    ${activeTab === "future_available_batches" ? `text-gray-600 shadow-md ${theme.activeTab}` : ' text-gray-600 hover:bg-white/50'}`}
                                 >
                                 Future Available Batches
                             </button>
@@ -137,14 +159,14 @@ const AvailableBatches = () => {
                         </div>
 
 
-                        <div className="grid col-span-1 justify-items-end">
+                        <div className="grid col-span-1 justify-items-end items-center">
                         <div className="flex gap-x-6">
                             <label htmlFor="table-search" className="sr-only">Search</label>
-                            <div className="relative h-auto">
-                                <input onChange={(e) => setSearchTerm(e.target.value.replace(/^\s+/, ''))} value={searchTerm} type="text" id="table-search" placeholder="Search for items"
-                                    className="2xl:w-96 lg:w-96 md:w-40 h-8 block p-2 pr-10 text-xs text-gray-600 font-normal border border-gray-300 rounded-lg bg-gray-50 focus:ring-0 focus:border-blue-500" 
+                            <div className="relative">
+                                <input onChange={(e) => setSearchTerm(e.target.value.replace(/^\s+/, ''))} value={searchTerm} type="text" id="table-search" placeholder="Search for batch"
+                                    className={`2xl:w-96 lg:w-96 md:w-40 h-8 block p-2 pr-10 text-xs font-medium ${theme.searchBg}`}
                                     />
-                                <div className="absolute inset-y-0 right-0 h-auto flex items-center pr-3">
+                                <div className="absolute inset-y-0 right-0 flex items-center pr-3 h-auto">
                                 <button onClick={() => setSearchTerm("")}>
                                 {searchTerm ? (
                                     <svg className="w-4 h-4 text-gray-500" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
@@ -167,61 +189,61 @@ const AvailableBatches = () => {
 
             </div>
             {activeTab === 'available_batches' && (
-            <div className={`overflow-hidden pb-2 relative`}>
+            <div className={`overflow-hidden pb-2 relative bg-white/40 backdrop-blur-sm rounded-xl shadow-sm`}>
             {/* Scrollable Table Container */}
-            <div className="w-full h-[38rem] overflow-y-auto overflow-x-auto rounded-lg pb-2">
-                <table className="w-full text-xs text-left text-gray-500 table-auto">
+            <div className="w-full h-auto md:max-h-[30rem] 2xl:max-h-[34rem] overflow-y-auto rounded-xl pb-2">
+                <table className="w-full text-xs font-normal text-left text-gray-500">
                 {/* Fixed Header */}
-                <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10 shadow-md">
-                    <tr>
-                        <th scope="col" className="px-3 py-3 md:px-2">
+                <thead className="bg-white sticky top-0 z-10">
+                    <tr className="bg-gray-50/80">
+                        <th scope="col" className="px-3 py-3 md:px-2 text-xs font-medium uppercase">
                             S.No
                         </th>
-                        <th scope="col" className="px-3 py-3 md:px-1">
+                        <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                             Trainer ID
                         </th>
-                        <th scope="col" className="px-3 py-3 md:px-1 cursor-pointer" onClick={toggleSortByName}>
+                        <th scope="col" className="px-3 py-3 md:px-1 cursor-pointer text-xs font-medium uppercase" onClick={toggleSortByName}>
                             Trainer Name
                            <span className="ml-1">
                                 <Tooltip title="sort by Trainer Name" placement="top">
-                                    {sortByName ? "▲" : "▼"}
+                                    {sortByName ? <UpOutlined /> : <DownOutlined />}
                                 </Tooltip>
                            </span>
                         </th>
 
-                        <th scope="col" className="px-3 py-3 md:px-1 cursor-pointer" onClick={toggleSortByStartTime}>
+                        <th scope="col" className="px-3 py-3 md:px-1 cursor-pointer text-xs font-medium uppercase" onClick={toggleSortByStartTime}>
                             Start Time 
                             <span className="ml-1">
                                 <Tooltip title="sort by start Time" placement="top">
-                                    {sortByStartTime  ? "▲" : "▼"} 
+                                    {sortByStartTime  ? <UpOutlined /> : <DownOutlined />} 
                                 </Tooltip>
                             </span>
                         </th>
-                        <th scope="col" className="px-3 py-3 md:px-1">
+                        <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                             End Time
                         </th>
-                        <th scope="col" className="px-3 py-3 md:px-1">
+                        <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                             course
                         </th>
-                        <th scope="col" className="px-3 py-3 md:px-1">
+                        <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                             Language
                         </th>
-                        <th scope="col" className="px-3 py-3 md:px-1">
+                        <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                             Preferred Week
                         </th>
-                        <th scope="col" className="px-3 py-3 md:px-1">
+                        <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                             Location
                         </th>
-                        <th scope="col" className="px-3 py-3 md:px-1">
+                        <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                             Free Since
                         </th>
-                        <th scope="col" className="px-3 py-3 md:px-1">
+                        <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                             create Batch
                         </th>
                         
                     </tr>
                     </thead>
-                        <tbody>
+                        <tbody className="divide-y divide-gray-100 font-normal text-gray-700">
                         {loading ? (
                                 <tr>
                                     <td colSpan="100%" className="text-center py-4">
@@ -230,14 +252,14 @@ const AvailableBatches = () => {
                                 </tr>
                             ) : Array.isArray(sortedFreeTrainers) && sortedFreeTrainers.length > 0 ? (
                             sortedFreeTrainers.map((item, index) => (
-                            <tr key={index} className="bg-white border-b border-gray-200 hover:bg-gray-50 scroll-smooth">
-                                <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900  dark:text-white">
+                            <tr key={index} className="hover:bg-white transition-colors scroll-smooth">
+                                <td scope="row" className="px-3 py-2 md:px-2">
                                     {index + 1}
                                 </td>
-                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(navigate,item.tr_id)}>
+                                <td className="px-3 py-2 md:px-1 font-medium cursor-pointer" onClick={() => handleTrainerClick(navigate,item.tr_id)}>
                                     {item.trainer_id}
                                 </td>
-                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(navigate,item.tr_id)}>
+                                <td className="px-3 py-2 md:px-1 font-medium cursor-pointer" onClick={() => handleTrainerClick(navigate,item.tr_id)}>
                                     {item.name} 
                                 </td>
                                 <td className="px-3 py-2 md:px-1">
@@ -246,7 +268,7 @@ const AvailableBatches = () => {
                                 <td className="px-3 py-2 md:px-1">
                                     {dayjs(`1970-01-01T${item.end_time}`).format("hh:mm A")} 
                                 </td>
-                                <td className="px-3 py-2 md:px-1 font-semibold">
+                                <td className="px-3 py-2 md:px-1">
                                     <Avatar.Group
                                         max={{
                                             count: 2,
@@ -261,39 +283,40 @@ const AvailableBatches = () => {
                                         {item.course &&
                                             item.course.map(([id, name], index) => ( // Destructure to get name
                                             <Tooltip key={id} title={name} placement="top">
-                                                <Avatar size={24} style={{ backgroundColor: "#87d068" }}>
-                                                {name[0]} {/* Display first letter of course name */}
+                                                <Avatar 
+                                                    size={24} 
+                                                    // style={{ backgroundColor: "#87d068" }}>
+                                                    className={`${theme.studentCount} text-white`}
+                                                >
+                                                    {name[0]} {/* Display first letter of course name */}
                                                 </Avatar>
                                             </Tooltip>
                                             ))}
                                     </Avatar.Group>
                                     {/* {item.course__name} */}
                                 </td>
-                                {/* <td className="px-3 py-2 md:px-1">
-                                    {item.mode}
-                                </td> */}
-                                <td className="px-3 py-2 md:px-1">
-                                    <Tag bordered={false} color={item.languages === "Hindi" ? "green" : item.languages === "English" ? "volcano" : "blue"}>
+                                <td className="px-3 py-2 md:px-1 font-normal">
+                                    <Tag className="rounded-xl" bordered={false} color={item.languages === "Hindi" ? "green" : item.languages === "English" ? "volcano" : "blue"}>
                                     {item.languages}
                                     </Tag>
                                 </td>
 
-                                <td className="px-3 py-2 md:px-1">
-                                    <Tag bordered={false} color={item.week === "Weekdays" ? "cyan" : item.week === "Weekends" ? "gold" : "geekblue" }>
+                                <td className="px-3 py-2 md:px-1 font-normal">
+                                    <Tag className="rounded-xl" bordered={false} color={item.week === "Weekdays" ? "cyan" : item.week === "Weekends" ? "gold" : "geekblue" }>
                                         {item.week}
                                     </Tag>
                                 </td>
                                 
-                                <td className="px-3 py-2 md:px-1">
-                                    <Tag bordered={false} color={item.location == 'Saket'? 'blue' : 'magenta'}>
+                                <td className="px-3 py-2 md:px-1 font-normal">
+                                    <Tag className="rounded-xl" bordered={false} color={item.location == 'Saket'? 'blue' : 'magenta'}>
                                         {item.location}
                                     </Tag>
                                 </td>
-                                <td className="px-3 py-2 md:px-1">
+                                <td className="px-3 py-2 md:px-1 font-normal">
                                     {item.free_days >= 0 ? item.free_days + " Days" : item.free_days}
                                 </td>
-                                <td className="px-3 py-2 md:px-1">
-                                <button onClick={() => handleCreateClick(item)} type="button" className="focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Create +</button>
+                                <td className="px-3 py-2 md:px-1 font-normal">
+                                <button onClick={() => handleCreateClick(item)} type="button" className={`focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5 ${theme.createBtn}`}>Create +</button>
                                 </td>
                             </tr>
                             ))
@@ -315,38 +338,38 @@ const AvailableBatches = () => {
 
 
             {activeTab === 'future_available_batches' && (
-            <div className={`overflow-hidden pb-2 relative`}>
+            <div className={`overflow-hidden pb-2 relative bg-white/40 backdrop-blur-sm rounded-xl shadow-sm`}>
             {/* Scrollable Table Container */}
-            <div className="w-full h-[38rem] overflow-y-auto overflow-x-auto rounded-lg pb-2">
-            <table className="w-full text-xs text-left text-gray-500 dark:text-gray-400 table-auto">
+            <div className="w-full h-auto md:max-h-[30rem] 2xl:max-h-[34rem] overflow-y-auto rounded-xl pb-2">
+            <table className="w-full text-xs font-normal text-left text-gray-600">
                 {/* Fixed Header */}
-                <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10 shadow-md">
-                    <tr>
-                    <th className="px-3 py-3 md:px-2">S.No</th>
-                    <th className="px-3 py-3 md:px-1">Trainer ID</th>
-                    <th className="px-3 py-3 md:px-1 cursor-pointer" onClick={toggleSortByName}>
+                <thead className="bg-white sticky top-0 z-10">
+                    <tr className="bg-gray-50/80">
+                    <th className="px-3 py-3 md:px-2 text-xs font-medium uppercase">S.No</th>
+                    <th className="px-3 py-3 md:px-1 text-xs font-medium uppercase">Trainer ID</th>
+                    <th className="px-3 py-3 md:px-1 cursor-pointer text-xs font-medium uppercase" onClick={toggleSortByName}>
                         <Tooltip title="sort by Trainer Name" placement="right">
-                            Trainer Name {sortByName ? "▲" : "▼"} 
+                            Trainer Name {sortByName ? <UpOutlined /> : <DownOutlined />} 
                         </Tooltip>
                     </th>
-                    <th className="px-3 py-3 md:px-1 cursor-pointer" onClick={toggleSortByStartTime}>
+                    <th className="px-3 py-3 md:px-1 cursor-pointer text-xs font-medium uppercase" onClick={toggleSortByStartTime}>
                         <Tooltip title="sort by Trainer Name" placement="right">
-                            Start Time {sortByStartTime  ? "▲" : "▼"} 
+                            Start Time {sortByStartTime  ? <UpOutlined /> : <DownOutlined />} 
                         </Tooltip>
                     </th>
-                    <th className="px-3 py-3 md:px-1">End Time</th>
-                    <th className="px-3 py-3 md:px-1">Start Date</th>
-                    <th className="px-3 py-3 md:px-1">End Date</th>
-                    <th className="px-3 py-3 md:px-1">Course</th>
-                    <th className="px-3 py-3 md:px-1">Batch ID</th>
-                    <th className="px-3 py-3 md:px-1">Preferred Week</th>
-                    <th className="px-3 py-3 md:px-1">Days Left</th>
-                    <th className="px-3 py-3 md:px-1">Create Batch</th>
+                    <th className="px-3 py-3 md:px-1 text-xs font-medium uppercase">End Time</th>
+                    <th className="px-3 py-3 md:px-1 text-xs font-medium uppercase">Start Date</th>
+                    <th className="px-3 py-3 md:px-1 text-xs font-medium uppercase">End Date</th>
+                    <th className="px-3 py-3 md:px-1 text-xs font-medium uppercase">Course</th>
+                    <th className="px-3 py-3 md:px-1 text-xs font-medium uppercase">Batch ID</th>
+                    <th className="px-3 py-3 md:px-1 text-xs font-medium uppercase">Preferred Week</th>
+                    <th className="px-3 py-3 md:px-1 text-xs font-medium uppercase">Days Left</th>
+                    <th className="px-3 py-3 md:px-1 text-xs font-medium uppercase">Create Batch</th>
                 </tr>
                 </thead>
         
                 {/* Scrollable Table Body */}
-                <tbody>
+                <tbody className="divide-y divide-gray-100 font-light text-gray-700">
                     {loading ? (
                                 <tr>
                                     <td colSpan="100%" className="text-center py-4">
@@ -355,9 +378,9 @@ const AvailableBatches = () => {
                                 </tr>
                     ) : Array.isArray(sortedFutureAvailableTrainers) && sortedFutureAvailableTrainers.length > 0 ? (
                         sortedFutureAvailableTrainers.map((item, index) => (
-                    <tr key={index} className="bg-white border-b hover:bg-gray-50">
-                        <td className="px-3 py-2 md:px-2 font-medium text-gray-900 dark:text-white">{index + 1}</td>
-                        <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleTrainerClick(navigate,item.tr_id)}>{item.trainer_id}</td>
+                    <tr key={index} className="hover:bg-gray-50 transition-colors scroll-smooth">
+                        <td className="px-3 py-2 md:px-2">{index + 1}</td>
+                        <td className="px-3 py-2 md:px-1 font-medium cursor-pointer" onClick={() => handleTrainerClick(navigate,item.tr_id)}>{item.trainer_id}</td>
                         <td className="px-3 py-2 md:px-1 ">{item.name}</td>
                         <td className="px-3 py-2 md:px-1">
                         {dayjs(`1970-01-01T${item.start_time}`).format("hh:mm A")} 
@@ -367,9 +390,9 @@ const AvailableBatches = () => {
                         </td>
                         <td className="px-3 py-2 md:px-1">{dayjs(item.start_date).format("DD/MM/YYYY")}</td>
                         <td className="px-3 py-2 md:px-1">{dayjs(item.end_date).format("DD/MM/YYYY")}</td>
-                        <td className="px-3 py-2 md:px-1 font-semibold">{item.batch_course}</td>
-                        <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleBatchClick(navigate,item.batch__id)}>{item.batch_id}</td>
-                        <td className="px-3 py-2 md:px-1">
+                        <td className="px-3 py-2 md:px-1 font-medium">{item.batch_course}</td>
+                        <td className="px-3 py-2 md:px-1 font-medium cursor-pointer" onClick={() => handleBatchClick(navigate,item.batch__id)}>{item.batch_id}</td>
+                        <td className="px-3 py-2 md:px-1 font-normal">
                             <Tag bordered={false} color={item.batch_week === "Weekdays" ? "cyan" : item.batch_week === "Weekends" ? "gold" : "geekblue" }>
                                 {item.batch_week}
                             </Tag>
@@ -383,7 +406,7 @@ const AvailableBatches = () => {
                         <button 
                             onClick={() => handleCreateClick(item)} 
                             type="button" 
-                            className="focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5"
+                            className={`focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5 ${theme.createBtn}`}
                         >
                             Create +
                         </button>
@@ -404,7 +427,7 @@ const AvailableBatches = () => {
         
             )}
 
-        </div>
+        {/* </div> */}
 
     <CreateAvailableBatchForm isOpen={isModalOpen} selectedBatch={selectedBatch} onClose={() => setIsModalOpen(false)} />
 
@@ -446,11 +469,10 @@ const CreateAvailableBatchForm = ({ isOpen, onClose, selectedBatch }) => {
         student: [],
         status: "",
     });
+console.log(selectedBatch);
 
     useEffect(() => {
-        if (isOpen && selectedBatch) {
-            // console.log(selectedBatch);
-            
+        if (isOpen && selectedBatch) {            
             setBatchFormData({
                 batchId: selectedBatch.batchId || "",
                 // batchTime: selectedBatch.start_time || "",
@@ -477,7 +499,6 @@ const CreateAvailableBatchForm = ({ isOpen, onClose, selectedBatch }) => {
         ...prev,
         [name]: value
     }));
-    // console.log(`${name} updated:`, value); // Debugging
 };
 
 
@@ -511,8 +532,6 @@ const CreateAvailableBatchForm = ({ isOpen, onClose, selectedBatch }) => {
         status: formattedData.status,
     };
 
-    // console.log("Final Payload:", JSON.stringify(payload, null, 2));
-
     try {
         setLoading(true); // Start loading
 
@@ -521,20 +540,16 @@ const CreateAvailableBatchForm = ({ isOpen, onClose, selectedBatch }) => {
 
         if (selectedBatch && selectedBatch.id) {
             // Update existing batch (PUT)
-            response = await axios.put(`${BASE_URL}/api/batches/edit/${selectedBatch.id}/`, 
+            response = await axiosInstance.put(`${BASE_URL}/api/batches/edit/${selectedBatch.id}/`, 
                 payload, 
-                { headers: { 'Content-Type': 'application/json' },
-                withCredentials: true
-            }
+                { headers: { 'Content-Type': 'application/json' } }
             );
             successMessage = "Batch updated successfully!";
         } else {
             // Add new batch (POST)
-            response = await axios.post(`${BASE_URL}/api/batches/add/`, 
+            response = await axiosInstance.post(`${BASE_URL}/api/batches/add/`, 
                 payload, 
-                { headers: { 'Content-Type': 'application/json' },
-                withCredentials: true
-            }
+                { headers: { 'Content-Type': 'application/json' } }
             );
             successMessage = "Batch added successfully!";            
         }
@@ -676,8 +691,7 @@ const convertTo12HourFormat = (time) => {
                <div className="col-span-2 sm:col-span-2">
                    <label htmlFor="course" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Course</label>
                     <Select name="course" className='w-full border-gray-300' size='large' placeholder='Select Course' 
-                        showSearch  // This enables search functionality
-                            
+                        showSearch    
                         onChange={(value) => {
                             const selectedCourse = selectedBatch?.courses?.find(course => course.id === value);
                             handleChange("course", selectedCourse ? { id: selectedCourse.id, name: selectedCourse.name } : "");
@@ -686,10 +700,6 @@ const convertTo12HourFormat = (time) => {
                         filterOption={(input, option) =>
                             option.label.toLowerCase().includes(input.toLowerCase())
                         }
-                        // options={(Array.isArray(selectedBatch?.courses) ? selectedBatch.courses : []).map(course => ({
-                        //     value: course.id,  
-                        //     label: course.name, 
-                        // }))}
                         options={[
                             ...(Array.isArray(selectedBatch?.courses)
                               ? selectedBatch.courses.map(course => ({
@@ -700,9 +710,7 @@ const convertTo12HourFormat = (time) => {
                             ...(selectedBatch?.batch_course
                               ? [{ value: selectedBatch.batch_course, label: selectedBatch.batch_course }]
                               : [])
-                          ]}
-                          
-                          
+                          ]}  
                     />
                    {/* {errors.course && <p className="text-red-500 text-sm">{errors.course}</p>} */}
                </div>

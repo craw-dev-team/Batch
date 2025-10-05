@@ -38,6 +38,7 @@ from django.utils import timezone
 from datetime import date, datetime
 User = get_user_model()
 from nexus.JWTCookie import JWTAuthFromCookie
+from django.db import transaction
 
 
 # This is student list pagination 
@@ -155,84 +156,82 @@ class StudentListView(ListAPIView):
 #         return student_data
 }
 
+{
+# # class StudentCrawListView(APIView):
+# #     authentication_classes = [JWTAuthFromCookie]
+# #     permission_classes = [IsAuthenticated]
 
+# #     def get(self, request, *args, **kwargs):
+# #         if request.user.role not in ['admin', 'coordinator']:
+# #             return Response({'error': 'Unauthorized'}, status=403)
 
-class StudentCrawListView(APIView):
-    authentication_classes = [JWTAuthFromCookie]
-    permission_classes = [IsAuthenticated]
+# #         today = now().date()
 
-    def get(self, request, *args, **kwargs):
-        if request.user.role not in ['admin', 'coordinator']:
-            return Response({'error': 'Unauthorized'}, status=403)
+# #         # 1. Subquery to check enrollment
+# #         enrolled_subquery = BatchStudentAssignment.objects.filter(
+# #             student=OuterRef('pk')
+# #         )
 
-        today = now().date()
+# #         # 2. Prefetch student course status (just IDs & status)
+# #         course_prefetch = Prefetch(
+# #             'studentcourse_set',
+# #             queryset=StudentCourse.objects.only('student_id', 'status'),
+# #             to_attr='prefetched_courses'
+# #         )
 
-        # 1. Subquery to check enrollment
-        enrolled_subquery = BatchStudentAssignment.objects.filter(
-            student=OuterRef('pk')
-        )
+# #         # 3. Only required fields & relations
+# #         students_qs = Student.objects.select_related(
+# #             'course_counsellor', 'support_coordinator', 'location'
+# #         ).only(
+# #             'id', 'name', 'email', 'phone', 'enrollment_no', 'status', 'date_of_joining',
+# #             'course_counsellor_id', 'support_coordinator_id', 'location_id'
+# #         ).annotate(
+# #             is_enrolled=Exists(enrolled_subquery)
+# #         ).prefetch_related(course_prefetch)
 
-        # 2. Prefetch student course status (just IDs & status)
-        course_prefetch = Prefetch(
-            'studentcourse_set',
-            queryset=StudentCourse.objects.only('student_id', 'status'),
-            to_attr='prefetched_courses'
-        )
+# #         # 4. Use iterator() to stream rows instead of loading all in memory
+# #         active_students, inactive_students = [], []
+# #         enrolled_students, today_students, free_students = [], [], []
 
-        # 3. Only required fields & relations
-        students_qs = Student.objects.select_related(
-            'course_counsellor', 'support_coordinator', 'location'
-        ).only(
-            'id', 'name', 'email', 'phone', 'enrollment_no', 'status', 'date_of_joining',
-            'course_counsellor_id', 'support_coordinator_id', 'location_id'
-        ).annotate(
-            is_enrolled=Exists(enrolled_subquery)
-        ).prefetch_related(course_prefetch)
+# #         for student in students_qs.iterator(chunk_size=500):
+# #             # Pre-checks
+# #             if student.status == 'Active':
+# #                 active_students.append(student)
+# #             else:
+# #                 inactive_students.append(student)
 
-        # 4. Use iterator() to stream rows instead of loading all in memory
-        active_students, inactive_students = [], []
-        enrolled_students, today_students, free_students = [], [], []
+# #             if student.is_enrolled:
+# #                 enrolled_students.append(student)
 
-        for student in students_qs.iterator(chunk_size=500):
-            # Pre-checks
-            if student.status == 'Active':
-                active_students.append(student)
-            else:
-                inactive_students.append(student)
+# #             if student.date_of_joining == today:
+# #                 today_students.append(student)
 
-            if student.is_enrolled:
-                enrolled_students.append(student)
+# #             # Free student logic (from prefetched courses)
+# #             if hasattr(student, 'prefetched_courses'):
+# #                 statuses = {s.status for s in student.prefetched_courses}
+# #                 if 'Not Started' in statuses and not statuses.intersection({'Ongoing', 'Upcoming'}):
+# #                     if student.status == 'Active':
+# #                         free_students.append(student)
 
-            if student.date_of_joining == today:
-                today_students.append(student)
+# #         # 5. Fast serialization — only serialize top 100 per list to avoid overload
+# #         def fast_serialize(students):
+# #             return StudentSerializer(students[:100], many=True).data
 
-            # Free student logic (from prefetched courses)
-            if hasattr(student, 'prefetched_courses'):
-                statuses = {s.status for s in student.prefetched_courses}
-                if 'Not Started' in statuses and not statuses.intersection({'Ongoing', 'Upcoming'}):
-                    if student.status == 'Active':
-                        free_students.append(student)
+# #         return Response({
+# #             "total_student": students_qs.count(),
+# #             "active_student_count": len(active_students),
+# #             "inactive_student_count": len(inactive_students),
+# #             "enrolled_student_count": len(enrolled_students),
+# #             "not_enrolled_student_count": len(free_students),
+# #             "today_added_student_count": len(today_students),
 
-        # 5. Fast serialization — only serialize top 100 per list to avoid overload
-        def fast_serialize(students):
-            return StudentSerializer(students[:100], many=True).data
-
-        return Response({
-            "total_student": students_qs.count(),
-            "active_student_count": len(active_students),
-            "inactive_student_count": len(inactive_students),
-            "enrolled_student_count": len(enrolled_students),
-            "not_enrolled_student_count": len(free_students),
-            "today_added_student_count": len(today_students),
-
-            "active_students": fast_serialize(active_students),
-            "inactive_students": fast_serialize(inactive_students),
-            "enrolled_students": fast_serialize(enrolled_students),
-            "not_enrolled_students": fast_serialize(free_students),
-            "today_added_students": fast_serialize(today_students),
-        })
-
-
+# #             "active_students": fast_serialize(active_students),
+# #             "inactive_students": fast_serialize(inactive_students),
+# #             "enrolled_students": fast_serialize(enrolled_students),
+# #             "not_enrolled_students": fast_serialize(free_students),
+# #             "today_added_students": fast_serialize(today_students),
+#         })
+}
 
 {
 # class FreeStudentListView(APIView):
@@ -254,7 +253,99 @@ class StudentCrawListView(APIView):
 #         return Response(serializer.data)
 }
 
+class StudentCrawListView(APIView):
+    authentication_classes = [JWTAuthFromCookie]
+    permission_classes = [IsAuthenticated]
 
+    def get(self, request, *args, **kwargs):
+        if request.user.role not in ['admin', 'coordinator']:
+            return Response({'error': 'Unauthorized'}, status=403)
+
+        today = now().date()
+
+        enrolled_subquery = BatchStudentAssignment.objects.filter(
+            student=OuterRef('pk')
+        )
+
+        course_prefetch = Prefetch(
+            'studentcourse_set',
+            queryset=StudentCourse.objects.only('student_id', 'status'),
+            to_attr='prefetched_courses'
+        )
+
+        students_qs = Student.objects.select_related(
+            'course_counsellor', 'support_coordinator', 'location'
+        ).only(
+            'id', 'name', 'email', 'phone', 'enrollment_no', 'status', 'date_of_joining',
+            'course_counsellor_id', 'support_coordinator_id', 'location_id'
+        ).annotate(
+            is_enrolled=Exists(enrolled_subquery)
+        ).prefetch_related(course_prefetch)
+
+        active_students, inactive_students = [], []
+        enrolled_students, today_students, free_students = [], [], []
+
+        for student in students_qs.iterator(chunk_size=500):
+            if student.status == 'Active':
+                active_students.append(student)
+            else:
+                inactive_students.append(student)
+
+            if student.is_enrolled:
+                enrolled_students.append(student)
+
+            if student.date_of_joining == today:
+                today_students.append(student)
+
+            if hasattr(student, 'prefetched_courses'):
+                statuses = {s.status for s in student.prefetched_courses}
+                if 'Not Started' in statuses and not statuses.intersection({'Ongoing', 'Upcoming'}):
+                    if student.status == 'Active':
+                        free_students.append(student)
+
+        def paginate_list(data_list):
+            try:
+                page = int(request.query_params.get('page', 1))
+                page_size = int(request.query_params.get('page_size', 50))
+            except ValueError:
+                page, page_size = 1, 50
+
+            start = (page - 1) * page_size
+            end = start + page_size
+            return {
+                "total": len(data_list),
+                "page": page,
+                "page_size": page_size,
+                "results": StudentSerializer(data_list[start:end], many=True).data
+            }
+
+        requested_type = request.query_params.get('type', '').strip()
+
+        response_data = {
+            "total_student": students_qs.count(),
+            "active_students_count": len(active_students),
+            "inactive_students_count": len(inactive_students),
+            "enrolled_students_count": len(enrolled_students),
+            "not_enrolled_students_count": len(free_students),
+            "today_added_students_count": len(today_students),
+        }
+
+        if requested_type == "active_students":
+            response_data["active_students"] = paginate_list(active_students)
+        elif requested_type == "inactive_students":
+            response_data["inactive_students"] = paginate_list(inactive_students)
+        elif requested_type == "enrolled_students":
+            response_data["enrolled_students"] = paginate_list(enrolled_students)
+        elif requested_type == "not_enrolled_students":
+            response_data["not_enrolled_students"] = paginate_list(free_students)
+        elif requested_type == "today_added_students":
+            response_data["today_added_students"] = paginate_list(today_students)
+        else:
+            response_data["all_students"] = paginate_list(list(students_qs))
+
+        # Else: No list, only counts are sent
+
+        return Response(response_data)
 
 class AddStudentView(APIView):
     authentication_classes = [JWTAuthFromCookie]
@@ -294,81 +385,165 @@ class AddStudentView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+{
 
 # ✅ Edit Student API with email update handling
+# class EditStudentView(APIView):
+#     authentication_classes = [JWTAuthFromCookie]
+#     permission_classes = [IsAuthenticated]
+
+#     def put(self, request, id):
+#         if request.user.role not in ['admin', 'coordinator']:
+#             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
+#         print(request.data)
+#         student = get_object_or_404(Student, id=id)
+#         old_student_data = model_to_dict(student)  # Get all old field values
+#         old_email = student.email  # Store old email before update
+
+#         # ✅ Pass request context for proper handling in serializer
+#         serializer = StudentSerializer(student, data=request.data, partial=True, context={'request': request})
+
+#         if serializer.is_valid():
+#             student = serializer.save()
+#             new_student_data = model_to_dict(student)  # Get new field values
+            
+#             # ✅ Generate a unique correlation ID for logging
+#             cid = str(uuid.uuid4())
+
+#             # ✅ Update User email if changed
+#             new_email = serializer.validated_data.get('email')
+#             if old_email and new_email and old_email != new_email:
+#                 user = User.objects.filter(email=old_email).first()
+#                 if user:
+#                     user.email = new_email
+#                     user.save()
+
+#             # ✅ Track what changed
+#             changes = {}
+#             for field, old_value in old_student_data.items():
+#                 new_value = new_student_data.get(field)
+#                 if old_value != new_value:  # Only log changes
+#                     changes[field] = {
+#                         "old": str(old_value) if old_value else "None",
+#                         "new": str(new_value) if new_value else "None"
+#                     }
+
+#             changes_text = []
+#             for field, change in changes.items():
+#                 if change["old"] != "None" and change["new"] != "None":
+#                     changes_text.append(f"Updated {field} from {change['old']} to {change['new']}.")
+#                 elif change["new"] != "None":
+#                     changes_text.append(f"Added {field}: {change['new']}.")
+#                 elif change["old"] != "None":
+#                     changes_text.append(f"Removed {field}: {change['old']}.")
+
+#             # ✅ Log detailed update action
+#             LogEntry.objects.create(
+#                 content_type=ContentType.objects.get_for_model(Student),
+#                 cid=cid,
+#                 object_pk=student.id,
+#                 object_id=student.id,
+#                 object_repr=f"Student ID: {student.enrollment_no} | Name: {student.name}",
+#                 action=LogEntry.Action.UPDATE,
+#                 changes=f"Updated student: {student.name} by {request.user.username}. Changes: {changes}",
+#                 serialized_data=json.dumps(model_to_dict(student), default=str),
+#                 changes_text=" ".join(changes_text),
+#                 additional_data="Student",
+#                 actor=request.user,
+#                 timestamp=now()
+#             )
+
+#             return Response({
+#                 'message': 'Student updated successfully',
+#                 'student_id': student.id
+#             }, status=status.HTTP_200_OK)
+}
 class EditStudentView(APIView):
     authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def put(self, request, id):
+        # Only admins/coordinators may edit
         if request.user.role not in ['admin', 'coordinator']:
             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
 
-        print(request.data)
         student = get_object_or_404(Student, id=id)
-        old_student_data = model_to_dict(student)  # Get all old field values
-        old_email = student.email  # Store old email before update
+        old_data = model_to_dict(student)
+        old_email = student.email
 
-        # ✅ Pass request context for proper handling in serializer
-        serializer = StudentSerializer(student, data=request.data, partial=True, context={'request': request})
+        # Make a mutable copy of request.data
+        data = request.data.copy()
 
-        if serializer.is_valid():
+        # Remove empty string for list fields
+        for list_field in ('tags', 'complete_course', 'courses'):
+            if list_field in data and data[list_field] == '':
+                data.pop(list_field)
+
+        serializer = StudentSerializer(
+            student,
+            data=data,
+            partial=True,
+            context={'request': request}
+        )
+
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        # Save updates to Student
+        with transaction.atomic():
             student = serializer.save()
-            new_student_data = model_to_dict(student)  # Get new field values
-            
-            # ✅ Generate a unique correlation ID for logging
-            cid = str(uuid.uuid4())
 
-            # ✅ Update User email if changed
+            # Handle email change on the associated User
             new_email = serializer.validated_data.get('email')
             if old_email and new_email and old_email != new_email:
-                user = User.objects.filter(email=old_email).first()
-                if user:
-                    user.email = new_email
-                    user.save()
+                # Normalize email (lowercase, strip)
+                new_email = new_email.strip().lower()
 
-            # ✅ Track what changed
-            changes = {}
-            for field, old_value in old_student_data.items():
-                new_value = new_student_data.get(field)
-                if old_value != new_value:  # Only log changes
-                    changes[field] = {
-                        "old": str(old_value) if old_value else "None",
-                        "new": str(new_value) if new_value else "None"
-                    }
+                # First, find User by student.enrollment_no (if that's how you map)
+                u = User.objects.filter(username=student.enrollment_no).first()
+                if not u:
+                    # Fallback: find by old_email if User exists
+                    u = User.objects.filter(email=old_email).first()
+                if u:
+                    # Prevent duplicate emails
+                    if User.objects.filter(email=new_email).exclude(pk=u.pk).exists():
+                        return Response({'error': 'This email is already taken by another user.'}, status=400)
+                    u.email = new_email
+                    u.save()
 
-            changes_text = []
-            for field, change in changes.items():
-                if change["old"] != "None" and change["new"] != "None":
-                    changes_text.append(f"Updated {field} from {change['old']} to {change['new']}.")
-                elif change["new"] != "None":
-                    changes_text.append(f"Added {field}: {change['new']}.")
-                elif change["old"] != "None":
-                    changes_text.append(f"Removed {field}: {change['old']}.")
+        # Write an audit log
+        new_data = model_to_dict(student)
+        changes = {}
+        for f, old in old_data.items():
+            new = new_data.get(f)
+            if old != new:
+                changes[f] = {'old': old, 'new': new}
 
-            # ✅ Log detailed update action
-            LogEntry.objects.create(
-                content_type=ContentType.objects.get_for_model(Student),
-                cid=cid,
-                object_pk=student.id,
-                object_id=student.id,
-                object_repr=f"Student ID: {student.enrollment_no} | Name: {student.name}",
-                action=LogEntry.Action.UPDATE,
-                changes=f"Updated student: {student.name} by {request.user.username}. Changes: {changes}",
-                serialized_data=json.dumps(model_to_dict(student), default=str),
-                changes_text=" ".join(changes_text),
-                additional_data="Student",
-                actor=request.user,
-                timestamp=now()
-            )
+        change_texts = []
+        for f, ch in changes.items():
+            change_texts.append(f"{f}: {ch['old']} → {ch['new']}")
 
-            return Response({
-                'message': 'Student updated successfully',
-                'student_id': student.id
-            }, status=status.HTTP_200_OK)
+        LogEntry.objects.create(
+            content_type=ContentType.objects.get_for_model(Student),
+            cid=str(uuid.uuid4()),
+            object_pk=student.id,
+            object_id=student.id,
+            object_repr=f"{student.name} ({student.enrollment_no})",
+            action=LogEntry.Action.UPDATE,
+            changes=json.dumps(changes),
+            serialized_data=json.dumps(new_data, default=str),
+            changes_text="; ".join(change_texts),
+            additional_data="Student",
+            actor=request.user,
+            timestamp=now()
+        )
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+        return Response({
+            'message': 'Student updated successfully',
+            'student_id': student.id
+        }, status=status.HTTP_200_OK)
+    
 
 
 # ✅ Add Fees API
@@ -495,6 +670,111 @@ class AddFeesView(APIView):
 }
 
 
+{
+
+# class StudentInfoAPIView(APIView):
+#     authentication_classes = [JWTAuthFromCookie]
+#     permission_classes = [IsAuthenticated]
+
+#     def get(self, request, id):
+#         if request.user.role not in ['admin', 'coordinator']:
+#             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
+#         student = get_object_or_404(Student, id=id)
+
+#         # Fetch related student courses with course data
+#         student_courses = StudentCourse.objects.filter(student=student).select_related('course')
+#         student_course_ids = list(student_courses.values_list('id', flat=True))
+
+#         student_course_list = []
+#         for sc in student_courses:
+#             # Get book issue dates
+#             book_issues = BookAllotment.objects.filter(
+#                 book__course=sc.course,
+#                 student=student
+#             ).values('allotment_datetime')
+
+#             student_course_list.append({
+#                 'id': sc.id,
+#                 'course_name': sc.course.name,
+#                 'course_taken': Batch.objects.filter(student=student, course=sc.course).count(),
+#                 'course_status': sc.status,
+#                 'course_certificate_date': sc.certificate_date,
+#                 'certificate_issued_at': sc.certificate_issued_at,
+#                 'student_book_allotment': sc.student_book_allotment,
+#                 'student_old_book_allotment': sc.student_old_book_allotment,
+#                 'student_book_issue_date': list(book_issues),
+#                 'student_marks': sc.marks,
+#                 'student_exam_date': sc.marks_update_date,
+#             })
+
+#         # Get batches grouped by status
+#         batch_statuses = ['Upcoming', 'Completed', 'Running', 'Hold']
+#         student_batches = {
+#             status: Batch.objects.filter(student=student, status=status).select_related('course', 'trainer', 'batch_time')
+#             for status in batch_statuses
+#         }
+
+#         # Identify upcoming batches not already in student's completed/ongoing courses
+#         completed_or_ongoing_course_ids = student_courses.filter(
+#             status__in=['Completed', 'Ongoing']
+#         ).values_list('course_id', flat=True)
+
+#         all_upcoming_batches = Batch.objects.filter(
+#             course__in=student_courses.values_list('course_id', flat=True),
+#             status='Upcoming'
+#         )
+
+#         filtered_upcoming_batches = all_upcoming_batches.exclude(
+#             course_id__in=completed_or_ongoing_course_ids
+#         ).exclude(
+#             id__in=student_batches['Upcoming'].values_list('id', flat=True)
+#         )
+
+#         # Update status to 'Upcoming' for related StudentCourse entries
+#         StudentCourse.objects.filter(
+#             student=student,
+#             course__in=student_batches['Upcoming'].values_list('course_id', flat=True)
+#         ).update(status='Upcoming')
+
+#         # Fetch logs
+#         content_types = ContentType.objects.get_for_models(Student, StudentCourse, StudentNotes)
+#         student_logs = LogEntry.objects.filter(
+#             content_type__in=content_types.values()
+#         ).filter(
+#             Q(object_id=student.id) | Q(object_id__in=student_course_ids)
+#         ).order_by('-timestamp')
+
+#         serialized_logs = LogEntrySerializer(student_logs, many=True).data
+
+#         # Notes
+#         note_fields = [
+#             'id', 'note', 'create_at', 'last_update_datetime',
+#             'create_by__first_name', 'create_by__role'
+#         ]
+#         student_notes = StudentNotes.objects.filter(student=student).values(*note_fields).order_by('-create_at')
+
+#         # Prepare batch fields
+#         batch_fields = [field.name for field in Batch._meta.fields]
+#         batch_extra_fields = ['course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time']
+
+#         response_data = {
+#             "All_in_One": {
+#                 'student_count': Student.objects.count(),
+#                 'student': StudentSerializer(student).data,
+#                 'student_courses': student_course_list,
+#                 'student_notes': student_notes,
+#                 'student_batch_upcoming': list(student_batches['Upcoming'].values(*batch_fields, *batch_extra_fields)),
+#                 'student_batch_hold': list(student_batches['Hold'].values(*batch_fields, *batch_extra_fields)),
+#                 'student_batch_ongoing': list(student_batches['Running'].values(*batch_fields, *batch_extra_fields)),
+#                 'student_batch_completed': list(student_batches['Completed'].values(*batch_fields, *batch_extra_fields)),
+#                 'all_upcoming_batch': list(filtered_upcoming_batches.values(*batch_fields, *batch_extra_fields)),
+#                 'student_logs': serialized_logs,
+#             }
+#         }
+
+#         return Response(response_data, status=status.HTTP_200_OK)
+}
 
 class StudentInfoAPIView(APIView):
     authentication_classes = [JWTAuthFromCookie]
@@ -506,18 +786,12 @@ class StudentInfoAPIView(APIView):
 
         student = get_object_or_404(Student, id=id)
 
-        # Fetch related student courses with course data
         student_courses = StudentCourse.objects.filter(student=student).select_related('course')
         student_course_ids = list(student_courses.values_list('id', flat=True))
 
         student_course_list = []
         for sc in student_courses:
-            # Get book issue dates
-            book_issues = BookAllotment.objects.filter(
-                book__course=sc.course,
-                student=student
-            ).values('allotment_datetime')
-
+            book_issues = BookAllotment.objects.filter(book__course=sc.course, student=student).values('allotment_datetime')
             student_course_list.append({
                 'id': sc.id,
                 'course_name': sc.course.name,
@@ -532,22 +806,15 @@ class StudentInfoAPIView(APIView):
                 'student_exam_date': sc.marks_update_date,
             })
 
-        # Get batches grouped by status
         batch_statuses = ['Upcoming', 'Completed', 'Running', 'Hold']
         student_batches = {
             status: Batch.objects.filter(student=student, status=status).select_related('course', 'trainer', 'batch_time')
             for status in batch_statuses
         }
 
-        # Identify upcoming batches not already in student's completed/ongoing courses
-        completed_or_ongoing_course_ids = student_courses.filter(
-            status__in=['Completed', 'Ongoing']
-        ).values_list('course_id', flat=True)
+        completed_or_ongoing_course_ids = student_courses.filter(status__in=['Completed', 'Ongoing']).values_list('course_id', flat=True)
 
-        all_upcoming_batches = Batch.objects.filter(
-            course__in=student_courses.values_list('course_id', flat=True),
-            status='Upcoming'
-        )
+        all_upcoming_batches = Batch.objects.filter(course__in=student_courses.values_list('course_id', flat=True), status='Upcoming')
 
         filtered_upcoming_batches = all_upcoming_batches.exclude(
             course_id__in=completed_or_ongoing_course_ids
@@ -555,13 +822,11 @@ class StudentInfoAPIView(APIView):
             id__in=student_batches['Upcoming'].values_list('id', flat=True)
         )
 
-        # Update status to 'Upcoming' for related StudentCourse entries
         StudentCourse.objects.filter(
             student=student,
             course__in=student_batches['Upcoming'].values_list('course_id', flat=True)
         ).update(status='Upcoming')
 
-        # Fetch logs
         content_types = ContentType.objects.get_for_models(Student, StudentCourse, StudentNotes)
         student_logs = LogEntry.objects.filter(
             content_type__in=content_types.values()
@@ -571,16 +836,69 @@ class StudentInfoAPIView(APIView):
 
         serialized_logs = LogEntrySerializer(student_logs, many=True).data
 
-        # Notes
-        note_fields = [
-            'id', 'note', 'create_at', 'last_update_datetime',
-            'create_by__first_name', 'create_by__role'
-        ]
+        note_fields = ['id', 'note', 'create_at', 'last_update_datetime', 'create_by__first_name', 'create_by__role']
         student_notes = StudentNotes.objects.filter(student=student).values(*note_fields).order_by('-create_at')
 
-        # Prepare batch fields
+        # ✅ Fetch all Status Notes
+        status_notes_qs = StudentNotes.objects.filter(student=student).order_by('-create_at').values(
+            'id', 'note', 'create_at', 'create_by__first_name','status_note'
+        )
+
         batch_fields = [field.name for field in Batch._meta.fields]
         batch_extra_fields = ['course__name', 'trainer__name', 'batch_time__start_time', 'batch_time__end_time']
+
+        # --- Attendance Summary ---
+        attendance_summary = {
+            "student_id": student.id,
+            "name": student.name,
+            "enrollment_no": student.enrollment_no,
+            "batch_wise_summary": []
+        }
+
+        student_batches_qs = Batch.objects.filter(student=student, status__in=['Running', 'Completed']).order_by('-id')
+        for batch in student_batches_qs:
+            attendance_qs = Attendance.objects.filter(student=student, batch=batch).order_by('date')
+            present_count = attendance_qs.filter(attendance='Present').count()
+            absent_count = attendance_qs.filter(attendance='Absent').count()
+            total_marked = attendance_qs.exclude(attendance='Not Marked').count()
+            latest_attendance = attendance_qs.order_by('-date', '-id').first()
+
+            batch_summary = {
+                "batch_id": batch.id,
+                "course_name": batch.course.name,
+                "batch_status": batch.status,
+                "present_count": present_count,
+                "absent_count": absent_count,
+                "total_attendance_marked": total_marked,
+                "present_percent": f"{(present_count / total_marked * 100):.1f}%" if total_marked > 0 else "0%",
+                "absent_percent": f"{(absent_count / total_marked * 100):.1f}%" if total_marked > 0 else "0%",
+                "latest_status": latest_attendance.attendance if latest_attendance else "Not Marked",
+                "latest_date": latest_attendance.date if latest_attendance else None,
+                "attendance_history": [
+                    {"date": att.date, "status": att.attendance}
+                    for att in attendance_qs
+                ]
+            }
+
+            attendance_summary["batch_wise_summary"].append(batch_summary)
+
+        all_attendance_qs = Attendance.objects.filter(student=student).exclude(attendance='Not Marked')
+        total_present = all_attendance_qs.filter(attendance='Present').count()
+        total_absent = all_attendance_qs.filter(attendance='Absent').count()
+        total_marked = all_attendance_qs.count()
+
+        overall_attendance = {
+            "total_present_count": total_present,
+            "total_absent_count": total_absent,
+            "total_attendance_marked": total_marked,
+            "overall_present_percent": f"{(total_present / total_marked * 100):.1f}%" if total_marked > 0 else "0%",
+            "overall_absent_percent": f"{(total_absent / total_marked * 100):.1f}%" if total_marked > 0 else "0%",
+        }
+
+        attendance_summary["overall_summary"] = overall_attendance
+
+        latest_status_note = status_notes_qs.first()
+        status_note_text = latest_status_note['status_note'] if latest_status_note else None
 
         response_data = {
             "All_in_One": {
@@ -588,18 +906,19 @@ class StudentInfoAPIView(APIView):
                 'student': StudentSerializer(student).data,
                 'student_courses': student_course_list,
                 'student_notes': student_notes,
+                "status_note": status_note_text,
+                'student_status_notes': list(status_notes_qs),   # ✅ Added
                 'student_batch_upcoming': list(student_batches['Upcoming'].values(*batch_fields, *batch_extra_fields)),
                 'student_batch_hold': list(student_batches['Hold'].values(*batch_fields, *batch_extra_fields)),
                 'student_batch_ongoing': list(student_batches['Running'].values(*batch_fields, *batch_extra_fields)),
                 'student_batch_completed': list(student_batches['Completed'].values(*batch_fields, *batch_extra_fields)),
                 'all_upcoming_batch': list(filtered_upcoming_batches.values(*batch_fields, *batch_extra_fields)),
                 'student_logs': serialized_logs,
+                'attendance_summary': attendance_summary
             }
         }
 
         return Response(response_data, status=status.HTTP_200_OK)
-
-
 
 class StudentCourseEditAPIView(APIView):
     """API to edit an existing StudentCourse record."""
@@ -1372,8 +1691,114 @@ class StudentBookAllotmentAPIView(APIView):
         
 }
 
+{
+
 
 # Student Attendance and email send to student.....
+# class StudentAttendanceEdit(APIView):
+#     authentication_classes = [JWTAuthFromCookie]
+#     permission_classes = [IsAuthenticated]
+
+#     def post(self, request, id):
+#         if request.user.role not in ['admin', 'coordinator']:
+#             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
+#         mark = request.data.get('mark', False)
+
+#         try:
+#             student_attendance = Attendance.objects.get(id=id)
+
+#             student = Student.objects.filter(id=student_attendance.student_id).first()
+#             if not student:
+#                 return Response({'error': 'Student not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+#             batch = student_attendance.batch
+#             trainer_name = batch.trainer.name if batch and batch.trainer else "N/A"
+#             start_time = batch.batch_time.start_time.strftime("%I:%M %p") if batch and batch.batch_time.start_time else "N/A"
+#             end_time = batch.batch_time.end_time.strftime("%I:%M %p") if batch and batch.batch_time.end_time else "N/A"
+
+#             student_email = student.email
+#             student_name = student.name
+#             course_name = student_attendance.course if student_attendance.course else "Course"
+#             batch_id = batch.batch_id if batch else "N/A"
+#             date_str = timezone.now().strftime('%d %B %Y')
+
+#             if mark is True:
+#                 student_attendance.attendance = 'Present'
+#                 status_text = "marked as <strong style='color: green;'>Present</strong>"
+#             else:
+#                 student_attendance.attendance = 'Absent'
+#                 status_text = "marked as <strong style='color: red;'>Absent</strong>"
+
+#             # Build the email message
+#             subject = f"Attendance Update for {course_name} on {date_str}"
+#             html_message = f"""
+#             <!DOCTYPE html>
+#             <html>
+#             <head>
+#                 <meta charset="UTF-8">
+#                 <title>Attendance Update</title>
+#             </head>
+#             <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0; color: #000;">
+#                 <div style="max-width: 600px; margin: 40px auto; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); overflow: hidden;">
+#                     <div style="text-align: center; padding: 20px; border-bottom: 1px solid #ddd;">
+#                         <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 60px;">
+#                     </div>
+#                     <div style="padding: 30px; color: #000;">
+#                         <h2 style="text-align: center; color: #000; font-size: 24px; margin-bottom: 20px;">📋 Attendance Notification</h2>
+#                         <p style="font-size: 16px; line-height: 1.6; color: #000;">Dear <strong>{escape(student_name)}</strong>,</p>
+#                         <p style="font-size: 16px; line-height: 1.6; color: #000;">Your attendance for today's session of <strong>{escape(str(course_name))}</strong> (Batch ID: {batch_id}) has been {status_text}.</p>
+#                         <div style="background-color: #f1f1f1; padding: 15px; border-radius: 6px; margin: 20px 0;">
+#                             <p style="font-size: 15px; margin: 6px 0; color: #000;"><strong>📘 Batch ID:</strong> {batch_id}</p>
+#                             <p style="font-size: 15px; margin: 6px 0; color: #000;"><strong>🕒 Timing:</strong> {start_time} - {end_time}</p>
+#                             <p style="font-size: 15px; margin: 6px 0; color: #000;"><strong>👨‍🏫 Trainer:</strong> {trainer_name}</p>
+#                             <p style="font-size: 15px; margin: 6px 0; color: #000;"><strong>📅 Date:</strong> {date_str}</p>
+#                         </div>
+#                         <p style="font-size: 16px; line-height: 1.6; color: #000;">If this information is incorrect, please contact your coordinator.</p>
+#                         <p style="font-size: 15px; margin-top: 30px; line-height: 1.6; color: #000;">
+#                             📍 <strong>Our Address:</strong><br>
+#                             1st Floor, Plot no. 4, Lane no. 2, Kehar Singh Estate, Westend Marg,<br>
+#                             Behind Saket Metro Station, New Delhi 110030
+#                         </p>
+#                         <p style="font-size: 15px; line-height: 1.6; color: #000;">
+#                             📞 <strong>Phone:</strong> 011-40394315 | +91-9650202445, +91-9650677445<br>
+#                             📧 <strong>Email:</strong> training@craw.in<br>
+#                             🌐 <strong>Website:</strong> 
+#                             <a href="https://www.craw.in" style="text-decoration: underline;">www.craw.in</a>
+#                         </p>
+#                         <p style="font-size: 16px; line-height: 1.6; color: #000;">
+#                             Regards,<br>
+#                             <strong>Craw Cyber Security Pvt Ltd</strong> 🛡️
+#                         </p>
+#                     </div>
+#                     <div style="background-color: #f0f0f0; padding: 18px 20px; text-align: center; font-size: 14px; border-top: 1px solid #ddd; color: #000;">
+#                         <p style="margin: 0;">© 2025 <strong>Craw Cyber Security Pvt Ltd</strong>. All Rights Reserved.</p>
+#                         <p style="margin: 5px 0 0;">This is an automated message. Please do not reply.</p>
+#                     </div>
+#                 </div>
+#             </body>
+#             </html>
+
+#             """
+
+#             try:
+#                 email = EmailMessage(subject, html_message, "CRAW SECURITY BATCH <training@craw.in>", [student_email])
+#                 email.content_subtype = "html"
+#                 email.send()
+#             except Exception as e:
+#                 print(f"Failed to send attendance email to {student_email}: {str(e)}")
+
+#             student_attendance.save()
+
+#             return Response({
+#                 'success': f"Attendance updated to {student_attendance.attendance}."
+#             }, status=status.HTTP_200_OK)
+
+#         except Attendance.DoesNotExist:
+#             return Response({'error': 'Attendance record not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+}
+
 class StudentAttendanceEdit(APIView):
     authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]

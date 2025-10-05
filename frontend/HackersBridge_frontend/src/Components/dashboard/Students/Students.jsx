@@ -1,11 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import CreateStudentForm from "./CreateStudentForm";
-import axios from "axios";
-import { Button, message, Popconfirm,  Avatar, Tag, Tooltip, Input, Spin, Empty, Pagination, Dropdown, Popover, DatePicker, Select  } from 'antd';
-import { EditOutlined, DeleteOutlined, CheckOutlined, TagOutlined, FilterOutlined , DownOutlined } from '@ant-design/icons';
-import BASE_URL from "../../../ip/Ip";
-import { useAuth } from "../AuthContext/AuthContext";
+import { Button, message, Popconfirm,  Avatar, Tag, Tooltip, Input, Spin, Empty, Pagination, Dropdown, Popover, DatePicker, Select, Badge } from 'antd';
+import { EditOutlined, DeleteOutlined, CheckOutlined, TagOutlined, FilterOutlined , MoreOutlined } from '@ant-design/icons';
 import { useStudentForm } from "../Studentcontext/StudentFormContext";
 import dayjs from "dayjs";
 import { handleStudentClick } from "../../Navigations/Navigations";
@@ -13,31 +10,37 @@ import useStudentStatusChange, { statusDescription } from "../../Functions/Stude
 import StudentCards from "../SpecificPage/Cards/Student/StudentCard";
 import SearchBar from "../../SearchInput/SearchInput";
 import { useTagContext } from "../Tags/TagsContext";
+import axiosInstance from "../api/api";
+import StudentStatusDropdown from "../../Functions/StudentStatusDropdown";
+import TagAssignmentPopover from "../../Functions/TagAssignmentPopover";
+import { useTheme } from "../../Themes/ThemeContext";
 
-const { Search } = Input;
 const { RangePicker } = DatePicker;
 
 
 const Students = () => {
+    // for theme -------------------------
+    const { getTheme } = useTheme();
+    const theme = getTheme();
+    // ------------------------------------
+
     const [isModalOpen, setIsModalOpen] = useState(false) 
     const [activeTab, setActiveTab] = useState('');
     const [selectedStudent, setSelectedStudent] = useState()
     const [isDeleted, setIsDeleted] = useState(false)
     const { studentStatuses, setStudentStatuses, handleStudentStatusChange } = useStudentStatusChange();
 
-    const { studentData, loading, setLoading, setStudentData, fetchStudents } = useStudentForm();
+    const { studentData, loading, setLoading, setStudentData, fetchStudents, handleDeleteStudent } = useStudentForm();
     
     const navigate = useNavigate();
 
     // for tags 
-        const {tagData, fetchTagData} = useTagContext();
-        const [selectedStudentId, setSelectedStudentId] = useState(null);
-        const [addTagValue, setAddTagValue] = useState([]);
-        const [assignTagData, setAssignTagData] = useState([]);
-        const [unassignTagData, setUnassignTagData] = useState([]); 
+        const { fetchTagData } = useTagContext();
+        const [selectedStudentId, setSelectedStudentId] = useState(null); 
 
     // for Pagination 
     const [searchTerm, setSearchTerm] = useState('');
+    const [inputValue, setInputValue] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 30;
 
@@ -55,8 +58,17 @@ const Students = () => {
 
     const handleTabClick = (tab) => {
         setActiveTab(tab);
+        sessionStorage.setItem("activeStudentTab", tab); // save
         setCurrentPage(1)
     };
+
+     // Load last tab from sessionStorage
+        useEffect(() => {
+            const savedTab = sessionStorage.getItem("activeStudentTab");
+            if (savedTab) {
+            setActiveTab(savedTab);
+            }
+        }, []);
 
 
     // FETCH STUDENTDATA OM MOUNT
@@ -65,6 +77,19 @@ const Students = () => {
         
         fetchTagData();
     },[!isModalOpen, searchTerm, currentPage, sortByMode, sortByLanguage, sortByPreferredWeek, sortByLocation, activeTab, startDate, endDate]);
+
+    
+     // HANDLE SEARCH INPUT AND DEBOUNCE 
+        useEffect(() => {
+            const handler = setTimeout(() => {
+                setSearchTerm(inputValue.trimStart());
+                setCurrentPage(1)
+            }, 500); // debounce delay in ms
+          
+            return () => {
+              clearTimeout(handler); // clear previous timeout on re-typing
+            };
+          }, [inputValue]);
 
           
 
@@ -104,54 +129,50 @@ const Students = () => {
     };
 
     
-    // Delete Function
-    const handleDelete = async (studentId) => {
-    if (!studentId) return;
+    // Delete Function for student delete
+    // const handleDelete = async (studentId) => {
+    // if (!studentId) return;
 
-    try {
-        const response = await axios.delete(`${BASE_URL}/api/students/delete/${studentId}/`, 
-            { headers: { 'Content-Type': 'application/json' }, 
-            withCredentials : true
-        }
-        );
+    // try {
+    //     const response = await axiosInstance.delete(`/api/students/delete/${studentId}/`);
 
-        if (response.status === 204) {
-            // Make sure Student Data is an array before filtering
-            if (Array.isArray(studentData)) {
-                setStudentData(prevStudents => prevStudents.filter(student => student.id !== studentId));
+    //     if (response.status === 204) {
+    //         // Make sure Student Data is an array before filtering
+    //         if (Array.isArray(studentData)) {
+    //             setStudentData(prevStudents => prevStudents.filter(student => student.id !== studentId));
                 
-                setTimeout(() => {
-                    setSearchTerm('')
-                }, 2000);
-            } else {
-                // console.error('Student Data is not an array');
-            }
-        }
-    } catch (error) {
-        setLoading(false);
+    //             setTimeout(() => {
+    //                 setSearchTerm('')
+    //             }, 2000);
+    //         } else {
+    //             // console.error('Student Data is not an array');
+    //         }
+    //     }
+    // } catch (error) {
+    //     setLoading(false);
     
-        if (error.response) {
-            // console.error("Server Error Response:", error.response.data);
+    //     if (error.response) {
+    //         // console.error("Server Error Response:", error.response.data);
     
-            // Extract error messages and show each one separately
-            Object.entries(error.response.data).forEach(([key, value]) => {
-                value.forEach((msg) => {
-                    message.error(`${msg}`);
-                });
-            });
-        } else if (error.request) {
-            // console.error("No Response from Server:", error.request);
-            message.error("No response from server. Please check your internet connection.");
-        } else {
-            // console.error("Error Message:", error.message);
-            message.error("An unexpected error occurred.");
-        }
-    }       
-    };
+    //         // Extract error messages and show each one separately
+    //         Object.entries(error.response.data).forEach(([key, value]) => {
+    //             value.forEach((msg) => {
+    //                 message.error(`${msg}`);
+    //             });
+    //         });
+    //     } else if (error.request) {
+    //         // console.error("No Response from Server:", error.request);
+    //         message.error("No response from server. Please check your internet connection.");
+    //     } else {
+    //         // console.error("Error Message:", error.message);
+    //         message.error("An unexpected error occurred.");
+    //     }
+    // }       
+    // };
 
     // Confirm and Cancel Handlers for delete button
     const confirm = (studentId) => {
-        handleDelete(studentId); 
+        handleDeleteStudent(studentId); 
         message.success('Student Deleted Successfully');
     };
 
@@ -161,8 +182,8 @@ const Students = () => {
 
 
     // Handle Toggle of student active, inactive, temporary block and restricted 
-    const onChangeStatus = (studentId, newStatus) => {
-        handleStudentStatusChange({ studentId, newStatus });
+    const onChangeStatus = (studentId, newStatus, status_note) => {        
+        handleStudentStatusChange({ studentId, newStatus, status_note });
     };
 
     
@@ -232,68 +253,12 @@ const Students = () => {
 
 
 
-    // Handle Tag Add (POST)
-    const handleAddTag = async (tagIds, studentId) => {
-        if (!studentId || !tagIds?.length) return;
-    
-        const payload = {
-            tag_ids: tagIds, // expects an array of IDs like [1, 2, 3]
-        };
-    
-        console.log("Payload being sent to backend:", payload);
-    
-        try {
-        const response = await axios.post(`${BASE_URL}/api/student/assign_tag/${studentId}/`,
-            payload, // ✅ send the payload here
-            { headers: {"Content-Type": "application/json"},
-            withCredentials: true
-            }
-        );
-    
-        if (response.status === 200 || response.status === 201) {
-            message.success("Tag(s) added successfully!");
-            // Optionally refresh tags
-            // fetchTagData();
-        } else {
-            message.error("Failed to add tag(s).");
-        }
-        } catch (error) {
-        console.error("Error creating tag:", error);
-        message.error("Error adding tag(s).");
-        }
-    };
-    
-    
-    // Fetch Assign and Unassign Tag
-    const fetchAssignTagData = async (studentId) => {
-    try {
-        const response = await axios.get(`${BASE_URL}/api/student/assign_tag/${studentId}/`, 
-            { headers: {"Content-Type": "application/json"},
-            withCredentials: true
-        }
-        );
-    
-        const assigned = response.data?.assigned_tags || [];
-        const unassigned = response.data?.unassigned_tags || [];
-    
-        setAssignTagData(assigned);       // full objects
-        setUnassignTagData(unassigned);   // full objects
-
-    } catch (error) {
-        console.error("Error fetching tags:", error);
-        setAssignTagData([]);
-        setUnassignTagData([]);
-    }
-    };
-
-
-
 
     return (
         <>
-        <div className="w-auto pt-4 px-2 mt-10">
+        <div className={`w-auto pt-4 px-4 mt-10 ${theme.bg}`}>
             <StudentCards />
-            <div className="relative mt-3 w-full h-full shadow-md sm:rounded-lg border border-gray-50">
+            {/* <div className="relative mt-3 w-full h-full shadow-md sm:rounded-lg border border-gray-50"> */}
             {/* <div className="w-full px-4 py-3 text flex justify-between font-semibold "> */}
                 {/* <h1>All Students</h1> */}
                     {/* <div>
@@ -301,9 +266,9 @@ const Students = () => {
                     </div> */}
                 {/* </div> */}
 
-                <div className="w-full grid grid-cols-3 grid-flow-row space-y-4 sm:space-y-0 items-center justify-between gap-x-8 px-4 py-4">
+                <div className="w-full grid grid-cols-3 grid-flow-row space-y-4 sm:space-y-0 items-center justify-between gap-x-8 px-0 pt-4 pb-2">
                     <div className="grid col-span-1">
-                        <div className="flex gap-x-4 h-auto items-center">
+                        <div className="flex gap-x-0 h-auto items-center">
                             
                             <div className="lg:hidden">
                                 <select
@@ -317,7 +282,7 @@ const Students = () => {
                                 </select>
                             </div>
 
-                            <div className="hidden lg:flex">
+                            {/* <div className="hidden lg:flex">
                                 <button
                                     onClick={() => handleTabClick('')}
                                     className={` px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
@@ -339,6 +304,45 @@ const Students = () => {
                                     >
                                     Restricted
                                 </button>
+                            </div> */}
+
+                            <div className="hidden lg:flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                                <div className="flex flex-wrap gap-x-1 bg-white/70 backdrop-blur-sm p-1.5 rounded-xl">
+                                    {["All Students", "Temporary Block", "Restricted"].map((tab) => {
+                                        const isActive =
+                                                        (tab === "All Students" && activeTab === "") ||
+                                                        (tab === "Temporary Block" && activeTab === "Temp Block") ||
+                                                        (tab === "Restricted" && activeTab === "Restricted");
+
+                                        const showCount = isActive ? studentData?.count : 0;
+
+                                        const tabKey =
+                                                    tab === "All Students"
+                                                        ? ""
+                                                        : tab === "Temporary Block"
+                                                        ? "Temp Block"
+                                                        : "Restricted";
+
+                                        return (
+                                        <div key={tab} className="relative">
+                                            <Badge
+                                            count={showCount}
+                                            overflowCount={999999}
+                                            size="small"
+                                            offset={[0, 0]} // Adjust position of the badge
+                                            >
+                                            <button
+                                                onClick={() => handleTabClick(tabKey)}
+                                                className={`px-3 py-2 rounded-lg font-medium text-xs transition-all duration-200 text-gray-600 hover:bg-white/50
+                                                ${isActive ? `text-gray-600 shadow-md ${theme.activeTab}` : "text-gray-600 hover:bg-white/50"}`}
+                                            >
+                                                {tab}
+                                            </button>
+                                            </Badge>
+                                        </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
 
                         </div>
@@ -346,51 +350,69 @@ const Students = () => {
 
                     <div className="flex justify-center">
                         <label htmlFor="table-search" className="sr-only">Search</label>
-                            <SearchBar placeholder="Search for Student"
-                                inputClassName="2xl:w-96 lg:w-96 md:w-72 h-8 block p-2 pr-10 text-xs text-gray-600 font-normal border border-gray-300 rounded-lg bg-gray-50 focus:ring-0 focus:border-blue-500"
-                                onSearch={(value) => {
-                                    setSearchTerm(value);
-                                    setCurrentPage(1);
-                                }}
-                            />
+                             <div className="relative h-auto">
+                            <input onChange={(e) => setInputValue(e.target.value.replace(/^\s+/, ''))} value={inputValue} type="text" id="table-search" placeholder="Search for student"
+                                className={`2xl:w-96 lg:w-96 md:w-72 h-8 block p-2 pr-10 text-xs font-medium ${theme.searchBg}`} 
+                                />
+                            <div className="absolute inset-y-0 right-0 h-auto flex items-center pr-3">
+                            <button onClick={() => setInputValue("")}>
+                            {inputValue ? (
+                                <svg className="w-4 h-4 text-gray-500" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M6.293 6.293a1 1 0 011.414 0L10 8.586l2.293-2.293a1 1 0 111.414 1.414L11.414 10l2.293 2.293a1 1 0 01-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 01-1.414-1.414L8.586 10 6.293 7.707a1 1 0 010-1.414z" clipRule="evenodd"></path>
+                                    </svg>
+                                ) : (
+                                    <svg className="w-4 h-4 text-gray-500" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"></path>
+                                    </svg>
+                                )}
+                            </button>
+                            </div>
+                        </div>
 
                     </div>
 
                     <div className="flex justify-end">
-                        <button onClick={() => { setIsModalOpen(true); setSelectedStudent(null); }} type="button" className="h-8 focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5">Add Student +</button>
+                        <button onClick={() => { setIsModalOpen(true); setSelectedStudent(null); }} type="button" className={`h-8 focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5 shadow-lg hover:shadow-xl transition-all duration-200 ${theme.createBtn} `}>Add Student +</button>
                     </div>
 
                 </div>
 
 
                 
-                <div className={`overflow-hidden pb-2 relative `}>
-                    <div className="w-full h-[38rem] overflow-y-auto rounded-lg pb-2">
-                        <table className="w-full text-xs text-left text-gray-500">
-                        <thead className="text-xs text-gray-700 uppercase bg-blue-50 sticky top-0 z-10">
-                            <tr>
+                <div className={`overflow-hidden pb-0 relative bg-white/40 backdrop-blur-sm rounded-xl shadow-sm`}>
+                    <div className="w-full h-[32rem] 2xl:min-h-[36rem] md:max-h-[33rem] lg:max-h-[32rem] 2xl:max-h-[36rem] overflow-y-auto rounded-xl pb-2">
+                        <table className="w-full text-xs font-normal text-left text-gray-600">
+                        <thead className="bg-white sticky top-0 z-10">
+                            <tr className="bg-gray-50/80">
                                 <th scope="col" className="p-2">
                                     <div className="flex items-center">
-                                        <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 focus:ring-2"></input>
-                                        <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
+                                        <input id="checkbox-all-search" type="checkbox" 
+                                            className={`
+                                                        w-3 h-3 rounded-[4px] text-md cursor-pointer focus:ring-0
+                                                        appearance-none border border-gray-300
+                                                        transition-all duration-200 ease-in-out
+                                                        checked:${theme.activeTab} checked:border-transparent
+                                                        hover:border-gray-400
+                                                    `}
+                                        />
                                     </div>
                                 </th>
-                                <th scope="col" className="px-3 py-3 md:px-2">
+                                <th scope="col" className="px-3 py-3 md:px-2 text-xs font-medium uppercase">
                                     s.No
                                 </th>
-                                <th scope="col" className="px-3 py-3 md:px-1">
+                                <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                     Enrollment No
                                 </th>
-                                <th scope="col" className="px-3 py-3 md:px-1">
+                                <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                     Name
                                 </th>
-                                <th scope="col" className="px-3 py-3 md:px-1">
+                                <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                     Phone No
                                 </th>
-                                <th scope="col" className="px-3 py-3 md:px-1">
+                                <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                     Email
                                 </th>
-                                <th scope="col" className="px-3 py-3 md:px-1">
+                                <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                     Date of Joining
                                     <Tooltip title="Sort by Joining Date" placement="top">
                                     <span>
@@ -415,7 +437,6 @@ const Students = () => {
                                                 />
                                             }
                                             placement="bottom"
-                                            trigger="click"
                                             open={openDatePopover}
                                             onOpenChange={(visible) => setOpenDatePopover(visible)}
                                             >
@@ -428,10 +449,10 @@ const Students = () => {
                                     </span>
                                     </Tooltip>
                                 </th>
-                                <th scope="col" className="px-3 py-3 md:px-1">
+                                <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                     Courses
                                 </th>
-                                <th scope="col" className="px-3 py-3 md:px-1">
+                                <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                     Mode
                                     <Tooltip title="Sort by Mode" placement="top">
                                     <span>
@@ -441,7 +462,7 @@ const Students = () => {
                                     </span>
                                     </Tooltip>
                                 </th>
-                                <th scope="col" className="px-3 py-3 md:px-1">
+                                <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                     Language
                                     <Tooltip title="Sort by Language" placement="top">
                                     <span>
@@ -451,7 +472,7 @@ const Students = () => {
                                     </span>
                                     </Tooltip>
                                 </th>
-                                <th scope="col" className="px-3 py-3 md:px-1">
+                                <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                     Preferred Week
                                     <Tooltip title="Sort by Preferred Week" placement="top">
                                     <span>
@@ -461,7 +482,7 @@ const Students = () => {
                                     </span>
                                     </Tooltip>
                                 </th>
-                                <th scope="col" className="px-3 py-3 md:px-1">
+                                <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                     Location
                                     <Tooltip title="Sort by Location" placement="top">
                                     <span>
@@ -471,16 +492,16 @@ const Students = () => {
                                     </span>
                                     </Tooltip>
                                 </th>
-                                <th scope="col" className="px-3 py-3 md:px-1">
+                                <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                     Counsellor
                                 </th>
-                                <th scope="col" className="px-3 py-3 md:px-1">
+                                <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                     Coordinator
                                 </th>
-                                <th scope="col" className="px-3 py-3 md:px-1">
+                                <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                     Status
                                 </th>
-                                <th scope="col" className="px-3 py-3 md:px-1">
+                                <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                     Action
                                 </th>
                                 
@@ -488,7 +509,7 @@ const Students = () => {
                         </thead>
                         {/* TO show all students data  */}
                         {(activeTab === '' || activeTab === "Temp Block" || activeTab === "Restricted") && (
-                        <tbody>
+                        <tbody className="divide-y divide-gray-100 font-normal text-gray-700">
                         {loading ? (
                                 <tr>
                                     <td colSpan="100%" className="text-center py-4">
@@ -498,14 +519,21 @@ const Students = () => {
                         
                         ) : studentData?.results?.length > 0 ? (
                             studentData.results.map((item, index) => (
-                            <tr key={item.id} className="bg-white border-b border-gray-200 hover:bg-gray-50 scroll-smooth">
+                            <tr key={item.id} className="hover:bg-white transition-colors scroll-smooth">
                                 <td scope="col" className="p-2">
                                     <div className="flex items-center">
-                                        <input id="checkbox-all-search" type="checkbox" className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 focus:ring-1"></input>
-                                        <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
+                                        <input id="checkbox-all-search" type="checkbox" 
+                                            className={`
+                                                        w-3 h-3 rounded-[4px] text-md cursor-pointer focus:ring-0
+                                                        appearance-none border border-gray-300
+                                                        transition-all duration-200 ease-in-out
+                                                        checked:${theme.activeTab} checked:border-transparent
+                                                        hover:border-gray-400
+                                                    `}
+                                        />
                                     </div>
                                 </td>
-                                <td scope="row" className="px-3 py-2 md:px-2 font-medium text-gray-900">
+                                <td scope="row" className="px-3 py-2 md:px-2">
                                     {(currentPage - 1) * pageSize + index + 1}
                                 </td>
                                 {/* <td className="px-3 py-2 md:px-1">
@@ -514,173 +542,22 @@ const Students = () => {
                                 {/* <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(navigate, item.id)}>
                                     {item.enrollment_no}
                                 </td> */}
-                                <td className="px-3 py-2 md:px-1 font-bold">
+                                <td className="px-3 py-2 md:px-1 font-medium">
                                     <div className="flex items-center gap-2">
                                         <span onClick={() => handleStudentClick(navigate, item.id)} className="cursor-pointer">
                                             {item.enrollment_no}
                                         </span>
 
-                                    <Popover
-                                    trigger="hover"
-                                    placement="bottomLeft"
-                                    open={selectedStudentId === item.id}
-                                    content={
-                                        <div
-                                        className="w-64 space-y-3"
-                                        onMouseEnter={() => {
-                                            clearTimeout(window.__popoverTimer);
-                                        }}
-                                        onMouseLeave={() => {
-                                            window.__popoverTimer = setTimeout(() => {
-                                            setSelectedStudentId(null);
-                                            setAssignTagData([]);
-                                            setUnassignTagData([]);
-                                            setAddTagValue([]);
-                                            }, 200);
-                                        }}
-                                        >
-                                        {/* ✅ Assigned Tags */}
-                                        <div className="space-y-1">
-                                            {assignTagData.length > 0 ? (
-                                            <>
-                                                <p className="text-xs text-gray-500 font-medium">Assigned Tags:</p>
-                                                <div className="flex flex-wrap gap-1">
-                                                {assignTagData.map((tag) => (
-                                                    <span
-                                                    key={tag.id}
-                                                    className="text-xs font-medium px-2 py-1 rounded"
-                                                    style={{ backgroundColor: tag.tag_color, color: "#fff" }}
-                                                    >
-                                                    {tag.tag_name}
-                                                    </span>
-                                                ))}
-                                                </div>
-                                            </>
-                                            ) : (
-                                            <span className="text-xs text-gray-500">No Tags Assigned</span>
-                                            )}
-                                        </div>
-
-                                        {/* Select New Tags */}
-                                        <Select
-                                            mode="multiple"
-                                            showSearch
-                                            placeholder="Select Tags"
-                                            value={addTagValue}
-                                            onChange={setAddTagValue}
-                                            options={unassignTagData.map((tag) => ({
-                                            value: tag.id,
-                                            label: tag.tag_name,
-                                            }))}
-                                            className="w-full"
-                                            size="small"
-                                            optionRender={(option) => {
-                                            const tag = unassignTagData.find((t) => t.id === option.value);
-                                            return (
-                                                <div
-                                                style={{
-                                                    backgroundColor: tag?.tag_color,
-                                                    padding: "2px 8px",
-                                                    borderRadius: "4px",
-                                                    color: "#fff",
-                                                }}
-                                                >
-                                                {option.label}
-                                                </div>
-                                            );
-                                            }}
-                                            tagRender={(props) => {
-                                            const { label, value, closable, onClose } = props;
-                                            const tag = unassignTagData.find((t) => t.id === value);
-                                            return (
-                                                <span
-                                                style={{
-                                                    backgroundColor: tag?.tag_color,
-                                                    color: "#fff",
-                                                    padding: "2px 8px",
-                                                    borderRadius: "4px",
-                                                    marginRight: "4px",
-                                                    display: "inline-flex",
-                                                    alignItems: "center",
-                                                    fontSize: "12px",
-                                                }}
-                                                >
-                                                {label}
-                                                {closable && (
-                                                    <span
-                                                    onClick={onClose}
-                                                    style={{
-                                                        marginLeft: 6,
-                                                        cursor: "pointer",
-                                                        fontWeight: "bold",
-                                                    }}
-                                                    >
-                                                    ×
-                                                    </span>
-                                                )}
-                                                </span>
-                                            );
-                                            }}
+                                        <TagAssignmentPopover
+                                            student={item}
+                                            isOpen={selectedStudentId === item.id}
+                                            onOpenChange={(visible) => setSelectedStudentId(visible ? item.id : null)}
+                                            setStudentData={setStudentData}
                                         />
-
-                                        {/* ✅ Add Tags Button */}
-                                        <Button
-                                            type="primary"
-                                            size="small"
-                                            block
-                                            disabled={!addTagValue || addTagValue.length === 0}
-                                            onClick={async () => {
-                                            if (!item.id || addTagValue.length === 0) return;
-
-                                            await handleAddTag(addTagValue, item.id);
-                                            await fetchAssignTagData(item.id);
-
-                                            setStudentData((prev) => {
-                                                const updated = prev.results.map((student) => {
-                                                if (student.id === item.id) {
-                                                    return {
-                                                    ...student,
-                                                    tags: [...(student.tags || []), ...addTagValue],
-                                                    };
-                                                }
-                                                return student;
-                                                });
-                                                return { ...prev, results: updated };
-                                            });
-
-                                            setAddTagValue([]); // ✅ Do not close popover yet
-                                            }}
-                                        >
-                                            Add Tag(s)
-                                        </Button>
-                                        </div>
-                                    }
-                                    >
-                                    <TagOutlined
-                                        className="cursor-pointer text-gray-600 hover:text-black"
-                                        onMouseEnter={async () => {
-                                        setSelectedStudentId(item.id);
-                                        await fetchAssignTagData(item.id);
-                                        setAddTagValue([]);
-                                        }}
-                                        onMouseLeave={() => {
-                                        window.__popoverTimer = setTimeout(() => {
-                                            setSelectedStudentId(null);
-                                            setAssignTagData([]);
-                                            setUnassignTagData([]);
-                                            setAddTagValue([]);
-                                        }, 200);
-                                        }}
-                                    />
-                                    </Popover>
-
-
-
-
                                     </div>
                                 </td>
 
-                                <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(navigate, item.id)}>
+                                <td className="px-3 py-2 md:px-1 font-medium cursor-pointer" onClick={() => handleStudentClick(navigate, item.id)}>
                                     {item.name}
                                 </td>
                                 <td className="px-3 py-2 md:px-1">
@@ -708,7 +585,8 @@ const Students = () => {
                                                 <Tooltip key={index} title={name} placement="top">
                                                     <Avatar
                                                         size={24}
-                                                        style={{ backgroundColor: "#87d068" }}
+                                                        // style={{ backgroundColor: "#87d068" }}
+                                                        className={`${theme.studentCount} text-white`}
                                                     >
                                                         {name[0]}
                                                     </Avatar>
@@ -718,22 +596,22 @@ const Students = () => {
                                 </td>
 
 
-                                <td className="px-3 py-2 md:px-1">
-                                <Tag bordered={false} color={item.mode == 'Offline'? 'green' : item.mode == 'Online'? 'volcano' : 'geekblue'}>{item.mode}</Tag>
+                                <td className="px-3 py-2 md:px-1 font-normal">
+                                <Tag className="rounded-xl" bordered={false} color={item.mode == 'Offline'? 'green' : item.mode == 'Online'? 'volcano' : 'geekblue'}>{item.mode}</Tag>
                                 </td>
 
-                                <td className="px-3 py-2 md:px-1">
-                                <Tag bordered={false} color={item.language == 'Hindi'? 'green' : item.language == 'English'? 'volcano' : 'blue'}>{item.language}</Tag>
+                                <td className="px-3 py-2 md:px-1 font-normal">
+                                <Tag className="rounded-xl" bordered={false} color={item.language == 'Hindi'? 'green' : item.language == 'English'? 'volcano' : 'blue'}>{item.language}</Tag>
                                 </td>
 
-                                <td className="px-3 py-2 md:px-1">
-                                    <Tag bordered={false} color={item.preferred_week === "Weekdays" ? "cyan" : item.preferred_week === "Weekends" ? "gold" : "geekblue" }>
+                                <td className="px-3 py-2 md:px-1 font-normal">
+                                    <Tag className="rounded-xl" bordered={false} color={item.preferred_week === "Weekdays" ? "cyan" : item.preferred_week === "Weekends" ? "gold" : "geekblue" }>
                                         {item.preferred_week}
                                     </Tag>
                                 </td>
 
-                                <td className="px-3 py-2 md:px-1">
-                                    {item.location == "1" ? <Tag bordered={false} color="blue">Saket</Tag> : item.location == "2" ? <Tag bordered={false} color="magenta">Laxmi Nagar</Tag> : <Tag bordered={false} color="geekblue">Both</Tag> }
+                                <td className="px-3 py-2 md:px-1 font-normal">
+                                    {item.location == "1" ? <Tag className="rounded-xl" bordered={false} color="blue">Saket</Tag> : item.location == "2" ? <Tag className="rounded-xl" bordered={false} color="magenta">Laxmi Nagar</Tag> : <Tag className="rounded-xl" bordered={false} color="geekblue">Both</Tag> }
                                 </td>
 
                                 <td className="px-3 py-2 md:px-1">
@@ -744,63 +622,60 @@ const Students = () => {
                                     {item.support_coordinator_name}
                                 </td>
                                 
-                                <td className="px-3 py-2 md:px-1">
-                                    <Dropdown
-                                        menu={{
-                                            items: ["Active", "Inactive", "Temp Block", "Restricted"]
-                                                .map((status) => ({
-                                                    key: status,
-                                                    label:(
-                                                        <Tooltip title={statusDescription[status]} placement="left">
-                                                        <span>{status}</span>
-                                                        </Tooltip>
-                                                    ),
-                                                })),
-                                            onClick: ({ key }) => onChangeStatus(item.id, key),
-                                        }}
-                                        >
-                                            <a onClick={(e) => e.preventDefault()}>
-                                            <Tag color={
-                                                (studentStatuses[item.id] || item.status) === "Active" ? "#28a745" :
-                                                (studentStatuses[item.id] || item.status) === "Inactive" ? "#6c757d" :
-                                                (studentStatuses[item.id] || item.status) === "Temp Block" ? "#ff9100" :
-                                                "#ef233c"
-                                            }>
-                                                {studentStatuses[item.id || item.status]} <span><DownOutlined /></span>
-                                            </Tag>
-                                        </a>
-                                    </Dropdown>
+                                <td className="px-3 py-2 md:px-1 font-normal">
+                                    <StudentStatusDropdown
+                                        item={item}
+                                        studentStatuses={studentStatuses}
+                                        onChangeStatus={onChangeStatus}
+                                    />
                                 </td>
 
-                                <td > <Button 
-                                        color="primary" 
-                                        variant="filled" 
-                                        className="rounded-lg w-auto pl-3 pr-3 py-0 my-1 mr-1"
-                                        onClick={(e) => {
-                                            e.stopPropagation(); // Prevent the click from bubbling to the <td> click handler
-                                            handleEditClick(item);  // Open the form with selected course data
-                                            setIsModalOpen(true);   // Open the modal
+                                <td > 
+                                    <Dropdown
+                                        trigger={["click"]}
+                                        placement="bottomRight"
+                                        menu={{
+                                        items: [
+                                            {
+                                            key: "edit",
+                                            label: (
+                                                <div
+                                                className="flex items-center gap-2 px-2 py-1 cursor-pointer hover:bg-gray-100 rounded-md"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleEditClick(item);   // Open student form
+                                                    setIsModalOpen(true);    // Open the modal
+                                                }}
+                                                >
+                                                <EditOutlined /> Edit
+                                                </div>
+                                            ),
+                                            },
+                                            {
+                                            key: "delete",
+                                            label: (
+                                                <Popconfirm
+                                                title="Delete the Student"
+                                                description="Are you sure you want to delete this Student?"
+                                                onConfirm={() => confirm(item.id)}
+                                                onCancel={cancel}
+                                                okText="Yes"
+                                                cancelText="No"
+                                                >
+                                                <div
+                                                    className="flex items-center gap-2 px-2 py-1 cursor-pointer hover:bg-gray-100 rounded-md text-red-500"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <DeleteOutlined /> Delete
+                                                </div>
+                                                </Popconfirm>
+                                            ),
+                                            },
+                                        ],
                                         }}
-                                    >
-                                        <EditOutlined />
-                                    </Button>
-                                    <Popconfirm
-                                        title="Delete the Student"
-                                        description="Are you sure you want to delete this Student?"
-                                        onConfirm={() => confirm(item.id)}
-                                        onCancel={cancel}
-                                        okText="Yes"
-                                        cancelText="No"
-                                    >
-                                        <Button 
-                                            color="danger" 
-                                            variant="filled" 
-                                            className="rounded-lg w-auto px-3"
-                                            onClick={(e) => e.stopPropagation()} // Prevent the click from triggering the Edit button
                                         >
-                                            <DeleteOutlined />
-                                        </Button>
-                                </Popconfirm>
+                                        <MoreOutlined className="cursor-pointer text-lg p-2 rounded-full hover:bg-gray-200" />
+                                    </Dropdown>
                                 </td>
                             </tr>
                         ))
@@ -818,8 +693,8 @@ const Students = () => {
                     </div>
 
                 {/* <div className="w-full h-14 bg-slate-200"> */}
-                <div className="flex justify-center items-center mt-0 py-2 bg-blue-50">
-                    <Pagination
+                <div className="flex justify-center items-center mt-0 py-2 bg-gray-200/20">
+                     <Pagination
                         size="small"
                         current={currentPage}
                         total={studentData?.count || 0}
@@ -833,7 +708,7 @@ const Students = () => {
 
                 </div>
                 
-            </div>
+            {/* </div> */}
             
         <CreateStudentForm isOpen={isModalOpen} selectedStudentData={selectedStudent || {}} onClose={() => setIsModalOpen(false)} />
 

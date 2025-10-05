@@ -1,7 +1,9 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import axios from "axios";
-import BASE_URL from "../../../ip/Ip";
 import { message } from "antd";
+import axiosInstance from './../api/api';
+import axios from 'axios';
+import BASE_URL from './../../../ip/Ip';
+
 
 const AuthContext = createContext();
 
@@ -13,32 +15,31 @@ export const AuthProvider = ({ children }) => {
 
   
 
-useEffect(() => {
-  const checkSession = async () => {
+// useEffect(() => {
+//   const checkSession = async () => {
 
-    setLoading(true);
-    try {
-      const res = await axios.get(`${BASE_URL}/api/user-info/`, {
-        withCredentials: true, 
-      });
+//     setLoading(true);
+//     try {
+//       const res = await axiosInstance.get(`/api/user-info/`);
 
-      const role = res?.data?.user_info?.role;
-      const user_name = res?.data?.user_info?.first_name ?? res?.data?.user_info?.user_name;
+//       const role = res?.data?.user_info?.role;
+//       const user_name = res?.data?.user_info?.first_name ?? (res?.data?.user_info?.user_name ?? res?.data?.user_info?.username);
 
-      setUsername(user_name);
-      setRole(role);
-    } catch (err) {
-      console.warn("Not logged in or session expired");
-      setUsername(null);
-      setRole(null);
+
+//       setUsername(user_name);
+//       setRole(role);
+//     } catch (err) {
+//       console.warn("Not logged in or session expired");
+//       setUsername(null);
+//       setRole(null);
       
-    } finally {
-      setLoading(false);
-    }
-  };
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
 
-  checkSession();
-}, []);
+//   checkSession();
+// }, []);
 
 
 
@@ -98,14 +99,19 @@ useEffect(() => {
         { username, password, recaptcha_token: recaptchaToken, },
         { withCredentials: true }
       );
-      // console.log(response); // Check the response format
+      console.log(response);
       
       const role = response?.data?.user_info?.role;
       const user_name = response?.data?.user_info?.first_name ?? response?.data?.user_info?.user_name;
       
+      // const token = response?.data?.user_info?.token;
       setUsername(user_name)
       setRole(role);
+      // setToken(token)
 
+      localStorage.setItem('role', role)
+      // localStorage.setItem('token', token)
+      localStorage.setItem('name', user_name)
   
       if (!role) throw new Error("Role not found in response");
   
@@ -138,18 +144,21 @@ useEffect(() => {
   const logout = async (redirect = true) => {
     try {
       // Send logout request to backend to clear cookies
-      await axios.post(`${BASE_URL}/api/logout/`, {}, { withCredentials: true });
+      const response = await axiosInstance.post(`/api/logout/`, {});
 
       // Clear frontend context/state if any
       setUsername(null);
       setRole(null);
+      localStorage.removeItem("role")
+      // localStorage.removeItem("token")
+      localStorage.removeItem("name")
 
       // Redirect after logout (optional)
       if (redirect) {
         window.location.href = "/"; // or navigate("/")
       }
     } catch (err) {
-      console.warn("Logout error:", err?.response?.data || err.message);
+      console.warn("Logout error:", err?.response || err.message);
     }
   };
 

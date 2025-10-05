@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Col, Row } from 'antd';
 
-
 import { useAllLogs } from '../AllLogsContext/AllLogsContext';
+
 
 const LogsCountCards = () => {
     const { allLogsData, fetchAllLogs } = useAllLogs();
@@ -12,6 +12,7 @@ const LogsCountCards = () => {
         fetchAllLogs();         
     }, []);
     const coordinatorCounts = allLogsData?.log_counts_by_coordinator ?? [];
+
     
     return (
         <Row gutter={14}>

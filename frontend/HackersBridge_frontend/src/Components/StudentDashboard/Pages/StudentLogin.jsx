@@ -108,7 +108,6 @@ const ForgotPassword = () => {
         navigate("/verify-otp", { state: { email } }); // Securely pass email in state
       }, 1000);
     } catch (error) {
-      console.log(error);
       message.error(error.response?.data?.error || "Error sending OTP");
     } finally {
       setIsLoading(false);
@@ -173,7 +172,6 @@ const VerifyOTP = () => {
       }, 1000);
 
     } catch (error) {
-      console.log(error);
       message.error(error.response?.data?.error || "Invalid OTP");
     } finally {
       setIsVerifying(false);

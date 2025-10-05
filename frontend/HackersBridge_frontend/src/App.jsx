@@ -21,7 +21,7 @@ import SpecificStudentPage from "./Components/dashboard/SpecificPage/SpecificStu
 import { SpecificStudentProvider } from "./Components/dashboard/Contexts/SpecificStudent";
 import Login, { ForgotPassword, ResetPassword, VerifyOTP } from "./Pages/Login";
 import Register from "./Pages/Register";
-import ProtectedRoute, { PublicRoute, StudentRoute } from "./Pages/ProtectedRoute";
+import ProtectedRoute, { PublicRoute, StudentRoute, TrainerRoute } from "./Pages/ProtectedRoute";
 import { AuthProvider, useAuth } from "./Components/dashboard/AuthContext/AuthContext";
 import { SpecificBatchProvider } from "./Components/dashboard/Contexts/SpecificBatch";
 import SpecificBatchPage from "./Components/dashboard/SpecificPage/SpecificBatchPage";
@@ -31,7 +31,6 @@ import AllLogs from "./Components/dashboard/AllLogs/AllLogs";
 import { AllLogsProvider } from "./Components/dashboard/AllLogsContext/AllLogsContext";
 import BooksHome from "./Pages/BooksHome";
 import { BookFormProvider } from "./Components/dashboard/BooksContext/BookFormContext";
-import StudentLayout from "./StudentLayout";
 import StudentDashboardHome from "./Components/StudentDashboard/Pages/StudentDashboardHome";
 import { SpecificCourseProvider } from "./Components/dashboard/Contexts/SpecificCourse";
 import SpecificCoursePage from "./Components/dashboard/SpecificPage/SpecificCoursePage";
@@ -62,14 +61,28 @@ import BookCardList from "./Components/dashboard/SpecificPage/Cards/Book/BookCar
 import StudentsList from "./Components/dashboard/SpecificPage/Cards/Student/StudentCardList";
 import { AllTicketsProvider } from "./Components/StudentDashboard/Dashboard/Ticket/TicketRaiseContext";
 import { TagProvider } from "./Components/dashboard/Tags/TagsContext";
+import { TimeSlotProvider } from "./Components/dashboard/AddDetails/TimeSlot/TimeSlotContext";
+import TrainersList from "./Components/dashboard/SpecificPage/Cards/Trainer/TrainerCardList";
+import StudentLayout from "./Components/StudentDashboard/Dashboard/Common/StudentLayout";
+import TrainerLayout from './Components/TrainerDashboard/dashboard/common/TrainerLayout';
+import TrainerDashboardHome from './Components/TrainerDashboard/Pages/TrainerDashboardHome';
+import TrainerBatches from './Components/TrainerDashboard/dashboard/TrainerInfo/TrainerBatches/TrainerBatches';
+import TrainerBatchesInfo from './Components/TrainerDashboard/dashboard/TrainerInfo/TrainerBatches/TrainerBatchesInfo';
+import TrainerBatchChats from './Components/TrainerDashboard/dashboard/TrainerChat/TrainerChat';
+import { TrainerInfoProvider } from "./Components/TrainerDashboard/dashboard/TrainerInfo/TrainerDetails/TrainerInfoContext";
+import { TrainerBatchProvider } from "./Components/TrainerDashboard/dashboard/TrainerInfo/TrainerBatches/TrainerBatchesContext";
+import { TrainerBatchChatsProvider } from "./Components/TrainerDashboard/dashboard/TrainerChat/TrainerbatchChatFunctions";
+import TrainerAnnouncement from './Components/TrainerDashboard/dashboard/TrainerInfo/Announcement/TrainerAnnouncementPage';
 
 
 
 const { Content, Header } = Layout;
 
 function App() {  
+
     const [collapsed, setCollapsed] = useState(true);
 
+;
 
   return (
       <AuthProvider>
@@ -102,6 +115,21 @@ function App() {
                 <Route path="*" element={<PageNotFound />} />
               </Route>
 
+              {/* TRAINER PROTECTED ROUTES */}
+              <Route element={<TrainerRoute />}>
+                <Route path="/trainer-info" element={<TrainerLayout />}>
+                  <Route index element={<TrainerDashboardHome />} />
+                  <Route path="trainer-batches" element={<TrainerBatches />} />
+                  {/* <Route path="student-recommended-batches" element={<StudentRecommendedBatches />} /> */}
+                  <Route path="trainer-batches/:batchId" element={<TrainerBatchesInfo />} />
+                  <Route path="trainer-chat" element={<TrainerBatchChats />} />
+                  {/* <Route path="student-certificates" element={<StudentCertificate />} /> */}
+                  {/* <Route path="all-tickets" element={<AllTickets />} /> */}
+                  <Route path="trainer-announcement" element={<TrainerAnnouncement />} />
+                </Route>
+                <Route path="*" element={<PageNotFound />} />
+              </Route>
+
               {/* ADMIN/COORDINATOR PROTECTED ROUTES */}
               <Route element={<ProtectedRoute  />}>
                 <Route
@@ -112,6 +140,7 @@ function App() {
                   <Route path="/students/:studentId" element={<SpecificStudentPage />} />
                   <Route path={route.TRAINERS_PATH} element={<TrainersHome />} />
                   <Route path="/trainers/:trainerId" element={<SpecificTrainerPage />} />
+                  <Route path="/trainersdata/:type" element={<TrainersList />} />
                   <Route path={route.COURSES_PATH} element={<CoursesHome />} />
                   <Route path="/course/:courseId" element={<SpecificCoursePage />} />
                   <Route path={route.ADD_DETAILS_COORDINATORS_PATH} element={<CoordinatorsHome />} />
@@ -132,7 +161,7 @@ function App() {
             </Routes>
           </Router>
         </AppProviders>
-    </AuthProvider>
+      </AuthProvider>
   );
 }
 
@@ -169,7 +198,15 @@ const AppProviders = ({ children }) => {
                                                         <StudentInfoProvider>
                                                           <BatchChatsProvider>
                                                             <TagProvider>
-                                                              {children}
+                                                              <TimeSlotProvider>
+                                                                <TrainerInfoProvider>
+                                                                  <TrainerBatchProvider>
+                                                                    <TrainerBatchChatsProvider>
+                                                                      {children}
+                                                                    </TrainerBatchChatsProvider>
+                                                                  </TrainerBatchProvider>
+                                                                </TrainerInfoProvider>
+                                                              </TimeSlotProvider>
                                                             </TagProvider>
                                                           </BatchChatsProvider>
                                                         </StudentInfoProvider>

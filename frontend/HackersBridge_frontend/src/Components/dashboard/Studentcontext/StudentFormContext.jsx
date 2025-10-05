@@ -1,6 +1,6 @@
-import axios from "axios";
 import { createContext, useContext, useState } from "react"
-import BASE_URL from "../../../ip/Ip";
+import axiosInstance from "../api/api";
+import PageNotFound from './../../../Pages/PageNotFound';
 
 
 
@@ -47,17 +47,10 @@ const StudentFormProvider = ({ children }) => {
     const fetchStudents = async ({ page = 1, pageSize = 30, search = '', mode = '', language = '', preferred_week = '', location = '', status = '', date_of_joining_after = '', date_of_joining_before = '' } = {}) => {
         if (loading) return;  // Prevent multiple fetches at the same time
 
-        // const token = localStorage.getItem('token');
-        // if (!token) {
-        //     console.error("No token found, user might be logged out.");
-        //     return;
-        // };
-
         setLoading(true);  // Set loading state
         try {
-            const response = await axios.get(`${BASE_URL}/api/students/`, 
-                { headers: { 'Content-Type': 'application/json' },
-                withCredentials : true,
+            const response = await axiosInstance.get(`/api/students/`, { 
+                
                 params: {
                     page,
                     page_size: pageSize,
@@ -73,7 +66,6 @@ const StudentFormProvider = ({ children }) => {
             }
             );
             const data = response?.data;
-            // console.log(data);  
 
             // Update state only if data has changed
             setStudentData(prevData => {
@@ -83,7 +75,6 @@ const StudentFormProvider = ({ children }) => {
                 return prevData;
             });
 
-            // console.log('Student Data Updated:', data); //  Log new data here
         } catch (error) {
             console.error('Error fetching student Data', error);
         } finally {
@@ -93,30 +84,23 @@ const StudentFormProvider = ({ children }) => {
 
 
 
-    const fetchStudentCount = async () => {
+    const fetchStudentCount = async (type = '', page = 1, pageSize = 50) => {
         if (loading) return;
-        
-        // const token = localStorage.getItem('token');
-        // if (!token) {
-        //     console.error("No token found, user might be logged out.");
-        //     return;
-        // };
-
         
         setLoading(true);
         try {
-            const response = await axios.get(`${BASE_URL}/api/studentscraw/`, 
-                { headers: { 'Content-Type': 'application/json' },
-            withCredentials: true
-            }
-            );
-            const data = response?.data;        
+            const response = await axiosInstance.get(`/api/studentscraw/`, {
+                params: {
+                    type,
+                    page,
+                    page_size: pageSize,
+                    
+                }
+            } );
             
-            setStudentsCounts(prevData => 
-                JSON.stringify(prevData) !== JSON.stringify(data) ? data : prevData
-            );
+            const data = response?.data;                                
+            setStudentsCounts({ type, page: data.page, ...data });
 
-            // console.log('Student Count Data ', data)
         } catch (error) {
         console.error('Error fetching Batches Data', error);
         } finally {
@@ -125,31 +109,19 @@ const StudentFormProvider = ({ children }) => {
     };
 
 
-// FETCH ALL STUDENTS
+// FETCH ALL STUDENTS TO DISPLAY IN SELECT FIELD WHEN CREATE BATCH
 const fetchAllStudent = async () => {
     if (loading) return;
     
-    // const token = localStorage.getItem('token');
-    // if (!token) {
-    //     console.error("No token found, user might be logged out.");
-    //     return;
-    // };
-
-    
     setLoading(true);
     try {
-        const response = await axios.get(`${BASE_URL}/api/allstudents/`, 
-            { headers: { 'Content-Type': 'application/json' }, 
-            withCredentials : true
-        }
-        );
+        const response = await axiosInstance.get(`/api/allstudents/` );
         const data = response?.data;        
         
         setAllStudentData(prevData => 
             JSON.stringify(prevData) !== JSON.stringify(data) ? data : prevData
         );
 
-        // console.log('Student Count Data ', data)
     } catch (error) {
       console.error('Error fetching Batches Data', error);
     } finally {
@@ -157,10 +129,65 @@ const fetchAllStudent = async () => {
     }
 }
 
+
+
+// delete student 
+ const handleDeleteStudent = async (studentId) => {
+    if (!studentId) return;
+
+    try {
+        const response = await axiosInstance.delete(`/api/students/delete/${studentId}/`);
+
+        if (response.status === 204) {
+            // Make sure Student Data is an array before filtering
+            if (Array.isArray(studentData)) {
+                setStudentData(prevStudents => prevStudents?.filter(student => student.id !== studentId));
+                
+                setTimeout(() => {
+                    setSearchTerm('')
+                    fetchStudents({
+                        page: currentPage,
+                        pageSize: pageSize,
+                        search: searchTerm,
+                        mode,
+                        language,
+                        preferred_week,
+                        location,
+                        status,
+                        date_of_joining_after,
+                        date_of_joining_before
+                    });
+                }, 2000);
+            } else {
+                // console.error('Student Data is not an array');
+            }
+        }
+    } catch (error) {
+        setLoading(false);
+    
+        if (error.response) {
+            // console.error("Server Error Response:", error.response.data);
+    
+            // Extract error messages and show each one separately
+            Object.entries(error.response.data).forEach(([key, value]) => {
+                value.forEach((msg) => {
+                    message.error(`${msg}`);
+                });
+            });
+        } else if (error.request) {
+            // console.error("No Response from Server:", error.request);
+            message.error("No response from server. Please check your internet connection.");
+        } else {
+            // console.error("Error Message:", error.message);
+            message.error("An unexpected error occurred.");
+        }
+    }       
+    };
+
     
 
     return (
-        <StudentFormContext.Provider value={{ studentFormData, loading, setStudentFormData, errors, setErrors, resetStudentForm, studentData, setStudentData, fetchStudents, studentsCounts, fetchStudentCount, allStudentData, fetchAllStudent  }}>
+        <StudentFormContext.Provider value={{ studentFormData, loading, setStudentFormData, errors, setErrors, resetStudentForm, studentData, setStudentData, fetchStudents, studentsCounts, fetchStudentCount, allStudentData, fetchAllStudent, handleDeleteStudent  }}>
             {children}
         </StudentFormContext.Provider>
     );

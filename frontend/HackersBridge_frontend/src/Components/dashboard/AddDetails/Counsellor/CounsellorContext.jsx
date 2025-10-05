@@ -1,6 +1,5 @@
-import axios from "axios";
 import React, { createContext, useState, useContext } from "react";
-import BASE_URL from "../../../../ip/Ip";
+import axiosInstance from "../../api/api";
 
 // Create the context object
 const CounsellorFormContext = createContext();
@@ -36,13 +35,12 @@ const CounsellorFormProvider = ({ children }) => {
 
         setLoading(true);
         try {
-            const response = await axios.get(`${BASE_URL}/api/counsellors/`, 
+            const response = await axiosInstance.get(`/api/counsellors/`, 
               { headers: { 'Content-Type': 'application/json'},
               withCredentials : true
             }
             );
             const data = response?.data;
-          //  console.log(data);
            
             setCounsellorData(prevData => {
               if(JSON.stringify(prevData) !== JSON.stringify(data)){
@@ -51,7 +49,6 @@ const CounsellorFormProvider = ({ children }) => {
               return prevData;
             });
 
-            // console.log('Councellor Data ', data)
         } catch (error) {
           console.error('Error fetching Counsellor Data', error);
         } finally {

@@ -21,11 +21,11 @@ const BatchComplete = (data) => {
             </p>
 
             <div style="background-color: #f1f1f1; padding: 15px; border-radius: 6px; margin: 20px 0;">
-                <p style="font-size: 15px; margin: 6px 0; color: #000;"><strong style="font-weight: bold;">📘 Batch ID:</strong> ${data?.batch?.batch_id}</p>
+                <p style="font-size: 15px; margin: 6px 0; color: #000;"><strong style="font-weight: bold;">🆔 Batch Code:</strong> ${data?.batch?.batch_id}</p>
                 <p style="font-size: 15px; margin: 6px 0; color: #000;"><strong style="font-weight: bold;">📅 Start Date:</strong> ${data?.batch?.start_date}</p>
-                <p style="font-size: 15px; margin: 6px 0; color: #000;"><strong style="font-weight: bold;">🏁 End Date:</strong> ${data?.batch?.end_date}</p>
-                <p style="font-size: 15px; margin: 6px 0; color: #000;"><strong style="font-weight: bold;">🕒 Batch Timing:</strong> ${to12HourFormat(data?.batch?.batch_time_data?.start_time)} - ${to12HourFormat(data?.batch.batch_time_data?.end_time)}</p>
-                <p style="font-size: 15px; margin: 6px 0; color: #000;"><strong style="font-weight: bold;">👨‍🏫 Trainer Name:</strong> ${data?.batch.trainer_name}</p>
+                <p style="font-size: 15px; margin: 6px 0; color: #000;"><strong style="font-weight: bold;">📅 End Date:</strong> ${data?.batch?.end_date}</p>
+                <p style="font-size: 15px; margin: 6px 0; color: #000;"><strong style="font-weight: bold;">🕒 Timing:</strong> ${to12HourFormat(data?.batch?.batch_time_data?.start_time)} - ${to12HourFormat(data?.batch.batch_time_data?.end_time)}</p>
+                <p style="font-size: 15px; margin: 6px 0; color: #000;"><strong style="font-weight: bold;">👤 Trainer Name:</strong> ${data?.batch.trainer_name}</p>
             </div>
 
             <p style="font-size: 16px; line-height: 1.6; color: #000;"><br>

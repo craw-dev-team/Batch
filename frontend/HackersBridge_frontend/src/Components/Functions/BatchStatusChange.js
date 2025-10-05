@@ -1,6 +1,5 @@
-import axios from "axios";
-import BASE_URL from "../../ip/Ip";
 import { message } from "antd";
+import axiosInstance from "../dashboard/api/api";
 
 
 
@@ -19,12 +18,7 @@ const useBatchStatusChange = () => {
             };
                 
         try {
-            const response = await axios.put(`${BASE_URL}/api/batches/edit/${batchId}/`,
-                updatedData,
-                { headers: { 'Content-Type': 'application/json' },
-                withCredentials : true
-            }
-            );
+            const response = await axiosInstance.put(`/api/batches/edit/${batchId}/`, updatedData );
             
             if (response.status >= 200 && response.status < 300) {
                 message.success(`Batch status updated successfully to ${status} !`);
