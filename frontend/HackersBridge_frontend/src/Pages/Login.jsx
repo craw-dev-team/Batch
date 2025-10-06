@@ -139,12 +139,12 @@ const Login = () => {
               </div>
             </div>
 
-            <div style={{ transform: "scale(0.7)", transformOrigin: "0 0" }}>
-              <ReCAPTCHA
-                sitekey="6LfKEG4rAAAAAEcc-V6fK2sFTSRfW_dokumkhF7i"  // 🔁 Replace with your real site key
-                onChange={(token) => setRecaptchaToken(token)}
-              />
-            </div>
+                  <div style={{ transform: "scale(0.8)", transformOrigin: "0 0" }}>
+                    <ReCAPTCHA
+                      sitekey="6LfKEG4rAAAAAEcc-V6fK2sFTSRfW_dokumkhF7i"  // 🔁 Replace with your real site key
+                      onChange={(token) => setRecaptchaToken(token)}
+                    />
+                  </div>
 
             {/* Login Button */}
             <button

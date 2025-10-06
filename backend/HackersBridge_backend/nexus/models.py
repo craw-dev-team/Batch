@@ -201,8 +201,8 @@ class BatchStudentAssignment(models.Model):
     student = models.ForeignKey("Student.Student", on_delete=models.CASCADE)
     coordinator = models.ForeignKey("Coordinator.Coordinator", on_delete=models.SET_NULL, null=True, blank=True)
     
-    # joined_on = models.DateField(default=now)  # ✅ new field
-    # left_on = models.DateField(null=True, blank=True)  # ✅ new field
+    joined_on = models.DateField(default=now)  # ✅ new field
+    left_on = models.DateField(null=True, blank=True)  # ✅ new field
 
     student_batch_status = models.CharField(max_length=10, choices=student_batch_status_choices,default='Active', null=True, blank=True)
     added_on = models.DateTimeField(auto_now_add=True)

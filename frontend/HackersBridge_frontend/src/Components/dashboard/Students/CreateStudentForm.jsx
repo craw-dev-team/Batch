@@ -71,7 +71,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
                 courseCounsellor: selectedStudentData.course_counsellor || "",
                 supportCoordinator: selectedStudentData.support_coordinator || "",
                 note: selectedStudentData.note || "",
-                tags: selectedStudentData.tags || null,
+                tags: selectedStudentData.tags || [],
 
             });
             
@@ -273,7 +273,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
                     <div className="grid gap-4 mb-0 grid-cols-4">
                         <div className="col-span-1">
                             <label htmlFor="enrollmentNumber" className={`block mb-2 text-sm font-medium ${theme.text}`}>Enrollment Number</label>
-                            <Input name="enrollmentNumber" value={studentFormData.enrollmentNumber} onChange={(e) => handleChange("enrollmentNumber", e.target.value)} disabled={isEditing} className='rounded-lg border-gray-300' placeholder="Enter Enrollment Number" />
+                            <Input name="enrollmentNumber" value={studentFormData.enrollmentNumber} onChange={(e) => handleChange("enrollmentNumber", e.target.value)}  className='rounded-lg border-gray-300' placeholder="Enter Enrollment Number" />
                             {errors.enrollmentNumber && <p className="text-red-500 text-sm">{errors.enrollmentNumber}</p>}
                         </div>
                         

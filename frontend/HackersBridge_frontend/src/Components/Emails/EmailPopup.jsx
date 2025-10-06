@@ -49,9 +49,8 @@ const EmailPopup = ({ open, onClose, checkStudentid, onSuccess = () => {}, train
 
 
 
-        useEffect(() => {
+    useEffect(() => {
       const emailToRemove = ["ishika@craw.in", "anjali@craw.in", "shivambharti@craw.in"];
-
       if (open && checkStudentid?.length) {
         const uniqueEmails = [...new Set(checkStudentid.map(s => s.emails))];
         setBccEmails(uniqueEmails);

@@ -34,7 +34,7 @@ const BatchFormProvider = ({ children }) => {
     }, []);
 
 
-    const fetchBatches = async ({ page = 1, pageSize = 30, search = '', mode = '', language = '', preferred_week = '', location = '', status = ''  }) => {
+    const fetchBatches = async ({ page = 1, pageSize = 30, search = '', mode = '', language = '', preferred_week = '', location = '', status = ''  } = {}) => {
         if (loading) return;
 
         setLoading(true);

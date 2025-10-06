@@ -692,7 +692,7 @@ const SpecificStudentPage = () => {
                                                         </tr>
                                                     </thead>
                                                     
-                                                    <tbody className="divide-y divide-gray-100 font-light text-gray-700">
+                                                    <tbody className="divide-y divide-gray-100 font-normal text-gray-700">
                                                         {specificStudent?.All_in_One?.student_courses.map((item, index) => (                          
                                                             <tr key={index} className="hover:bg-white transition-colors scroll-smooth">
                                                                 <td scope="row" className="px-3 py-2 md:px-2">
@@ -912,7 +912,7 @@ const SpecificStudentPage = () => {
                                                         <th className="px-4 py-2 text-xs font-medium uppercase">Attendance History</th>
                                                     </tr>
                                                     </thead>
-                                                    <tbody className="divide-y divide-gray-100 font-light text-gray-700">
+                                                    <tbody className="divide-y divide-gray-100 font-normal text-gray-700">
                                                     {specificStudent?.All_in_One?.attendance_summary?.batch_wise_summary?.map((batch, index) => (
                                                         <tr key={index} className="border-b">
                                                         <td className="px-4 py-2 font-medium">{batch.course_name} ({batch.batch_status})</td>
@@ -1052,7 +1052,7 @@ const SpecificStudentPage = () => {
                                                     
                                                 </tr>
                                             </thead>
-                                                <tbody className="divide-y divide-gray-100 font-light text-gray-700">
+                                                <tbody className="divide-y divide-gray-100 font-normal text-gray-700">
                                                 {Array.isArray(filteredStudentData) && filteredStudentData.length > 0 ? (
                                                     filteredStudentData.map((item, index) => (
                                                     <tr key={index} className="hover:bg-white transition-colors scroll-smooth">

@@ -705,7 +705,7 @@ class BatchCreateSerializer(serializers.ModelSerializer):
             elif status == 'Upcoming':
                 StudentCourse.objects.filter(student__in=removed_students, course=instance.course).update(status='Not Started')
 
-            # Send removal email to removed students
+        #     # Send removal email to removed students
         #     for student in removed_students:
         #         subject = f"You have been removed from {instance.course} ({instance.batch_id})"
         #         html_message = f"""<html>

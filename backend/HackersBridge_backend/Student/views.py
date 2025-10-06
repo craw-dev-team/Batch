@@ -1065,88 +1065,88 @@ class GenerateCertificateAPIView(APIView):
 
                 # pixel_url = f"http://192.168.1.18:8000/api/email-tracker/{student_course.id}/"  # ✅ Fixed the pixel URL
 
-#                 html_message = f"""
-#         <!DOCTYPE html>
-#         <html>
-#         <head>
-#         <meta charset="UTF-8">
-#         <title>Certificate Issued</title>
-#         </head>
-#         <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0; color: #000;">
-#         <div style="max-width: 600px; margin: 40px auto; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); overflow: hidden;">
+                html_message = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <meta charset="UTF-8">
+        <title>Certificate Issued</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0; color: #000;">
+        <div style="max-width: 600px; margin: 40px auto; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); overflow: hidden;">
             
-#             <!-- Header with Logo -->
-#             <div style="text-align: center; padding: 20px; border-bottom: 1px solid #ddd;">
-#             <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 60px;">
-#             </div>
+            <!-- Header with Logo -->
+            <div style="text-align: center; padding: 20px; border-bottom: 1px solid #ddd;">
+            <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 60px;">
+            </div>
 
-#             <!-- Body -->
-#             <div style="padding: 30px; color: #000;">
-#             <h2 style="text-align: center; font-size: 24px; margin-bottom: 20px;">🎓 Certificate of Achievement</h2>
+            <!-- Body -->
+            <div style="padding: 30px; color: #000;">
+            <h2 style="text-align: center; font-size: 24px; margin-bottom: 20px;">🎓 Certificate of Achievement</h2>
 
-#             <p style="font-size: 16px; line-height: 1.6;">
-#                 Dear <strong style="font-weight: bold;">{student.name}</strong>,
-#             </p>
+            <p style="font-size: 16px; line-height: 1.6;">
+                Dear <strong style="font-weight: bold;">{student.name}</strong>,
+            </p>
 
-#             <p style="font-size: 16px; line-height: 1.6;">
-#                 Congratulations on successfully completing the <strong style="font-weight: bold;">{course}</strong> course at <strong>Craw Cyber Security</strong>! 🎉
-#             </p>
+            <p style="font-size: 16px; line-height: 1.6;">
+                Congratulations on successfully completing the <strong style="font-weight: bold;">{course}</strong> course at <strong>Craw Cyber Security</strong>! 🎉
+            </p>
 
-#             <p style="font-size: 16px; line-height: 1.6;">
-#                 Your hard work and commitment have paid off, and we are excited to issue your official certificate.
-#             </p>
+            <p style="font-size: 16px; line-height: 1.6;">
+                Your hard work and commitment have paid off, and we are excited to issue your official certificate.
+            </p>
 
-#             <p style="font-size: 16px; line-height: 1.6;">
-#                 Share your achievement on LinkedIn and tag <strong>@Craw Cyber Security</strong> to inspire others! Don’t forget to use <strong>#crawsec</strong> and <strong>#lifeatcraw</strong> 🚀
-#             </p>
+            <p style="font-size: 16px; line-height: 1.6;">
+                Share your achievement on LinkedIn and tag <strong>@Craw Cyber Security</strong> to inspire others! Don’t forget to use <strong>#crawsec</strong> and <strong>#lifeatcraw</strong> 🚀
+            </p>
             
-#             <div style="background-color: #f1f1f1; padding: 15px; border-radius: 6px; margin: 20px 0;">
-#                 <p style="font-size: 15px; margin: 6px 0;"><strong>🏷️ Enrollment Number:</strong> {student.enrollment_no}</p>
-#                 <p style="font-size: 15px; margin: 6px 0;"><strong>📅 Date of Issue:</strong> {certificate_date}</p>
-#                 <p style="font-size: 15px; margin: 6px 0;"><strong>📎 Certificate:</strong> Attached as PDF</p>
-#                 <ifream src = "file_path" />
-#             </div>
+            <div style="background-color: #f1f1f1; padding: 15px; border-radius: 6px; margin: 20px 0;">
+                <p style="font-size: 15px; margin: 6px 0;"><strong>🏷️ Enrollment Number:</strong> {student.enrollment_no}</p>
+                <p style="font-size: 15px; margin: 6px 0;"><strong>📅 Date of Issue:</strong> {certificate_date}</p>
+                <p style="font-size: 15px; margin: 6px 0;"><strong>📎 Certificate:</strong> Attached as PDF</p>
+                <ifream src = "file_path" />
+            </div>
 
-#             <p style="font-size: 16px; line-height: 1.6;">
-#                 Your certificate is attached to this email. Feel free to showcase it in your portfolio, LinkedIn profile, or wherever you wish to highlight your accomplishments.
-#             </p>
+            <p style="font-size: 16px; line-height: 1.6;">
+                Your certificate is attached to this email. Feel free to showcase it in your portfolio, LinkedIn profile, or wherever you wish to highlight your accomplishments.
+            </p>
 
-#             <p style="font-size: 16px; line-height: 1.6;">
-#                 This is a great milestone in your cybersecurity journey, and we’re confident you’ll achieve even more in the future!
-#             </p>
+            <p style="font-size: 16px; line-height: 1.6;">
+                This is a great milestone in your cybersecurity journey, and we’re confident you’ll achieve even more in the future!
+            </p>
 
-#             <p style="font-size: 16px; line-height: 1.6;">
-#                 🔐 Stay passionate, stay curious, and keep securing the digital world!
-#             </p>
+            <p style="font-size: 16px; line-height: 1.6;">
+                🔐 Stay passionate, stay curious, and keep securing the digital world!
+            </p>
 
-#             <p style="font-size: 16px; line-height: 1.6;">
-#                 Warm regards,<br>
-#                 <strong style="font-weight: bold;">Craw Cyber Security Team</strong> 🚀<br>
-#                 📧 <a href="mailto:training@craw.in" style="text-decoration: underline;">training@craw.in</a><br>
-#                 📞 +91 9513805401<br>
-#                 🌐 <a href="https://www.craw.in/" style="text-decoration: underline;">www.craw.in</a>
-#             </p>
-#             </div>
+            <p style="font-size: 16px; line-height: 1.6;">
+                Warm regards,<br>
+                <strong style="font-weight: bold;">Craw Cyber Security Team</strong> 🚀<br>
+                📧 <a href="mailto:training@craw.in" style="text-decoration: underline;">training@craw.in</a><br>
+                📞 +91 9513805401<br>
+                🌐 <a href="https://www.craw.in/" style="text-decoration: underline;">www.craw.in</a>
+            </p>
+            </div>
 
-#             <!-- Footer -->
-#             <div style="background-color: #f0f0f0; padding: 18px 20px; text-align: center; font-size: 14px; color: #000; border-top: 1px solid #ddd;">
-#             <p style="margin: 0;">© 2025 <strong>Craw Cyber Security Pvt Ltd</strong>. All Rights Reserved.</p>
-#             <p style="margin: 5px 0 0;">This is an automated message. Please do not reply.</p>
-#             </div>
-#         </div>
-#         </body>
-#         </html>
+            <!-- Footer -->
+            <div style="background-color: #f0f0f0; padding: 18px 20px; text-align: center; font-size: 14px; color: #000; border-top: 1px solid #ddd;">
+            <p style="margin: 0;">© 2025 <strong>Craw Cyber Security Pvt Ltd</strong>. All Rights Reserved.</p>
+            <p style="margin: 5px 0 0;">This is an automated message. Please do not reply.</p>
+            </div>
+        </div>
+        </body>
+        </html>
 
-# """
+"""
 
-#                 from_email = "CRAW SECURITY CERTIFICATE <training@craw.in>"
-#                 try:
-#                     email = EmailMessage(subject, html_message, from_email, [student.email])
-#                     email.content_subtype = "html"  # ✅ Make it HTML email
-#                     email.attach_file(file_path)
-#                     email.send()
-                # except Exception as e:
-                #     return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                from_email = "CRAW SECURITY CERTIFICATE <training@craw.in>"
+                try:
+                    email = EmailMessage(subject, html_message, from_email, [student.email])
+                    email.content_subtype = "html"  # ✅ Make it HTML email
+                    email.attach_file(file_path)
+                    email.send()
+                except Exception as e:
+                    return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
                 # ✅ Fix: Open file WITHOUT closing it prematurely
                 certificate_file = open(file_path, 'rb')
@@ -1800,7 +1800,7 @@ class StudentBookAllotmentAPIView(APIView):
 }
 
 class StudentAttendanceEdit(APIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
 
     def post(self, request, id):
@@ -1834,63 +1834,63 @@ class StudentAttendanceEdit(APIView):
                 student_attendance.attendance = 'Absent'
                 status_text = "marked as <strong style='color: red;'>Absent</strong>"
 
-            # # Build the email message
-            # subject = f"Attendance Update for {course_name} on {date_str}"
-            # html_message = f"""
-            # <!DOCTYPE html>
-            # <html>
-            # <head>
-            #     <meta charset="UTF-8">
-            #     <title>Attendance Update</title>
-            # </head>
-            # <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0; color: #000;">
-            #     <div style="max-width: 600px; margin: 40px auto; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); overflow: hidden;">
-            #         <div style="text-align: center; padding: 20px; border-bottom: 1px solid #ddd;">
-            #             <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 60px;">
-            #         </div>
-            #         <div style="padding: 30px; color: #000;">
-            #             <h2 style="text-align: center; color: #000; font-size: 24px; margin-bottom: 20px;">📋 Attendance Notification</h2>
-            #             <p style="font-size: 16px; line-height: 1.6; color: #000;">Dear <strong>{escape(student_name)}</strong>,</p>
-            #             <p style="font-size: 16px; line-height: 1.6; color: #000;">Your attendance for today's session of <strong>{escape(str(course_name))}</strong> (Batch ID: {batch_id}) has been {status_text}.</p>
-            #             <div style="background-color: #f1f1f1; padding: 15px; border-radius: 6px; margin: 20px 0;">
-            #                 <p style="font-size: 15px; margin: 6px 0; color: #000;"><strong>📘 Batch ID:</strong> {batch_id}</p>
-            #                 <p style="font-size: 15px; margin: 6px 0; color: #000;"><strong>🕒 Timing:</strong> {start_time} - {end_time}</p>
-            #                 <p style="font-size: 15px; margin: 6px 0; color: #000;"><strong>👨‍🏫 Trainer:</strong> {trainer_name}</p>
-            #                 <p style="font-size: 15px; margin: 6px 0; color: #000;"><strong>📅 Date:</strong> {date_str}</p>
-            #             </div>
-            #             <p style="font-size: 16px; line-height: 1.6; color: #000;">If this information is incorrect, please contact your coordinator.</p>
-            #             <p style="font-size: 15px; margin-top: 30px; line-height: 1.6; color: #000;">
-            #                 📍 <strong>Our Address:</strong><br>
-            #                 1st Floor, Plot no. 4, Lane no. 2, Kehar Singh Estate, Westend Marg,<br>
-            #                 Behind Saket Metro Station, New Delhi 110030
-            #             </p>
-            #             <p style="font-size: 15px; line-height: 1.6; color: #000;">
-            #                 📞 <strong>Phone:</strong> 011-40394315 | +91-9650202445, +91-9650677445<br>
-            #                 📧 <strong>Email:</strong> training@craw.in<br>
-            #                 🌐 <strong>Website:</strong> 
-            #                 <a href="https://www.craw.in" style="text-decoration: underline;">www.craw.in</a>
-            #             </p>
-            #             <p style="font-size: 16px; line-height: 1.6; color: #000;">
-            #                 Regards,<br>
-            #                 <strong>Craw Cyber Security Pvt Ltd</strong> 🛡️
-            #             </p>
-            #         </div>
-            #         <div style="background-color: #f0f0f0; padding: 18px 20px; text-align: center; font-size: 14px; border-top: 1px solid #ddd; color: #000;">
-            #             <p style="margin: 0;">© 2025 <strong>Craw Cyber Security Pvt Ltd</strong>. All Rights Reserved.</p>
-            #             <p style="margin: 5px 0 0;">This is an automated message. Please do not reply.</p>
-            #         </div>
-            #     </div>
-            # </body>
-            # </html>
+            # Build the email message
+            subject = f"Attendance Update for {course_name} on {date_str}"
+            html_message = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Attendance Update</title>
+            </head>
+            <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0; color: #000;">
+                <div style="max-width: 600px; margin: 40px auto; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); overflow: hidden;">
+                    <div style="text-align: center; padding: 20px; border-bottom: 1px solid #ddd;">
+                        <img src="https://www.craw.in/wp-content/uploads/2023/01/crawacademy-logo.png" alt="CRAW" style="max-height: 60px;">
+                    </div>
+                    <div style="padding: 30px; color: #000;">
+                        <h2 style="text-align: center; color: #000; font-size: 24px; margin-bottom: 20px;">📋 Attendance Notification</h2>
+                        <p style="font-size: 16px; line-height: 1.6; color: #000;">Dear <strong>{escape(student_name)}</strong>,</p>
+                        <p style="font-size: 16px; line-height: 1.6; color: #000;">Your attendance for today's session of <strong>{escape(str(course_name))}</strong> (Batch ID: {batch_id}) has been {status_text}.</p>
+                        <div style="background-color: #f1f1f1; padding: 15px; border-radius: 6px; margin: 20px 0;">
+                            <p style="font-size: 15px; margin: 6px 0; color: #000;"><strong>📘 Batch ID:</strong> {batch_id}</p>
+                            <p style="font-size: 15px; margin: 6px 0; color: #000;"><strong>🕒 Timing:</strong> {start_time} - {end_time}</p>
+                            <p style="font-size: 15px; margin: 6px 0; color: #000;"><strong>👨‍🏫 Trainer:</strong> {trainer_name}</p>
+                            <p style="font-size: 15px; margin: 6px 0; color: #000;"><strong>📅 Date:</strong> {date_str}</p>
+                        </div>
+                        <p style="font-size: 16px; line-height: 1.6; color: #000;">If this information is incorrect, please contact your coordinator.</p>
+                        <p style="font-size: 15px; margin-top: 30px; line-height: 1.6; color: #000;">
+                            📍 <strong>Our Address:</strong><br>
+                            1st Floor, Plot no. 4, Lane no. 2, Kehar Singh Estate, Westend Marg,<br>
+                            Behind Saket Metro Station, New Delhi 110030
+                        </p>
+                        <p style="font-size: 15px; line-height: 1.6; color: #000;">
+                            📞 <strong>Phone:</strong> 011-40394315 | +91-9650202445, +91-9650677445<br>
+                            📧 <strong>Email:</strong> training@craw.in<br>
+                            🌐 <strong>Website:</strong> 
+                            <a href="https://www.craw.in" style="text-decoration: underline;">www.craw.in</a>
+                        </p>
+                        <p style="font-size: 16px; line-height: 1.6; color: #000;">
+                            Regards,<br>
+                            <strong>Craw Cyber Security Pvt Ltd</strong> 🛡️
+                        </p>
+                    </div>
+                    <div style="background-color: #f0f0f0; padding: 18px 20px; text-align: center; font-size: 14px; border-top: 1px solid #ddd; color: #000;">
+                        <p style="margin: 0;">© 2025 <strong>Craw Cyber Security Pvt Ltd</strong>. All Rights Reserved.</p>
+                        <p style="margin: 5px 0 0;">This is an automated message. Please do not reply.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
 
-            # """
+            """
 
-            # try:
-            #     email = EmailMessage(subject, html_message, "CRAW SECURITY BATCH <training@craw.in>", [student_email])
-            #     email.content_subtype = "html"
-            #     email.send()
-            # except Exception as e:
-            #     print(f"Failed to send attendance email to {student_email}: {str(e)}")
+            try:
+                email = EmailMessage(subject, html_message, "CRAW SECURITY BATCH <training@craw.in>", [student_email])
+                email.content_subtype = "html"
+                email.send()
+            except Exception as e:
+                print(f"Failed to send attendance email to {student_email}: {str(e)}")
 
             student_attendance.save()
 
@@ -2043,37 +2043,8 @@ class StudentMarksUpdateAPIView(APIView):
         return Response({'message': 'Marks updated and email sent successfully.'}, status=status.HTTP_200_OK)
 
 
-{
 
 # This is for Creating Student Note...
-# class StudentNotesCreateAPIViews(APIView):
-#     authentication_classes = [JWTAuthFromCookie]
-#     permission_classes = [IsAuthenticated]
-
-#     def post(self, request):
-#         if request.user.role not in ['admin', 'coordinator']:
-#             return Response({'error': 'User is Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
-
-#         student_id = request.data.get('student_id')
-#         note_text = request.data.get('note')
-
-#         if not student_id or not note_text:
-#             return Response({'error': 'Missing student_id or note'}, status=status.HTTP_400_BAD_REQUEST)
-
-#         student = Student.objects.filter(id=student_id).first()
-#         if not student:
-#             return Response({'error': 'Student not found'}, status=status.HTTP_404_NOT_FOUND)
-
-#         serializer = StudentNoteSerializer(data={'note': note_text, 'student': student_id})
-#         if serializer.is_valid():
-#             serializer.save(student=student, create_by=request.user)
-#             return Response({
-#                 "message": "Note created successfully"
-#             }, status=status.HTTP_201_CREATED)
-
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-}
-
 class StudentNotesCreateAPIViews(APIView):
     authentication_classes = [JWTAuthFromCookie]
     permission_classes = [IsAuthenticated]
@@ -2084,27 +2055,23 @@ class StudentNotesCreateAPIViews(APIView):
 
         student_id = request.data.get('student_id')
         note_text = request.data.get('note')
-        status_note = request.data.get('status_note')  # ✅ Get status_note from request
 
-        if not student_id:
-            return Response({'error': 'Missing student_id'}, status=status.HTTP_400_BAD_REQUEST)
+        if not student_id or not note_text:
+            return Response({'error': 'Missing student_id or note'}, status=status.HTTP_400_BAD_REQUEST)
 
         student = Student.objects.filter(id=student_id).first()
         if not student:
             return Response({'error': 'Student not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        serializer = StudentNoteSerializer(data={
-            'note': note_text,
-            'status_note': status_note,
-            'student': student_id
-        })
-
+        serializer = StudentNoteSerializer(data={'note': note_text, 'student': student_id})
         if serializer.is_valid():
             serializer.save(student=student, create_by=request.user)
-            return Response({"message": "Note created successfully"}, status=status.HTTP_201_CREATED)
+            return Response({
+                "message": "Note created successfully"
+            }, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-                  
+         
 
 
 

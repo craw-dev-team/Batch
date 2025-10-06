@@ -164,7 +164,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from datetime import datetime
 
 # ✅ Correct FONT directory
-FONT_DIR = r'C:\Users\Yogesh gahlot\Downloads\backend\HackersBridge_backend\static\fonts'
+FONT_DIR = r'C:\Users\Administrator\Desktop\CRAW\Batch\backend\HackersBridge_backend\static\fonts'
 
 # ✅ Register Custom Fonts
 pdfmetrics.registerFont(TTFont("Roboto", os.path.join(FONT_DIR, "Roboto-Bold.ttf")))
@@ -172,10 +172,10 @@ pdfmetrics.registerFont(TTFont("Corbel", os.path.join(FONT_DIR, "corbel.ttf")))
 pdfmetrics.registerFont(TTFont("Montserrat", os.path.join(FONT_DIR, "Montserrat-Regular.ttf")))
 
 # ✅ Correct TEMPLATE directory
-TEMPLATE_DIR = r'C:\Users\Yogesh gahlot\Downloads\backend\HackersBridge_backend\static\templates'
+TEMPLATE_DIR = r'C:\Users\Administrator\Desktop\CRAW\Batch\backend\HackersBridge_backend\static\templates'
 
 # ✅ Correct OUTPUT directory
-OUTPUT_DIR = r'C:\Users\Yogesh gahlot\Downloads\backend\HackersBridge_backend\static\certficates'
+OUTPUT_DIR = r'C:\Users\Administrator\Desktop\CRAW\Certificate'
 os.makedirs(OUTPUT_DIR, exist_ok=True)  # Ensure the directory exists
 
 # ✅ Certificate File Naming & Storage

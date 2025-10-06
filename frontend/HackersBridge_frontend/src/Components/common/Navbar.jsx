@@ -120,7 +120,7 @@ const Navbar = ({ collapsed, setCollapsed }) => {
                         <div className="flex items-center gap-x-3">
                             <div>
                             <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                                {username} yogesh
+                                {username}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
                                 {/* {userEmail} */}
