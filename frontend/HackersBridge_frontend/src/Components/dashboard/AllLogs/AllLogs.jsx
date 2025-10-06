@@ -102,7 +102,7 @@ const AllLogs = () => {
                                 </tr>
                             </thead>
 
-                            <tbody className="divide-y divide-gray-100 font-light text-gray-700">
+                            <tbody className="divide-y divide-gray-100 font-normal text-gray-700">
                             {loading ? (
                                     <tr>
                                         <td colSpan="100%" className="text-center py-4">

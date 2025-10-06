@@ -1,3 +1,5 @@
+{
+
 # import os
 # from reportlab.lib.pagesizes import landscape
 # from reportlab.pdfgen import canvas
@@ -150,6 +152,7 @@
 #     filename = f"{sanitized_name}_0.pdf"
 #     return os.path.join(CERTIFICATE_DIR, filename)
 
+}
 
 import os
 from reportlab.lib.pagesizes import landscape

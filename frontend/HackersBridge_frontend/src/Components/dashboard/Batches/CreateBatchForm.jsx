@@ -29,7 +29,7 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
     const isEditing = Boolean(selectedBatchData?.id);
     const { batchFormData, setBatchFormData, errors, setErrors, resetBatchForm, fetchBatches } = useBatchForm();
     const { coursesData, fetchCourses } = useCourseForm();
-        const {timeSlotData, fetchTimeSlotData} = useTimeSlotForm();
+    const {timeSlotData, fetchTimeSlotData} = useTimeSlotForm();
     const { trainerData, fetchTrainers } = useTrainerForm();
     const { fetchStudents, allStudentData, fetchAllStudent } = useStudentForm();
     const [ loading, setLoading ] = useState(false);
@@ -276,38 +276,31 @@ const CreateBatchForm = ({ isOpen, onClose, selectedBatchData }) => {
                                 ]}
                                 onChange={(value) => handleChange('batchTime', value)}
                             /> */}
-                            <Select name="batchTime" value={batchFormData.batchTime }  className='w-full border-gray-300' size='large' placeholder='Select Batch Timing' 
-                                dropdownRender={menu => <div>{menu}</div>} // required to ensure styling applies properly
-                                showSearch 
-
-                                options={(timeSlotData || []).map((slot) => {
-                                    let bgColor = "bg-gray-100"; // default
-
-                                    if (slot.week_type === "Weekends") bgColor = "bg-yellow-100";
-                                    else if (slot.week_type === "Weekdays") bgColor = "bg-blue-100";
-                                    else if (slot.week_type === "Both") bgColor = "bg-green-100";
-
-                                    return {
-                                        value: slot.id,
-                                        label: (
-                                        <div className={`rounded p-0 ${bgColor}`}>
-                                            <span className="text-gray-800">
-                                            {`${dayjs(slot.start_time, "HH:mm").format("hh:mm A")} - ${dayjs(
-                                                slot.end_time,
-                                                "HH:mm"
-                                            ).format("hh:mm A")} `}
-                                            </span>
-                                            <span className="text-xs text-gray-500">({slot.week_type})</span>
-                                        </div>
-                                        ),
-                                    };
-                                })}
-
-                                 onChange={(val) => setBatchFormData(prev => ({
-                                    ...prev,
-                                    batchTime: val // val is just ID
-                                }))}
-
+                            <Select name="batchTime" value={batchFormData.batchTime ? String(batchFormData.batchTime) : null} onChange={(value) => handleChange("batchTime", value)} className='w-full border-gray-300' size='large' placeholder='Select Batch Timing' 
+                                 dropdownRender={menu => <div>{menu}</div>} // required to ensure styling applies properly
+                                 options={[
+                                    { value: '1', label: '10:00 - 12:00' },
+                                    { value: '2', label: '12:00 - 02:00' },
+                                    { value: '3', label: '03:00 - 05:00' },
+                                    { value: '4', label: '05:00 - 06:30' },
+                                    { value: '9', label: '06:00 - 07:00' },
+                                    { value: '7', label: '07:00 - 09:00' },
+                                    { value: '8', label: '10:00 - 05:00' },
+                           
+                                    // Weekends
+                                    { value: '5', label: <div style={{ backgroundColor: '#fffbe6' }}>10:00 - 02:00 - Weekends</div> },
+                                    { value: '6', label: <div style={{ backgroundColor: '#fffbe6' }}>03:00 - 06:30 - Weekends</div> },
+                                    { value: '16', label: <div style={{ backgroundColor: '#fffbe6' }}>12:00 - 02:00 - Weekends</div> },
+                                    
+                                    // Weekdays
+                                    { value: '17', label: <div style={{ backgroundColor: '#c3f3fa' }}>10:30 - 12:00 - Weekdays</div> },
+                                    { value: '10', label: <div style={{ backgroundColor: '#c3f3fa' }}>12:30 - 02:30 - Weekdays</div> },
+                                    { value: '11', label: <div style={{ backgroundColor: '#c3f3fa' }}>07:00 - 08:30 - Weekdays</div> },
+                                    { value: '12', label: <div style={{ backgroundColor: '#c3f3fa' }}>05:00 - 07:00 - Weekdays</div> },
+                                    { value: '13', label: <div style={{ backgroundColor: '#c3f3fa' }}>08:00 - 09:00 - Weekdays</div> },
+                                    { value: '14', label: <div style={{ backgroundColor: '#c3f3fa' }}>03:00 - 07:00 - Weekdays</div> },
+                                    { value: '15', label: <div style={{ backgroundColor: '#c3f3fa' }}>06:00 - 07:30 - Weekdays</div> },
+                                ]}
                                  filterOption={(input, option) => {
                                     const labelText = typeof option.label === 'string'
                                       ? option.label

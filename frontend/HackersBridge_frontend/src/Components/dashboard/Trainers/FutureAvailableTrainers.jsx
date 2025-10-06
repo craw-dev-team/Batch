@@ -97,7 +97,7 @@ const FutureAvailableTrainers = () => {
                     
                 </tr>
                 </thead>
-                    <tbody className="divide-y divide-gray-100 font-light text-gray-700">
+                    <tbody className="divide-y divide-gray-100 font-normal text-gray-700">
                     {Array.isArray(sortedData) && sortedData.length > 0 ? (
                         sortedData.map((item, index) => (
                         <tr key={index} className="hover:bg-white transition-colors scroll-smooth">

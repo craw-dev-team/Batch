@@ -103,57 +103,60 @@ class FirstTimeResetPasswordSerializer(serializers.Serializer):
         )
 
 
+{
 
 # This is for Forgot Password
-class ForgotPasswordSerializer(serializers.Serializer):
-    email = serializers.EmailField()
+# class ForgotPasswordSerializer(serializers.Serializer):
+#     email = serializers.EmailField()
 
-    def validate(self, data):
-        email = data.get('email')
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            raise serializers.ValidationError("User with this email does not exist.")
+#     def validate(self, data):
+#         email = data.get('email')
+#         try:
+#             user = User.objects.get(email=email)
+#         except User.DoesNotExist:
+#             raise serializers.ValidationError("User with this email does not exist.")
 
-        # Generate and store OTP
-        otp = get_random_string(length=6, allowed_chars='1234567890')
-        OTPVerification.objects.create(user=user, otp=otp)
+#         # Generate and store OTP
+#         otp = get_random_string(length=6, allowed_chars='1234567890')
+#         OTPVerification.objects.create(user=user, otp=otp)
 
-        # Send OTP via email
-        send_mail(
-            subject="Your Password Reset OTP",
-            message=f"Your OTP for password reset is: {otp}.",
-            from_email="noreply@yourdomain.com",
-            recipient_list=[email],
-            fail_silently=False,
-        )
+#         # Send OTP via email
+#         send_mail(
+#             subject="Your Password Reset OTP",
+#             message=f"Your OTP for password reset is: {otp}.",
+#             from_email="noreply@yourdomain.com",
+#             recipient_list=[email],
+#             fail_silently=False,
+#         )
 
-        return data
+#         return data
+}
     
+{
 
-# This is For OTP Varification
-class VerifyOTPSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    otp = serializers.CharField(max_length=6)
+# # This is For OTP Varification
+# class VerifyOTPSerializer(serializers.Serializer):
+#     email = serializers.EmailField()
+#     otp = serializers.CharField(max_length=6)
 
-    def validate(self, data):
-        email = data.get('email')
-        otp = data.get('otp')
+#     def validate(self, data):
+#         email = data.get('email')
+#         otp = data.get('otp')
 
-        try:
-            user = User.objects.get(email=email)
-            otp_record = OTPVerification.objects.filter(user=user, otp=otp).first()
-            if not otp_record:
-                raise serializers.ValidationError("Invalid OTP or OTP expired.")
+#         try:
+#             user = User.objects.get(email=email)
+#             otp_record = OTPVerification.objects.filter(user=user, otp=otp).first()
+#             if not otp_record:
+#                 raise serializers.ValidationError("Invalid OTP or OTP expired.")
             
-            # OTP is valid, delete it
-            otp_record.delete()
-        except User.DoesNotExist:
-            raise serializers.ValidationError("User not found.")
+#             # OTP is valid, delete it
+#             otp_record.delete()
+#         except User.DoesNotExist:
+#             raise serializers.ValidationError("User not found.")
 
-        return data
+#         return data
     
-
+}
 
 {
 
@@ -186,35 +189,47 @@ class VerifyOTPSerializer(serializers.Serializer):
 #         return data
 }
 
+{
 
+
+# class ResetPasswordSerializer(serializers.Serializer):
+#     email = serializers.EmailField()
+#     new_password = serializers.CharField(write_only=True)
+
+#     def validate(self, data):
+#         email = data.get('email')
+#         new_password = data.get('new_password')
+
+#         try:
+#             user = User.objects.get(email=email)
+#             user.set_password(new_password)
+#             user.save()
+
+#             # Send confirmation email
+#             send_mail(
+#                 subject="Password Reset Successful",
+#                 message="Your password has been successfully reset.",
+#                 from_email="noreply@yourdomain.com",
+#                 recipient_list=[email],
+#                 fail_silently=False,
+#             )
+#         except User.DoesNotExist:
+#             raise serializers.ValidationError("User not found.")
+
+#         return data
+
+}
+
+class ForgotPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+class VerifyOTPSerializer(serializers.Serializer):
+    reset_token = serializers.CharField()
+    otp = serializers.CharField(max_length=6)
 
 class ResetPasswordSerializer(serializers.Serializer):
-    email = serializers.EmailField()
+    verified_token = serializers.CharField()
     new_password = serializers.CharField(write_only=True)
-
-    def validate(self, data):
-        email = data.get('email')
-        new_password = data.get('new_password')
-
-        try:
-            user = User.objects.get(email=email)
-            user.set_password(new_password)
-            user.save()
-
-            # Send confirmation email
-            send_mail(
-                subject="Password Reset Successful",
-                message="Your password has been successfully reset.",
-                from_email="noreply@yourdomain.com",
-                recipient_list=[email],
-                fail_silently=False,
-            )
-        except User.DoesNotExist:
-            raise serializers.ValidationError("User not found.")
-
-        return data
-
-
 
 class CourseSerializer(serializers.ModelSerializer):
     class Meta:
@@ -226,7 +241,11 @@ class CourseSerializer(serializers.ModelSerializer):
 class TimeslotSerializer(serializers.ModelSerializer):
     class Meta:
         model = Timeslot
-        fields = '__all__'
+        fields = '__all__'  
+
+    def get_generated_by(self, obj):
+        return obj.generated_by.username if obj.generated_by else "craw"
+
 
 
 

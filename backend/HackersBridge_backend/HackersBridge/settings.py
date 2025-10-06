@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-+6#-07c7yk=gs-x&&0d57y5ov&+p+se0&p#k^9=!(g##f#5*t0'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
 
@@ -77,6 +77,7 @@ INSTALLED_APPS = [
     'Trainer',
     'Student',
     'Student_login',
+    'Trainer_login',
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
@@ -140,6 +141,7 @@ DATABASES = {
         'PORT':'3306',
     }
 }
+
 
 
 # Password validation
@@ -250,3 +252,25 @@ CELERY_BROKER_URL = 'redis://localhost:6379/0'
 
 # reCAPTCHA
 RECAPTCHA_SECRET_KEY = '6LfKEG4rAAAAAMMFt9QuJMQBQB95aSKAkSDqFwQg'
+
+# -------------------------------------------
+# 🔐 OTP and JWT Configuration for Reset Flow
+# -------------------------------------------
+
+# OTP expiry time (10 minutes)
+OTP_EXPIRE_SECONDS = 600
+
+# JWT Secret for encoding reset token (reuses project secret key)
+JWT_SECRET_KEY = SECRET_KEY
+JWT_ALGORITHM = 'HS256'
+
+# Redis cache setup (used to store OTP securely)
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/1',  # Local Redis instance
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient'
+        }
+    }
+}

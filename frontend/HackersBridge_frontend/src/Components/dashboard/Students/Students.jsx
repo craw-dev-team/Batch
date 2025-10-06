@@ -58,8 +58,17 @@ const Students = () => {
 
     const handleTabClick = (tab) => {
         setActiveTab(tab);
+        sessionStorage.setItem("activeStudentTab", tab); // save
         setCurrentPage(1)
     };
+
+     // Load last tab from sessionStorage
+        useEffect(() => {
+            const savedTab = sessionStorage.getItem("activeStudentTab");
+            if (savedTab) {
+            setActiveTab(savedTab);
+            }
+        }, []);
 
 
     // FETCH STUDENTDATA OM MOUNT
@@ -500,7 +509,7 @@ const Students = () => {
                         </thead>
                         {/* TO show all students data  */}
                         {(activeTab === '' || activeTab === "Temp Block" || activeTab === "Restricted") && (
-                        <tbody className="divide-y divide-gray-100 font-light text-gray-700">
+                        <tbody className="divide-y divide-gray-100 font-normal text-gray-700">
                         {loading ? (
                                 <tr>
                                     <td colSpan="100%" className="text-center py-4">

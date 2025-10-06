@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import handleBatchClick, { handleTrainerClick } from "../../Navigations/Navigations";
 import axiosInstance from "../api/api";
 import { useTheme } from "../../Themes/ThemeContext";
+import BASE_URL from "../../../ip/Ip";
 
 
 
@@ -242,7 +243,7 @@ const AvailableBatches = () => {
                         
                     </tr>
                     </thead>
-                        <tbody className="divide-y divide-gray-100 font-light text-gray-700">
+                        <tbody className="divide-y divide-gray-100 font-normal text-gray-700">
                         {loading ? (
                                 <tr>
                                     <td colSpan="100%" className="text-center py-4">
@@ -348,12 +349,12 @@ const AvailableBatches = () => {
                     <th className="px-3 py-3 md:px-1 text-xs font-medium uppercase">Trainer ID</th>
                     <th className="px-3 py-3 md:px-1 cursor-pointer text-xs font-medium uppercase" onClick={toggleSortByName}>
                         <Tooltip title="sort by Trainer Name" placement="right">
-                            Trainer Name {sortByName ? "▲" : "▼"} 
+                            Trainer Name {sortByName ? <UpOutlined /> : <DownOutlined />} 
                         </Tooltip>
                     </th>
                     <th className="px-3 py-3 md:px-1 cursor-pointer text-xs font-medium uppercase" onClick={toggleSortByStartTime}>
                         <Tooltip title="sort by Trainer Name" placement="right">
-                            Start Time {sortByStartTime  ? "▲" : "▼"} 
+                            Start Time {sortByStartTime  ? <UpOutlined /> : <DownOutlined />} 
                         </Tooltip>
                     </th>
                     <th className="px-3 py-3 md:px-1 text-xs font-medium uppercase">End Time</th>
@@ -539,24 +540,18 @@ console.log(selectedBatch);
 
         if (selectedBatch && selectedBatch.id) {
             // Update existing batch (PUT)
-            response = await axiosInstance.put(`/api/batches/edit/${selectedBatch.id}/`, payload );
-
-            if (response.status === 200 || response.status === 201) {
-                
-                successMessage = "Batch updated successfully!";
-            } else {
-                successMessage = "Error Updating Batch"
-            }
+            response = await axiosInstance.put(`${BASE_URL}/api/batches/edit/${selectedBatch.id}/`, 
+                payload, 
+                { headers: { 'Content-Type': 'application/json' } }
+            );
+            successMessage = "Batch updated successfully!";
         } else {
             // Add new batch (POST)
-            response = await axiosInstance.post(`/api/batches/add/`, payload );
-            
-            if (response.status === 200 || response.status === 201) {
-
-                successMessage = "Batch Added Successfully!";            
-            } else {
-                successMessage = "Error Creating Batch ! Try again !"
-            }
+            response = await axiosInstance.post(`${BASE_URL}/api/batches/add/`, 
+                payload, 
+                { headers: { 'Content-Type': 'application/json' } }
+            );
+            successMessage = "Batch added successfully!";            
         }
 
         if (response.status >= 200 && response.status < 300) {

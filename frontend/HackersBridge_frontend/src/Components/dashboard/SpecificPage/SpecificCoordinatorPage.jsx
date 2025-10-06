@@ -211,7 +211,7 @@ return (
                                                         </th>
                                                     </tr>
                                                 </thead>
-                                                <tbody className="divide-y divide-gray-100 font-light text-gray-700">
+                                                <tbody className="divide-y divide-gray-100 font-normal text-gray-700">
                                                     {loading ? (
                                                         <tr>
                                                             <td colSpan="100%" className="text-center py-4">
@@ -388,7 +388,7 @@ return (
                                                     </tr>
                                                 </thead>
 
-                                                <tbody className="divide-y divide-gray-100 font-light text-gray-700">
+                                                <tbody className="divide-y divide-gray-100 font-normal text-gray-700">
                                                     {(specificCoordinatorTrainers ?? []).length > 0 ? (
                                                     specificCoordinatorTrainers.map((item, index) => (
                                                     <tr key={index} className="hover:bg-white transition-colors scroll-smooth">

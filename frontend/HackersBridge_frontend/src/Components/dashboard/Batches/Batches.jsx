@@ -50,8 +50,17 @@ const Batches = () => {
 
     const handleTabClick = (tab) => {
         setActiveTab(tab);
+        sessionStorage.setItem("activeBatchTab", tab); // save
         setCurrentPage(1)
     };
+
+    // Load last tab from sessionStorage
+    useEffect(() => {
+        const savedTab = sessionStorage.getItem("activeBatchTab");
+        if (savedTab) {
+        setActiveTab(savedTab);
+        }
+    }, []);
 
 
    const currentFilters = useMemo(() => ({
@@ -617,7 +626,7 @@ const Batches = () => {
                                     
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100 font-light text-gray-700">
+                            <tbody className="divide-y divide-gray-100 font-normal text-gray-700">
                                 {loading ? (
                                     <tr>
                                         <td colSpan="100%" className="text-center py-4">
