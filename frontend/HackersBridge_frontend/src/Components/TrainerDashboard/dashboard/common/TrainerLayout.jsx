@@ -22,11 +22,11 @@ const TrainerLayout = () => {
         />
   
         {/* Main content */}
-        <Layout className="w-full">
+        <Layout className="flex-1 min-h-screen">
           {/* Show navbar only on mobile */}
           <TrainerNavbar onMenuClick={() => setDrawerOpen(true)} />
   
-          <Content className="p-1 bg-gray-100 min-h-screen">
+          <Content className="p-1 bg-gray-100 overflow-x-hidden overflow-y-hidden">
             <Outlet />
           </Content>
         </Layout>

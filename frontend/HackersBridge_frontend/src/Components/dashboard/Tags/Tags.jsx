@@ -59,7 +59,7 @@ const Tags = () => {
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-gray-100 font-normal text-gray-700">
+              <tbody className="divide-y divide-gray-100 font-light text-gray-700">
               {tagData?.data && tagData?.data.length > 0 ? (
                   tagData?.data.map((tag, index) => (
                     <tr key={tag.id} className="hover:bg-gray-50 transition-colors scroll-smooth">

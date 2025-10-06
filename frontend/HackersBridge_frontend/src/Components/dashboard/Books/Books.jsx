@@ -9,6 +9,7 @@ import AllBooks from "./AllBooks";
 import BookCards from "../SpecificPage/Cards/Book/BookCards";
 import axiosInstance from "../api/api";
 import { useTheme } from "../../Themes/ThemeContext";
+import { useSpecificBook } from "../Contexts/SpecificBook";
 
 
 const Books = () => {
@@ -21,7 +22,8 @@ const Books = () => {
     const [activeTab, setActiveTab] = useState('books');
     const [selectedBook, setSelectedBook] = useState();
     const [isDeleted, setIsDeleted] = useState(false)
-    const { bookData, loading, setBookData, fetchBooks } = useBookForm();
+    const { bookData, loading, fetchBooks, handleDeleteBook } = useBookForm();
+    const { specificBook, fetchSpecificBook } = useSpecificBook();
     
     const navigate = useNavigate();
 
@@ -33,10 +35,12 @@ const Books = () => {
       useEffect(() => {
             fetchBooks();  // Fetch courses after deletion
             setIsDeleted(false); // Reset deletion flag
+            fetchSpecificBook(allBookIds);
      
     }, [isDeleted, selectedBook, bookData]);
     
-    
+    const allBookIds = bookData.map(book => book.id);
+
 
     // Function to handle Edit button click
     const handleEditClick = (book) => {
@@ -45,30 +49,11 @@ const Books = () => {
         setIsDeleted(false)
     };
 
-   // Delete Function
-    const handleDelete = async (bookId) => {
-        if (!bookId) return;
-
-        try {
-            const response = await axiosInstance.delete(`/api/books/delete/${bookId}/` );
-
-            if (response.status === 204) {
-                // Make sure coursesData is an array before filtering
-                if (Array.isArray(bookData)) {
-                    setBookData(prevBooks => prevBooks.filter(book => book.id !== bookId));
-                } else {
-                    console.error('BookData is not an array');
-                }
-            }
-        } catch (error) {
-            console.error("Error deleting Book:", error);
-        }
-    };
 
     // Confirm and Cancel Handlers
     const confirm = (bookId) => {
-        handleDelete(bookId);
-        message.success('Book Deleted Successfully');
+        handleDeleteBook(bookId);
+        
     };
 
     const cancel = () => {
@@ -104,15 +89,17 @@ const Books = () => {
                 <BookCards />
             </div>
                 <div className={`relative w-full h-full mt-3 px-4 shadow-md  ${theme.specificPageBg}`}>
-                    <div className={`w-full px-1 py-3 flex justify-between font-semibold ${theme.text}`}>
-                    <h1>All Books</h1>
+                    <div className={`w-full px-1 py-3 flex justify-between items-center ${theme.text}`}>
+                        <div className="flex items-center gap-1">
+                            <h1 className="font-semibold">All Books</h1> <span className="text-lg font-bold">({bookData?.length || 0})</span>
+                        </div>
                         <div>
                             <button onClick={() => { setIsModalOpen(true); setSelectedCourse(null); }} type="button" className={`focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5 shadow-lg hover:shadow-xl transition-all duration-200 ${theme.createBtn}`}>Add Book +</button>
                         </div>
                     </div>
 
                 
-                    <div className={`overflow-hidden pb-2 relative bg-white/40 backdrop-blur-sm rounded-xl shadow-sm ${loading ? "backdrop-blur-md opacity-50 pointer-events-none" : ""}`}>
+                    <div className={`overflow-hidden pb-2 relative bg-white/40 backdrop-blur-sm rounded-xl shadow-sm `}>
                         <div className="w-auto h-[28rem] md:max-h-[25rem] 2xl:max-h-[28rem] overflow-y-auto rounded-xl pb-2">
                             <table className="w-full text-xs font-normal text-left text-gray-600">
                                 <thead className="bg-white sticky top-0 z-10">
@@ -125,6 +112,9 @@ const Books = () => {
                                         </th>
                                         <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                             Book Name
+                                        </th>
+                                        <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
+                                            Allotted
                                         </th>
                                         <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                             Version
@@ -142,7 +132,7 @@ const Books = () => {
                                 </thead>
                                 
                                 <tbody className="divide-y divide-gray-100 font-normal text-gray-700">
-                                {loading ? (
+                                {loading.all ? (
                                     <tr>
                                         <td colSpan="100%" className="text-center py-4">
                                             <Spin size="large" />
@@ -160,6 +150,9 @@ const Books = () => {
                                         </th>
                                         <td className="px-3 py-2 md:px-1 font-medium cursor-pointer" onClick={() => handleBookClick(navigate,item.id)}>
                                             {item.name}
+                                        </td>
+                                        <td className="px-3 py-2 md:px-1">
+                                            {specificBook?.issued_students ? specificBook.issued_students.length : 0}
                                         </td>
                                         <td className="px-3 py-2 md:px-1">
                                             {item.version}

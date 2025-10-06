@@ -30,7 +30,7 @@ const Students = () => {
     const [isDeleted, setIsDeleted] = useState(false)
     const { studentStatuses, setStudentStatuses, handleStudentStatusChange } = useStudentStatusChange();
 
-    const { studentData, loading, setLoading, setStudentData, fetchStudents, handleDeleteStudent } = useStudentForm();
+    const { studentData, loading, setStudentData, fetchStudents, handleDeleteStudent } = useStudentForm();
     
     const navigate = useNavigate();
 
@@ -62,21 +62,35 @@ const Students = () => {
         setCurrentPage(1)
     };
 
-     // Load last tab from sessionStorage
-        useEffect(() => {
-            const savedTab = sessionStorage.getItem("activeStudentTab");
-            if (savedTab) {
-            setActiveTab(savedTab);
-            }
-        }, []);
+      // Load last tab from sessionStorage
+    useEffect(() => {
+        const savedTab = sessionStorage.getItem("activeStudentTab");
+        if (savedTab) {
+        setActiveTab(savedTab);
+        }
+    }, []);
+
+
+    const currentFilters = useMemo(() => ({
+        page: currentPage,
+        pageSize,
+        search: searchTerm,
+        mode: sortByMode,
+        language: sortByLanguage,
+        preferred_week: sortByPreferredWeek,
+        location: sortByLocation,
+        status: activeTab,
+        date_of_joining_after: startDate, 
+        date_of_joining_before: endDate
+    }), [currentPage, pageSize, searchTerm, sortByMode, sortByLanguage, sortByPreferredWeek, sortByLocation, activeTab, startDate, endDate]);
 
 
     // FETCH STUDENTDATA OM MOUNT
-    useEffect(() => {
-        fetchStudents({  page: currentPage, pageSize, search: searchTerm, mode: sortByMode, language: sortByLanguage, preferred_week: sortByPreferredWeek, location: sortByLocation, status: activeTab, date_of_joining_after: startDate, date_of_joining_before: endDate })        
-        
+    useEffect(() => {   
+        // fetchStudents({  page: currentPage, pageSize, search: searchTerm, mode: sortByMode, language: sortByLanguage, preferred_week: sortByPreferredWeek, location: sortByLocation, status: activeTab, date_of_joining_after: startDate, date_of_joining_before: endDate })        
+        fetchStudents(currentFilters);
         fetchTagData();
-    },[!isModalOpen, searchTerm, currentPage, sortByMode, sortByLanguage, sortByPreferredWeek, sortByLocation, activeTab, startDate, endDate]);
+    },[isModalOpen, currentFilters]);
 
     
      // HANDLE SEARCH INPUT AND DEBOUNCE 
@@ -129,51 +143,10 @@ const Students = () => {
     };
 
     
-    // Delete Function for student delete
-    // const handleDelete = async (studentId) => {
-    // if (!studentId) return;
-
-    // try {
-    //     const response = await axiosInstance.delete(`/api/students/delete/${studentId}/`);
-
-    //     if (response.status === 204) {
-    //         // Make sure Student Data is an array before filtering
-    //         if (Array.isArray(studentData)) {
-    //             setStudentData(prevStudents => prevStudents.filter(student => student.id !== studentId));
-                
-    //             setTimeout(() => {
-    //                 setSearchTerm('')
-    //             }, 2000);
-    //         } else {
-    //             // console.error('Student Data is not an array');
-    //         }
-    //     }
-    // } catch (error) {
-    //     setLoading(false);
-    
-    //     if (error.response) {
-    //         // console.error("Server Error Response:", error.response.data);
-    
-    //         // Extract error messages and show each one separately
-    //         Object.entries(error.response.data).forEach(([key, value]) => {
-    //             value.forEach((msg) => {
-    //                 message.error(`${msg}`);
-    //             });
-    //         });
-    //     } else if (error.request) {
-    //         // console.error("No Response from Server:", error.request);
-    //         message.error("No response from server. Please check your internet connection.");
-    //     } else {
-    //         // console.error("Error Message:", error.message);
-    //         message.error("An unexpected error occurred.");
-    //     }
-    // }       
-    // };
 
     // Confirm and Cancel Handlers for delete button
     const confirm = (studentId) => {
         handleDeleteStudent(studentId); 
-        message.success('Student Deleted Successfully');
     };
 
     const cancel = () => {
@@ -510,7 +483,7 @@ const Students = () => {
                         {/* TO show all students data  */}
                         {(activeTab === '' || activeTab === "Temp Block" || activeTab === "Restricted") && (
                         <tbody className="divide-y divide-gray-100 font-normal text-gray-700">
-                        {loading ? (
+                        {loading.students ? (
                                 <tr>
                                     <td colSpan="100%" className="text-center py-4">
                                         <Spin size="large" />
@@ -710,7 +683,7 @@ const Students = () => {
                 
             {/* </div> */}
             
-        <CreateStudentForm isOpen={isModalOpen} selectedStudentData={selectedStudent || {}} onClose={() => setIsModalOpen(false)} />
+        <CreateStudentForm isOpen={isModalOpen} selectedStudentData={selectedStudent || {}} onClose={() => setIsModalOpen(false)} currentFilters={currentFilters} />
 
         </div>  
 

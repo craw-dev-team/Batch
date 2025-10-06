@@ -19,7 +19,7 @@ return `
             Behind Saket Metro Station, New Delhi 110030
         </p>
         <p style="color: #000;">
-            📞 <strong>Phone:</strong> 011-40394315 | +91-9650202445, +91-9650677445<br>
+            📞 <strong>Phone:</strong> 011-40394315 | +91-9650202445 | +91-9650677445<br>
             📧 <strong>Email:</strong> training@craw.in<br>
             🌐 <strong>Website:</strong> 
             <a href="https://www.craw.in" style="text-decoration: underline;">www.craw.in</a>

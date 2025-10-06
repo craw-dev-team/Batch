@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Route, Routes  } from "react-router-dom"
+import { BrowserRouter as Router, Route, Routes, useNavigate  } from "react-router-dom"
 import Sidebarnew from "./Components/common/Sidebarnew";
 import * as route from './routes/Slugs'
 import BatchesHome from "./Pages/BatchesHome";
@@ -6,7 +6,7 @@ import StudentsHome from "./Pages/StudentsHome";
 import TrainersHome from "./Pages/TrainersHome";
 import CoursesHome from "./Pages/CoursesHome";
 import { Layout, Spin } from "antd";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CourseFormProvider } from "./Components/dashboard/Coursecontext/CourseFormContext";
 import { BatchFormProvider } from "./Components/dashboard/Batchcontext/BatchFormContext";
 import { StudentFormProvider } from "./Components/dashboard/Studentcontext/StudentFormContext";
@@ -73,7 +73,11 @@ import { TrainerInfoProvider } from "./Components/TrainerDashboard/dashboard/Tra
 import { TrainerBatchProvider } from "./Components/TrainerDashboard/dashboard/TrainerInfo/TrainerBatches/TrainerBatchesContext";
 import { TrainerBatchChatsProvider } from "./Components/TrainerDashboard/dashboard/TrainerChat/TrainerbatchChatFunctions";
 import TrainerAnnouncement from './Components/TrainerDashboard/dashboard/TrainerInfo/Announcement/TrainerAnnouncementPage';
-
+import Settings from "./Components/Setting/Settings";
+import { NotificationProvider } from "./Components/dashboard/Notification/NotificationContext";
+import NotificationPopup from "./Components/dashboard/Notification/NotificationPopup";
+import Notification from "./Components/dashboard/Notification/Notification";
+import GlobalNotification from "./Components/dashboard/Notification/NotificationForeGroundPopup";
 
 
 const { Content, Header } = Layout;
@@ -82,12 +86,12 @@ function App() {
 
     const [collapsed, setCollapsed] = useState(true);
 
-;
-
   return (
+          // <Router>
       <AuthProvider>
         <AppProviders>
-          <Router>
+          <GlobalNotification />
+          <NotificationPopup />
             <Routes>
 
               {/* ADMIN/COORDINATOR PUBLIC ROUTES */}
@@ -112,7 +116,7 @@ function App() {
                   <Route path="all-tickets" element={<AllTickets />} />
                   {/* <Route path="student-announcement-page" element={<StudentAnnouncementPage />} /> */}
                 </Route>
-                <Route path="*" element={<PageNotFound />} />
+                {/* <Route path="*" element={<PageNotFound />} /> */}
               </Route>
 
               {/* TRAINER PROTECTED ROUTES */}
@@ -127,7 +131,7 @@ function App() {
                   {/* <Route path="all-tickets" element={<AllTickets />} /> */}
                   <Route path="trainer-announcement" element={<TrainerAnnouncement />} />
                 </Route>
-                <Route path="*" element={<PageNotFound />} />
+                {/* <Route path="*" element={<PageNotFound />} /> */}
               </Route>
 
               {/* ADMIN/COORDINATOR PROTECTED ROUTES */}
@@ -138,6 +142,7 @@ function App() {
                   <Route path="/batches/:batchId" element={<SpecificBatchPage />} />
                   <Route path={route.STUDENTS_PATH} element={<StudentsHome />} />
                   <Route path="/students/:studentId" element={<SpecificStudentPage />} />
+                  <Route path="/studentsdata/:type" element={<StudentsList />} />
                   <Route path={route.TRAINERS_PATH} element={<TrainersHome />} />
                   <Route path="/trainers/:trainerId" element={<SpecificTrainerPage />} />
                   <Route path="/trainersdata/:type" element={<TrainersList />} />
@@ -146,22 +151,23 @@ function App() {
                   <Route path={route.ADD_DETAILS_COORDINATORS_PATH} element={<CoordinatorsHome />} />
                   <Route path="/add-details/coordinators/:coordinatorId" element={<SpecificCoordinatorPage />} />
                   <Route path={route.ADD_DETAILS_COUNSELLORS_PATH} element={<CounsellorsHome />} />
-                  <Route path="/studentsdata/:type" element={<StudentsList />} />
                   <Route path={route.ALL_LOGS_PATH} element={<AllLogs />} />
                   <Route path={route.BOOKS_PATH} element={<BooksHome />} />
                   <Route path="/book/:bookId" element={<SpecificBookPage />} />
                   <Route path="/book/card/:course_name" element={<BookCardList />} />
-                  <Route path="announcement-form-page" element={<CreateAnnouncementForm />} />
+                  {/* <Route path="announcement-form-page" element={<CreateAnnouncementForm />} /> */}
                   <Route path={route.ANNOUNCEMENTS_PATH} element={<AnnouncementPage />} />
                   <Route path={route.TICKETS_PATH} element={<TicketsOperation />} />
                   <Route path={route.BATCH_CHAT_PATH} element={<BatchChats/>} />
-                <Route path="*" element={<PageNotFound />} />
+                  <Route path={route.SETTINGS_PATH} element={<Settings/>} />
+                  <Route path="notification" element={<Notification />} />
+                  <Route path="*" element={<PageNotFound />} />
                 </Route>
               </Route>
             </Routes>
-          </Router>
         </AppProviders>
       </AuthProvider>
+        // </Router>  
   );
 }
 
@@ -202,7 +208,9 @@ const AppProviders = ({ children }) => {
                                                                 <TrainerInfoProvider>
                                                                   <TrainerBatchProvider>
                                                                     <TrainerBatchChatsProvider>
-                                                                      {children}
+                                                                      <NotificationProvider>
+                                                                        {children}
+                                                                      </NotificationProvider>
                                                                     </TrainerBatchChatsProvider>
                                                                   </TrainerBatchProvider>
                                                                 </TrainerInfoProvider>

@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext } from "react";
 import axiosInstance from "../../api/api";
+import { message } from "antd";
 
 // Create the context object
 const CounsellorFormContext = createContext();
@@ -16,8 +17,11 @@ const initialFormData = {
 const CounsellorFormProvider = ({ children }) => {
   const [counsellorFormData, setCounsellorFormData] = useState(initialFormData);
   const [counsellorData, setCounsellorData] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState({
+    all: false,
+    delete: false
+  });
 
     // Function to reset form
     const resetCouncellorForm = () => {
@@ -25,21 +29,11 @@ const CounsellorFormProvider = ({ children }) => {
     };
 
     const fetchCounsellors = async () => {
-        if (loading) return;
-        
-        // const token = localStorage.getItem('token');
-        // if (!token) {
-        //     console.error("No token found, user might be logged out.");
-        //     return;
-        // };
+        if (loading.all) return;
 
-        setLoading(true);
+        setLoading(prev => ({...prev, all: true }));
         try {
-            const response = await axiosInstance.get(`/api/counsellors/`, 
-              { headers: { 'Content-Type': 'application/json'},
-              withCredentials : true
-            }
-            );
+            const response = await axiosInstance.get(`/api/counsellors/`);
             const data = response?.data;
            
             setCounsellorData(prevData => {
@@ -52,12 +46,36 @@ const CounsellorFormProvider = ({ children }) => {
         } catch (error) {
           console.error('Error fetching Counsellor Data', error);
         } finally {
-          setLoading(false);
+            setLoading( prev => ({...prev, all: false }) );
         }
     }
 
+
+    // Delete Function 
+    const handleDeleteCounsellor = async (counsellorId) => {
+        if (!counsellorId) return;
+
+        setLoading(prev => ({...prev, delete: true}));
+        try {
+            const response = await axiosInstance.delete(`/api/counsellors/delete/${counsellorId}/` );
+
+            if (response.status >= 200 && response.status < 300) {
+                message.success('counsellor Deleted Successfully');
+                if (Array.isArray(counsellorData)) {
+                    setCounsellorData(prevcounsellor => prevcounsellor.filter(counsellor => counsellor.id !== counsellorId));
+                } else {
+                    console.error('counsellordata is not an array');
+                }
+            }
+        } catch (error) {
+            console.error("Error deleting counsellor:", error);
+        } finally {
+            setLoading(prev => ({...prev, delete: false}));  
+        }
+    };
+
   return (
-    <CounsellorFormContext.Provider value={{ counsellorFormData, setCounsellorFormData, loading, errors, setErrors,  resetCouncellorForm, counsellorData, setCounsellorData, fetchCounsellors }}>
+    <CounsellorFormContext.Provider value={{ counsellorFormData, setCounsellorFormData, loading, errors, setErrors,  resetCouncellorForm, counsellorData, setCounsellorData, fetchCounsellors, handleDeleteCounsellor }}>
       {children}
     </CounsellorFormContext.Provider>
   );

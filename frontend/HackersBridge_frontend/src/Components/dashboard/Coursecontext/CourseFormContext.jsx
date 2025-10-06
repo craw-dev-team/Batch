@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import axiosInstance from "../api/api";
+import { all } from "axios";
+import { message } from "antd";
 
 
 
@@ -16,7 +18,10 @@ export const CourseFormProvider = ({ children }) => {
     const [courseFormData, setCourseFormData] = useState(initialFormData);
     const [errors, setErrors] = useState({});
     const [coursesData, setCoursesData] = useState([]);
-    const [loading, setLoading] = useState(false);  // Loading state to manage fetch state
+    const [loading, setLoading] = useState({
+        all: false,
+        delete: false
+    });  // Loading state to manage fetch state
 
     const resetCourseForm = () => {
         setCourseFormData(initialFormData);
@@ -25,9 +30,9 @@ export const CourseFormProvider = ({ children }) => {
 
     // Fetch courses from API
     const fetchCourses = async () => {
-        if (loading) return;  // Prevent multiple fetches at the same time
+        if (loading.all) return;  // Prevent multiple fetches at the same time
 
-        setLoading(true);  // Set loading state
+        setLoading(prev => ({...prev, all: true}));  // Set loading state
         try {
             const response = await axiosInstance.get(`/api/courses/` );
             const data = response?.data;
@@ -43,14 +48,37 @@ export const CourseFormProvider = ({ children }) => {
         } catch (error) {
             console.error('Error fetching Courses Data', error);
         } finally {
-            setLoading(false);  // Reset loading state after fetch
+            setLoading(prev => ({...prev, all: false}));  // Reset loading state after fetch
         }
     };
 
     
+    // Delete Function
+    const handleDeleteCourse = async (courseId) => {
+        if (!courseId) return;
+
+        setLoading(prev => ({...prev, delete: true}));
+        try {
+            const response = await axiosInstance.delete(`/api/courses/delete/${courseId}/` );
+
+            if (response.status === 204) {
+                message.success('Course Deleted Successfully');
+                if (Array.isArray(coursesData)) {
+                    setCoursesData(prevCourses => prevCourses.filter(course => course.id !== courseId));
+                } else {
+                    console.error('coursesData is not an array');
+                }
+            }
+        } catch (error) {
+            console.error("Error deleting course:", error);
+        } finally {
+            setLoading(prev => ({...prev, delete: false}));  // Reset loading state after fetch
+        }
+    };
+
 
     return (
-        <CourseFormContext.Provider value={{ courseFormData, loading, setCourseFormData, errors, setErrors, resetCourseForm, coursesData, setCoursesData, fetchCourses }}>
+        <CourseFormContext.Provider value={{ courseFormData, loading, setCourseFormData, errors, setErrors, resetCourseForm, coursesData, setCoursesData, fetchCourses, handleDeleteCourse }}>
             {children}
         </CourseFormContext.Provider>
     );

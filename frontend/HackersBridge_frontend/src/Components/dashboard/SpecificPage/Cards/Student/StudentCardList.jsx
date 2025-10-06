@@ -18,7 +18,7 @@ const StudentsList = () => {
     // ------------------------------------
 
     const { type } = useParams(); // Get type from URL
-    const { loading, studentsCounts, fetchStudentCount } = useStudentForm();
+    const { loading, studentsList, fetchStudentList } = useStudentForm();
 
     const { studentStatuses, setStudentStatuses, handleStudentStatusChange } = useStudentStatusChange();
     const navigate = useNavigate();
@@ -35,43 +35,32 @@ const StudentsList = () => {
     },[])
 
     useEffect(() => {
-        if (type) {
-            fetchStudentCount(type, currentPage, pageSize);
-        }
-    }, [type, currentPage]);
+    if (type) {
+      fetchStudentList(type, currentPage, pageSize, searchTerm);
+    }
+  }, [type, currentPage, searchTerm]);
+  
 
-    const currentStudentData = studentsCounts?.[type] || {};
-    const filteredStudents = currentStudentData?.results || [];
+    const currentStudentData = studentsList?.results || [];
 
   // HANDLE SEARCH INPUT AND DEBOUNCE 
         useEffect(() => {
             const handler = setTimeout(() => {
-                setSearchTerm(inputValue.trimStart());
-                setCurrentPage(1)
-            }, 500); // debounce delay in ms
-          
-            return () => {
-              clearTimeout(handler); // clear previous timeout on re-typing
-            };
-          }, [inputValue]);
+            setSearchTerm(inputValue.trimStart());
+            }, 500);
+            return () => clearTimeout(handler);
+        }, [inputValue]);
     
     
-    useEffect(() => {
-        if (Array.isArray(filteredStudents) && filteredStudents.length > 0) {
-            
-            const timer =  setTimeout(() => {
-                const initialStatuses = {};
-                filteredStudents.forEach((student) => {
+        useEffect(() => {
+            if (Array.isArray(currentStudentData) && currentStudentData.length > 0) {
+            const initialStatuses = {};
+            currentStudentData.forEach((student) => {
                 initialStatuses[student.id] = student.status;
             });
-
             setStudentStatuses(initialStatuses);
-           }, 100);
-           
-           return () => clearTimeout(timer);
-        }
-
-    }, [filteredStudents]);
+            }
+        }, [currentStudentData, setStudentStatuses]);
 
 
 
@@ -79,25 +68,6 @@ const StudentsList = () => {
     const onChangeStatus = (studentId, newStatus, status_note) => {
         handleStudentStatusChange({ studentId, newStatus, status_note });
     };
-
-
-    // HANDLE FILTER STUDENT BASED ON SEARCH INPUT 
-     const searchFilteredStudents = useMemo(() => {
-            const term = searchTerm.toLowerCase();
-          
-            if (!searchTerm) return filteredStudents;
-          
-            return filteredStudents.filter(student => {
-              return (
-                (student.name?.toLowerCase() || "").includes(term) ||
-                (student.email?.toLowerCase() || "").includes(term) ||
-                (student.phone?.toLowerCase() || "").includes(term) ||
-                (student.support_coordinator_name?.toLowerCase() || "").includes(term));
-            });
-          }, [filteredStudents, searchTerm]);
-          
-
-
 
 
     return (
@@ -108,7 +78,10 @@ const StudentsList = () => {
                     <StudentCards/>
 
                     <div className="flex justify-between items-center">
-                        <h3 className={`font-semibold px-1 my-4 ${theme.text}`}> {type === "enrolled_students"? "Students Enrolled In Batches": type === "today_added_students" ? "Today Added Students" : type === "not_enrolled_students" ? "Students Not Enrolled In Batches Yet" : type === "active_students" ? "Active Students" : "Inactive Students"}</h3>
+                        <div className="flex items-center">
+                            <h3 className={`font-semibold px-1 my-4 ${theme.text}`}> {type === "enrolled_students"? "Students Enrolled In Batches": type === "today_added_students" ? "Today Added Students" : type === "not_enrolled_students" ? "Students Not Enrolled In Batches Yet" : type === "active_students" ? "Active Students" : "Inactive Students"}</h3>
+                            <span className={`text-lg font-bold ${theme.text}`}>({studentsList?.count || 0})</span>
+                        </div>
                         <label htmlFor="table-search" className="sr-only">Search</label>
                         <div className="relative h-auto">
                             <input onChange={(e) => setInputValue(e.target.value.replace(/^\s+/, ''))} value={inputValue} type="text" id="table-search" placeholder="Search for items"
@@ -184,15 +157,15 @@ const StudentsList = () => {
                         
                         </thead>
                         <tbody className="divide-y divide-gray-100 font-light text-gray-700">
-                        { loading ? (
+                        { loading.studentList ? (
                                 <tr>
                                     <td colSpan="100%" className="text-center py-4">
                                         <Spin size="large" />
                                     </td>
                                 </tr>
 
-                        ) : searchFilteredStudents.length > 0 ? (
-                            searchFilteredStudents.map((item, index) => (
+                        ) : currentStudentData.length > 0 ? (
+                            currentStudentData.map((item, index) => (
                                 <tr key={item.id} className="hover:bg-white transition-colors scroll-smooth">
                                     <td className="px-3 py-2 md:px-2">
                                         {(currentPage - 1) * pageSize + index + 1}
@@ -289,7 +262,7 @@ const StudentsList = () => {
                         <Pagination
                             size="small"
                             current={currentPage}
-                            total={currentStudentData?.total || 0}
+                            total={studentsList?.count || 0}
                             pageSize={pageSize}
                             onChange={(page) => setCurrentPage(page)}
                             showSizeChanger={false}

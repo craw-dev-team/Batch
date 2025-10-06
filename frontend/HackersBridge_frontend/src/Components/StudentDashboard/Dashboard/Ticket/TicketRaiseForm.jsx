@@ -95,7 +95,7 @@ const TicketRaiseForm = ({ onCancel }) => {
         <Form.Item>
           <div style={{ transform: "scale(0.7)", transformOrigin: "0 0" }}>
           <ReCAPTCHA
-            sitekey="6LfKEG4rAAAAAEcc-V6fK2sFTSRfW_dokumkhF7i"
+            sitekey="6Le71r0rAAAAAAN9fwpdRSDr2yL_mFblxpcWaPZ7"
             onChange={(token) => setRecaptchaToken(token)}
           />
           </div>

@@ -57,6 +57,8 @@ const BatchChats = () => {
   useEffect(() => {
     fetchChats({ search: searchTerm, batch__status: chatTab });
   }, [searchTerm, chatTab]);
+  console.log(chat);
+  
 
     // HANDLE SEARCH INPUT AND DEBOUNCE 
     useEffect(() => {        
@@ -85,24 +87,39 @@ const BatchChats = () => {
 
 
   //  UPdate the message coming from web sockets
-  useEffect(() => {
-    if (!wsMessages || !selectedBatch) return;
+useEffect(() => {
+  if (!wsMessages || !selectedBatch) return;
 
-    const messages = wsMessages.messages || [];
+  const messages = wsMessages.messages || [];
 
-    const formattedMessages = messages.map((msg) => ({
-      id: msg.id,
-      text: msg.message,
-      time: msg.gen_time,
-      isSelf: msg.isSelf,
-      senderName: msg.send_by,
-      senderRole: msg.sender ? msg.sender : "CRAW Support",
-      type: "text",
-    }));
+  const formattedMessages = messages.map((msg) => ({
+    id: msg.id,
+    text: msg.message,
+    time: msg.gen_time,
+    isSelf: msg.isSelf,
+    senderName: msg.send_by,
+    senderRole: msg.sender ? msg.sender : "CRAW Support",
+    type: "text",
+  }));
 
-    formattedMessages.sort((a, b) => new Date(a.time) - new Date(b.time));
-    setCombinedMessages(formattedMessages);
-  }, [wsMessages, selectedBatch]);
+  setCombinedMessages(prev => {
+    const existingIds = new Set(prev.map(m => m.id));
+    const merged = [...prev];
+
+    formattedMessages.forEach(msg => {
+      if (!existingIds.has(msg.id)) {
+        merged.push(msg);
+      } else {
+        // Remove pending flag if server confirmed the message
+        const index = merged.findIndex(m => m.id === msg.id);
+        if (index !== -1) merged[index].pending = false;
+      }
+    });
+
+    return merged.sort((a, b) => new Date(a.time) - new Date(b.time));
+  });
+}, [wsMessages, selectedBatch]);
+
 
 
 
@@ -125,34 +142,6 @@ const BatchChats = () => {
 
 
 
-  
-//   useEffect(() => {
-//     if (!wsMessages || !selectedBatch) return;
-
-//     const messages = wsMessages?.messages || [];
-
-//     const formattedMessages = messages.map((msg) => ({
-//       id: msg.id,
-//       text: msg.message,
-//       time: msg.gen_time,
-//       isSelf: msg.sender,
-//       senderName: msg.send_by ,
-//       type: "text",
-//     }));
-//     console.log("formattedMessages:", formattedMessages);
-    
-//     formattedMessages.sort((a, b) => new Date(a.time) - new Date(b.time));
-
-//        setCombinedMessages(formattedMessages);
-
-//   }, [wsMessages, selectedBatch]);
-
-
-// useEffect(() => {
-//   // Clear messages when switching to a different batch
-//   setCombinedMessages([]);
-// }, [selectedBatch]);
-
 
 
 
@@ -174,7 +163,7 @@ const BatchChats = () => {
 
 
 
- const handleSend = () => {
+const handleSend = () => {
   if (!msg.trim() || !selectedBatch || !ws.current) return;
 
   if (ws.current.readyState !== WebSocket.OPEN) {
@@ -183,9 +172,26 @@ const BatchChats = () => {
   }
 
   const trimmedMessage = msg.trim();
+
+  // Optimistically add message to UI
+  const newMessage = {
+    id: `local-${Date.now()}`, // temporary id
+    text: trimmedMessage,
+    time: new Date().toISOString(),
+    isSelf: true,
+    senderName: "Me",
+    senderRole: userRole,
+    type: "text",
+    pending: true, // optional flag to mark as not confirmed by server yet
+  };
+
+  setCombinedMessages(prev => [...prev, newMessage]);
   setMsg(""); // Clear input
-  sendMessage(selectedBatch.batch_id, trimmedMessage); // Fire and let history update UI
+
+  // Send via WebSocket
+  sendMessage(selectedBatch.batch_id, trimmedMessage);
 };
+
 
 
 
@@ -288,7 +294,7 @@ const BatchChats = () => {
 
 
   return (
-    <div className={`sticky top-0 left-0 border h-fit w-full overflow-hidden backdrop-blur-sm rounded-xl shadow-sm ${theme.bg} `}>
+    <div className={`sticky top-0 left-0 border h-fit w-full overflow-hidden backdrop-blur-sm rounded-xl shadow-sm `}>
       <div className="pt-8 w-full min-h-[20rem] md:min-h-[30rem] lg:min-h-[40rem] h-[calc(100vh-6rem)] max-h-[60rem] flex mx-4 my-3 rounded-sm">
         <div className={`w-[30rem] border-r flex flex-col py-1 ${theme.activeTab}`}>
           <h2 className={`text-base font-semibold p-4 border-b ${theme.text}`}>All Batch Chats</h2>

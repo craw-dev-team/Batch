@@ -1,13 +1,18 @@
+import { useTheme } from "../../Components/Themes/ThemeContext";
 
 
 
 
 const StudentInfoLoading = () => {
-  
+      // for theme -------------------------
+      const { getTheme } = useTheme();
+      const theme = getTheme();
+      // ------------------------------------
+
     return (
         <>
         <div className="col-span-6 space-y-4 animate-pulse">
-          <div className="bg-white border border-gray-100 rounded-md shadow px-4 py-4 space-y-4">
+        <div className={`bg-white border border-gray-100 rounded-md shadow px-4 py-4 space-y-4`}>
             <div className="h-6 bg-gray-200 rounded w-2/5 2xl:w-1/6"></div>
 
             <div className="grid 2xl:grid-cols-6 lg:grid-cols-3 md:grid-cols-3 grid-cols-2 gap-4">
@@ -25,13 +30,13 @@ const StudentInfoLoading = () => {
             
             {/* Header Skeleton */}
             <div className="col-span-1 text-lg px-1 py-4">
-              <div className="h-6 bg-gray-200 rounded w-32 dark:bg-gray-700"></div>
+              <div className="h-6 bg-gray-200 rounded w-32"></div>
             </div>
 
             {/* Table Skeleton */}
             <div className="col-span-1 border overflow-x-auto">
               <table className="w-full text-xs text-left">
-                <thead className="text-xs uppercase bg-green-200 sticky top-0 z-10">
+                <thead className={`text-xs uppercase ${theme.bg} sticky top-0 z-10`}>
                   <tr>
                     {["S.No", "Course Name", "Course Status", "Batch Taken", "Books"].map((header, i) => (
                       <th key={i} className="px-3 py-3">

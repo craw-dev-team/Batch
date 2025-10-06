@@ -444,7 +444,7 @@ const SpecificStudentPage = () => {
                                                 {studentDetails.tags_values.map((tag) => (
                                                 <div
                                                     key={tag.id}
-                                                    className="relative text-xs font-medium px-2 py-1 rounded"
+                                                    className="relative text-xs font-medium px-2 py-1 rounded-lg"
                                                     style={{
                                                     backgroundColor: tag.tag_color,
                                                     color: "#fff",
@@ -455,7 +455,7 @@ const SpecificStudentPage = () => {
                                                     
                                                     {/* Cancel Icon */}
                                                     <span
-                                                    className="absolute top-0 right-0 mr-1 mt-0.5 text-white text-xs cursor-pointer font-bold"
+                                                    className="absolute top-0 right-0 mr-1 mt-0 py-1 text-white text-xs cursor-pointer font-bold"
                                                     onClick={async () => {
                                                             await handleRemoveTag([tag.id], studentDetails.id);
                                                         }}
@@ -487,7 +487,7 @@ const SpecificStudentPage = () => {
 
                                         <div className="col-span-1 px-1 py-1">
                                             <h1 >Name</h1>
-                                            <p className="font-bold text-lg text-blue-500">{studentDetails.name}</p>
+                                            <p className={`font-bold text-lg ${theme.text}`}>{studentDetails.name}</p>
                                         </div>
 
                                         <div className="col-span-1 px-1 py-1">
@@ -680,9 +680,6 @@ const SpecificStudentPage = () => {
                                                             <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                                 Issue Certificate
                                                             </th>
-                                                            {/* <th scope="col" className="px-3 py-3 md:px-1 md:w-40">
-                                                                Certificate Date
-                                                            </th> */}
                                                             <th className="px-3 py-3 md:px-1 text-xs font-medium uppercase">
                                                                 Exam Date
                                                             </th>
@@ -900,10 +897,10 @@ const SpecificStudentPage = () => {
                                                 </div>
 
                                                 {/* Right: Attendance Table */}
-                                                <div className="w-2/3 overflow-y-auto bg-white/40 rounded-xl">
-                                                <table className="w-full text-xs font-normal text-left text-gray-600">
+                                                <div className="w-2/3 overflow-y-auto pb-8 bg-white/40 rounded-xl">
+                                                <table className="w-full text-xs font-normal pb-6 text-left text-gray-600">
                                                     <thead className="bg-white sticky top-0 z-10">
-                                                    <tr>
+                                                    <tr className="bg-gray-50/80">
                                                         <th className="px-4 py-2 text-xs font-medium uppercase">Batch Name</th>
                                                         <th className="px-4 py-2 text-xs font-medium uppercase">Total Marked</th>
                                                         <th className="px-4 py-2 text-xs font-medium uppercase">Total Present</th>
@@ -914,7 +911,7 @@ const SpecificStudentPage = () => {
                                                     </thead>
                                                     <tbody className="divide-y divide-gray-100 font-normal text-gray-700">
                                                     {specificStudent?.All_in_One?.attendance_summary?.batch_wise_summary?.map((batch, index) => (
-                                                        <tr key={index} className="border-b">
+                                                        <tr key={index} className="border-b hover:bg-white transition-colors scroll-smooth">
                                                         <td className="px-4 py-2 font-medium">{batch.course_name} ({batch.batch_status})</td>
                                                         <td className="px-4 py-2 font-normal">{batch.total_attendance_marked}</td>
                                                         <td className="px-4 py-2 font-normal">{batch.present_percent}</td>
@@ -1099,7 +1096,7 @@ const SpecificStudentPage = () => {
                                                         </td>
                                                     
                                                         <td className="px-3 py-2 md:px-1 font-normal">
-                                                        {item.location == '1' ? <Tag bordered={false} color="blue">Saket</Tag> : item.location == "2" ? <Tag bordered={false} color="magenta">Laxmi Nagar</Tag> : <Tag bordered={false} color="geekblue">Both</Tag>}
+                                                        {item.location == '1' ? <Tag className="rounded-xl" bordered={false} color="blue">Saket</Tag> : item.location == "2" ? <Tag className="rounded-xl" bordered={false} color="magenta">Laxmi Nagar</Tag> : <Tag className="rounded-xl" bordered={false} color="geekblue">Both</Tag>}
                                                         </td>
                                                     </tr>
                                                 ))

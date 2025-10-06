@@ -9,6 +9,8 @@ import { useSpecificBatch } from '../dashboard/Contexts/SpecificBatch';
 import { useCoordinatorForm } from '../dashboard/AddDetails/Coordinator/CoordinatorContext';
 import axiosInstance from '../dashboard/api/api';
 import dayjs from 'dayjs';
+import Theme from 'quill/core/theme';
+import { useTheme } from '../Themes/ThemeContext';
 
 
 
@@ -18,6 +20,11 @@ Quill.register(AlignStyle, true);
 
 
 const EmailPopup = ({ open, onClose, checkStudentid, onSuccess = () => {}, trainer_email }) => {
+      // for theme -------------------------
+      const { getTheme } = useTheme();
+      const theme = getTheme();
+      // ------------------------------------
+
     if (!open) return null;
 
     const [selectedTemplate, setSelectedTemplate] = useState('');
@@ -49,8 +56,9 @@ const EmailPopup = ({ open, onClose, checkStudentid, onSuccess = () => {}, train
 
 
 
-    useEffect(() => {
+        useEffect(() => {
       const emailToRemove = ["ishika@craw.in", "anjali@craw.in", "shivambharti@craw.in"];
+
       if (open && checkStudentid?.length) {
         const uniqueEmails = [...new Set(checkStudentid.map(s => s.emails))];
         setBccEmails(uniqueEmails);
@@ -190,12 +198,18 @@ const EmailPopup = ({ open, onClose, checkStudentid, onSuccess = () => {}, train
     <Modal
       open={open}
       onCancel={onClose}
-      onOk={handleSend}
+      // onOk={handleSend}
       title="Send Email"
       width={1300}
-      okText="Send"
-      cancelText="Cancel"
-      okButtonProps={{ disabled: loading }}
+      // okText="Send"
+      // cancelText="Cancel"
+      // okButtonProps={{ disabled: loading,  
+      //   style: {
+      //     backgroundColor: theme.createBtn,  // dynamic background
+      //     color: theme.text,          // dynamic text color
+      //     borderColor: theme.okButtonBg,
+      //   }, }}
+      footer={null}
       style={{ height: '760px',  position: 'relative', top: '2rem' }}
     >
       {/* To field  */}
@@ -205,7 +219,7 @@ const EmailPopup = ({ open, onClose, checkStudentid, onSuccess = () => {}, train
           {toEmails.map((email) => (
             <span
               key={email}
-              className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded flex items-center gap-1"
+              className={`${theme.modeBadge} text-blue-800 px-2 py-0.5 rounded flex items-center gap-1`}
             >
               {email}
               <button
@@ -247,7 +261,7 @@ const EmailPopup = ({ open, onClose, checkStudentid, onSuccess = () => {}, train
                 {ccEmails.map((email) => (
                   <span
                     key={email}
-                    className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded flex items-center gap-1"
+                    className={`${theme.modeBadge} text-blue-800 px-2 py-0.5 rounded flex items-center gap-1`}
                   >
                     {email}
                     <button
@@ -287,7 +301,7 @@ const EmailPopup = ({ open, onClose, checkStudentid, onSuccess = () => {}, train
                 {BccEmails.map((email) => (
                   <span
                     key={email}
-                    className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded flex items-center gap-1"
+                    className={`${theme.modeBadge} text-blue-800 px-2 py-0.5 rounded flex items-center gap-1`}
                   >
                     {email}
                     <button
@@ -336,7 +350,7 @@ const EmailPopup = ({ open, onClose, checkStudentid, onSuccess = () => {}, train
 
       <div className="flex flex-col md:flex-row gap-4">
         {/* Sidebar of templates */}
-        <div className="md:w-1/4 w-full bg-gray-100 p-3 rounded overflow-y-auto ">
+        <div className={`md:w-1/4 w-full p-3 rounded overflow-y-auto ${theme.cardBg}`}>
           <h3 className="font-semibold mb-3">Templates</h3>
           <List
             size="small"
@@ -345,7 +359,7 @@ const EmailPopup = ({ open, onClose, checkStudentid, onSuccess = () => {}, train
             renderItem={(item) => (
               <List.Item
                 className={`cursor-pointer transition-colors duration-200 ${
-                  item === selectedTemplate ? 'bg-blue-100 font-medium' : 'hover:bg-gray-200'
+                  item === selectedTemplate ? `${theme.sideBarTab} font-medium` : 'hover:bg-white'
                 }`}
                 onClick={() => handleTemplateClick(item) }
               >
@@ -368,7 +382,7 @@ const EmailPopup = ({ open, onClose, checkStudentid, onSuccess = () => {}, train
                 [{ header: [1, 2, 4, 5, false] }],
                 [{ align: [] }],
                 ['bold', 'italic', 'underline'],
-                ['link'],
+                ['link'], 
                 ['clean'],
               ],
             }}
@@ -378,6 +392,24 @@ const EmailPopup = ({ open, onClose, checkStudentid, onSuccess = () => {}, train
           />
         </div>
       </div>
+
+       <div className="flex justify-end gap-3 mt-4">
+    <button
+      onClick={onClose}
+      className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300"
+    >
+      Cancel
+    </button>
+    <button
+      onClick={handleSend}
+      disabled={loading}
+      className={`px-4 py-2 rounded-lg text-white ${
+        loading ? `${theme.createBtn} opacity-0 cursor-not-allowed` : `${theme.createBtn}`
+      }`}
+    >
+      Send
+    </button>
+  </div>
     </Modal>
   );
 };

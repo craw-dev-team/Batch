@@ -22,7 +22,6 @@ const TrainerBatchProvider = ({children})=>{
             const response = await axiosInstance.get(`/Trainer_login/trainer_batch/`);
             const data = response.data;
             // setUsername(data?.trainerinfo?.name)
-            console.log(data);
             
             setTrainerBatches(prevData => {
             if(JSON.stringify(prevData) !== JSON.stringify(data)){
@@ -31,7 +30,6 @@ const TrainerBatchProvider = ({children})=>{
             return prevData;
             });
 
-            // console.log('Batches Data ', data)
         } catch (error) {
             console.log('Error Fetching Trainer Batch Data', error);
         } finally{
@@ -50,7 +48,6 @@ const TrainerBatchProvider = ({children})=>{
             const today = date || dayjs().format("YYYY-MM-DD");
             const response = await axiosInstance.get(`/Trainer_login/trainer/batch/info/${id}/?date=${today}`);
             const data = response.data;
-            console.log(data);
             
             setTrainerBatchesDetails(prevData => {
             if(JSON.stringify(prevData) !== JSON.stringify(data)){
@@ -59,7 +56,6 @@ const TrainerBatchProvider = ({children})=>{
             return prevData;
             });
 
-            console.log('Batches Data ', data)
         } catch (error) {
             console.log('Error Fetching Trainer Batch Data', error);
         } finally{

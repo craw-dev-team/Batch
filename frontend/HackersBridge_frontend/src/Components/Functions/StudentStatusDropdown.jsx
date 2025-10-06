@@ -67,7 +67,7 @@ const StudentStatusDropdown = ({ item, studentStatuses, onChangeStatus }) => {
       }
     >
       <Dropdown
-        trigger={["hover"]}
+        trigger={["click"]}
         menu={{
           items: ["Active", "Inactive", "Temp Block", "Restricted"].map((status) => ({
             key: status,

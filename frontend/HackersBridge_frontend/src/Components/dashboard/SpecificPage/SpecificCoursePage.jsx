@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Button, Select, Empty, Spin, Avatar, Tooltip, Tag, Input } from 'antd';
+import { Button, Select, Empty, Spin, Avatar, Tooltip, Tag, Input, Badge } from 'antd';
 import { EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { useSpecificCourse } from "../Contexts/SpecificCourse";
 import CreateCourseForm from "../Courses/CreateCourseForm";
@@ -117,6 +117,10 @@ const SpecificCoursePage = () => {
                     </div>
                         <div className="flex gap-x-4 justify-between">
                             <div className="bg-white/70 backdrop-blur-sm p-1.5 rounded-xl">
+                            {/* <Badge count={specificCourse?.course_info?.Student_take_by?.length || 0} 
+                                    overflowCount={999999}
+                                    size="small"
+                                    offset={[0, 0]} > */}
                                 <button
                                     onClick={() => handleTabClick("students")}
                                     className={`px-4 py-2 textrounded-lg font-medium text-xs transition-all duration-200 text-gray-600 hover:bg-white/50
@@ -124,7 +128,12 @@ const SpecificCoursePage = () => {
                                 >
                                     Students
                                 </button>
+                                {/* </Badge> */}
 
+                                {/* <Badge count={specificCourse?.course_info?.Batch_take_by?.length || 0} 
+                                    overflowCount={999999}
+                                    size="small"
+                                    offset={[0, 0]} > */}
                                 <button
                                     onClick={() => handleTabClick("batches")}
                                     className={` px-4 py-2 rounded-lg font-medium text-xs transition-all duration-200 text-gray-600 hover:bg-white/50
@@ -132,6 +141,7 @@ const SpecificCoursePage = () => {
                                 >
                                     Batches
                                 </button>
+                                {/* </Badge> */}
                                         
                             </div>
 
@@ -189,7 +199,7 @@ const SpecificCoursePage = () => {
                                                     </tr>
                                             </thead>
                                             <tbody className="divide-y divide-gray-100 font-normal text-gray-700">
-                                            {loading ? (
+                                            {loading.all ? (
                                                 <tr>
                                                     <td colSpan="100%" className="text-center py-4">
                                                         <Spin size="large" />

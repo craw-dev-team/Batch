@@ -12,10 +12,16 @@ import { Button, Layout, Menu, Drawer } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
 import crawlogo from '../../../../assets/images/crawlogo.png';
 import { useAuth } from '../../../dashboard/AuthContext/AuthContext';
+import { useTheme } from '../../../Themes/ThemeContext';
 
 const { Sider } = Layout;
 
 const TrainerSidebar = ({ collapsed, setCollapsed, drawerOpen, setDrawerOpen }) => {
+    // for theme -------------------------
+      const { getTheme } = useTheme();
+      const theme = getTheme();
+    // ------------------------------------
+
   const navigate = useNavigate();
   const location = useLocation();
   const { logout } = useAuth(); 
@@ -32,23 +38,30 @@ const TrainerSidebar = ({ collapsed, setCollapsed, drawerOpen, setDrawerOpen }) 
   const menuItems = [
     {
       key: '/trainer-info',
-      icon: <ReadOutlined />,
-      label: <span>Overview</span>,
+      icon: <ReadOutlined style={{ color: theme.textColor }} />,
+      label: <span className={theme.text}>Overview</span>,
+      className: location.pathname === '/trainer-info' ? theme.sideBarTab : ""
     },
     {
       key: '/trainer-info/trainer-batches',
-      icon: <UsergroupAddOutlined />,
-      label: <span>Batches</span>,
+      icon: <UsergroupAddOutlined style={{ color: theme.textColor }} />,
+      label: <span className={theme.text}>Batches</span>,
+      className:  location.pathname === '/trainer-info/trainer-batches' ||
+                  location.pathname.startsWith("/trainer-info/trainer-batches")
+                  ? theme.sideBarTab
+                    : ""
     },
     {
       key: '/trainer-info/trainer-chat',
-      icon: <WechatWorkOutlined/>,
-      label: <span>Chat</span>,
+      icon: <WechatWorkOutlined style={{ color: theme.textColor }} />,
+      label: <span className={theme.text}>Chat</span>,
+      className: location.pathname === '/trainer-info/trainer-chat' ? theme.sideBarTab : ""
     },
     {
       key: '/trainer-info/trainer-announcement',
-      icon: <NotificationOutlined />,
-      label: <span>Announcements</span>,
+      icon: <NotificationOutlined style={{ color: theme.textColor }} />,
+      label: <span className={theme.text}>Announcements</span>,
+      className: location.pathname === '/trainer-info/trainer-announcement' ? theme.sideBarTab : ""
     },
     {
       key: 'logout',
@@ -75,7 +88,7 @@ const TrainerSidebar = ({ collapsed, setCollapsed, drawerOpen, setDrawerOpen }) 
         collapsible
         collapsed={collapsed}
         onCollapse={setCollapsed}
-        className="hidden md:block h-screen sticky top-0 left-0 z-50 bg-white"
+        className={`hidden md:block h-screen sticky top-0 left-0 z-50 ${theme.bg} border border-gray-200`}
       >
         <div className="h-28 flex justify-center items-center border-b border-gray-200">
           <img src={crawlogo} alt="logo" className="w-12 h-12 object-contain" />
@@ -88,7 +101,7 @@ const TrainerSidebar = ({ collapsed, setCollapsed, drawerOpen, setDrawerOpen }) 
             items={menuItems}
             onClick={handleMenuClick}
             // className="pt-6 custom-menu"
-            className="pt-6"
+            className={`pt-6 ${theme.bg}`}
           />
         </div>
       </Sider>

@@ -1,6 +1,5 @@
 
 
-import React from 'react';
 
 const TemplateSidebar = ({ templates, onSelect }) => {
   return (

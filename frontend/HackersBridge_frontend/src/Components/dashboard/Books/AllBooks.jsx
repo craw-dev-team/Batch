@@ -76,7 +76,7 @@ const AllBooks = () => {
 
                         
                 <div className="overflow-hidden pb-0 px-4 relative backdrop-blur-sm rounded-xl shadow-sm">
-                    <div className="w-full h-auto md:max-h-[33rem] 2xl:max-h-[37rem] overflow-y-auto rounded-xl pb-2">
+                    <div className="w-full h-auto md:max-h-[35rem] 2xl:max-h-[40rem] overflow-y-auto rounded-xl pb-2">
                     
                             <table className="w-full text-xs font-normal text-left text-gray-600">
                                 <thead className="bg-white sticky top-0 z-10">

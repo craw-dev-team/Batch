@@ -1,16 +1,14 @@
+
+
+
+
 import React, { useState, useEffect, useRef } from "react";
-import {
-  SendOutlined,
-  PaperClipOutlined,
-  MoreOutlined,
-  PushpinOutlined,
-  FileImageOutlined,
-  ArrowLeftOutlined,
-} from "@ant-design/icons";
-import { Dropdown, Empty, Menu } from "antd";
+import { SendOutlined, LinkOutlined, DeleteOutlined, SearchOutlined, ArrowLeftOutlined, MoreOutlined, CopyOutlined } from "@ant-design/icons";
+import { Dropdown, Empty, Menu, Modal, Select, message as antMessage } from "antd";
+import { BiShare } from "react-icons/bi";
+import { PiShareFat } from "react-icons/pi";
 import useStudentBatchChat from "./StudentBatchChatFunctions";
 import dayjs from "dayjs";
-
 
 
 
@@ -19,6 +17,11 @@ const StudentBatchChat = () => {
   // const [selectedBatch, setSelectedBatch] = useState(1);
   const [message, setMessage] = useState("");
   const [selectedChatId, setSelectedChatId] = useState(null);
+  const [selectedMsgId, setSelectedMsgId] = useState(null);
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [forwardMessage, setForwardMessage] = useState(null);
+  const [forwardTarget, setForwardTarget] = useState(null);
+  const [isForwardModalVisible, setIsForwardModalVisible] = useState(false);
 
     //websockeand batch chat list 
     const { batchChatList, fetchStudentBatchChatList, ws, batchChatMessage, connectWebSocket, sendMessage } = useStudentBatchChat();
@@ -27,6 +30,8 @@ const StudentBatchChat = () => {
     // for Search functionality from backend basis of tabs (All, Ongoing, Archieved)
     const [searchTerm, setSearchTerm] = useState('');
     const [inputValue, setInputValue] = useState('');
+
+
     
     const messagesEndRef = useRef(null);
 
@@ -86,7 +91,7 @@ const StudentBatchChat = () => {
         id: msg.id,
         text: msg.message,
         time: msg.gen_time,
-        isSelf: msg.isSelf,
+        isSelf: msg.isSelf, 
         senderName: msg.send_by,
         senderRole: msg.sender,
         type: "text",
@@ -96,13 +101,14 @@ const StudentBatchChat = () => {
       setCombinedMessages(formattedMessages);
     }, [batchChatMessage, selectedChat]);
 
+    
+
 
       useEffect(() => {
         if (messagesEndRef.current) {
           messagesEndRef.current.scrollIntoView({ behavior: "auto" });
         }
       }, [combinedMessages]);
-    
 
 
       const handleBatchClick = (batch) => {
@@ -158,15 +164,64 @@ const StudentBatchChat = () => {
         if (!message.trim() || !selectedChat || !ws.current) return;
 
         if (ws.current.readyState !== WebSocket.OPEN) {
-          message.error("Connection lost. Please wait for reconnection.");
+          antMessage.error("Connection lost. Please wait for reconnection.");
           return;
         }
 
         const trimmedMessage = message.trim();
         setMessage(""); // Clear input
+        setReplyingTo(null); // Clear reply
         sendMessage(selectedChat.batch_id, trimmedMessage); // Fire and let history update UI
       };
 
+
+      // Message action handlers
+      const handleCopyMessage = (msgText) => {
+        navigator.clipboard.writeText(msgText).then(() => {
+          antMessage.success("Message copied to clipboard");
+        }).catch(() => {
+          antMessage.error("Failed to copy message");
+        });
+      };
+
+      const handleReplyMessage = (msg) => {
+        setReplyingTo(msg);
+        // Focus on input field
+        document.querySelector('input[type="text"]')?.focus();
+      };
+
+      // const handleForwardMessage = (msg) => {
+      //   setMessage(msg.text);
+      //   antMessage.info("Message added to input field");
+      // };
+
+      const handleForward = (msg) => {
+        setForwardMessage(msg);
+        setIsForwardModalVisible(true);
+        setSelectedMsgId(null);
+      };
+
+      const handleForwardSubmit = () => {
+        if (forwardMessage && forwardTarget && ws.current) {
+          // Reconnect WebSocket to the target batch
+          connectWebSocket(forwardTarget);
+          // Small delay to allow WebSocket reconnection
+          setTimeout(() => {
+            const payload = {
+              message: forwardMessage.text,
+              forwarded: true,
+              original_sender: forwardMessage.senderName || "You",
+              target_batch_id: forwardTarget, // Explicitly specify target batch
+            };
+            console.log("Forwarding message:", payload, "to batch:", forwardTarget); // Debug log
+            sendMessage(forwardTarget, payload);
+            setIsForwardModalVisible(false);
+            setForwardMessage(null);
+            setForwardTarget(null);
+            antMessage.success("Message forwarded successfully");
+          }, 500); // Adjust delay if needed
+        }
+      };
 
 
       function truncateText(text, maxLength = 50) {
@@ -175,20 +230,34 @@ const StudentBatchChat = () => {
       }
 
 
-  const menu = (msgText) => (
-    <Menu
-      items={[
-        {
-          key: "1",
-          label: (
-            <div onClick={() => handlePinMessage(msgText)}>
-              <PushpinOutlined className="mr-2" /> Pin Message
-            </div>
-          ),
-        },
-      ]}
-    />
-  );
+  const getMessageMenu = (msg) => ({
+    items: [
+      {
+        key: "copy",
+        label: (
+          <div onClick={() => handleCopyMessage(msg.text)} className="flex items-center gap-2">
+            <CopyOutlined /> Copy
+          </div>
+        ),
+      },
+      {
+        key: "reply",
+        label: (
+          <div onClick={() => handleReplyMessage(msg)} className="flex items-center gap-2">
+            <BiShare  className="text-base" /> Reply
+          </div>
+        ),
+      },
+      {
+        key: "forward",
+        label: (
+          <div onClick={() => handleForward(msg)} className="flex items-center gap-2">
+            <PiShareFat className="text-base" /> Forward
+          </div>
+        ),
+      },
+    ],
+  });
 
 
 
@@ -329,94 +398,146 @@ const StudentBatchChat = () => {
             {selectedChat ? (
               <>
                 {/* Chat Header */}
-                <div className={`flex items-center justify-between p-4 border-b bg-green-200 ${isMobile ? 'px-2 py-2' : "p-4"}`}>
+                <div className={`flex items-center justify-between py-3 border-b bg-green-200 ${isMobile ? 'px-2 py-2' : "p-4"}`}>
                   {isMobile && (
                     <button onClick={handleBack}>
                       <ArrowLeftOutlined className="mr-2" />
                     </button>
                   )}
-                  <h3 className="text-md lg:text-lg font-sans font-semibold">{selectedChat.batch_code}</h3>
+                  <h3 className={`text-md lg:text-lg font-sans font-semibold ${isMobile ? "px-4" : "px-4"}`}>{selectedChat.batch_code}</h3>
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto px-3 py-2 pb-[80px] md:pb-2" id="chat-message-panel">
+                <div className="flex-1 overflow-y-auto px-8 py-2 pb-[80px] md:pb-2" id="chat-message-panel">
                     {Object.keys(groupedMessages).length > 0 ? (
                       Object.entries(groupedMessages).map(([dateLabel, msg], i) => (
-                      // <div
-                      //   key={i}
-                      //   className={`flex ${msg.from === "student" ? "justify-end" : "justify-start"}`}
-                      // >
                       <div key={i}>
                         <p className="text-center text-gray-500 text-xs font-normal mb-4">
                           {dateLabel}
                         </p>
 
-                        {msg.map((msg, index) => (
+                        {/* {msg.map((msg, index) => (
                         <div
                           key={index}
                           className={`flex mb-3 ${msg.isSelf ? "justify-end" : "justify-start"}`}
                         >
-                          <div
-                            className={`max-w-[80%] relative rounded-xl px-4 py-2 shadow cursor-pointer ${
-                              msg.isSelf ? "bg-green-500 text-white" : "bg-[#f8f9fa] text-black"
-                            }`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedMsgId(msg.id);
-                            }}
-                          >
-                            {!msg.isSelf  && msg.senderName && (
-                              <div className="font-semibold font-sans text-xs mb-1">
-                                {msg.senderRole === "admin" || "coordinator" ? "Craw Support" : msg.senderName}
-                              </div>
-                            )}
-
-                            {msg.type === "image" ? (
-                              <img
-                                src={msg.fileUrl}
-                                alt={msg.text}
-                                className="max-w-full max-h-48 rounded"
-                              />
-                            ) : msg.type === "file" ? (
-                              <a
-                                href={msg.fileUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="underline text-blue-600 hover:text-blue-800"
-                              >
-                                📎 {msg.text}
-                              </a>
-                            ) : (
-                              <div className="text-sm break-words">{msg.text}</div>
-                            )}
-
+                          <div className="relative group">
                             <div
-                              className={`text-xs text-right mt-1 ${
-                                msg.isSelf ? "text-white/80" : "text-gray-500"
+                              className={`max-w-[80%] relative rounded-xl px-4 py-2 shadow cursor-pointer ${
+                                msg.isSelf ? "bg-green-500 text-white" : "bg-[#f8f9fa] text-black"
                               }`}
                             >
-                              {dayjs(msg.time).format("hh:mm A")}
+                              {!msg.isSelf  && msg.senderName && (
+                                <div className="font-semibold font-sans text-xs mb-1">
+                                  {msg.senderRole === "admin" || msg.senderRole === "coordinator" ? "Craw Support" : msg.senderName}
+                                </div>
+                              )}
+
+                              {msg.type === "image" ? (
+                                <img
+                                  src={msg.fileUrl}
+                                  alt={msg.text}
+                                  className="max-w-full max-h-48 rounded"
+                                />
+                              ) : msg.type === "file" ? (
+                                <a
+                                  href={msg.fileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="underline text-blue-600 hover:text-blue-800"
+                                >
+                                  📎 {msg.text}
+                                </a>
+                              ) : (
+                                <div className="text-sm break-words">{msg.text}</div>
+                              )}
+
+                              <div
+                                className={`text-xs text-right mt-1 ${
+                                  msg.isSelf ? "text-white/80" : "text-gray-500"
+                                }`}
+                              >
+                                {dayjs(msg.time).format("hh:mm A")}
+                              </div>
+                            </div> */}
+
+                            {/* Three dot menu - appears on hover */}
+                            {/* <Dropdown 
+                              menu={getMessageMenu(msg)} 
+                              trigger={['click']}
+                              placement={msg.isSelf ? "bottomLeft" : "bottomRight"}
+                            >
+                              <button 
+                                className={`absolute top-1 ${msg.isSelf ? 'left-[-30px]' : 'right-[-30px]'} opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white rounded-full p-1 shadow-md hover:bg-gray-100`}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <MoreOutlined className="text-gray-600" />
+                              </button>
+                            </Dropdown>
+                          </div>
+                        </div>
+                      ))} */}
+
+                      {msg.map((msg, index) => (
+                        <div
+                          key={index}
+                          className={`flex mb-3 ${msg.isSelf ? "justify-end" : "justify-start"}`}
+                        >
+                          <div className="relative">
+                            <div
+                              className={`max-w-[80%] relative rounded-xl px-4 py-2 shadow cursor-pointer ${
+                                msg.isSelf ? "bg-green-500 text-white" : "bg-[#f8f9fa] text-black"
+                              }`}
+                            >
+                              {!msg.isSelf && msg.senderName && (
+                                <div className="font-semibold font-sans text-xs mb-1">
+                                  {(msg.senderRole === "admin" || msg.senderRole === "coordinator") 
+                                    ? "Craw Support" 
+                                    : msg.senderName}
+                                </div>
+                              )}
+
+                              {msg.type === "image" ? (
+                                <img
+                                  src={msg.fileUrl}
+                                  alt={msg.text}
+                                  className="max-w-full max-h-48 rounded"
+                                />
+                              ) : msg.type === "file" ? (
+                                <a
+                                  href={msg.fileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="underline text-blue-600 hover:text-blue-800"
+                                >
+                                  📎 {msg.text}
+                                </a>
+                              ) : (
+                                <div className="text-sm break-words">{msg.text}</div>
+                              )}
+
+                              <div
+                                className={`text-xs text-right mt-1 ${
+                                  msg.isSelf ? "text-white/80" : "text-gray-500"
+                                }`}
+                              >
+                                {dayjs(msg.time).format("hh:mm A")}
+                              </div>
                             </div>
 
-                            {/* {(selectedMsgId === msg.id &&
-                              (msg.senderName || userRole === "admin" || userRole === "coordinator")) && (
-                              <Popover
-                                content={deletePopoverContent(msg.id)}
-                                trigger="click"
-                                visible={visiblePopover === msg.id}
-                                onVisibleChange={(visible) =>
-                                  setVisiblePopover(visible ? msg.id : null)
-                                }
-                                placement="topRight"
+                            {/* Always visible ellipsis menu */}
+                            <Dropdown 
+                              menu={getMessageMenu(msg)} 
+                              trigger={['click']}
+                              placement={msg.isSelf ? "bottomRight" : "bottomLeft"}
+                            >
+                              <button 
+                                className={`absolute top-1 ${msg.isSelf ? 'left-[-30px]' : 'right-[-30px]'} bg-white rounded-full p-1 shadow-md hover:bg-gray-100`}
+                                onClick={(e) => e.stopPropagation()}
                               >
-                                <div
-                                  className="absolute right-0 top-0 bg-white border text-red-600 text-xs px-2 py-1 rounded shadow cursor-pointer hover:bg-red-100"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <DeleteOutlined />
-                                </div>
-                              </Popover>
-                            )} */}
+                                <MoreOutlined className="text-gray-600" />
+                              </button>
+                            </Dropdown>
                           </div>
                         </div>
                       ))}
@@ -428,27 +549,34 @@ const StudentBatchChat = () => {
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Input Section */}
-                {/* <div className="p-4 border-t flex items-center gap-2 w-auto bg-orange-400 md:static fixed bottom-0 left-0 right-0 z-10 md:z-auto">
-                  <input
-                    type="text"
-                    className="flex-1 border rounded-full px-4 py-2 text-sm focus:outline-none w-full"
-                    placeholder="Type a message..."
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                  />
-                  <button className="shrink-0 bg-green-500 text-white px-4 py-2 rounded-full">
-                    Send
-                  </button>
-                </div> */}
+                {/* Reply Preview */}
+                {replyingTo && (
+                  <div className="px-4 py-2 bg-gray-100 border-t flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="text-xs text-gray-500 font-semibold">
+                        Replying to {replyingTo.isSelf ? "yourself" : replyingTo.senderName}
+                      </div>
+                      <div className="text-sm text-gray-700 truncate">
+                        {replyingTo.text}
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => setReplyingTo(null)}
+                      className="ml-2 text-gray-500 hover:text-gray-700"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
 
-                <div className={`w-full flex items-center gap-2 border-t bg-white px-3 py-2 fixed bottom-0 left-0 right-0 z-50 md:static md:border-t-0`}
+                {/* Input Section */}
+                <div className={`w-full flex items-center gap-2 border-t bg-white px-8 py-2 fixed bottom-0 left-0 right-0 z-50 md:static md:border-t-0`}
                     style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
                   >
                     <div className="relative flex-1">
                       <input
                         type="text"
-                        className="w-full border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-0 focus:border-green-500"
+                        className="w-full border border-gray-300 rounded-full px-8 py-2 text-sm focus:outline-none focus:ring-0 focus:border-green-500"
                         placeholder="Type a message..."
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
@@ -486,6 +614,35 @@ const StudentBatchChat = () => {
           </div>
         </div>
       </div>
+
+      <Modal
+        title="Forward Message"
+        open={isForwardModalVisible}
+        onOk={handleForwardSubmit}
+        onCancel={() => { 
+          setIsForwardModalVisible(false); 
+          setForwardMessage(null); 
+          setForwardTarget(null); 
+        }}
+      >
+        <p>Forward "{forwardMessage?.text?.length > 30 ? forwardMessage.text.slice(0, 30) + "..." : forwardMessage?.text}" to:</p>
+        <Select
+          style={{ width: "100%" }}
+          placeholder="Select a batch"
+          onChange={(value) => setForwardTarget(value)}
+          value={forwardTarget}
+        >
+          {batchChatList?.all_batch_chats.map((batch) => (
+            <Select.Option 
+              key={batch.batch_id} 
+              value={batch.batch_id} 
+              disabled={batch.batch_id === selectedChatId}
+            >
+              {batch.batch_name}
+            </Select.Option>
+          ))}
+        </Select>
+      </Modal>
     </div>
 
   );

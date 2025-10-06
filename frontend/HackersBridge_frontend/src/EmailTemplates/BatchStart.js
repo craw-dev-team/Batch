@@ -71,7 +71,7 @@ const BatchStart = (data) => {
             </p>
 
             <p>
-              📞 <strong>Phone:</strong> 011-40394315 | +91-9650202445, +91-9650677445<br>
+              📞 <strong>Phone:</strong> 011-40394315 | +91-9650202445 | +91-9650677445<br>
               📧 <strong>Email:</strong> <a href="mailto:training@craw.in" style="color: #0a58ca;">training@craw.in</a><br>
               🌐 <strong>Website:</strong> <a href="https://www.craw.in" target="_blank" style="color: #0a58ca;">www.craw.in</a>
             </p>

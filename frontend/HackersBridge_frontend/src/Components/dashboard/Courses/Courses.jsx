@@ -19,7 +19,7 @@ const Courses = () => {
     const [activeTab, setActiveTab] = useState('tab1');
     const [selectedCourse, setSelectedCourse] = useState();
     const [isDeleted, setIsDeleted] = useState(false)
-    const { coursesData, loading, setCoursesData, fetchCourses } = useCourseForm();
+    const { coursesData, loading, fetchCourses, handleDeleteCourse } = useCourseForm();
     
     const navigate = useNavigate();
 
@@ -43,30 +43,10 @@ const Courses = () => {
         setIsDeleted(false)
     };
 
-    // Delete Function
-    const handleDelete = async (courseId) => {
-        if (!courseId) return;
-
-        try {
-            const response = await axiosInstance.delete(`/api/courses/delete/${courseId}/` );
-
-            if (response.status === 204) {
-                // Make sure coursesData is an array before filtering
-                if (Array.isArray(coursesData)) {
-                    setCoursesData(prevCourses => prevCourses.filter(course => course.id !== courseId));
-                } else {
-                    console.error('coursesData is not an array');
-                }
-            }
-        } catch (error) {
-            console.error("Error deleting course:", error);
-        }
-    };
-
+    
     // Confirm and Cancel Handlers
     const confirm = (courseId) => {
-        handleDelete(courseId); // Call delete function with course ID
-        message.success('Course Deleted Successfully');
+        handleDeleteCourse(courseId); // Call delete function with course ID
     };
 
     const cancel = () => {
@@ -79,15 +59,17 @@ const Courses = () => {
     return (
         <>
             <div className={`w-auto pt-4 px-4 mt-10 ${theme.bg}`}>
-                <div className={`w-full px-0 py-3 flex items-center justify-between font-semibold ${theme.text}`}>
-                <h1>All Courses</h1>
+                <div className={`w-full px-0 py-3 flex items-center justify-between ${theme.text}`}>
+                    <div className="flex items-center gap-1">
+                        <h1 className="font-semibold">All Courses</h1> <span className="text-lg font-bold">({coursesData.length || 0})</span>
+                    </div>
                     <div>
                         <button onClick={() => { setIsModalOpen(true); setSelectedCourse(null); }} type="button" className={`focus:outline-none text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-1.5 shadow-lg hover:shadow-xl transition-all duration-200 ${theme.createBtn}`}>Add Course +</button>
                     </div>
                 </div>
 
                 {activeTab === 'tab1' && (
-                <div className={`overflow-hidden pb-2 relative bg-white/40 backdrop-blur-sm rounded-xl shadow-sm ${loading ? "backdrop-blur-md opacity-50 pointer-events-none" : ""}`}>
+                <div className={`overflow-hidden pb-2 relative bg-white/40 backdrop-blur-sm rounded-xl shadow-sm`}>
                     <div className="w-full h-[37rem] md:max-h-[32rem] 2xl:max-h-[37rem] overflow-y-auto rounded-xl pb-2">
                 <table className="w-full text-xs font-normal text-left text-gray-600">
                     <thead className="bg-white sticky top-0 z-10">
@@ -114,7 +96,7 @@ const Courses = () => {
                     </thead>
 
                     <tbody className="divide-y divide-gray-100 font-normal text-gray-700">
-                    {loading ? (
+                    {loading.all ? (
                         <tr>
                             <td colSpan="100%" className="text-center py-4">
                                 <Spin size="large" />

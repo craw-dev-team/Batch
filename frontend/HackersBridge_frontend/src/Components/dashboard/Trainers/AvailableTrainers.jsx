@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { useTrainerForm } from "../Trainercontext/TrainerFormContext";
 import { Avatar, Tooltip, Tag } from 'antd';
+import {DownOutlined, UpOutlined } from '@ant-design/icons';
 import { CreateAvailableBatchForm } from "../Batches/AvailableBatches";
 import { useNavigate } from "react-router-dom";
 import { handleTrainerClick } from "../../Navigations/Navigations";
@@ -71,14 +72,14 @@ const AvailableTrainers = () => {
                 Trainer ID
             </th>
             <th className="px-3 py-3  md:px-1 cursor-pointer text-xs font-medium uppercase" onClick={toggleSortByName}>
-              <Tooltip title="sort by Trainer Name" placement="right">
-                Trainer Name {sortByName ? "▲" : "▼"} 
+              <Tooltip title="sort by Trainer Name" placement="top">
+                Trainer Name {sortByName ? <UpOutlined /> : <DownOutlined />} 
               </Tooltip>
             </th>
 
             <th className="px-3 py-3 md:px-1 cursor-pointer text-xs font-medium uppercase" onClick={toggleSortByStartTime}>
-              <Tooltip title="sort by Trainer Name" placement="right">
-                Start Time {sortByStartTime  ? "▲" : "▼"} 
+              <Tooltip title="sort by Start Time" placement="top">
+                Start Time {sortByStartTime  ? <UpOutlined /> : <DownOutlined />} 
               </Tooltip>
             </th>
             <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">

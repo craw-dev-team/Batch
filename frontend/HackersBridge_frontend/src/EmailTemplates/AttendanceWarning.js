@@ -36,7 +36,7 @@ const AttendanceWarning = (data) => {
             </p>
 
             <p style="font-size: 15px; line-height: 1.6; color: #000;">
-                📞 <strong style="font-weight: bold;">Phone:</strong> 011-40394315 | +91-9650202445, +91-9650677445<br>
+                📞 <strong style="font-weight: bold;">Phone:</strong> 011-40394315 | +91-9650202445 | +91-9650677445<br>
                 📧 <strong style="font-weight: bold;">Email:</strong> training@craw.in<br>
                 🌐 <strong style="font-weight: bold;">Website:</strong> 
                 <a href="https://www.craw.in" style="text-decoration: underline;">www.craw.in</a>
