@@ -10,6 +10,7 @@ import { MenuUnfoldOutlined, MenuFoldOutlined, DownOutlined, LogoutOutlined, Use
 import { useAuth } from "../dashboard/AuthContext/AuthContext";
 import { useTheme } from "../Themes/ThemeContext";
 import ThemeDropdown from "../Themes/ThemeDropdown";
+import SettingDrawer from '../Setting/SettingDrawer';
 
 
 
@@ -23,10 +24,20 @@ const Navbar = ({ collapsed, setCollapsed }) => {
 
     const { username } = useAuth();
 
+    // for setting drawer open and close 
+    const [openDrawer, setOpenDrawer] = useState(false);
+    const [size, setSize] = useState();
+
 
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
     const themeRef = useRef(null);
+
+
+    const showLargeDrawer = () => {
+        setSize('large');
+        setOpenDrawer(true);
+    };
 
 
     // Close dropdowns when clicking outside
@@ -140,7 +151,7 @@ const Navbar = ({ collapsed, setCollapsed }) => {
                         </button>
                         
                         <button
-                            onClick={() => handleMenuClick('Settings')}
+                            onClick={() => showLargeDrawer()}
                             className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-x-3"
                         >
                             <SettingOutlined className="w-4 h-4" />
@@ -183,10 +194,12 @@ const Navbar = ({ collapsed, setCollapsed }) => {
                     <img src={avatar} alt="" className={'pl-3 w-[40px]'}/>
                     </div>
                 </div> */}
-            </div>
+                </div>
         </div>
             
         {/* </div> */}
+
+        <SettingDrawer Open={openDrawer} size={size} onClose={() => setOpenDrawer(false)}/>
         </>
     )
 }

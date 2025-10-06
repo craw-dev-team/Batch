@@ -18,11 +18,14 @@ export const BookFormProvider = ({ children }) => {
     const [errors, setErrors] = useState({});
     const [bookData, setBookData] = useState([]);
     const [booksCountData, setBooksCountData] = useState([]);
-    const [loading, setLoading] = useState(false);  // Loading state to manage fetch state
-
     const [selectedOption, setSelectedOption] = useState("this month");
     const [startDate, setStartDate] = useState(null);
     const [endDate, setEndDate] = useState(null);
+    const [loading, setLoading] = useState({
+        all: false,
+        filter: false,
+        delete: false
+    });
 
     const resetBookForm = () => {
         setBookFormData(initialFormData);
@@ -31,9 +34,9 @@ export const BookFormProvider = ({ children }) => {
 
         // Fetch Books data  
         const fetchBooks = async () => {
-            if (loading) return;  // Prevent multiple fetches at the same time
+            if (loading.all) return;  // Prevent multiple fetches at the same time
 
-            setLoading(true);  // Set loading state
+            setLoading(prev => ({...prev, all: true }));  // Set loading state
             try {
                 const response = await axiosInstance.get(`/api/books/`);
                 const data = response?.data;
@@ -48,7 +51,7 @@ export const BookFormProvider = ({ children }) => {
             } catch (error) {
                 message.error('Error fetching Books Data');
             } finally {
-                setLoading(false);  // Reset loading state after fetch
+                setLoading(prev => ({...prev, all: false }));  // Reset loading state after fetch
             }
         };
 
@@ -93,15 +96,9 @@ export const BookFormProvider = ({ children }) => {
 
         // handle filter books by time and date 
         const handleBookFilter = async (filter = "", customStart = null, customEnd = null) => {
-            if (loading) return;
+            if (loading.filter) return;
 
-            // const token = localStorage.getItem("token");
-            // if (!token) {
-            //     console.log("No token found, user might be logged out");
-            //     return;
-            // }
-
-            setLoading(true);
+            setLoading(prev => ({...prev, filter: true }));
             try {
                     let url = `/api/books/students/`;
 
@@ -144,13 +141,36 @@ export const BookFormProvider = ({ children }) => {
                     console.log("Error in searching book by filter", error);
                     
                 } finally {
-                    setLoading(false)
+                    setLoading(prev => ({...prev, filter: false }) );  // Reset loading state after fetch
                 }
         };
 
 
+        // Delete Function
+        const handleDeleteBook = async (bookId) => {
+            if (!bookId) return;
+
+            setLoading(prev => ({...prev, delete: true}));
+            try {
+                const response = await axiosInstance.delete(`/api/books/delete/${bookId}/` );
+
+                if (response.status >= 200 && response.status < 300) {
+                    message.success('Book Deleted Successfully');
+                    if (Array.isArray(bookData)) {
+                        setBookData(prevBooks => prevBooks.filter(book => book.id !== bookId));
+                    } else {
+                        console.error('BookData is not an array');
+                    }
+                }
+            } catch (error) {
+                console.error("Error deleting Book:", error);
+            } finally {
+                setLoading(prev => ({...prev, delete: false}));  // Reset loading state after fetch
+            }
+        };
+
     return (
-        <BookFormContext.Provider value={{ bookFormData, loading, setBookFormData, errors, setErrors, resetBookForm, bookData, setBookData, fetchBooks, booksCountData, selectedOption, setSelectedOption, startDate, setStartDate, endDate, setEndDate, handleBookFilter }}>
+        <BookFormContext.Provider value={{ bookFormData, loading, setBookFormData, errors, setErrors, resetBookForm, bookData, setBookData, fetchBooks, booksCountData, selectedOption, setSelectedOption, startDate, setStartDate, endDate, setEndDate, handleBookFilter, handleDeleteBook }}>
             {children}
         </BookFormContext.Provider>
     );

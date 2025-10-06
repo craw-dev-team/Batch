@@ -46,8 +46,10 @@ const AllLogs = () => {
             <div className={`w-auto pt-4 px-4 mt-10 ${theme.bg}`}>
                 <LogsCountCards />
                 {/* <div className="relative w-full h-auto shadow-md sm:rounded-lg border border-gray-50 dark:border dark:border-gray-600"> */}
-                    <div className={`w-full px-1 py-3 flex items-center justify-between font-semibold ${theme.text}`}>
-                        <h1>All Logs</h1>
+                    <div className={`w-full px-1 py-3 flex items-center justify-between ${theme.text}`}>
+                        <div className="flex items-center gap-1">
+                            <h1 className="font-semibold">All Logs</h1> <span className="text-lg font-bold">({allLogsData?.count || 0})</span>
+                        </div>
 
                         <label htmlFor="table-search" className="sr-only">Search</label>
                             <div className="relative">
@@ -102,7 +104,7 @@ const AllLogs = () => {
                                 </tr>
                             </thead>
 
-                            <tbody className="divide-y divide-gray-100 font-normal text-gray-700">
+                            <tbody className="divide-y divide-gray-100 font-light text-gray-700">
                             {loading ? (
                                     <tr>
                                         <td colSpan="100%" className="text-center py-4">

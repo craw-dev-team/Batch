@@ -15,7 +15,7 @@ const AnnouncementPage = () => {
     // ------------------------------------
 
 
-  const { Announcement, fetchAnnouncement } = useAnnouncement();
+  const { Announcement, fetchAnnouncement, handleDeleteAnnouncement } = useAnnouncement();
   const [announcementData, setAnnouncementData] = useState();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isDeleted, setIsDeleted] = useState(false);
@@ -48,30 +48,10 @@ const AnnouncementPage = () => {
     handleOpenModal(true);
   };
 
-  const handleDelete = async (announcementId) => {
-    if (!announcementId) return;
-    try {
-      const response = await axiosInstance.delete(`/api/announcement/delete/${announcementId}/`, {
-        headers: {
-          'Content-Type': 'application/json',
-         
-        },
-        withCredentials: true
-      });
 
-      if (response.status >= 200 && response.status <= 204) {
-        message.success("Announcement deleted successfully");
-        setIsDeleted(true);
-        fetchAnnouncement();
-      }
-    } catch (error) {
-      console.error("Error deleting announcement:", error);
-      message.error("Failed to delete announcement");
-    }
-  };
 
   const confirm = (announcementId) => {
-    handleDelete(announcementId);
+    handleDeleteAnnouncement(announcementId);
   };
 
   const cancel = () => {
@@ -84,7 +64,7 @@ const AnnouncementPage = () => {
         <div className={`h-[80vh] md:h-[85vh] lg:h-[88vh] 2xl:max-h-[90vh] overflow-y-auto relative shadow-xs flex flex-col ${theme.cardBg}`}>
           {/* Header (sticky, not scrollable) */}
           <div className="flex justify-between items-center px-4 mt-12 mb-5 sticky top-0 left-0 z-10">
-            <h1 className={`text-base font-semibold px-1 ${theme.text}`}>Announcements</h1>
+            <h1 className={`text-base font-semibold px-1 ${theme.text}`}>Announcements <span className='text-lg font-bold'>({announcements.length || 0})</span></h1>
             <button
               type="button"
               className={`text-white px-4 py-2 rounded-lg hover:bg-green-600 focus:outline-none focus:ring-3 focus:ring-green-300 font-medium ${theme.createBtn}`}

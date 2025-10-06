@@ -598,8 +598,15 @@ import { PiShareFat } from "react-icons/pi";
 import { Popover, Button, Modal, Select } from "antd";
 import dayjs from "dayjs";
 import { useTrainerBatchChats } from "./TrainerbatchChatFunctions";
+import { useTheme } from "../../../Themes/ThemeContext";
+import { theme } from 'antd';
 
 const TrainerBatchChats = () => {
+      // for theme -------------------------
+      const { getTheme } = useTheme();
+      const theme = getTheme();
+      // ------------------------------------
+
   const { fetchBatchChats, chat, wsMessages, allChats, ws, sendMessage, fetchAllChats, connectWebSocket, unreadCounts, setUnreadCounts, deleteMessage } = useTrainerBatchChats();
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [message, setMessage] = useState("");
@@ -679,20 +686,54 @@ const TrainerBatchChats = () => {
     setCombinedMessages(formattedMessages);
   }, [wsMessages, selectedBatch]);
 
+  // const handleSend = () => {
+  //   if (!message.trim() || !selectedBatch || !ws.current) return;
+
+  //   const payload = {
+  //     message: message.trim(),
+  //     reply_to: replyTo?.id || null,
+  //     reply_to_text: replyTo?.text || "",
+  //     reply_to_send_by: replyTo?.senderName || "",
+  //   };
+
+  //   sendMessage(selectedBatch.batch_id, payload);
+  //   setMessage("");
+  //   setReplyTo(null);
+  // };
+
+
   const handleSend = () => {
-    if (!message.trim() || !selectedBatch || !ws.current) return;
+  if (!message.trim() || !selectedBatch || !ws.current) return;
 
-    const payload = {
-      message: message.trim(),
-      reply_to: replyTo?.id || null,
-      reply_to_text: replyTo?.text || "",
-      reply_to_send_by: replyTo?.senderName || "",
-    };
-
-    sendMessage(selectedBatch.batch_id, payload);
-    setMessage("");
-    setReplyTo(null);
+  const payload = {
+    message: message.trim(),
+    reply_to: replyTo?.id || null,
+    reply_to_text: replyTo?.text || "",
+    reply_to_send_by: replyTo?.senderName || "",
   };
+
+  // Send via WebSocket
+  sendMessage(selectedBatch.batch_id, payload);
+
+  // Optimistically add message to chat
+  const newMsg = {
+    id: `local-${Date.now()}`, // temp id
+    text: payload.message,
+    time: new Date().toISOString(),
+    isSelf: true,
+    senderName: "You",
+    senderRole: "Trainer",
+    type: "text",
+    reply_to: replyTo?.id || null,
+    reply_to_message: replyTo?.text || null,
+    reply_to_send_by: replyTo?.senderName || null,
+  };
+
+  setCombinedMessages((prev) => [...prev, newMsg]);
+
+  setMessage("");
+  setReplyTo(null);
+};
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -790,17 +831,19 @@ const TrainerBatchChats = () => {
     </div>
   );
 
+
+
   return (
-    <div className="fixed col-span-6 w-full h-screen shadow-md sm:rounded-lg border border-gray-50 bg-white overflow-x-hidden overflow-y-auto">
-      <div className="pt-0 col-span-6 w-full h-[calc(100vh-50px)] shadow-md sm:rounded-lg border border-gray-50 bg-white overflow-x-hidden">
+    <div className={`fixed col-span-6 w-full h-screen shadow-md sm:rounded-lg overflow-x-hidden overflow-y-auto   `}>
+      <div className="pt-0 col-span-6 w-full h-[calc(100vh-50px)] shadow-md sm:rounded-lg overflow-x-hidden ">
         <div className="h-full w-full max-w-full flex flex-col md:flex-row">
           <div
-            className={`bg-white border-r sm:p-0 transition-all duration-300 flex flex-col
+            className={` border-r sm:p-0 transition-all duration-300 flex flex-col ${theme.activeTab}
               ${isMobile && selectedBatch ? "hidden" : "flex"}
               w-full md:basis-1/4 lg:basis-[25%] xl:basis-[27%] 2xl:basis-[30%] max-w-full`}
           >
-            <div className={`${isMobile ? "sticky top-0 z-50" : ""} bg-white p-0`}>
-              <h2 className={`text-lg font-semibold border-b bg-blue-100 ${isMobile ? "px-2 py-2" : "p-4"}`}>
+            <div className={`${isMobile ? "sticky top-0 z-50" : ""}   p-0`}>
+              <h2 className={`text-lg font-semibold ${theme.text} ${isMobile ? "px-2 py-2" : "p-4"}`}>
                 All Batch Chats
               </h2>
               <div className="px-1 py-2">
@@ -811,7 +854,7 @@ const TrainerBatchChats = () => {
                     id="table-search"
                     placeholder="Search Batch"
                     onChange={(e) => setInputValue(e.target.value)}
-                    className="w-full h-8 block p-2 pr-10 text-xs text-gray-600 font-normal border border-gray-300 rounded-lg bg-gray-50 focus:ring-0 focus:border-blue-500"
+                    className={`w-full h-8 block p-2 pr-10 text-xs font-medium ${theme.searchBg}`}
                   />
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                     <button onClick={() => { setInputValue(""); setSearchTerm(""); }}>
@@ -830,17 +873,35 @@ const TrainerBatchChats = () => {
               </div>
               <div className="px-4 py-1 text-md font-semibold border-b border-gray-300 flex justify-between items-center">
                 <p>Messages</p>
-                <div className="relative z-10">
-                  <button onClick={() => handleChatTab("")} className={`px-2 py-1 text-xs font-semibold rounded-sm transition-colors duration-200 ${chatTab === "" ? "border-b-2 border-blue-500 text-black bg-white" : "text-gray-700 hover:border-b-2 hover:border-blue-400"}`}>All</button>
-                  <button onClick={() => handleChatTab("Running")} className={`px-2 py-1 text-xs font-semibold rounded-sm transition-colors duration-200 ${chatTab === "Running" ? "border-b-2 border-blue-500 text-black bg-white" : "text-gray-700 hover:border-b-2 hover:border-blue-400"}`}>Ongoing</button>
-                  <button onClick={() => handleChatTab("Completed")} className={`px-2 py-1 text-xs font-semibold rounded-sm transition-colors duration-200 ${chatTab === "Completed" ? "border-b-2 border-blue-500 text-black bg-white" : "text-gray-700 hover:border-b-2 hover:border-blue-400"}`}>Archieved</button>
+                <div className="relative z-10 bg-white/70 backdrop-blur-sm p-1 rounded-xl">
+                  <button onClick={() => handleChatTab("")} 
+                    className={`px-2 py-1 rounded-lg font-medium text-xs transition-all duration-200 text-gray-600 hover:bg-white/50 
+                      ${chatTab === "" ?  `text-gray-600 shadow-md ${theme.activeTab}` : ' text-gray-600 hover:bg-white/50'}`}
+                      >
+                        All
+                  </button>
+                  <button onClick={() => handleChatTab("Running")} 
+                    className={`px-2 py-1 rounded-lg font-medium text-xs transition-all duration-200 text-gray-600 hover:bg-white/50 
+                      ${chatTab === "Running" ? `text-gray-600 shadow-md ${theme.activeTab}` : ' text-gray-600 hover:bg-white/50'}`}
+                      >
+                        Ongoing
+                  </button>
+                  <button onClick={() => handleChatTab("Completed")} className={`px-2 py-1 rounded-lg font-medium text-xs transition-all duration-200 text-gray-600 hover:bg-white/50 
+                    ${chatTab === "Completed" ? `text-gray-600 shadow-md ${theme.activeTab}` : ' text-gray-600 hover:bg-white/50'}`}
+                      >
+                        Archieved
+                  </button>
                 </div>
               </div>
             </div>
             <div className="flex-1 overflow-y-auto divide-y scrollbar-custom-trainer">
               {chat?.all_batch_chats.length > 0 ? (
                 chat?.all_batch_chats.map((batch) => (
-                  <div key={batch?.batch_id} onClick={() => handleBatchClick(batch)} className={`p-4 pl-6 cursor-pointer hover:bg-blue-50 relative ${selectedBatch?.batch_id === batch?.batch_id ? "bg-blue-200" : "hover:bg-blue-50"}`}>
+                  <div 
+                    key={batch?.batch_id} 
+                    onClick={() => handleBatchClick(batch)} 
+                    className={`p-4 pl-6 cursor-pointer hover:bg-blue-50 relative ${selectedBatch?.batch_id === batch?.batch_id ? `${theme.bgDark}` : "text-gray-600 hover:bg-white/50"}`}
+                  >
                     <div className="flex items-center justify-between">
                       <div className="w-full">
                         <div className="flex justify-between mb-0.5">
@@ -860,20 +921,32 @@ const TrainerBatchChats = () => {
               )}
             </div>
           </div>
-          <div className={`bg-gray-50 flex flex-col overflow-hidden p-0 ${isMobile && !selectedBatch ? "hidden" : "flex"} w-full md:basis-[55%] lg:basis-[59%] xl:basis-[59%] 2xl:basis-[60%] max-w-full`}>
+          <div className={`${theme.bg} flex flex-col overflow-hidden pb-3 ${isMobile && !selectedBatch ? "hidden" : "flex"} w-full md:basis-[55%] lg:basis-[59%] xl:basis-[59%] 2xl:basis-[60%] max-w-full`}>
             {selectedBatch ? (
               <>
-                <div className={`flex items-center justify-between p-4 border-b bg-blue-100 ${isMobile ? "px-2 py-2 fixed top-0 w-full bg-blue-100 z-50" : "p-4"}`}>
-                  <button onClick={() => setSelectedBatch(null)} className="mr-2"><ArrowLeftOutlined /></button>
-                  <h3 className="text-md lg:text-lg font-sans font-semibold">{selectedBatch.batch_name}</h3>
+                <div className={`flex items-center justify-between py-3 border-b ${theme.activeTab} ${isMobile ? "px-2 py-2" : "px-4"}`}>
+                  <button 
+                    onClick={() => setSelectedBatch(null)} 
+                    className="mr-2">
+                    <ArrowLeftOutlined />
+                  </button>
+                  <h3 className={`text-md lg:text-lg font-sans font-semibold ${isMobile ? "px-4" : "px-4"}`}>{selectedBatch.batch_name}</h3>
                 </div>
-                <div className="flex-1 overflow-y-auto px-3 py-2 pb-[80px] md:pb-2" id="chat-message-panel" style={{ height: isMobile ? "calc(100vh - 100px)" : "auto" }}>
+                
+                {/* Messages */}
+                <div className="flex-1 overflow-y-auto px-8 py-2 pb-[80px] md:pb-2" id="chat-message-panel" style={{ height: isMobile ? "calc(100vh - 100px)" : "auto" }}>
                   {Object.keys(groupedMessages).length > 0 ? (
                     Object.entries(groupedMessages).map(([dateLabel, msgs], i) => (
                       <div key={i}>
-                        <p className="text-center text-gray-500 text-xs font-normal mb-4">{dateLabel}</p>
+                        <p className="text-center text-gray-500 text-xs font-normal mb-4">
+                          {dateLabel}
+                        </p>
+
                         {msgs.map((msg, index) => (
-                          <div key={index} className={`flex mb-2 items-start ${msg.isSelf ? "justify-end" : "justify-start"}`}>
+                          <div 
+                            key={index} 
+                            className={`flex mb-2 ${msg.isSelf ? "justify-end" : "justify-start"}`}
+                          >
                             {msg.isSelf && (
                               <div className="relative mr-2">
                                 <div className="p-1 cursor-pointer" onClick={(e) => { e.stopPropagation(); setSelectedMsgId(msg.id === selectedMsgId ? null : msg.id); }}>
@@ -897,17 +970,21 @@ const TrainerBatchChats = () => {
                                 )}
                               </div>
                             )}
-                            <div className={`max-w-[80%] relative rounded-xl px-4 py-2 shadow ${msg.isSelf ? "bg-sky-500 text-white" : "bg-[#f8f9fa] text-black"}`}>
+
+                            <div 
+                              className={`max-w-[80%] relative rounded-xl px-2 py-2 shadow 
+                              ${msg.isSelf ? `${theme.bgDark} text-black` : "bg-[#f8f9fa] text-black"}`}
+                            >
                               {!msg.isSelf && msg.senderName && 
                                 <div className="font-semibold font-sans text-xs ml-1 mb-1 ">{msg.senderName}</div>}
                               {msg.reply_to && (
                                 <div className={`px-3 py-2 border-l-4 text-xs 
-                                ${msg.isSelf ? "bg-sky-600 border-white/50 text-white/80" : "bg-gray-100 border-blue-400 text-gray-700"} rounded-t-md`}>
+                                ${msg.isSelf ? `${theme.bg} border-white/50 text-gray-600/80` : "bg-gray-100 border-blue-400 text-gray-700"} rounded-t-md`}>
                                   <div className="font-semibold">{msg.reply_to_send_by || "Unknown"}</div>
                                   <div className="truncate italic text-[11px] opacity-90">{msg.reply_to_message || "(message deleted)"}</div>
                                 </div>
                               )}
-                              <div className="px-4 py-2 text-sm break-words">
+                              <div className="px-0 py-2 text-sm break-words">
                                 {msg.type === "image" ? (
                                   <img src={msg.fileUrl} alt={msg.text} className="max-w-full max-h-48 rounded" />
                                 ) : msg.type === "file" ? (
@@ -916,7 +993,7 @@ const TrainerBatchChats = () => {
                                   <div dangerouslySetInnerHTML={{ __html: msg.text.replace(/(https?:\/\/[^\s]+)/g, (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer" class="underline ${msg.isSelf ? 'text-blue-200' : 'text-blue-600'}">${url}</a>`) }} />
                                 )}
                               </div>
-                              <div className={`text-[10px] px-4 pb-1 text-right ${msg.isSelf ? "text-white/70" : "text-gray-500"}`}>
+                              <div className={`text-[10px] px-0 pb-1 text-right ${msg.isSelf ? "text-gray-700/90" : "text-gray-500"}`}>
                                 {dayjs(msg.time).format("hh:mm A")}
                               </div>
                             </div>
@@ -950,8 +1027,8 @@ const TrainerBatchChats = () => {
                   <div ref={messagesEndRef} />
                 </div>
                 {replyTo && (
-                  <div className={`mb-2 px-2 py-1 rounded-t-md text-xs border-l-4 
-                  ${replyTo.isSelf ? "bg-sky-600 border-white/50 text-white/90" : "bg-gray-200 border-blue-500 text-gray-700"}`}>
+                  <div className={`mb-2 mx-10 px-2 py-3 rounded-t-lg text-sm border-l-4 
+                  ${replyTo.isSelf ? `${theme.bgDark} border-white/50 text-gray-600/90` : "bg-gray-200 border-blue-500 text-gray-700"}`}>
                     <div className="flex justify-between items-center">
                       <span><strong>{replyTo.senderName || "You"}</strong>: {replyTo.text?.length > 50 ? replyTo.text.slice(0, 50) + "..." : replyTo.text}</span>
                       <button onClick={() => setReplyTo(null)} className="ml-2 text-gray-500 hover:text-red-500 text-sm">✕</button>
@@ -959,7 +1036,7 @@ const TrainerBatchChats = () => {
                   </div>
                 )} 
 
-                <div className={`w-full flex items-center gap-2 border-t bg-white px-3 py-2 fixed bottom-0 left-0 right-0 z-50 md:static md:border-t-0`} style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+                <div className={`w-full flex items-center gap-2 border-t px-8 py-2 fixed bottom-0 left-0 right-0 z-50 md:static md:border-t-0`} style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
                   <div className="relative flex-1">
                     <input
                       type="text"
@@ -978,7 +1055,11 @@ const TrainerBatchChats = () => {
                     <LinkOutlined className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-700 cursor-pointer" onClick={handleLinkClick} />
                     <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
                   </div>
-                  <button className="shrink-0 bg-sky-500 text-white px-3 py-2 rounded-full" onClick={handleSend}><SendOutlined /></button>
+
+                  <button className={`shrink-0 px-3 py-2 rounded-full text-white ${theme.createBtn}`} 
+                    onClick={handleSend}>
+                    <SendOutlined />
+                    </button>
                 </div>
               </>
             ) : (

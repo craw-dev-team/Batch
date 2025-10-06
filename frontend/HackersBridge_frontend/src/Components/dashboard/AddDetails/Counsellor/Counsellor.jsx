@@ -21,7 +21,8 @@ const Counsellor = () => {
     const [isDeleted, setIsDeleted] = useState(false);
     const [counsellorStatuses, setCounsellorStatuses] = useState({}); // Store status per trainer
 
-    const { counsellorData, loading, setCounsellorData, fetchCounsellors } = useCounsellorForm();
+    const { counsellorData, loading, fetchCounsellors, handleDeleteCounsellor } = useCounsellorForm();
+
 
     // Fetch batches afer deletion or modal open
     useEffect(() => {
@@ -58,34 +59,10 @@ const Counsellor = () => {
         setIsDeleted(false);
     };
 
-     // Delete Function 
-     const handleDelete = async (counsellorId) => {
-        if (!counsellorId) return;
-
-        try {
-            const response = await axiosInstance.delete(`/api/counsellors/delete/${counsellorId}/`, 
-                { headers: { 'Content-Type': 'application/json' },
-                withCredentials : true
-            }
-            );
-
-            if (response.status === 204) {
-                // Make sure coursesData is an array before filtering
-                if (Array.isArray(counsellorData)) {
-                    setCounsellorData(prevcounsellor => prevcounsellor.filter(counsellor => counsellor.id !== counsellorId));
-                } else {
-                    console.error('counsellordata is not an array');
-                }
-            }
-        } catch (error) {
-            console.error("Error deleting counsellor:", error);
-        }
-    };
 
       // Confirm and Cancel Handler for delete button 
       const confirm = (counsellorId) => {
-        handleDelete(counsellorId);
-        message.success('counsellor Deleted Successfully');
+        handleDeleteCounsellor(counsellorId);
     };
 
     const cancel = () => {
@@ -130,7 +107,7 @@ const Counsellor = () => {
                         </div>
                     </div>
 
-                    <div className={`overflow-hidden pb-2 relative bg-white/40 backdrop-blur-sm rounded-xl shadow-sm ${loading ? "backdrop-blur-md opacity-50 pointer-events-none" : ""}`}>
+                    <div className={`overflow-hidden pb-2 relative bg-white/40 backdrop-blur-sm rounded-xl shadow-sm `}>
                         <div className="w-full h-[40rem] md:max-h-[35rem] 2xl:max-h-[40rem] overflow-y-auto rounded-xl pb-2">
                             <table className="w-full text-xs font-normal text-left text-gray-600">
                                 <thead className="bg-white sticky top-0 z-10">
@@ -162,7 +139,7 @@ const Counsellor = () => {
                                 </thead>
 
                                 <tbody className="divide-y divide-gray-100 font-normal text-gray-700">
-                                {loading ? (
+                                {loading.all ? (
                                     <tr>
                                         <td colSpan="100%" className="text-center py-4">
                                             <Spin size="large" />

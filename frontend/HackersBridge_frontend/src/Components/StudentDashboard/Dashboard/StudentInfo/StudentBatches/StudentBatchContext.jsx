@@ -22,6 +22,7 @@ const StudentBatchProvider = ({ children }) => {
         try {
             const response = await axiosInstance.get(`/Student_login/student_batch/` );
             const data = response.data;
+            console.log(data);
             
             setStudentBatch(prevData => {
               if(JSON.stringify(prevData) !== JSON.stringify(data)){

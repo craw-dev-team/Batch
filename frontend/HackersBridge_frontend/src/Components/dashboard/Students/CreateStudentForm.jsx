@@ -16,7 +16,7 @@ const { TextArea } = Input;
 
 
 
-const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
+const CreateStudentForm = ({ isOpen, onClose, selectedStudentData, currentFilters }) => {
     if(!isOpen) return null;
 
     // for theme -------------------------
@@ -26,7 +26,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
 
     const isEditing = Boolean(selectedStudentData?.id); 
 
-    const { studentFormData, setStudentFormData, errors, setErrors, resetStudentForm } = useStudentForm();
+    const { studentFormData, setStudentFormData, errors, setErrors, resetStudentForm, fetchStudents } = useStudentForm();
     const { coursesData, fetchCourses  } = useCourseForm();
     const { coordinatorData, fetchCoordinators } = useCoordinatorForm();
     const { counsellorData, fetchCounsellors } = useCounsellorForm();
@@ -71,9 +71,14 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
                 courseCounsellor: selectedStudentData.course_counsellor || "",
                 supportCoordinator: selectedStudentData.support_coordinator || "",
                 note: selectedStudentData.note || "",
-                tags: selectedStudentData.tags || [],
+                tags: Array.isArray(selectedStudentData.tags_values)
+                    ? selectedStudentData.tags_values.map(tag => tag.id)
+                    : [],
+
 
             });
+            console.log(selectedStudentData);
+            
             
             setSelectedCourses(selectedStudentData.courses || []);  // Set IDs for Enrolled Courses
             setCompletedCourses(selectedStudentData.complete_course_id || []); 
@@ -104,13 +109,10 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
         if (!studentFormData.dateOfJoining || studentFormData.dateOfJoining.length === 0) newErrors.dateOfJoining = "Date Of Joining are required";
         if (!studentFormData.phoneNumber) newErrors.phoneNumber = "Phone Number is required";
         if (!studentFormData.emailAddress) newErrors.emailAddress = "Email Address is required";
-        // if (!studentFormData.course || studentFormData.course.length === 0) newErrors.course = "Course is required";
         if (!studentFormData.language || studentFormData.language.length === 0) newErrors.language = "Language is required";
         if (!studentFormData.mode || studentFormData.mode.length === 0) newErrors.mode = "Mode is required";
         if (!studentFormData.preferredWeek || studentFormData.preferredWeek.length === 0) newErrors.preferredWeek = "Preferred Week is required";
         if (!studentFormData.location || studentFormData.location.length === 0) newErrors.location = "Location is required";
-        // if (!studentFormData.guardianName) newErrors.guardianName = "Guardian Name is required";
-        // if (!studentFormData.guardianPhoneNumber) newErrors.guardianPhoneNumber = "Guardian Phone Number is required";
         if (!studentFormData.courseCounsellor || studentFormData.courseCounsellor.length === 0) newErrors.courseCounsellor = "Course Counsellor is required";
         if (!studentFormData.supportCoordinator || studentFormData.supportCoordinator.length === 0) newErrors.supportCoordinator = "Support Coordinator is required";
 
@@ -181,14 +183,14 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
                     response = await axiosInstance.post(`/api/students/add/`, payload );
                         successMessage = "Student added successfully!";
                 };
-
+                
                 if (response.status >= 200 && response.status < 300) {
                     message.success(successMessage);
                     setTimeout(() => {
                         setLoading(false);
                         onClose();
                         resetStudentForm();
-                        
+                        fetchStudents(currentFilters, true);
                     }, 1000);
                 };
   
@@ -196,24 +198,24 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
             setLoading(false);
         
             if (error.response) {
-        console.error("Server Error Response:", error.response);
+                console.error("Server Error Response:", error.response);
 
-        // Extract and handle error messages
-        Object.entries(error.response.data).forEach(([key, value]) => {
-            if (Array.isArray(value)) {
-            value.forEach((msg) => {
-                message.error(`${msg}`);
-            });
-            } else {
-            message.error(`${value}`);
+                // Extract and handle error messages
+                Object.entries(error.response.data).forEach(([key, value]) => {
+                    if (Array.isArray(value)) {
+                    value.forEach((msg) => {
+                        message.error(`${msg}`);
+                    });
+                    } else {
+                    message.error(`${value}`);
             }
         });
         } else if (error.request) {
-        console.error("No Response from Server:", error.request);
-        message.error("No response from server. Please check your internet connection.");
+            console.error("No Response from Server:", error.request);
+            message.error("No response from server. Please check your internet connection.");
         } else {
-        console.error("Error Message:", error.message);
-        message.error("An unexpected error occurred.");
+            console.error("Error Message:", error.message);
+            message.error("An unexpected error occurred.");
         }
 
         }        
@@ -273,7 +275,7 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
                     <div className="grid gap-4 mb-0 grid-cols-4">
                         <div className="col-span-1">
                             <label htmlFor="enrollmentNumber" className={`block mb-2 text-sm font-medium ${theme.text}`}>Enrollment Number</label>
-                            <Input name="enrollmentNumber" value={studentFormData.enrollmentNumber} onChange={(e) => handleChange("enrollmentNumber", e.target.value)}  className='rounded-lg border-gray-300' placeholder="Enter Enrollment Number" />
+                            <Input name="enrollmentNumber" value={studentFormData.enrollmentNumber} onChange={(e) => handleChange("enrollmentNumber", e.target.value)} disabled={isEditing} className='rounded-lg border-gray-300' placeholder="Enter Enrollment Number" />
                             {errors.enrollmentNumber && <p className="text-red-500 text-sm">{errors.enrollmentNumber}</p>}
                         </div>
                         
@@ -568,7 +570,8 @@ const CreateStudentForm = ({ isOpen, onClose, selectedStudentData }) => {
                                 placeholder="Select Tags"
                                 className="w-full border-gray-300"
                                 name="tags"
-                                value={studentFormData.tags}
+                                value={studentFormData.tags || []}
+
                                 onChange={(value) =>
                                 setStudentFormData((prev) => ({ ...prev, tags: value }))
                                 }

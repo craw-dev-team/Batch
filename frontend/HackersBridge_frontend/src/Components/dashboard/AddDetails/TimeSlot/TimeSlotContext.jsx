@@ -17,8 +17,11 @@ const initialFormData = {
 const TimeSlotProvider = ({children}) => {
     const [timeSlotFormData, setTimeSlotFormData] = useState(initialFormData);
     const [timeSlotData, setTimeSlotData] = useState([]);
-    const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
+    const [loading, setLoading] = useState({
+        all: false,
+        delete: false
+    });
 
 
     // Fucntion to reset form
@@ -27,11 +30,10 @@ const TimeSlotProvider = ({children}) => {
     };
 
     // Fetch TimeSlot Data
-
     const fetchTimeSlotData = async () => {
-        // if(!loading) return;
+        if(loading.all) return;
 
-        setLoading(true);
+        setLoading(prev => ({...prev, all: true}));
         try {
             const response = await axiosInstance.get(`/api/timeslots/`);
             const data = response?.data;
@@ -46,12 +48,39 @@ const TimeSlotProvider = ({children}) => {
         } catch (error) {
             message.error('Error Fetching TiemSlot Data',error);
         }finally{
-            setLoading(false);
+            setLoading(prev => ({...prev, all: false}) );
         }
     }
 
+
+        // Delete Function 
+        const handleDeleteTimeSlot = async (timeSlotId) => {
+            if (!timeSlotId) return;
+
+            setLoading(prev => ({...prev, delete: true}));
+            try {
+                const response = await axiosInstance.delete(`/api/timeslots/delete/${timeSlotId}/`);
+        
+                if (response.status === 204 || response.status === 200) {
+                    message.success('TimeSlot Deleted Successfully');
+                    
+                }
+            } catch (error) {
+                if (error.response) {
+                    message.error("Delete failed: " + (error.response.data?.detail || "Server error"));
+                    console.error("Server Error Response:", error.response.data);
+                } else if (error.request) {
+                    message.error("No response from server.");
+                } else {
+                    message.error("Unexpected error occurred.");
+                }
+            } finally {
+                setLoading(prev => ({...prev, delete: false}));
+            }
+        };
+
     return (
-        <TimeSlotFormContext.Provider value={{timeSlotFormData, setTimeSlotFormData, loading, errors, setErrors, timeSlotData, setTimeSlotData, resetTimeSlotForm, fetchTimeSlotData}}>
+        <TimeSlotFormContext.Provider value={{timeSlotFormData, setTimeSlotFormData, loading, errors, setErrors, timeSlotData, setTimeSlotData, resetTimeSlotForm, fetchTimeSlotData, handleDeleteTimeSlot }}>
             {children}
         </TimeSlotFormContext.Provider>
     )

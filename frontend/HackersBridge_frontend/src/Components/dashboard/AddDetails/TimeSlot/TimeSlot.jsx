@@ -16,7 +16,7 @@ const TimeSlot = () => {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTimeSlot, setSelectedTimeSlot] = useState();
-    const {timeSlotData, fetchTimeSlotData, loading, setLoading} = useTimeSlotForm();
+    const {timeSlotData, fetchTimeSlotData, handleDeleteTimeSlot} = useTimeSlotForm();
     const [isDeleted, setIsDeleted] = useState(false);
 
     useEffect(()=>{
@@ -34,32 +34,10 @@ const TimeSlot = () => {
     };
 
 
-      // Delete Function 
-    const handleDelete = async (timeSlotId) => {
-      try {
-          const response = await axiosInstance.delete(`/api/timeslots/delete/${timeSlotId}/`);
-
-          if (response.status === 204 || response.status === 200) {
-              message.success("TimeSlot deleted successfully.");
-              fetchTimeSlotData(); // Refresh after deletion
-          }
-      } catch (error) {
-          if (error.response) {
-              message.error("Delete failed: " + (error.response.data?.detail || "Server error"));
-              console.error("Server Error Response:", error.response.data);
-          } else if (error.request) {
-              message.error("No response from server.");
-          } else {
-              message.error("Unexpected error occurred.");
-          }
-      }
-};
-
-
      // Confirm and Cancel Handler for delete button 
-      const confirm = (timeSlotId) => {
-        handleDelete(timeSlotId);
-        message.success('TimeSlot Deleted Successfully');
+      const confirm = async (timeSlotId) => {
+        handleDeleteTimeSlot(timeSlotId);
+        await fetchTimeSlotData(); // Refresh after deletion
     };
 
     const cancel = () => {
@@ -97,7 +75,7 @@ const TimeSlot = () => {
                     </tr>
                   </thead>
 
-                  <tbody className="divide-y divide-gray-100 font-normal text-gray-700">
+                  <tbody className="divide-y divide-gray-100 font-light text-gray-700">
                     {time.length === 0 ? (
                       <tr>
                         <td colSpan="5" className="text-center py-4 text-gray-500">No TimeSlots Found</td>

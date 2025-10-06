@@ -17,8 +17,7 @@ const StudentCards = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-        fetchStudentCount(); 
-
+          fetchStudentCount(); 
   }, []);
 
 

@@ -12,12 +12,6 @@ const AllLogsProvider = ({ children }) => {
 
     const fetchAllLogs = useCallback (async ({ page = 1, pageSize = 100, search = '' } = {}) => {
         if (loading) return;
-       
-        // const token = localStorage.getItem('token');
-        // if (!token) {
-        //     console.error("No token found, user might be logged out.");
-        //     return;
-        // };
 
         setLoading(true);
         try {
@@ -27,10 +21,9 @@ const AllLogsProvider = ({ children }) => {
               page,
               page_size: pageSize,
               search,
-          },
-            withCredentials : true
+            },
           }
-            );
+          );
             const data = response.data;
             
             setAllLogsData(prevData => {

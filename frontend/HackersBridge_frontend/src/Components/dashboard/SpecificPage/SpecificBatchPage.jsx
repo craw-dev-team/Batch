@@ -13,6 +13,7 @@ import BatchInfoLoading from "../../../Pages/SkeletonLoading.jsx/BatchINfoLoadin
 import { handleStudentClick } from "../../Navigations/Navigations";
 import axiosInstance from "../api/api";
 import { useTheme } from "../../Themes/ThemeContext";
+import { useStudentForm } from "../Studentcontext/StudentFormContext";
 
 
 
@@ -32,9 +33,9 @@ const SpecificBatchPage = () => {
     const [selectedBatch, setSelectedBatch] = useState();
 
     const { batchId } = useParams();
-    const { specificBatch, fetchSpecificBatch } = useSpecificBatch();
+    const { specificBatch, fetchSpecificBatch, classLink, setClassLink, handleSaveClassLink } = useSpecificBatch();
     const {batchFormData, setBatchFormData} = useBatchForm();
-
+    const {students, fetchAvailableStudents} = useStudentForm()
 
     const [editingField, setEditingField] = useState(null);
     const [updatedValues, setUpdatedValues] = useState(null);
@@ -49,8 +50,7 @@ const SpecificBatchPage = () => {
     const [selectedStudentIds, setSelectedStudentIds] = useState([]);
     // track the certificate is issued or not 
     const [isCertificateIssued, setIsCertificateIssued] = useState(false);
-    // store preferred available students for that specific batch
-    const [students, setStudents] = useState({});
+  
     // store search input 
     const [searchTerm, setSearchTerm] = useState("");
     // store student id's to send email
@@ -58,7 +58,7 @@ const SpecificBatchPage = () => {
     const [checkStudentid, setCheckStudentid] = useState([]);
  
     // store the batch class link in input field 
-    const [classLink, setClassLink] = useState('');
+    // const [classLink, setClassLink] = useState('');
     // store student status in a batch 
     const [studentStatuses, setStudentStatuses] = useState({}); // Store status per trainer
 
@@ -70,23 +70,6 @@ const SpecificBatchPage = () => {
     const handleTabClick = (tab) => {
         setActiveTab(tab);
     };
-    
-        // HANDLE FETCH PREFFERED AVAILABLE STUDNETS FOR THAT SPECIFIC BATCH
-        const fetchAvailableStudents = useCallback(async (batchId) => {              
-            try {
-                const response = await axiosInstance.get(`/api/batches/${batchId}/available-students/`);
-                const data = response.data;
-                
-                if (!data.available_students) {
-                    throw new Error("Invalid response format");
-                };
-        
-                // Update state with students for the specific batchId
-                setStudents(data);                        
-            } catch (error) {
-                console.error("Error fetching students:", error);
-            }
-        }, [students]);
 
                 
           // Filter students based on the search term of all students added in that batch
@@ -186,7 +169,7 @@ const SpecificBatchPage = () => {
             const timer = setTimeout(() => {
                 const initialStatus = {};
                 studentArray.forEach((student) => {
-                    initialStatus[student.id] = student.student_batch_status;
+                    initialStatus[student.id] = student.student_batch_status === "Active";
                 })
                 setStudentStatuses(initialStatus);
             }, 100);
@@ -333,24 +316,32 @@ const SpecificBatchPage = () => {
 
 
         // send the batch class link to the server 
-        const handleSaveClassLink = async () => {
-            const batch_id = atob(batchId)
-            try {
-                const response = await axiosInstance.patch(`/api/batch-link/${batch_id}/`,
-                    {batch_link: classLink } );
+        // const handleSaveClassLink = async () => {
+        //     const batch_id = atob(batchId)
+        //     try {
+        //         const response = await axiosInstance.patch(`/api/batch-link/${batch_id}/`,
+        //             {batch_link: classLink } );
 
-                if (response.status === 200) {     
-                    message.success("Batch Link Added")
+        //         if (response.status === 200) {     
+        //             message.success("Batch Link Added")
 
-                } else {
-                    message.error("Error issuing certificate", response?.error.message)
-                };
-            } catch (error) {
-                message.error(error?.response?.data?.message);
+        //         } else {
+        //             message.error("Error issuing certificate", response?.error.message)
+        //         };
+        //     } catch (error) {
+        //         message.error(error?.response?.data?.message);
             
-            }
-        };
+        //     }
+        // };
 
+        const sendClassLink = async (batchId) => {
+            const batch_id = atob(batchId)
+            if (!classLink) {
+                message.warning("Please enter a class link before saving.");
+                return;
+            }
+            await handleSaveClassLink(batch_id, classLink);
+        };
 
 
         const handleRejectRequestToBatch = async (studentId) => {
@@ -388,13 +379,14 @@ const SpecificBatchPage = () => {
         // HANDLE STUDENT STATUS CHANGE IN A BATCH 
         const handleToggle = async (checked, studentId) => {
         const newStatus = checked ? "Active" : "Inactive";
+        console.log(checked, studentId);
         
         setStudentStatuses((prev) => ({ ...prev, [studentId]: checked }));
     
         try {
             await axiosInstance.patch(`/api/batches/student-status/${studentId}/`, 
                 { status: newStatus } );
-            message.success(`Student status updated to ${newStatus}`);
+            message.success(`Student status updated to ${newStatus} in this batch`);
         } catch (error) {
             message.error("Failed to update status");            
             //  Revert UI if API fails
@@ -476,21 +468,21 @@ const SpecificBatchPage = () => {
                                 );
                             })}
 
-                            <div className="h-auto 2xl:col-span-2 col-span-2 lg:col-span-1">
-                                <p>Class Link</p>
-                                <div className="flex mt-1">
-                                <Input
-                                    value={classLink}
-                                    onChange={(e) => setClassLink(e.target.value)}
-                                    placeholder="Class Link"
-                                    className={`px-2 rounded-xl h-7 mr-2 border border-gray-300 focus:ring-0 ${theme.bg}`}
-                                />
-                                <CheckCircleOutlined
-                                    onClick={handleSaveClassLink}
-                                    className="mx-1 text-green-500 text-lg cursor-pointer hover:text-green-700"
-                                />
+                                <div className="h-auto 2xl:col-span-2 col-span-2 lg:col-span-1">
+                                    <p>Class Link</p>
+                                    <div className="flex mt-1">
+                                    <Input
+                                        value={classLink}
+                                        onChange={(e) => setClassLink(e.target.value)}
+                                        placeholder="Class Link"
+                                        className={`px-2 rounded-xl h-7 mr-2 border border-gray-300 focus:ring-0 ${theme.bg}`}
+                                    />
+                                    <CheckCircleOutlined
+                                        onClick={() => sendClassLink(batchId)}
+                                        className="mx-1 text-green-500 text-lg cursor-pointer hover:text-green-700"
+                                    />
+                                    </div>
                                 </div>
-                            </div>
                             </div>
                         </div>
                         )}
@@ -499,9 +491,9 @@ const SpecificBatchPage = () => {
 
 
                     {/* Students List Table */}
-                    <div className={`py-0 col-span-6 mt-3 h-auto shadow-md sm:rounded-lg ${theme.specificPageBg}`}>
+                    <div className={`py-0 px-4 col-span-6 mt-3 h-auto shadow-md sm:rounded-lg ${theme.specificPageBg}`}>
                         <div className="w-full font-semibold">
-                            <div className="col-span-1 text-lg px-4 pt-4 pb-2 flex justify-between items-center">
+                            <div className="col-span-1 text-lg pt-4 pb-2 flex justify-between items-center">
                                 {/* <h1>Students</h1> */}
 
                                 <div className="relative">
@@ -520,6 +512,7 @@ const SpecificBatchPage = () => {
       
                                     {/* Tab buttons for medium and up screens */}
                                     <div className="hidden lg:flex bg-white/70 backdrop-blur-sm p-1.5 rounded-xl">
+                                        <Badge count={filteredBatchStudents?.length || 0 } overflowCount={999} size="small">
                                         <button
                                             onClick={() => handleTabClick("students")}
                                             className={`px-4 py-2 rounded-lg font-medium text-xs transition-all duration-200 text-gray-600 hover:bg-white/50
@@ -527,6 +520,7 @@ const SpecificBatchPage = () => {
                                         >
                                             Students
                                         </button>
+                                        </Badge>
 
                                         <button
                                             onClick={() => handleTabClick("recommended_students")}
@@ -652,17 +646,24 @@ const SpecificBatchPage = () => {
                                 </div>
                             </div>
 
-                                <div className={`overflow-hidden pb-2 px-4 relative backdrop-blur-sm rounded-xl shadow-sm`}>
-                                    <div className="w-full bg-white/40 h-auto md:max-h-[27rem] 2xl:max-h-[30rem] overflow-y-auto rounded-xl pb-2">
-                                        <div className="col-span-1 py-0 leading-0">
+                                <div className={`overflow-hidden pb-2 relative bg-white/40 backdrop-blur-sm rounded-xl shadow-sm`}>
+                                    <div className="w-full h-auto md:max-h-[27rem] 2xl:max-h-[30rem] overflow-y-auto rounded-xl pb-2">
                                         <table className="w-full text-xs font-normal text-left text-gray-600">
                                             {(activeTab === "students" || activeTab === "recommended_students") && (
                                             <thead className="bg-white sticky top-0 z-10">
                                                 <tr className="bg-gray-50/80">
                                                     <th scope="col" className="p-2">
                                                         <div className="flex items-center">
-                                                            <input id="checkbox-all-search" type="checkbox" onChange={(e) => toggleSelectAll(e.target.checked)} checked={checkAll} ref={(el) => {if (el) {el.indeterminate = indeterminate}}} className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 focus:ring-1"></input>
-                                                            <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
+                                                            <input id="checkbox-all-search" type="checkbox" onChange={(e) => toggleSelectAll(e.target.checked)} checked={checkAll} ref={(el) => {if (el) {el.indeterminate = indeterminate}}}
+                                                                className={`
+                                                                    w-3 h-3 rounded-[4px] text-md cursor-pointer focus:ring-0
+                                                                    appearance-none border border-gray-300
+                                                                    transition-all duration-200 ease-in-out
+                                                                    checked:${theme.activeTab} checked:border-transparent
+                                                                    hover:border-gray-400
+                                                                `}
+                                                            />
+                                                            
                                                         </div>
                                                     </th>
                                                     <th scope="col" className="px-3 py-3 md:px-2 text-xs font-medium uppercase">
@@ -773,8 +774,16 @@ const SpecificBatchPage = () => {
                                                     <tr key={item.id} className="hover:bg-white transition-colors scroll-smooth">
                                                         <td scope="col" className="p-2">
                                                             <div className="flex items-center">
-                                                                <input id="checkbox-all-search" type="checkbox" checked={checkStudentid.some((s) => s.students === item?.student?.id)} onChange={() => toggleStudent(item?.student?.id, item?.student?.email)} className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 focus:ring-1"></input>
-                                                                <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
+                                                                <input id="checkbox-all-search" type="checkbox" checked={checkStudentid.some((s) => s.students === item?.student?.id)} onChange={() => toggleStudent(item?.student?.id, item?.student?.email)} 
+                                                                    className={`
+                                                                        w-3 h-3 rounded-[4px] text-md cursor-pointer focus:ring-0
+                                                                        appearance-none border border-gray-300
+                                                                        transition-all duration-200 ease-in-out
+                                                                        checked:${theme.activeTab} checked:border-transparent
+                                                                        hover:border-gray-400
+                                                                    `}
+                                                                />
+                                                                
                                                             </div>
                                                         </td>
                                                         <td scope="row" className="px-3 py-2 md:px-2">
@@ -814,7 +823,7 @@ const SpecificBatchPage = () => {
                                                                         <Tooltip key={index} title={name} placement="top">
                                                                             <Avatar
                                                                                 size={24}
-                                                                                style={{ backgroundColor: "#87d068" }}
+                                                                                className={`${theme.studentCount} text-white`}
                                                                             >
                                                                                 {name[0]}
                                                                             </Avatar>
@@ -855,7 +864,7 @@ const SpecificBatchPage = () => {
                                                                 size="small"
                                                                 checkedChildren={<CheckOutlined />}
                                                                 unCheckedChildren={<CloseOutlined />}
-                                                                checked={studentStatuses[item.id] || false} // Get correct status per trainer
+                                                                checked={studentStatuses[item.id] || false} // Get correct status per student
                                                                 onChange={(checked) => handleToggle(checked, item.id)}
                                                                 style={{
                                                                     backgroundColor: studentStatuses[item.id] ? "#38b000" : "gray", // Change color when checked
@@ -936,8 +945,15 @@ const SpecificBatchPage = () => {
                                                         <tr key={item.id} className="hover:bg-gray-50 transition-colors scroll-smooth">
                                                             <td scope="col" className="p-2">
                                                                 <div className="flex items-center">
-                                                                    <input id="checkbox-all-search" type="checkbox" checked={checkStudentid.some((s) => s.students === item?.id)} onChange={() => toggleStudent(item?.id, item?.email)} className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 focus:ring-1"></input>
-                                                                    <label htmlFor="checkbox-all-search" className="sr-only">checkbox</label>
+                                                                    <input id="checkbox-all-search" type="checkbox" checked={checkStudentid.some((s) => s.students === item?.id)} onChange={() => toggleStudent(item?.id, item?.email)}
+                                                                        className={`
+                                                                            w-3 h-3 rounded-[4px] text-md cursor-pointer focus:ring-0
+                                                                            appearance-none border border-gray-300
+                                                                            transition-all duration-200 ease-in-out
+                                                                            checked:${theme.activeTab} checked:border-transparent
+                                                                            hover:border-gray-400
+                                                                        `}
+                                                                        />
                                                                 </div>
                                                             </td>
                                                             <td scope="row" className="px-3 py-2 md:px-2">
@@ -1009,7 +1025,7 @@ const SpecificBatchPage = () => {
                                                                             <Tooltip key={index} title={name} placement="top">
                                                                                 <Avatar
                                                                                     size={24}
-                                                                                    style={{ backgroundColor: "#87d068" }}
+                                                                                    className={`${theme.studentCount} text-white`}
                                                                                 >
                                                                                     {name[0]}
                                                                                 </Avatar>
@@ -1074,7 +1090,7 @@ const SpecificBatchPage = () => {
                                                 
                                                     
                                             {activeTab === "batch_request" && (
-                                                    <tbody>
+                                                    <tbody className="divide-y divide-gray-100 font-normal text-gray-700">
                                                 {loading ? (
                                                         <tr>
                                                             <td colSpan="100%" className="text-center py-4">
@@ -1089,11 +1105,11 @@ const SpecificBatchPage = () => {
                                                             {index + 1}
                                                         </td>
                                                         
-                                                        <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(navigate,item.id)}>
+                                                        <td className="px-3 py-2 md:px-1 font-medium cursor-pointer" onClick={() => handleStudentClick(navigate,item.id)}>
                                                             {item.enrollment_no}
                                                         </td>
 
-                                                        <td className="px-3 py-2 md:px-1 font-bold cursor-pointer" onClick={() => handleStudentClick(navigate,item.id)}>
+                                                        <td className="px-3 py-2 md:px-1 font-medium cursor-pointer" onClick={() => handleStudentClick(navigate,item.id)}>
                                                             {item.name}
                                                         </td>
                                                         <td className="px-3 py-2 md:px-1">
@@ -1128,25 +1144,25 @@ const SpecificBatchPage = () => {
                                                         </td>
 
                                                         <td className="px-3 py-2 md:px-1">
-                                                            <Tag bordered={false} color={item.mode === "Offline" ? "green" : item.mode === "Online" ? "red" : "geekblue"}>
+                                                            <Tag className="rounded-xl" bordered={false} color={item.mode === "Offline" ? "green" : item.mode === "Online" ? "red" : "geekblue"}>
                                                                 {item.mode}
                                                             </Tag>
                                                         </td>
                 
                                                         <td className="px-3 py-2 md:px-1">
-                                                            <Tag bordered={false} color={item.language === 'Hindi'? 'green' : item.language === 'English'? 'volcano' : 'blue'}>
+                                                            <Tag className="rounded-xl" bordered={false} color={item.language === 'Hindi'? 'green' : item.language === 'English'? 'volcano' : 'blue'}>
                                                                 {item.language}
                                                             </Tag>
                                                             </td>
                 
                                                         <td className="px-3 py-2 md:px-1">
-                                                            <Tag bordered={false} color={item.preferred_week === "Weekdays" ? "cyan" : item.preferred_week === "Weekends" ? "gold" : "geekblue" }>
+                                                            <Tag className="rounded-xl" bordered={false} color={item.preferred_week === "Weekdays" ? "cyan" : item.preferred_week === "Weekends" ? "gold" : "geekblue" }>
                                                                 {item.preferred_week}
                                                             </Tag>
                                                         </td>
 
                                                         <td className="px-3 py-2 md:px-1">
-                                                            {item.location == '1' ? <Tag bordered={false} color="blue">Saket</Tag> : item.location == "2" ? <Tag bordered={false} color="magenta">Laxmi Nagar</Tag> : <Tag bordered={false} color="blue">Both</Tag>}
+                                                            {item.location == '1' ? <Tag className="rounded-xl" bordered={false} color="blue">Saket</Tag> : item.location == "2" ? <Tag className="rounded-xl" bordered={false} color="magenta">Laxmi Nagar</Tag> : <Tag className="rounded-xl" bordered={false} color="blue">Both</Tag>}
                                                         </td>
 
                                                         <td className="px-3 py-2 md:px-1">
@@ -1155,7 +1171,7 @@ const SpecificBatchPage = () => {
 
                                                         <td className="flex gap-x-1 items-center py-2"> 
                                                             {   item?.request_status === "Approved" || item?.request_status === "Rejected" || item?.request_status === "Removed" ?
-                                                                    <Tag color={item.request_status === "Approved" ? "green" : "red" }>{item.request_status}</Tag> : (
+                                                                    <Tag className="rounded-xl" bordered={false} color={item.request_status === "Approved" ? "green" : "red" }>{item.request_status}</Tag> : (
                                                                 <>
                                                                 <Button 
                                                                     color="danger" 
@@ -1189,7 +1205,7 @@ const SpecificBatchPage = () => {
                                                                 </>
                                                             )}
                                                         </td>
-                                                       
+                                                    
                                                     </tr>
                                                 ))
                                             ) : (
@@ -1203,7 +1219,6 @@ const SpecificBatchPage = () => {
                                             )}
                                     
                                         </table>
-                                        </div>
                                     </div>
                                 </div>
                         </div>

@@ -11,14 +11,14 @@ const TrainerCards = () => {
     const { getTheme } = useTheme();
     const theme = getTheme();
 
-    const { trainersCount, fetchTrainersCount } = useTrainerForm();
+    const { trainersCount, fetchTrainerCount } = useTrainerForm();
     const [selectedCard, setSelectedCard] = useState(null);
 
     const navigate = useNavigate();
 
 
     useEffect(() => {
-      fetchTrainersCount();
+      fetchTrainerCount();
     },[]);
 
 
@@ -56,12 +56,12 @@ const handleCardClick = (cardType, callback) => {
     return (
         <Row gutter={[14, 14]}>
           {[
-            { key: "all", label: "Total Trainers", count: trainersCount?.all_in_one?.total_count_trainer || '0', data:total_trainer },
-            { key: "leave", label: "Trainers on leave", count: trainersCount?.all_in_one?.leave_count_trainer || '0', data: trainer_on_leave },
-            { key: "active_trainers", label: "Active Trainers", count: trainersCount?.all_in_one?.active_count_trainer || '0', data: active_trainer },
-            { key: "inactive_trainers", label: "Inactive Trainers", count: trainersCount?.all_in_one?.inactive_count_trainer || '0', data: inactive_trainer },
-            { key: "Saket", label: "Saket", count: trainersCount?.all_in_one?.Saket_count_trainer || '0', data: saket },
-            { key: "Laxmi Nagar", label: "Laxmi Nagar", count: trainersCount?.all_in_one?.Laxmi_Nagar_count_trainer || '0', data: laxmi_nagar },
+            { key: "all", label: "Total Trainers", count: trainersCount?.total_trainer || '0', data:total_trainer },
+            { key: "leave", label: "Trainers on leave", count: trainersCount?.trainer_on_leave_count || '0', data: trainer_on_leave },
+            { key: "active_trainers", label: "Active Trainers", count: trainersCount?.active_trainer_count || '0', data: active_trainer },
+            { key: "inactive_trainers", label: "Inactive Trainers", count: trainersCount?.inactive_trainer_count || '0', data: inactive_trainer },
+            { key: "saket", label: "Saket", count: trainersCount?.saket_trainer_count || '0', data: saket },
+            { key: "laxmi_nagar", label: "Laxmi Nagar", count: trainersCount?.laxmi_nagar_trainer_count || '0', data: laxmi_nagar },
           ].map(({ key, label, count, data }, index) => (
             <Col span={4} key={key}>
               <Card

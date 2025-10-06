@@ -76,7 +76,6 @@ const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
         if(!trainerFormData.trainerExperience || trainerFormData.trainerExperience.length === 0) newErrors.trainerExperience = "Trainer Experience is required";
         if(!trainerFormData.trainerCourse || trainerFormData.trainerCourse.length === 0) newErrors.trainerCourse = "Course is required";
         if(!trainerFormData.trainerLanguage || trainerFormData.trainerLanguage.length === 0) newErrors.trainerLanguage = "language is required";
-        // if(!trainerFormData.trainerTeamLeader || trainerFormData.trainerTeamLeader.length === 0) newErrors.trainerTeamLeader = "Team Leader is required";
         if(!trainerFormData.trainerCoordinator || trainerFormData.trainerCoordinator.length === 0) newErrors.trainerCoordinator = "Team Leader is required";
         if(!trainerFormData.location || trainerFormData.location.length === 0) newErrors.location = "Location is required";
         if(!trainerFormData.trainerWeekOff || trainerFormData.trainerWeekOff.length === 0) newErrors.trainerWeekOff = "Location is required";
@@ -142,9 +141,10 @@ const CreateTrainerForm = ({ isOpen, onClose, selectedTrainerData }) => {
     
                     if (response.status >= 200 && response.status < 300) {
                         message.success(successMessage);
-                        setTimeout(() => {
-                            setLoading(false);
-                            onClose();
+                            setTimeout(async() => {
+                                setLoading(false);
+                                onClose();
+                                await fetchTrainers();
                             resetTrainerForm();
                         }, 1000);
                     }

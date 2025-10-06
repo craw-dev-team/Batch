@@ -7,6 +7,8 @@ import { useSpecificTrainer } from '../dashboard/Contexts/SpecificTrainers';
 import { useSpecificStudent } from '../dashboard/Contexts/SpecificStudent';
 import { useSpecificBatch } from '../dashboard/Contexts/SpecificBatch';
 import { useSpecificBook } from '../dashboard/Contexts/SpecificBook';
+import Coordinators from './../dashboard/AddDetails/Coordinator/Coordinator';
+import { useSpecificCoordinator } from '../dashboard/Contexts/SpecificCoordinators';
 
 
 
@@ -18,6 +20,7 @@ const breadcrumbNameMap = {
   [route.ALL_LOGS_PATH]: { title: "Logs", icon: <ProductOutlined /> },
   [route.BOOKS_PATH]: { title: "Books", icon: <BookOutlined /> }, // Added new route
   [route.ANNOUNCEMENTS_PATH]: { title: "Announcements", icon: <NotificationOutlined /> }, // Added new route
+  [route.ADD_DETAILS_COORDINATORS_PATH]: { title: "Coordinator", icon: <UserOutlined /> }, // Added new route
 
 };
 
@@ -27,6 +30,7 @@ const BreadCrumbs = () => {
   const { specificStudent } = useSpecificStudent();
   const { specificBatch } = useSpecificBatch();
   const { specificBook } = useSpecificBook();  
+  const { specificCoordinator } = useSpecificCoordinator();
 
   const batch = matchPath("/batches/:batchId", location.pathname);
   const batchId = batch?.params?.batchId || null;
@@ -40,11 +44,15 @@ const BreadCrumbs = () => {
   const book = matchPath("/book/:bookId", location.pathname);
   const bookId = book?.params?.bookId  || null
 
+  const coordinator = matchPath("/add-details/coordinators/:coordinatorId", location.pathname);
+  const coordinatorId = coordinator?.params?.coordinatorId  || null
+
   // Get name dynamically (fallback to ID if not found)
   const batchCode = specificBatch?.batch?.batch_id || `# ${batchId}`;
   const studentName = specificStudent?.All_in_One?.student?.name || `Student ${studentId}`;
   const trainerName = specificTrainer?.Trainer_All?.trainer?.name || `Trainer ${trainerId}`;
   const bookName = specificBook?.book_info?.name || `Book ${bookId}`;
+  const CoordinatorName = specificCoordinator?.Coordinator_Info?.coordinator?.name || `coordinator ${coordinatorId}`;
 
   // Split pathname into segments
   const pathSnippets = location.pathname.split("/").filter((i) => i);
@@ -113,6 +121,13 @@ const BreadCrumbs = () => {
         return {
           href: `/trainers/${trainerId}`,
           title: trainerName,
+        };
+      }
+
+      if (path.startsWith("/add-details/coordinators") && coordinatorId) {
+        return {
+          href: `/add-details/coordinators/${coordinatorId}`,
+          title: CoordinatorName,
         };
       }
 

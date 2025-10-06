@@ -13,8 +13,12 @@ const initialFormData = {
 
 const AnnouncementProvider = ({ children }) => {
   const [Announcement, setAnnouncement] = useState();
-  const [loading, setLoading] = useState(false);
   const [trainer, setTrainer] = useState();
+  const [loading, setLoading] = useState({
+    all: false,
+    delete: false,
+    trainer: false
+  });
 
   const resetAnnouncementForm = () => {
     setAnnouncement(initialFormData);
@@ -22,15 +26,9 @@ const AnnouncementProvider = ({ children }) => {
 
   // Fetch announcements
   const fetchAnnouncement = useCallback(async () => {
-    if (loading) return;
+    if (loading.all) return;
 
-    // const token = localStorage.getItem("token");
-    // if (!token) {
-    //   console.error("No token found, user might be logged out.");
-    //   return;
-    // }
-
-    setLoading(true);
+    setLoading(prev => ({...prev, all: true }));
     try {
       const response = await axiosInstance.get(`/api/announcement/`);
 
@@ -44,7 +42,7 @@ const AnnouncementProvider = ({ children }) => {
     } catch (error) {
       console.error('Error fetching Announcement Data', error);
     } finally {
-      setLoading(false);
+      setLoading(prev => ({...prev, all: false }) );
     }
   }, [loading]);
 
@@ -75,21 +73,11 @@ const AnnouncementProvider = ({ children }) => {
 
   // ✅ Fetch trainer data
   const fetchTrainer = useCallback(async () => {
-    if (loading) return;
+    if (loading.trainer) return;
 
-    // const token = localStorage.getItem('token');
-    // if (!token) {
-    //   console.error("No token found, user might be logged out.");
-    //   return;
-    // }
-
-    setLoading(true);
+    setLoading(prev => ({...prev, trainer: true }));
     try {
-      const response = await axiosInstance.get(`/api/announcement/trainer/`, 
-        { headers: { 'Content-Type': 'application/json' },
-        withCredentials: true
-      }
-      );
+      const response = await axiosInstance.get(`/api/announcement/trainer/`);
 
       const data = response.data;
       setTrainer(prevData => {
@@ -101,13 +89,36 @@ const AnnouncementProvider = ({ children }) => {
     } catch (error) {
       console.error('Error fetching Trainer Data', error);
     } finally {
-      setLoading(false);
+      setLoading(prev => ({...prev, trainer: false }) );
     }
-  }, [loading]);
+  }, [loading.trainer]);
+
+
+  const handleDeleteAnnouncement = async (announcementId) => {
+      if (!announcementId) return;
+
+      setLoading(prev => ({...prev, delete: true}));
+      try {
+        const response = await axiosInstance.delete(`/api/announcement/delete/${announcementId}/`);
+  
+        if (response.status >= 200 && response.status <= 204) {
+            message.success("Announcement deleted successfully");
+          // setIsDeleted(true);
+          fetchAnnouncement();
+        }
+      } catch (error) {
+        console.error("Error deleting announcement:", error);
+        message.error("Failed to delete announcement");
+      } finally {
+          setLoading(prev => ({...prev, delete: false}) );
+      }
+    };
+
+
 
   return (
     <AnnouncementContext.Provider
-      value={{loading, Announcement, setAnnouncement, fetchAnnouncement, handleFormSubmit, trainer, setTrainer, fetchTrainer, resetAnnouncementForm}}
+      value={{loading, Announcement, setAnnouncement, fetchAnnouncement, handleFormSubmit, trainer, setTrainer, fetchTrainer, resetAnnouncementForm, handleDeleteAnnouncement }}
     >
       {children}
     </AnnouncementContext.Provider>

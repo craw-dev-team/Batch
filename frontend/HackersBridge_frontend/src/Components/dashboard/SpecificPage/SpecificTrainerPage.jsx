@@ -35,7 +35,7 @@ const SpecificTrainerPage = () => {
     const handleTabClick = (tab) => {
         setActiveTab(tab);
     };
-
+    
 
     useEffect(() => {
         if (trainerId) {
@@ -355,8 +355,8 @@ const SpecificTrainerPage = () => {
 
                             <button
                                 onClick={() => handleTabClick("completed")}
-                                className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 
-                                    ${activeTab === "completed" ? 'border-b-2 border-blue-500 text-black bg-white' : ' text-gray-700 hover:border-b-2 hover:border-blue-400 '}`}
+                                className={`px-4 py-2 rounded-lg font-medium text-xs transition-all duration-200 text-gray-600 hover:bg-white/50
+                                    ${activeTab === "completed" ? `text-gray-600 shadow-md ${theme.activeTab}` : ' text-gray-600 hover:bg-white/50'}`}
                                 >
                                 Completed
                             </button>

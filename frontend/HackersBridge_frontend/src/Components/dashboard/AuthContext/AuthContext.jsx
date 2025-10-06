@@ -3,6 +3,7 @@ import { message } from "antd";
 import axiosInstance from './../api/api';
 import axios from 'axios';
 import BASE_URL from './../../../ip/Ip';
+import { Navigate, useNavigate } from 'react-router-dom';
 
 
 const AuthContext = createContext();
@@ -12,7 +13,7 @@ export const AuthProvider = ({ children }) => {
   // const [token, setToken] = useState(localStorage.getItem('token' || ''));
   const [loading, setLoading] = useState(false);
   const [username, setUsername] = useState('');
-
+  const navigate = useNavigate()
   
 
 // useEffect(() => {
@@ -99,21 +100,20 @@ export const AuthProvider = ({ children }) => {
         { username, password, recaptcha_token: recaptchaToken, },
         { withCredentials: true }
       );
-      console.log(response);
       
       const role = response?.data?.user_info?.role;
       const user_name = response?.data?.user_info?.first_name ?? response?.data?.user_info?.user_name;
-      
       // const token = response?.data?.user_info?.token;
+      
+      if (!role) throw new Error("Role not found in response");
       setUsername(user_name)
       setRole(role);
       // setToken(token)
 
       localStorage.setItem('role', role)
-      // localStorage.setItem('token', token)
       localStorage.setItem('name', user_name)
+      // localStorage.setItem('token', token)
   
-      if (!role) throw new Error("Role not found in response");
   
       return response?.data; // Return the full response body to be used in handleLogin
     } catch (error) {
@@ -141,35 +141,94 @@ export const AuthProvider = ({ children }) => {
 
 
 
+  // const logout = async (redirect = true) => {
+  //   try {
+  //     // Send logout request to backend to clear cookies
+  //     const response = await axiosInstance.post(`/api/logout/`, {});
+  //     if (response.status === 401 || response.status === 403) {
+  //       setUsername(null);
+  //       setRole(null);
+  //       localStorage.removeItem("role")
+  //       localStorage.removeItem("name")
+  //     };
+
+  //     // Clear frontend context/state if any
+
+  //     // Redirect after logout (optional)
+  //     if (redirect) {
+  //       window.location.href = "/"; // or navigate("/")
+  //     }
+  //   } catch (err) {
+  //     console.warn("Logout error:", err?.response || err.message);
+  //   }
+  // };
+
+
+
   const logout = async (redirect = true) => {
     try {
-      // Send logout request to backend to clear cookies
-      const response = await axiosInstance.post(`/api/logout/`, {});
-
-      // Clear frontend context/state if any
-      setUsername(null);
-      setRole(null);
-      localStorage.removeItem("role")
-      // localStorage.removeItem("token")
-      localStorage.removeItem("name")
-
-      // Redirect after logout (optional)
-      if (redirect) {
-        window.location.href = "/"; // or navigate("/")
-      }
+      console.log("🚪 Sending logout request to /api/logout/");
+      await axiosInstance.post("/api/logout/", {});
+      console.log("🗑️ Backend cookies invalidated via logout endpoint");
     } catch (err) {
       console.warn("Logout error:", err?.response || err.message);
     }
+
+    // Clear state and storage regardless of response
+    console.log("📢 Clearing auth state");
+    setRole(null);
+    setUsername(null);
+    localStorage.removeItem("role");
+    localStorage.removeItem("name");
+    localStorage.removeItem("selectedTheme");
+    sessionStorage.clear();
+
+     // Forcefully remove cookies in frontend for extra safety
+  document.cookie.split(";").forEach((c) => {
+    document.cookie = c
+      .replace(/^ +/, "")
+      .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+  });
+
+    if (redirect) {
+      console.log("🚀 Navigating to /");
+      navigate("/", { replace: true });
+      setTimeout(() => setLoading(false), 1); // Reset loading after navigation
+    } else {
+      setLoading(false);
+    }
   };
 
+  useEffect(() => {
+    const handleLogout = () => {
+      console.log("📢 Received logout event. Clearing auth state.");
+      logout(true); // Call logout with redirect
+    };
+
+    window.addEventListener("logout", handleLogout);
+
+    return () => {
+      window.removeEventListener("logout", handleLogout);
+    };
+  }, []);
 
 
 
   return (
-    <AuthContext.Provider value={{ role, username, loading, universalLogin, logout, register }}>
+    <AuthContext.Provider value={{ role, username, loading, setLoading, universalLogin, logout, register }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
 export const useAuth = () => useContext(AuthContext);
+
+
+
+
+
+
+
+// Admin - admin [123]
+// Student - CRAWEN-68273741 [testing]
+// Trainer - CRAWTR001 [1234]

@@ -1,5 +1,6 @@
 import { createContext, useContext, useState } from "react";
 import axiosInstance from "../api/api";
+import { message } from "antd";
 
 
 const SpecificBatchContext = createContext();
@@ -7,7 +8,8 @@ const SpecificBatchContext = createContext();
 const SpecificBatchProvider = ({ children }) => {
     const [specificBatch, setSpecificBatch] = useState();
     const [loading, setLoading] = useState(false);
-
+    // store the batch class link in input field 
+    const [classLink, setClassLink] = useState('');
 
     const fetchSpecificBatch = async (batchId) => {
         if (loading) return;
@@ -32,8 +34,33 @@ const SpecificBatchProvider = ({ children }) => {
         }
     };
 
+
+    // send the batch class link to the server 
+    const handleSaveClassLink = async (batch_id, classLink) => {  
+        console.log(batch_id, classLink);
+        
+        try {
+            const response = await axiosInstance.patch(`/api/batch-link/${batch_id}/`,
+                {batch_link: classLink } );
+
+            if (response.status === 200) {     
+                message.success("Class Link Added")
+                return response.data;
+
+            } else {
+                message.error("Error issuing certificate", response?.error.message)
+            };
+        } catch (error) {
+            message.error(error?.response?.data?.message);
+        
+        }
+    };
+
+
+
+
     return (
-            <SpecificBatchContext.Provider value={{ specificBatch, fetchSpecificBatch }}>
+            <SpecificBatchContext.Provider value={{ specificBatch, fetchSpecificBatch,classLink, setClassLink, handleSaveClassLink }}>
                 {children}
             </SpecificBatchContext.Provider>
     )

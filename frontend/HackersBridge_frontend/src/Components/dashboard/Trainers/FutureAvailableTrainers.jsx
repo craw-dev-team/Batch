@@ -1,18 +1,13 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Tooltip, Tag, Empty } from 'antd';
+import {DownOutlined, UpOutlined } from '@ant-design/icons';
 import { useTrainerForm } from "../Trainercontext/TrainerFormContext";
 import { useNavigate } from "react-router-dom";
 import handleBatchClick, { handleTrainerClick } from "../../Navigations/Navigations";
 import dayjs from "dayjs";
-import { useTheme } from "../../Themes/ThemeContext";
-
 
 
 const FutureAvailableTrainers = () => {
-    // for theme -------------------------
-    const { getTheme } = useTheme();
-    const theme = getTheme();
-    // ------------------------------------
 
 
     const [sortByName, setSortByName] = useState(false);
@@ -61,13 +56,13 @@ const FutureAvailableTrainers = () => {
                         Trainer ID
                     </th>
                     <th scope="col" className="px-3 py-3  cursor-pointer text-xs font-medium uppercase" onClick={toggleSortByName}>
-                      <Tooltip title="sort by Trainer Name" placement="right">
-                        Trainer Name  {sortByName ? "▲" : "▼"} 
+                      <Tooltip title="sort by Trainer Name" placement="top">
+                        Trainer Name  {sortByName ? <UpOutlined /> : <DownOutlined />} 
                       </Tooltip>
                     </th>
                     <th scope="col" className="px-3 py-3 cursor-pointer text-xs font-medium uppercase" onClick={toggleSortByStartTime}>
-                      <Tooltip title="sort by Trainer Name" placement="right">
-                        Start Time  {sortByStartTime  ? "▲" : "▼"} 
+                      <Tooltip title="sort by Start Time" placement="top">
+                        Start Time  {sortByStartTime  ? <UpOutlined /> : <DownOutlined />} 
                       </Tooltip>
                     </th>
                     <th scope="col" className="px-3 py-3 md:px-1 text-xs font-medium uppercase">

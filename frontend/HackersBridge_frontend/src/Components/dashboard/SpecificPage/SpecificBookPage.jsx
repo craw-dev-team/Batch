@@ -31,7 +31,6 @@ const SpecificBookPage = () => {
         setActiveTab(tab);
     };
 
-
     useEffect(() => {
         if (bookId) {
             const originalBookId = atob(bookId)
@@ -123,7 +122,7 @@ const SpecificBookPage = () => {
                         </>
                         )  
                         : (
-                            <p>Loading Course data...</p>
+                            <p>Loading book data...</p>
                         )}
                 </div>
            
@@ -221,7 +220,7 @@ const SpecificBookPage = () => {
                                                 </tr>
                                         </thead>
                                    
-                                        <tbody className="divide-y divide-gray-100 font-normal text-gray-700">
+                                        <tbody className="divide-y divide-gray-100 font-light text-gray-700">
                                             {loading ? (
                                                 <tr>
                                                     <td colSpan="100%" className="text-center py-4">

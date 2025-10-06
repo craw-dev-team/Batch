@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTheme } from './ThemeContext';
-import { DownOutlined } from '@ant-design/icons';
+import { DownOutlined, UpOutlined } from '@ant-design/icons';
 
 const ThemeDropdown = () => {
   const { currentTheme, themes, saveTheme } = useTheme();
@@ -39,9 +39,11 @@ const ThemeDropdown = () => {
             {saving ? 'Saving...' : themes[currentTheme]?.name || 'Select Theme'}
           </span>
         </div>
-        <DownOutlined
-          className={`w-5 h-5 ml-2 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-        />
+
+        {isOpen ? <UpOutlined className={`w-5 h-5 ml-2 transition-transform duration-200`}/> 
+        : <DownOutlined className={`w-5 h-5 ml-2 transition-transform duration-200`}/>
+        }
+
       </button>
 
       {isOpen && (

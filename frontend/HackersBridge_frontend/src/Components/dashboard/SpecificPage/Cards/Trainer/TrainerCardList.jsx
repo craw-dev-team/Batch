@@ -2,12 +2,14 @@
 import { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Avatar, Tag, Tooltip, Dropdown, Pagination, Empty, Spin, Switch, Button, Popconfirm } from 'antd';
-import { CheckOutlined, CloseOutlined, DeleteOutlined, DownOutlined, EditOutlined  } from '@ant-design/icons';
+import { CheckOutlined, CloseOutlined, DeleteOutlined, DownOutlined, EditOutlined, MoreOutlined  } from '@ant-design/icons';
 import { handleTrainerClick } from "../../../../Navigations/Navigations";
 import { useTrainerForm } from "../../../Trainercontext/TrainerFormContext";
 import TrainerCards from "./TrainerCards";
 import dayjs from "dayjs";
 import { useTheme } from "../../../../Themes/ThemeContext";
+import StudentsList from './../Student/StudentCardList';
+import CreateTrainerForm from "../../../Trainers/CreateTrainerForm";
 
 
 const TrainersList = () => {
@@ -16,8 +18,11 @@ const TrainersList = () => {
     const theme = getTheme();
     // ------------------------------------
 
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedTrainer, setSelectedTrainer] = useState();
+
     const { type } = useParams(); // Get type from URL
-    const { loading, setLoading, trainersCount, fetchTrainersCount } = useTrainerForm();
+    const { loading, trainersList, fetchTrainerList, handleDelete } = useTrainerForm();
     const [trainerStatuses, setTrainerStatuses] = useState({}); // Store status per trainer
 
     // const { studentStatuses, setStudentStatuses, handleStudentStatusChange } = useStudentStatusChange(token);
@@ -26,36 +31,37 @@ const TrainersList = () => {
         // for Pagination 
     const [searchTerm, setSearchTerm] = useState('');
     const [inputValue, setInputValue] = useState('');
-
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 20;
 
     
     useEffect(() => {
         if (type) {
-            fetchTrainersCount(type);
+            fetchTrainerList(type, currentPage, pageSize, searchTerm);
         }
-    }, [type]);
+    }, [type, currentPage, searchTerm]);
     
-    
-  // HANDLE SEARCH INPUT AND DEBOUNCE 
-        useEffect(() => {
-            const handler = setTimeout(() => {
-                setSearchTerm(inputValue.trimStart());
-            }, 500); // debounce delay in ms
-          
-            return () => {
-              clearTimeout(handler); // clear previous timeout on re-typing
-            };
-          }, [inputValue]);
     
 
-    const filteredTrainer = trainersCount?.trainers || []
+    const currentTrainerData = trainersList?.results || []    
+    console.log(trainersList);
+
+    // HANDLE SEARCH INPUT AND DEBOUNCE 
+    useEffect(() => {
+        const handler = setTimeout(() => {
+        setSearchTerm(inputValue.trimStart());
+        }, 500);
+        return () => clearTimeout(handler);
+    }, [inputValue]);
+    
+
     
     useEffect(() => {
-        if (Array.isArray(filteredTrainer) && filteredTrainer.length > 0) {
+        if (Array.isArray(currentTrainerData) && currentTrainerData.length > 0) {
             
             const timer =  setTimeout(() => {
                 const initialStatuses = {};
-                filteredTrainer.forEach((student) => {
+                currentTrainerData.forEach((student) => {
                 initialStatuses[student.id] = student.status;
             });
 
@@ -65,68 +71,20 @@ const TrainersList = () => {
            return () => clearTimeout(timer);
         }
 
-    }, [filteredTrainer]);
-
-
-    // HANDLE FILTER STUDENT BASED ON SEARCH INPUT 
-     const searchFilteredTrainer = useMemo(() => {
-            const term = searchTerm.toLowerCase();
-          
-            if (!searchTerm) return filteredTrainer;
-          
-            return filteredTrainer.filter(student => {
-              return (
-                (student.name?.toLowerCase() || "").includes(term) ||
-                (student.email?.toLowerCase() || "").includes(term) ||
-                (student.phone?.toLowerCase() || "").includes(term) ||
-                (student.support_coordinator_name?.toLowerCase() || "").includes(term));
-            });
-          }, [filteredTrainer, searchTerm]);
+    }, [currentTrainerData]);
           
 
-    
-    // Delete Function
-    const handleDelete = async (trainerId) => {
-    if (!trainerId) return;
-        
-    try {
-        const response = await axiosInstance.delete(`/api/trainers/delete/${trainerId}/`);
-
-        if (response.status === 204) {
-            // Make sure coursesData is an array before filtering
-            if (Array.isArray(trainerData)) {
-                setTrainerData(prevTrainers => prevTrainers.filter(trainer => trainer.id !== trainerId));
-            } else {
-                console.error('TrainerData is not an array');
-            }
-        }
-    } catch (error) {
-        setLoading(false);
-    
-        if (error.response) {
-            console.error("Server Error Response:", error.response.data);
-    
-            // Extract error messages and show each one separately
-            Object.entries(error.response.data).forEach(([key, value]) => {
-                value.forEach((msg) => {
-                    message.error(`${msg}`);
-                });
-            });
-        } else if (error.request) {
-            console.error("No Response from Server:", error.request);
-            message.error("No response from server. Please check your internet connection.");
-        } else {
-            console.error("Error Message:", error.message);
-            message.error("An unexpected error occurred.");
-        }
-    }       
+        // Function to handle Edit button click
+    const handleEditClick = (trainer) => {
+        setSelectedTrainer(trainer); // Set the selected course data
+        setIsModalOpen(true); // Open the modal
+        setIsDeleted(false)
     };
 
 
     // Confirm and Cancel Handlers for delete button
     const confirm = (trainerId) => {
-        handleDelete(trainerId); // Call delete function with course ID
-        message.success('Trainer Deleted Successfully');
+        handleDelete(trainerId); // Call delete function with trainer ID
     };
 
     const cancel = () => {
@@ -221,19 +179,19 @@ const TrainersList = () => {
                             )}
                         
                         </thead>
-                        <tbody className="divide-y divide-gray-100 font-light text-gray-700">
-                        { loading ? (
+                        <tbody className="divide-y divide-gray-100 font-normal text-gray-700">
+                        { loading.trainerList ? (
                                 <tr>
                                     <td colSpan="100%" className="text-center py-4">
                                         <Spin size="large" />
                                     </td>
                                 </tr>
 
-                        ) : searchFilteredTrainer.length > 0 ? (
-                            searchFilteredTrainer.map((item, index) => (
+                        ) : currentTrainerData.length > 0 ? (
+                            currentTrainerData.map((item, index) => (
                                 <tr key={item.id} className="hover:bg-white transition-colors scroll-smooth">
                                     <td className="px-3 py-2 md:px-2">
-                                        {index + 1}
+                                        {(currentPage - 1) * pageSize +  index + 1}
                                     </td>
                                     <td className="px-3 py-2 md:px-1 font-medium cursor-pointer" onClick={() => handleTrainerClick(navigate, item.id)}>
                                         {item.trainer_id}
@@ -265,7 +223,7 @@ const TrainersList = () => {
                                                 }
                                             }}
                                             >
-                                                {item.courses_names?.map((name, index) => (
+                                                {item.course_names?.map((name, index) => (
                                                     <Tooltip key={index} title={name} placement="top">
                                                         <Avatar
                                                             size={24}
@@ -287,7 +245,7 @@ const TrainersList = () => {
                                     </td>
 
                                     <td className="px-3 py-2 md:px-1">
-                                        {item.location == '1' ? <Tag className="rounded-xl" bordered={false} color="blue">Saket</Tag> : <Tag className="rounded-xl" bordered={false} color="magenta">Laxmi Nagar</Tag>}
+                                        {item.coordinator_name}
                                     </td>
 
                                     <td className="px-3 py-2 md:px-1 font-normal">
@@ -311,37 +269,53 @@ const TrainersList = () => {
                                         />                    
                                     </td>
 
-                                    <td > 
-                                        <Button 
-                                            color="primary" 
-                                            variant="filled" 
-                                            className="rounded-xl w-auto pl-3 pr-3 py-0 my-1 mr-1"
-                                            onClick={(e) => {
-                                                e.stopPropagation(); // Prevent the click from bubbling to the <td> click handler
-                                                handleEditClick(item);  // Open the form with selected course data
-                                                setIsModalOpen(true);   // Open the modal
+                                    <td> 
+                                        <Dropdown
+                                            trigger={["click"]}
+                                            placement="bottomRight"
+                                            menu={{
+                                            items: [
+                                                {
+                                                key: "edit",
+                                                label: (
+                                                    <div
+                                                    className="flex items-center gap-2 px-2 py-1 cursor-pointer hover:bg-gray-100 rounded-md"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleEditClick(item);   // Open trainer edit form
+                                                        setIsModalOpen(true);    // Open the modal
+                                                    }}
+                                                    >
+                                                    <EditOutlined /> Edit
+                                                    </div>
+                                                ),
+                                                },
+                                                {
+                                                key: "delete",
+                                                label: (
+                                                    <Popconfirm
+                                                    title="Delete the Trainer"
+                                                    description="Are you sure you want to delete this Trainer?"
+                                                    onConfirm={() => confirm(item.id)}
+                                                    onCancel={cancel}
+                                                    okText="Yes"
+                                                    cancelText="No"
+                                                    >
+                                                    <div
+                                                        className="flex items-center gap-2 px-2 py-1 cursor-pointer hover:bg-gray-100 rounded-md text-red-500"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        <DeleteOutlined /> Delete
+                                                    </div>
+                                                    </Popconfirm>
+                                                ),
+                                                },
+                                            ],
                                             }}
                                             >
-                                            <EditOutlined />
-                                        </Button>
-                                        <Popconfirm
-                                            title="Delete the Trainer"
-                                            description="Are you sure you want to delete this Trainer?"
-                                            onConfirm={() => confirm(item.id)}
-                                            onCancel={cancel}
-                                            okText="Yes"
-                                            cancelText="No"
-                                            >
-                                            <Button 
-                                                color="danger" 
-                                                variant="filled" 
-                                                className="rounded-xl w-auto px-3"
-                                                onClick={(e) => e.stopPropagation()} // Prevent the click from triggering the Edit button
-                                            >
-                                                <DeleteOutlined />
-                                            </Button>
-                                        </Popconfirm>
-                                    </td> 
+                                            <MoreOutlined className="cursor-pointer text-lg p-2 rounded-full hover:bg-gray-200" />
+                                        </Dropdown>
+                                    </td>
                                 </tr>
                             ))
                         ) : (
@@ -355,22 +329,24 @@ const TrainersList = () => {
                         </table>
                     </div>
 
-                     {/* <div className="flex justify-center items-center mt-0 py-2 bg-gray-200/20">
+                     <div className="flex justify-center items-center mt-0 py-2 bg-gray-200/20">
                         <Pagination
                             size="small"
                             current={currentPage}
-                            total={currentTrainerData?.total || 0}
+                            total={trainersList?.count || 0}
                             pageSize={pageSize}
                             onChange={(page) => setCurrentPage(page)}
                             showSizeChanger={false}
                             showQuickJumper={false}
                         />
-                    </div> */}
+                    </div>
 
                 {/* </div> */}
             {/* </div> */}
         </div>
+        <CreateTrainerForm isOpen={isModalOpen} selectedTrainerData={selectedTrainer || {}} onClose={() => setIsModalOpen(false)} />
         </>
+
     )
     
 };

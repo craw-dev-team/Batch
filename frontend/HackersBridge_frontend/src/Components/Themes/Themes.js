@@ -21,7 +21,7 @@ export const themes = {
     statusBadge: "bg-gradient-to-r from-emerald-100 to-emerald-50 text-emerald-700",
     modeBadge: "bg-gradient-to-r from-blue-100 to-blue-50 text-blue-700",
     studentCount: "bg-gradient-to-r from-sky-400 to-blue-500",
-    sideBarTab: "bg-blue-700",
+    sideBarTab: "bg-blue-100",
     specificPageBg: "bg-white",
     chatDiv: "bg-gradient-to-r from-sky-400 to-blue-500",
     dot: "bg-blue-300",

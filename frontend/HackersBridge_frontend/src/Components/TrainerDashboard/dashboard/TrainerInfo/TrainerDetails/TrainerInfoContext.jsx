@@ -20,8 +20,7 @@ const TrainerInfoProvider = ({ children })=>{
         try {
             const response = await axiosInstance.get(`/Trainer_login/trainer_info/`);
             const data = response.data;
-            setUsername(data?.trainerinfo?.name);
-            console.log(data);
+            setUsername(data?.trainerinfo?.name || 'No name');
             
             setTrainerDetails(prevData => {
             if(JSON.stringify(prevData) !== JSON.stringify(data)){
@@ -41,7 +40,7 @@ const TrainerInfoProvider = ({ children })=>{
 
 
     return (
-        <TrainerInfoContext.Provider value={{ trainerDetails, fetchTrainerDetails, loading }}>
+        <TrainerInfoContext.Provider value={{ trainerDetails, fetchTrainerDetails, loading, username }}>
             {children}
         </TrainerInfoContext.Provider>
     )

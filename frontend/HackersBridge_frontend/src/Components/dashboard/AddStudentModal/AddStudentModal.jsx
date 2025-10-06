@@ -5,6 +5,7 @@ import { useBatchForm } from '../Batchcontext/BatchFormContext';
 import { useParams } from 'react-router-dom';
 import { useSpecificBatch } from '../Contexts/SpecificBatch';
 import axiosInstance from '../api/api';
+import { useStudentForm } from '../Studentcontext/StudentFormContext';
 
 
 
@@ -15,7 +16,7 @@ const AddStudentModal = ({ isOpen, onClose }) => {
     const [decodedBatchId, setDecodedBatchId] = useState(null);
     const {batchFormData, setBatchFormData, resetBatchForm} = useBatchForm();
     const { fetchSpecificBatch } = useSpecificBatch();
-
+    const { studentsListSelect, fetchAvailableStudents } = useStudentForm();
     const [ loading, setLoading ] = useState(false);
     const [students, setStudents] = useState({}); // Stores selected students per batch
 
@@ -73,31 +74,6 @@ const AddStudentModal = ({ isOpen, onClose }) => {
         }
     };
 
-
-    const fetchAvailableStudents = useCallback(async (decodedBatchId) => {        
-        try {
-            const response = await axiosInstance.get(`/api/batches/${decodedBatchId}/available-students/` );
-            const data = response.data;
-            
-            if (!data.available_students) {
-                throw new Error("Invalid response format");
-            };
-    
-            // Format data for the Select component
-            const formattedOptions = data.available_students.map(student => ({
-                name: student.name,
-                studentid: student.id,
-                phone: student.phone
-            }));
-            
-    
-            // Update state with students for the specific batchId
-            setStudents(prev => ({ ...prev, [decodedBatchId]: formattedOptions }));                        
-        } catch (error) {
-            console.error("Error fetching students:", error);
-        }
-    }, [students]);
-    
 
     useEffect(() => {
         if (isOpen) {
@@ -177,8 +153,8 @@ const AddStudentModal = ({ isOpen, onClose }) => {
                             filterOption={(input, option) =>
                                 option.label.toLowerCase().includes(input.toLowerCase()) // Search filter
                             }
-                            options={Array.isArray(students[decodedBatchId]) 
-                                ? students[decodedBatchId].map(student => ({
+                            options={Array.isArray(studentsListSelect[decodedBatchId]) 
+                                ? studentsListSelect[decodedBatchId].map(student => ({
                                     value: String(student.studentid),
                                     label: `${student.name} - ${student.phone}`,
                                     phone:  student.phone,

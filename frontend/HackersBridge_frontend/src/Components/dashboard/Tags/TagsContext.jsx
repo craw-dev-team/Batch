@@ -21,8 +21,8 @@ const TagContext = createContext();
 
 const TagProvider = ({ children }) => {
   const [tagData, setTagData] = useState([]);
-  const [loading, setLoading] = useState(false);
   const {fetchSpecificStudent} = useSpecificStudent();
+  const [loading, setLoading] = useState(false);
 
   
   // Fetch All Tags

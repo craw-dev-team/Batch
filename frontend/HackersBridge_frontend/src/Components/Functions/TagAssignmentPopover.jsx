@@ -3,9 +3,14 @@ import { Popover, Button, Select, message } from "antd";
 import { TagOutlined } from "@ant-design/icons";
 import { useTagContext } from "../dashboard/Tags/TagsContext";
 import axiosInstance from "../dashboard/api/api";
+import { useTheme } from "../Themes/ThemeContext";
 
 const TagAssignmentPopover = ({ student, isOpen, onOpenChange, setStudentData }) => {
-  
+      // for theme -------------------------
+      const { getTheme } = useTheme();
+      const theme = getTheme();
+      // ------------------------------------
+
   const { handleRemoveTag } = useTagContext();
   const [addTagValue, setAddTagValue] = useState([]);
   const [assignTagData, setAssignTagData] = useState([]);
@@ -184,16 +189,16 @@ const TagAssignmentPopover = ({ student, isOpen, onOpenChange, setStudentData })
                 );
               }}
             />
-            <Button
-              type="primary"
-              size="normal"
+            <button
+              type="button"
+              className={`h-7 cursor-pointer focus:outline-none text-white font-medium rounded-lg text-sm px-2 py-1 shadow-lg hover:shadow-xl transition-all duration-200 ${theme.createBtn}`}
               disabled={!addTagValue || addTagValue.length === 0}
               onClick={async () => {
                 await handleAddTag(addTagValue, student.id);
               }}
             >
               Add
-            </Button>
+            </button>
           </div>
         </div>
       }

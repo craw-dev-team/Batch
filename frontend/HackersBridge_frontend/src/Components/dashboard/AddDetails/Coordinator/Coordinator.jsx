@@ -11,6 +11,7 @@ import TimeSlot from "../TimeSlot/TimeSlot";
 import { handleCoordinatorClick } from "../../../Navigations/Navigations";
 import Tags from './../../Tags/Tags';
 import { useTheme } from "../../../Themes/ThemeContext";
+import axiosInstance from "../../api/api";
 
 
 
@@ -22,14 +23,13 @@ const Coordinators = () => {
     // ------------------------------------
 
 
+    const [activeTab, setActiveTab] = useState("coordinators");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedCoordinator, setSelectedCoordinator] = useState(); 
     const [isDeleted, setIsDeleted] = useState(false);
     const [coordinatorStatuses, setCoordinatorStatuses] = useState({}); // Store status per trainer
 
-    const { coordinatorData, loading, setLoading, setCoordinatorData, fetchCoordinators } = useCoordinatorForm();
-    const { token } = useAuth();
-    const [activeTab, setActiveTab] = useState("coordinators");
+    const { coordinatorData, loading, fetchCoordinators, handleDeleteCoordinator } = useCoordinatorForm();
     
     const navigate = useNavigate();
 
@@ -72,52 +72,11 @@ const Coordinators = () => {
         setIsModalOpen(true);
         setIsDeleted(false);
     };
+  
 
-     // Delete Function 
-     const handleDelete = async (coordinatorId) => {
-        if (!coordinatorId) return;
-
-        try {
-            const response = await axios.delete(`${BASE_URL}/api/coordinators/delete/${coordinatorId}/`, 
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                withCredentials : true
-            }
-            );
-
-            if (response.status === 204) {
-                // Make sure coursesData is an array before filtering
-                if (Array.isArray(coordinatorData)) {
-                    setCoordinatorData(prevCoordinator => prevCoordinator.filter(coordinator => coordinator.id !== coordinatorId));
-                } else {
-                    console.error('coordinatordata is not an array');
-                }
-            }
-        }catch (error) {
-            setLoading(false);
-        
-            if (error.response) {
-                console.error("Server Error Response:", error.response.data);
-        
-                // Extract error messages and show each one separately
-                Object.entries(error.response.data).forEach(([key, value]) => {
-                    value.forEach((msg) => {
-                        message.error(`${msg}`);
-                    });
-                });
-            } else if (error.request) {
-                console.error("No Response from Server:", error.request);
-                message.error("No response from server. Please check your internet connection.");
-            } else {
-                console.error("Error Message:", error.message);
-                message.error("An unexpected error occurred.");
-            }
-        }
-    };   
-
-      // Confirm and Cancel Handler for delete button 
-      const confirm = (coordinatorId) => {
-        handleDelete(coordinatorId);
-        message.success('Coordinator Deleted Successfully');
+    // Confirm and Cancel Handler for delete button 
+    const confirm = (coordinatorId) => {
+        handleDeleteCoordinator(coordinatorId);
     };
 
     const cancel = () => {
@@ -134,11 +93,8 @@ const Coordinators = () => {
         setCoordinatorStatuses((prev) => ({ ...prev, [coordinatorId]: checked }));
     
         try {
-            await axios.put(`${BASE_URL}/api/coordinators/edit/${coordinatorId}/`, 
+            await axiosInstance.put(`/api/coordinators/edit/${coordinatorId}/`, 
                 { status: newStatus, email: coordinatorEmail },
-                { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                withCredentials : true
-            }
             );
             message.success(`Coordinator status updated to ${newStatus}`);
         } catch (error) {
@@ -196,7 +152,7 @@ const Coordinators = () => {
                                 </div>
                             </div>
 
-                            <div className={`overflow-hidden pb-0 relative bg-white/40 backdrop-blur-sm rounded-xl shadow-sm ${loading ? "backdrop-blur-md opacity-50 pointer-events-none" : ""}`}>
+                            <div className={`overflow-hidden pb-0 relative bg-white/40 backdrop-blur-sm rounded-xl shadow-sm `}>
                                 <div className="w-full h-[37rem] md:max-h-[36rem] 2xl:max-h-[37rem] overflow-y-auto rounded-xl pb-2">
                                     <table className="w-full text-xs font-normal text-left text-gray-600">
                                         <thead className="bg-white sticky top-0 z-10">
@@ -235,8 +191,8 @@ const Coordinators = () => {
                                             </tr>
                                         </thead>
 
-                                        <tbody className="divide-y divide-gray-100 font-normal text-gray-700">
-                                        {loading ? (
+                                        <tbody className="divide-y divide-gray-100 font-light text-gray-700">
+                                        {loading.all ? (
                                             <tr>
                                                 <td colSpan="100%" className="text-center py-4">
                                                     <Spin size="large" />

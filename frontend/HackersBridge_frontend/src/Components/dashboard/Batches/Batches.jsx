@@ -12,6 +12,7 @@ import useBatchStatusChange from "../../Functions/BatchStatusChange";
 import SearchBar from "../../SearchInput/SearchInput";
 import axiosInstance from "../api/api";
 import { useTheme } from "../../Themes/ThemeContext.jsx";
+import { useStudentForm } from "../Studentcontext/StudentFormContext.jsx";
 
 
 
@@ -25,7 +26,6 @@ const Batches = () => {
     const [activeTab, setActiveTab] = useState("Running");
     const [selectedBatch, setSelectedBatch] = useState();
     const [isDeleted, setIsDeleted] = useState(false)
-    const [students, setStudents] = useState({}); // Stores selected students per batch
     const [selectedStudent, setSelectedStudent] = useState({}); // Stores selected students per batch
     const [addStudentDropdown, setAddStudentDropdown] = useState({});
     const [sortByTime, setSortByTime] = useState(false); // Default ascending
@@ -37,7 +37,8 @@ const Batches = () => {
     const [sortByLocation, setSortByLocation] = useState(null);
     // const [sortByCourse, setSortByCourse] = useState(null);
     
-    const { batchData, loading, setLoading, setBatchData, fetchBatches } = useBatchForm();
+    const { batchData, loading, handleDeleteBatch, fetchBatches } = useBatchForm();
+    const { studentsListSelect, fetchAvailableStudents } = useStudentForm();
     const { handleBatchStatusChange } = useBatchStatusChange();
 
     const navigate = useNavigate();
@@ -82,16 +83,16 @@ const Batches = () => {
 
 
     // HANDLE SEARCH INPUT AND DEBOUNCE 
-        useEffect(() => {
-            const handler = setTimeout(() => {
-                setSearchTerm(inputValue.trimStart());
-                setCurrentPage(1)
-            }, 500); // debounce delay in ms
-          
-            return () => {
-              clearTimeout(handler); // clear previous timeout on re-typing
-            };
-          }, [inputValue]);
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setSearchTerm(inputValue.trimStart());
+            setCurrentPage(1)
+        }, 500); // debounce delay in ms
+        
+        return () => {
+            clearTimeout(handler); // clear previous timeout on re-typing
+        };
+    }, [inputValue]);
 
 
 
@@ -104,103 +105,15 @@ const Batches = () => {
     };
 
 
-    
-    // Delete Function 
-    const handleDelete = async (batchId) => {
-        if (!batchId) return;
-
-        try {
-            const response = await axiosInstance.delete(`/api/batches/delete/${batchId}/` );
-
-            if (response.status >= 200 && response.status < 300) {
-                // Only update the batch data if it's correctly structured
-                if (
-                    batchData?.results &&
-                    Array.isArray(batchData.results.batches)
-                ) {
-                    setBatchData(prevBatch => {
-                        const updatedBatches = prevBatch.results.batches.filter(
-                            batch => String(batch.id) !== String(batchId)
-                        );
-    
-                        // Update the batches in the corresponding status category
-                        return {
-                            ...prevBatch,
-                            results: {
-                                ...prevBatch.results,
-                                batches: updatedBatches, // Update the batches array
-                            },
-                        };
-                    });
-            
-                    setTimeout(() => {
-                        setSearchTerm('');
-                    }, 2000);
-                } else {
-                    console.error('batchData is not an array or properly structured');
-                }
-            } else {
-                message.error('Failed to delete batch');
-            }
-            
-   
-        } catch (error) {
-            setLoading(false);
-        
-            if (error.response) {
-                console.error("Server Error Response:", error.response.data);
-        
-                // Extract error messages and show each one separately
-                Object.entries(error.response.data).forEach(([key, value]) => {
-                    value.forEach((msg) => {
-                        message.error(`${msg}`);
-                    });
-                });
-            } else if (error.request) {
-                console.error("No Response from Server:", error.request);
-                message.error("No response from server. Please check your internet connection.");
-            } else {
-                console.error("Error Message:", error.message);
-                message.error("An unexpected error occurred.");
-            }
-        }       
-    };
-
-
     // Confirm and Cancel Handler for delete button 
     const confirm = (batchId) => {
-        handleDelete(batchId);
+        handleDeleteBatch(batchId);
     };
 
     const cancel = () => {
         message.error('batch Deletion Cancelled');
     };
 
-
-    // to add students in a batch fetch available student data from select field
-    const fetchAvailableStudents = useCallback(async (batchId) => {
-        try {
-            const response = await axiosInstance.get(`/api/batches/${batchId}/available-students/`);
-            const data = response.data;
-            
-            if (!data.available_students) {
-                throw new Error("Invalid response format");
-            }
-    
-            // Format data for the Select component
-            const formattedOptions = data.available_students.map(student => ({
-                name: student.name,
-                studentid: student.id,
-                phone: student.phone
-            }));
-            
-    
-            // Update state with students for the specific batchId
-            setStudents(prev => ({ ...prev, [batchId]: formattedOptions }));
-        } catch (error) {
-            console.error("Error fetching students:", error);
-        }
-    }, [students]) 
     
 
     // send student id to api and add it in selected  batch
@@ -423,7 +336,7 @@ const Batches = () => {
                 <div className={`w-full py-3 px-1 flex justify-between items-center font-semibold ${theme.text}`}>
                     <h1>All Batches</h1>
                     <div>
-                        <button onClick={() =>  { setIsModalOpen(true); setSelectedBatch(null); }} type="button" className={`focus:outline-none text-white font-medium rounded-lg text-sm px-4 py-1.5 shadow-lg hover:shadow-xl transition-all duration-200 ${theme.createBtn}`}>Create Batch +</button>
+                        <button onClick={() => { setIsModalOpen(true); setSelectedBatch(null); }} type="button" className={`focus:outline-none text-white font-medium rounded-lg text-sm px-4 py-1.5 shadow-lg hover:shadow-xl transition-all duration-200 ${theme.createBtn}`}>Create Batch +</button>
                     </div>
                 </div>
 
@@ -482,7 +395,6 @@ const Batches = () => {
 
                             <div className="grid col-span-1 justify-items-end items-center">
                                 <div className="flex gap-x-6">
-                                    <label htmlFor="table-search" className="sr-only">Search</label>
                                         <div className="relative">
                                             <input  value={inputValue} type="text" id="table-search" placeholder="Search for batch"
                                                 onChange={(e) => setInputValue(e.target.value)}
@@ -510,7 +422,7 @@ const Batches = () => {
                 </div>
                 
                 {/* {activeTab === 'tab1' && ( */}
-                <div className={`overflow-hidden pb-0 mx-0 relative bg-white/40 backdrop-blur-sm rounded-xl shadow-sm ${loading ? "backdrop-blur-md opacity-50 pointer-events-none" : ""}`}>
+                <div className={`overflow-hidden pb-0 mx-0 relative bg-white/40 backdrop-blur-sm rounded-xl shadow-sm`}>
                     <div className="w-full h-auto md:max-h-[30rem] 2xl:max-h-[34rem] overflow-y-auto rounded-xl pb-2">
                         <table className="w-full text-xs font-normal text-left text-gray-600">
                             <thead className="bg-white sticky top-0 z-10">
@@ -537,7 +449,7 @@ const Batches = () => {
                                     <th scope="col" className="px-3 py-3 md:px-1 cursor-pointer text-xs font-medium uppercase" onClick={toggleSortByStartTime}>
                                         Start Time 
                                     <span className="ml-1">
-                                            <Tooltip title="Sort by Start Time" placement="top"> 
+                                            <Tooltip title="Sort by Time" placement="top"> 
                                                 {sortByTime ? <UpOutlined /> : <DownOutlined />}
                                             </Tooltip>
                                     </span>
@@ -545,7 +457,7 @@ const Batches = () => {
                                     <th scope="col" className="px-3 py-3 md:px-1 cursor-pointer text-xs font-medium uppercase" onClick={toggleSortByStartDate}>
                                         Start Date
                                     <span className="ml-1">
-                                            <Tooltip title="Sort by start Date" placement="top">
+                                            <Tooltip title="Sort by Start Date" placement="top">
                                                 {sortByStartDate ? <UpOutlined /> : <DownOutlined />}
                                             </Tooltip>
                                     </span>
@@ -627,7 +539,7 @@ const Batches = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 font-normal text-gray-700">
-                                {loading ? (
+                                {loading.all ? (
                                     <tr>
                                         <td colSpan="100%" className="text-center py-4">
                                             <Spin size="large" />
@@ -635,7 +547,9 @@ const Batches = () => {
                                     </tr>
                                 ) : sortedBatches.length > 0 ? (
                                     sortedBatches.map((item, index) => (
-                                        <tr key={index} className={`hover:bg-white transition-colors scroll-smooth`}>
+                                        <tr key={index} className={`hover:bg-white transition-colors scroll-smooth ${new Date(item.batch_create_datetime).toDateString() === new Date().toDateString() ? (
+                                                    "bg-green-100"
+                                                ) : "bg-gray-50/80"}`}>
                                             <td scope="col" className="p-2">
                                                 <div className="flex items-center">
                                                     <input id="checkbox-all-search" type="checkbox"
@@ -653,9 +567,11 @@ const Batches = () => {
                                                 {index + 1}
                                             </td>
                                             <td className="px-3 py-2 md:px-1 cursor-pointer font-medium" onClick={() => handleBatchClick(navigate,item.id)}>
-                                                {item.batch_id} {item.batch_link && ( 
+                                              {item.batch_id} {" "}
+                                                                                                
+                                                {item.batch_link && ( 
                                                     <Tooltip title={
-                                                        <span overlayStyle={{ whiteSpace: "nowrap", maxWidth: 'none' }}>
+                                                        <span overlayStyle={{ whiteSpace: "nowrap", maxWidth: 'none', display: "flex" }}>
                                                             Class Link - {item.batch_link}
                                                         </span>
                                                         }
@@ -753,7 +669,7 @@ const Batches = () => {
                                                                 style={{ width: 250, whiteSpace: "normal" }}
                                                                 onChange={(values) => handleSelectChange(item.id, values)}
                                                                 placeholder="Select a student"
-                                                                options={students[item.id] ? students[item.id].map(student => ({
+                                                                options={studentsListSelect[item.id] ? studentsListSelect[item.id].map(student => ({
                                                                     label: (
                                                                         <div style={{ whiteSpace: "normal", wordWrap: "break-word", overflowWrap: "break-word" }}>
                                                                             {student.name} - {student.phone}
@@ -937,7 +853,7 @@ const Batches = () => {
                 {/* )} */}
             {/* </div> */}
 
-            <CreateBatchForm isOpen={isModalOpen} selectedBatchData={selectedBatch|| {}}  onClose={() => setIsModalOpen(false)} />
+            <CreateBatchForm isOpen={isModalOpen} selectedBatchData={selectedBatch|| {}}  onClose={() => setIsModalOpen(false)} currentFilters={currentFilters} />
 
         </div>
 
